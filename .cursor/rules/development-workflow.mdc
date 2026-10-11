@@ -1,0 +1,49 @@
+---
+description: Docs-first, gemeinsame Nenner, Inventur vor Code — sauberer Entwicklungsablauf
+alwaysApply: true
+---
+
+# Development Workflow
+
+Vollständige Beschreibung: **`_docs/requirements/requirements-development-workflow.md`**
+
+## Phase 1 — Docs first (Default)
+
+- **Kein Feature-Code**, solange das Feature nicht in `_docs/requirements/` beschrieben ist.
+- Pro System / Domäne eine **eigene Requirement-Datei** (`requirements-{kebab-case}.md`).
+- User will **erst alles aufschreiben** — nicht vorzeitig implementieren oder „Prototypen“ die später 100× umgebaut werden.
+- Neue Requirements: ans **Dateiende**, bestehende nicht überschreiben (siehe `requirements.mdc`).
+
+## Phase 2 — Gemeinsame Nenner (vor Implementierung)
+
+- Wenn **mehrere Systeme** betroffen sind (z. B. Lighting, Placement, Camera): **zuerst** Querschnitt klären und dokumentieren.
+- Gemeinsame Bausteine explizit benennen (Entity-Modell, Scene-API, Store, Panel-Muster, Serialisierung) — in Requirements oder [`requirements-architecture.md`](../../_docs/requirements/requirements-architecture.md).
+- **Keine parallelen Einmal-Lösungen** pro Feature, wenn dasselbe Muster schon existiert oder geplant ist.
+- Abstraktion **erst** wenn der Bedarf in den Docs klar ist — nicht raten im Code.
+
+## Phase 3 — Inventur (bei jeder Umsetzung)
+
+Vor dem ersten Edit in `src/**`:
+
+1. **Requirements** der betroffenen Kategorien lesen (Index → Kategorie-Dateien).
+2. **Bestand prüfen**: Was gibt es schon? (`scene-api`, Engine, Store, Controller, bestehende Patterns.)
+3. **Entscheidung**: Erweitern / refactoren / ersetzen — begründet, minimaler Diff.
+4. **Kein Duplikat**: Keine zweite API, kein zweites Entity-Modell, kein Copy-Paste von Engine-Logik ins UI.
+
+## Phase 4 — Sauberer Code
+
+- **Erweitern vor Neuschreiben** — vorhandene Module nutzen und vereinheitlichen.
+- Berührt bestehender Code das Feature: **mit aufräumen** (nur im relevanten Scope, kein Drive-by-Refactor).
+- Ein Verantwortungsbereich pro Modul; Scene-API als UI↔Engine-Grenze.
+- `npm run lint` + `npm run build` wenn Code geändert wird (User sagt „fix" → Pflicht).
+
+## Wann Code schreiben?
+
+- User fordert explizit **Implementierung** an, **oder**
+- Anforderungen + Querschnitt (gemeinsame Nenner) sind ** dokumentiert** und User bestätigt den Start.
+
+Im Zweifel: **nachfragen** oder **weiter dokumentieren** — nicht raten und nicht vorauseilen.
+
+## Decision Diary
+
+Nach jeder merklichen Tech-/Architektur-Entscheidung: kurzer Eintrag in [`diary-code-decisions.md`](../../_docs/diaries/diary-code-decisions.md). Vor Umbauten Diary lesen. Regeln → [`diary.mdc`](./diary.mdc).

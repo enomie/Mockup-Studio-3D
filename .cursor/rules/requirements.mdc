@@ -1,0 +1,77 @@
+---
+description: Requirements in _docs/requirements/ — Einstieg, Kategorien, Format
+alwaysApply: true
+---
+
+# Requirements
+
+## Einstieg (immer zuerst)
+
+**[`requirements-and-project-description.md`](../../_docs/requirements/requirements-and-project-description.md)** — Projektziel, Browser-only, Asset-Limits, Index aller Kategorie-Dateien.
+
+Vor jeder größeren Entscheidung kurz diese Datei lesen, dann die passende Kategorie.
+
+## Kategorie-Dateien
+
+| Datei | Wann lesen |
+|---|---|
+| `requirements-and-project-description.md` | Projektkontext, Scope, Plattform |
+| `requirements-app-layout.md` | Shell: Top/Left/Right/Status, Main + Sub Panels |
+| `requirements-lighting.md` | Multi-Light, Typen, Right Lighting Panel |
+| `requirements-lighting-presets.md` | Left Light rigs: lighting presets, user save |
+| `requirements-shadows.md` | Szene-Schatten: Qualität, mm-Kontakt, Cast/Receive, Engine |
+| `requirements-scene-placement.md` | Entities, Select, Transform, Gizmo |
+| `requirements-gimbals.md` | Transform-Gizmo, Translate/Rotate, Toolbar |
+| `requirements-camera.md` | Camera: Quick Bar, Sub-Panel, Presets, Navigation |
+| `requirements-export.md` | Bild-Export (normativ): PNG/JPG, Pipeline, Contact shadows, UI, Store |
+| `requirements-environment.md` | Sky, Fog, Reflections, Ground (one panel) |
+| `requirements-environments.md` | Left Environments library: atmosphere presets, user save |
+| `requirements-ground.md` | Ground Panel, Texture, Images-Link |
+| `requirements-scenes.md` | Scene presets: built-ins, user save, load |
+| `requirements-images.md` | Images library, Upload, Starter assets |
+| `requirements-colors.md` | Colors library, named RGB swatches, ColorPicker integration |
+| `requirements-materials.md` | Materials library, PBR presets, built-ins, assignment |
+| `requirements-assets.md` | Asset catalog, drop/placement, screen image, sizing |
+| `requirements-assets-picture-framed.md` | Picture framed: frame geometry, glazing, panel |
+| `requirements-assets-wall.md` | Wall, wall with door, wallpaper pattern |
+| `requirements-assets-block.md` | Block: box dimensions, single material, corner radius |
+| `requirements-assets-fabric-cloth.md` | Fabric cloth: image both sides, border, stiff / wavy / physical |
+| `requirements-assets-beverage-can.md` | Beverage can (330 ml): SVG lathe alu body, label UV on mantle band, top ring |
+| `requirements-assets-tin-can.md` | Tin can (food can): parametric radius + height, beads on middle 80% of mantle, label follows corrugation |
+| `requirements-assets-wine-bottle.md` | Wine bottle: bordeaux / alsace / sparkling profiles, glass wall, label (TBD) |
+| `requirements-color-picker.md` | Shared ColorPicker component |
+| `requirements-ground.md` | Ground panel UI + texture mapping |
+| `requirements-look-and-feel.md` | UI, UX, Lucide Icons, Panel Scrollbars |
+| `requirements-demo.md` | UI Dummy Demo — Shell-Platzhalter |
+| `requirements-development-workflow.md` | Docs first, Phasen, Inventur, sauberer Code |
+| `requirements-architecture.md` | Querschnitt, gemeinsame Nenner, Scene-API, Entity |
+| `requirements-code.md` | React UI-Chrome, Three WebGPU, Rapier, Strict TS |
+| `requirements-tips-and-tricks.md` | Tips & Tricks — Sammelbecken, kein Feature-Scope; später promoten |
+
+Neue Kategorie → `requirements-{kebab-case}.md` + Eintrag in der Projekt-Datei. Praxis-Tipps (Workarounds) → `requirements-tips-and-tricks.md`.
+
+## Format (pro Requirement)
+
+Template: `_docs/templates/template-requirement.md`
+
+```markdown
+**Category:** …
+**Title:** …
+**Description:** …
+
+---
+```
+
+Mehrere Requirements pro Datei — durch `---` getrennt.
+
+## Regeln für den Agent
+
+- **Workflow:** Docs first → gemeinsame Nenner → Inventur → Code. Details: [`development-workflow.mdc`](./development-workflow.mdc), [`requirements-development-workflow.md`](../../_docs/requirements/requirements-development-workflow.md).
+- **Zuerst** `requirements-and-project-description.md`, **dann** Kategorie-Datei; Querschnitt: `requirements-architecture.md`.
+- **Kein Feature-Code** ohne dokumentierte Requirements und ohne explizite User-Freigabe zur Implementierung.
+- Layout/UI-Shell: `requirements-app-layout.md` + `requirements-look-and-feel.md`.
+- Neue Requirements nur auf User-Anfrage — nicht proaktiv erfinden.
+- Bestehende Requirements nicht überschreiben; neue Blöcke ans Dateiende.
+- Typische Fehler in `requirements-code.md` — nicht dagegen implementieren.
+- **Code & Kommentare immer Englisch** (`src/**`); Docs/Requirements dürfen Deutsch sein.
+- **Entscheidungen:** kurzes Diary in [`diary-code-decisions.md`](../../_docs/diaries/diary-code-decisions.md) — siehe [`diary.mdc`](./diary.mdc).

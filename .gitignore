@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.backup/
+.backups/
+_deleted/
+_anfänge/
+.DS_Store
+*.log

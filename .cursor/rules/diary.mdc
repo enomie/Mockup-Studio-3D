@@ -1,0 +1,41 @@
+---
+description: Code-Decision-Diary — kurze Entscheidungs-Historie pflegen
+alwaysApply: true
+---
+
+# Code Decision Diary
+
+**Datei:** [`_docs/diaries/diary-code-decisions.md`](../../_docs/diaries/diary-code-decisions.md)
+
+## Zweck
+
+Knappe, chronologische Notizen **wie wir uns entschieden haben** — nicht Requirements (Was), sondern Diary (Warum / welche Alternative verworfen). Hilft bei Inventur und verhindert alte Debatten.
+
+## Wann eintragen
+
+Nach jeder **merklichen Architektur- oder Tech-Entscheidung** — vom User bestätigt oder vom Agent vorgeschlagen und akzeptiert:
+
+- Stack, Libraries, Patterns
+- Layout-/UI-Konventionen
+- Grenzen zwischen UI und Engine
+- „X statt Y" mit kurzem Grund
+
+**Nicht** eintragen: triviale Bugfixes, reine Requirement-Übernahme ohne Entscheidung, Commit-Messages.
+
+## Format (kurz halten)
+
+```markdown
+### YYYY-MM-DD — Titel
+- **Entscheidung:** …
+- **Grund:** …
+- **Verworfen:** … (optional, eine Zeile)
+```
+
+Neue Einträge **oben** unter „Einträge" (neueste zuerst). Deutsch ok. Keine Romane.
+
+## Agent-Pflicht
+
+- Vor größeren Umbauten: Diary **lesen** — nicht gegen dokumentierte Entscheidungen arbeiten ohne User-Rücksprache.
+- Nach neuer Entscheidung: **Eintrag ergänzen** in derselben Session (nicht auf später verschieben).
+
+Requirements bleiben in `_docs/requirements/`; Diary ergänzt, ersetzt sie nicht.

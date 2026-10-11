@@ -1,0 +1,27 @@
+---
+description: Mockup Studio 3D — Kurz-Kontext (Details in Requirements)
+alwaysApply: true
+---
+
+# Mockup Studio 3D
+
+Photorealistische Mockups im **Browser** — Desktop & Mobile.
+
+Vollständige Projektbeschreibung: **`_docs/requirements/requirements-and-project-description.md`**
+
+**Entwicklung:** Docs first → gemeinsame Nenner → Inventur → Code. Entscheidungen → `_docs/diaries/diary-code-decisions.md` (`diary.mdc`).
+
+Kern in Kürze:
+
+- Mockups für Webshops, Flyer, Geräte, Tapeten, Böden, Arrangements, Stilleben, …
+- **Hochqualitative Schatten** — Pflicht; 4096², 5 m Frustum, shadowSide → `requirements-shadows.md`
+- **Browser-only** — kein Desktop/Backend-Kern
+- **WebGPU required** — kein WebGL-Fallback
+- **React** nur für UI-Chrome; Canvas/Engine = Vanilla TS (Three, Rapier)
+- **Code & comments: English only** — Docs dürfen Deutsch sein
+- Kameras: Quick Bar (Top Main) + Sub-Panel + Presets → `requirements-camera.md`
+- Multi-Light + Placement → `requirements-lighting.md`, `requirements-scene-placement.md`
+- App-Shell: Top/Left/Right/Status (Main + Sub) → `requirements-app-layout.md`
+- UI: Figma-like, responsive, touch-ready
+- User: **min. 10 Bilder** hochladen & verwenden
+- **Bilder nie verzerren** — Ratio immer; Override nur per Checkbox → `image-aspect-ratio.mdc`

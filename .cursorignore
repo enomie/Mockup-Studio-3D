@@ -1,0 +1,12 @@
+# Local backups — not part of the app source tree
+.backups/
+.backup/
+
+# Archived / tooling — same as .gitignore workspace dirs
+_deleted/
+_anfänge/
+_scripts/
+
+# Build output
+dist/
+node_modules/

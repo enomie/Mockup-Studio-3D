@@ -1,0 +1,436 @@
+import {
+  AmbientLight,
+  Group,
+  type Light,
+  type MeshBasicNodeMaterial,
+  type Scene,
+  Vector3,
+} from 'three/webgpu';
+import { applySpotShadowCast, updateSpotShadowCamera } from '@/render/shadow-setup';
+import { rgbToColor, type Rgb } from '@/colors/rgb';
+import { cloneTransform, defaultTransform } from '@/scene/entity-types';
+import { LIGHT_FILL_ID, LIGHT_KEY_ID, type StudioLightId } from '@/scene/light-ids';
+import { mergeLightingSettings } from '@/scene/lighting-merge';
+import type { DeepPartial, LightingSettings } from '@/scene/scene-api';
+import {
+  readTransformFromObject,
+  type EntityRegistry,
+} from '@/engine/entity-registry';
+import { FILL_DECAY, KEY_DECAY, LightPool } from './light-pool';
+import type { SpotLightRig } from './light-rig';
+import { orientFixtureDiscToward, setFixtureDiscColor } from './light-fixture-disc';
+import {
+  applyTransformOffset,
+  computeFillPose,
+  computeKeyPose,
+  computeOffsetFromWorld,
+  computeSceneCenter,
+  type StudioPose,
+} from './studio-pose';
+
+type SelectionListener = (lightId: StudioLightId | null) => void;
+
+const KEY_PICK_COLOR: Rgb = { r: 1, g: 0.85, b: 0.6 };
+const FILL_PICK_COLOR: Rgb = { r: 0.75, g: 0.85, b: 1 };
+const _targetPosition = new Vector3();
+
+function cloneLightingSettings(settings: LightingSettings): LightingSettings {
+  return {
+    referenceMode: settings.referenceMode,
+    ambient: {
+      enabled: settings.ambient.enabled,
+      color: { ...settings.ambient.color },
+      intensity: settings.ambient.intensity,
+    },
+    key: {
+      enabled: settings.key.enabled,
+      side: settings.key.side,
+      color: { ...settings.key.color },
+      intensity: settings.key.intensity,
+      castShadow: settings.key.castShadow,
+      shadowSoftness: settings.key.shadowSoftness,
+      transformOffset: cloneTransform(settings.key.transformOffset),
+    },
+    fill: {
+      enabled: settings.fill.enabled,
+      color: { ...settings.fill.color },
+      intensityRatio: settings.fill.intensityRatio,
+      distance: settings.fill.distance,
+      castShadow: settings.fill.castShadow,
+      shadowSoftness: settings.fill.shadowSoftness,
+      transformOffset: cloneTransform(settings.fill.transformOffset),
+    },
+  };
+}
+
+function applyPoseToRig(
+  rig: SpotLightRig,
+  pose: StudioPose,
+  targetPosition: Vector3,
+  updateShadowCamera: boolean,
+): void {
+  rig.helper.position.set(pose.position.x, pose.position.y, pose.position.z);
+  rig.helper.rotation.set(0, 0, 0);
+
+  rig.light.position.set(pose.position.x, pose.position.y, pose.position.z);
+  rig.target.position.copy(targetPosition);
+
+  rig.helper.updateMatrixWorld(true);
+  rig.light.updateMatrixWorld(true);
+  rig.target.updateMatrixWorld(true);
+  if (rig.fixtureDisc) {
+    orientFixtureDiscToward(rig.fixtureDisc, targetPosition);
+  }
+
+  if (updateShadowCamera) {
+    updateSpotShadowCamera(rig.light);
+  }
+}
+
+function setLightColor(light: Light, color: Rgb): void {
+  const rgb = rgbToColor(color);
+  light.color.setRGB(rgb.r, rgb.g, rgb.b);
+}
+
+export class LightingSystem {
+  private readonly scene: Scene;
+  private readonly registry: EntityRegistry;
+  private readonly lightPool: LightPool;
+  private readonly ambient: AmbientLight;
+  private readonly worldFixedPoses = new Map<StudioLightId, StudioPose>();
+
+  private settings: LightingSettings;
+  private selectedLightId: StudioLightId | null = null;
+  private readonly selectionListeners = new Set<SelectionListener>();
+  private exportHideFixturesDepth = 0;
+
+  constructor(scene: Scene, registry: EntityRegistry, initial: LightingSettings) {
+    this.scene = scene;
+    this.registry = registry;
+    this.settings = cloneLightingSettings(initial);
+
+    this.lightPool = new LightPool(scene);
+    this.ambient = new AmbientLight(0xffffff, initial.ambient.intensity);
+    scene.add(this.ambient);
+
+    registry.subscribeEntities(() => {
+      if (this.settings.referenceMode === 'scene-center') {
+        this.updateRigTransforms();
+      }
+    });
+
+    this.apply(initial);
+  }
+
+  apply(settings: LightingSettings): void {
+    this.settings = cloneLightingSettings(settings);
+    this.updateRigTransforms();
+    this.applyAmbient();
+    this.applyKey();
+    this.applyFill();
+  }
+
+  setLighting(partial: DeepPartial<LightingSettings>): void {
+    const wasSceneCenter = this.settings.referenceMode === 'scene-center';
+    this.settings = mergeLightingSettings(this.settings, partial);
+
+    if (wasSceneCenter && this.settings.referenceMode === 'world-fixed') {
+      this.captureWorldFixedPoses();
+    }
+    if (partial.referenceMode === 'scene-center') {
+      this.worldFixedPoses.clear();
+    }
+
+    this.updateRigTransforms();
+    this.applyAmbient();
+    this.applyKey();
+    this.applyFill();
+  }
+
+  getLighting(): LightingSettings {
+    return cloneLightingSettings(this.settings);
+  }
+
+  /** Keep shadow matrices current — call once per frame from the render loop. */
+  updateFrame(): void {
+    const rigs: SpotLightRig[] = [];
+    if (this.settings.key.enabled) rigs.push(this.getKeyRig());
+    if (this.settings.fill.enabled) rigs.push(this.getFillRig());
+
+    for (const rig of rigs) {
+      rig.light.position.copy(rig.helper.position);
+      rig.helper.updateMatrixWorld(true);
+      rig.light.updateMatrixWorld(true);
+      rig.target.updateMatrixWorld(true);
+      if (rig.fixtureDisc) {
+        orientFixtureDiscToward(rig.fixtureDisc, rig.target.position);
+      }
+      const castsShadow =
+        rig.id === LIGHT_KEY_ID
+          ? this.settings.key.enabled && this.settings.key.castShadow
+          : this.settings.fill.enabled && this.settings.fill.castShadow;
+      if (castsShadow) {
+        updateSpotShadowCamera(rig.light);
+      }
+    }
+  }
+
+  getPickables(): Group[] {
+    const pickables: Group[] = [];
+    if (this.settings.key.enabled) {
+      pickables.push(this.getKeyRig().helper);
+    }
+    if (this.settings.fill.enabled) {
+      pickables.push(this.getFillRig().helper);
+    }
+    return pickables;
+  }
+
+  isLightEnabled(lightId: StudioLightId): boolean {
+    if (lightId === LIGHT_KEY_ID) return this.settings.key.enabled;
+    if (lightId === LIGHT_FILL_ID) return this.settings.fill.enabled;
+    return false;
+  }
+
+  getHelperObject(lightId: StudioLightId): Group | null {
+    const rig = this.getRig(lightId);
+    return rig?.helper ?? null;
+  }
+
+  getSelectedLightId(): StudioLightId | null {
+    return this.selectedLightId;
+  }
+
+  setSelectedLightId(lightId: StudioLightId | null): void {
+    if (this.selectedLightId === lightId) return;
+    this.selectedLightId = lightId;
+    this.selectionListeners.forEach((listener) => listener(lightId));
+  }
+
+  getWireframe(lightId: StudioLightId): SpotLightRig['wireframe'] | null {
+    const rig = this.getRig(lightId);
+    return rig?.wireframe ?? null;
+  }
+
+  subscribeSelection(listener: SelectionListener): () => void {
+    this.selectionListeners.add(listener);
+    return () => this.selectionListeners.delete(listener);
+  }
+
+  syncOffsetFromHelper(lightId: StudioLightId): void {
+    const rig = this.getRig(lightId);
+    if (!rig) return;
+
+    const center = this.getReferenceCenter();
+    const base = this.getBasePose(lightId, center);
+    const world = readTransformFromObject(rig.helper);
+    const offset = computeOffsetFromWorld(base, world);
+
+    if (lightId === LIGHT_KEY_ID) {
+      this.settings.key.transformOffset = offset;
+      if (this.settings.referenceMode === 'world-fixed') {
+        this.worldFixedPoses.set(LIGHT_KEY_ID, {
+          position: { ...world.position },
+          rotation: { ...world.rotation },
+        });
+      }
+    } else {
+      this.settings.fill.transformOffset = offset;
+      if (this.settings.referenceMode === 'world-fixed') {
+        this.worldFixedPoses.set(LIGHT_FILL_ID, {
+          position: { ...world.position },
+          rotation: { ...world.rotation },
+        });
+      }
+    }
+  }
+
+  dispose(): void {
+    sceneRemove(this.scene, this.ambient);
+    this.lightPool.dispose(this.scene);
+  }
+
+  getLightPool(): LightPool {
+    return this.lightPool;
+  }
+
+  /** Export capture — hide fixture discs and wireframe chrome; viewport restored on pop. */
+  pushExportHideFixtures(): void {
+    if (this.exportHideFixturesDepth > 0) {
+      this.exportHideFixturesDepth += 1;
+      return;
+    }
+    this.exportHideFixturesDepth = 1;
+    this.setStudioFixtureChromeVisible(false);
+  }
+
+  popExportHideFixtures(): void {
+    if (this.exportHideFixturesDepth === 0) return;
+    this.exportHideFixturesDepth -= 1;
+    if (this.exportHideFixturesDepth === 0) {
+      this.applyKey();
+      this.applyFill();
+    }
+  }
+
+  private setStudioFixtureChromeVisible(visible: boolean): void {
+    for (const lightId of [LIGHT_KEY_ID, LIGHT_FILL_ID] as const) {
+      const rig = this.getRig(lightId);
+      if (!rig) continue;
+      rig.wireframe.visible = visible;
+      if (rig.fixtureDisc) {
+        rig.fixtureDisc.visible = visible;
+      }
+    }
+  }
+
+  private getKeyRig(): SpotLightRig {
+    return this.lightPool.getKeyRig();
+  }
+
+  private getFillRig(): SpotLightRig {
+    return this.lightPool.getFillRig();
+  }
+
+  private getRig(lightId: StudioLightId): SpotLightRig | null {
+    return this.lightPool.getSpotRigById(lightId);
+  }
+
+  private getReferenceCenter(): Group {
+    const center = computeSceneCenter(
+      this.registry.getEntities().map((entity) => entity.transform.position),
+    );
+    const anchor = new Group();
+    anchor.position.set(center.x, center.y, center.z);
+    return anchor;
+  }
+
+  private getBasePose(lightId: StudioLightId, centerAnchor: Group): StudioPose {
+    const center = {
+      x: centerAnchor.position.x,
+      y: centerAnchor.position.y,
+      z: centerAnchor.position.z,
+    };
+
+    if (this.settings.referenceMode === 'world-fixed') {
+      const stored = this.worldFixedPoses.get(lightId);
+      if (stored) return stored;
+    }
+
+    if (lightId === LIGHT_KEY_ID) {
+      return computeKeyPose(center, this.settings.key.side);
+    }
+    return computeFillPose(center, this.settings.key.side, this.settings.fill.distance);
+  }
+
+  private getWorldPose(lightId: StudioLightId, centerAnchor: Group): StudioPose {
+    const base = this.getBasePose(lightId, centerAnchor);
+    const offset =
+      lightId === LIGHT_KEY_ID
+        ? this.settings.key.transformOffset
+        : this.settings.fill.transformOffset;
+    return applyTransformOffset(base, offset);
+  }
+
+  private updateRigTransforms(): void {
+    const centerAnchor = this.getReferenceCenter();
+    _targetPosition.copy(centerAnchor.position);
+
+    const keyPose = this.getWorldPose(LIGHT_KEY_ID, centerAnchor);
+    applyPoseToRig(
+      this.getKeyRig(),
+      keyPose,
+      _targetPosition,
+      this.settings.key.enabled && this.settings.key.castShadow,
+    );
+
+    const fillPose = this.getWorldPose(LIGHT_FILL_ID, centerAnchor);
+    applyPoseToRig(
+      this.getFillRig(),
+      fillPose,
+      _targetPosition,
+      this.settings.fill.enabled && this.settings.fill.castShadow,
+    );
+  }
+
+  private captureWorldFixedPoses(): void {
+    for (const lightId of [LIGHT_KEY_ID, LIGHT_FILL_ID] as const) {
+      const rig = this.getRig(lightId);
+      if (!rig) continue;
+      const world = readTransformFromObject(rig.helper);
+      this.worldFixedPoses.set(lightId, {
+        position: { ...world.position },
+        rotation: { ...world.rotation },
+      });
+      if (lightId === LIGHT_KEY_ID) {
+        this.settings.key.transformOffset = defaultTransform();
+      } else {
+        this.settings.fill.transformOffset = defaultTransform();
+      }
+    }
+  }
+
+  private applyAmbient(): void {
+    const { ambient } = this.settings;
+    setLightColor(this.ambient, ambient.color);
+    this.ambient.intensity = ambient.intensity;
+    this.ambient.visible = ambient.enabled;
+  }
+
+  private applyKey(): void {
+    const { key } = this.settings;
+    const rig = this.getKeyRig();
+    setLightColor(rig.light, key.color);
+    rig.light.intensity = key.intensity;
+    rig.light.visible = key.enabled;
+    applySpotShadowCast(rig.light, key.enabled, key.castShadow);
+    rig.light.shadow.radius = key.shadowSoftness;
+    rig.helper.visible = key.enabled;
+    rig.wireframe.visible = key.enabled;
+    if (rig.fixtureDisc) {
+      setFixtureDiscColor(rig.fixtureDisc, key.color);
+      rig.fixtureDisc.visible = key.enabled;
+    }
+    this.updatePickColor(rig, KEY_PICK_COLOR);
+    if (key.enabled && key.castShadow) {
+      updateSpotShadowCamera(rig.light);
+    }
+  }
+
+  private applyFill(): void {
+    const { key, fill } = this.settings;
+    const rig = this.getFillRig();
+    const fillCastsShadow = fill.enabled && fill.castShadow;
+
+    setLightColor(rig.light, fill.color);
+    rig.light.intensity = key.intensity * fill.intensityRatio;
+    // Shadow darkness scales with light contribution — decay 1.5 at studio distance (~8 m)
+    // makes Fill shadows invisible even when castShadow is on. Use key-like falloff while casting.
+    rig.light.decay = fillCastsShadow ? KEY_DECAY : FILL_DECAY;
+    rig.light.visible = fill.enabled;
+    applySpotShadowCast(rig.light, fill.enabled, fill.castShadow);
+    rig.light.shadow.radius = fill.shadowSoftness;
+    rig.helper.visible = fill.enabled;
+    rig.wireframe.visible = fill.enabled;
+    if (rig.fixtureDisc) {
+      setFixtureDiscColor(rig.fixtureDisc, fill.color);
+      rig.fixtureDisc.visible = fill.enabled;
+    }
+    this.updatePickColor(rig, FILL_PICK_COLOR);
+    if (fillCastsShadow) {
+      updateSpotShadowCamera(rig.light);
+    }
+  }
+
+  private updatePickColor(rig: SpotLightRig, color: Rgb): void {
+    const rgb = rgbToColor(color);
+    const material = rig.pickMesh.material as MeshBasicNodeMaterial;
+    material.color.setRGB(rgb.r, rgb.g, rgb.b);
+  }
+
+}
+
+function sceneRemove(scene: Scene, object: AmbientLight): void {
+  scene.remove(object);
+  object.dispose();
+}

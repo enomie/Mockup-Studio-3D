@@ -1,0 +1,111 @@
+/** MSAA sample count for viewport compositor, canvas, and planar mirror RT. */
+export const VIEWPORT_MSAA_SAMPLES = 4;
+
+/** Cap devicePixelRatio for viewport and export (performance vs sharpness). */
+export const VIEWPORT_MAX_PIXEL_RATIO = 2;
+
+/** Screen-space AA after scene composite (Three SMAANode). */
+export const VIEWPORT_SMAA_ENABLED = true;
+
+export const SKYBOX_RADIUS = 900;
+
+/** PMREM resolution for sky-derived IBL (scene.environment). */
+export const ENV_MAP_PMREM_SIZE = 512;
+
+/** Debounce sky color edits before rebuilding the environment map. */
+export const ENV_MAP_REBUILD_DEBOUNCE_MS = 100;
+
+/** Max edge length for planar ground mirror render targets. */
+export const PLANAR_REFLECTION_MAX_SIZE = 1024;
+
+/** Mip chain on mirror RT — reduces grazing-angle aliasing; small GPU cost per mirror frame. */
+export const PLANAR_REFLECTION_GENERATE_MIPMAPS = true;
+
+export const FRUSTUM_SIZE = 8;
+
+export const GROUND_PLANE_SIZE = 5000;
+
+/** Debug only — falling Rapier box to verify physics. Not a product feature. */
+export const DEBUG_PHYSICS_CUBE = false;
+
+export const CUBE_SIZE = 2;
+export const CUBE_DROP_HEIGHT = 10;
+
+/** Shadow map resolution — 4096² for mm-scale contact shadows in studio mockups. */
+export const SHADOW_MAP_SIZE = 4096;
+
+/** Pre-allocated light slots per type (v2 extra lights; studio rig reserves spot 0 + 1). */
+export const LIGHT_POOL_SPOT_COUNT = 10;
+export const LIGHT_POOL_DIRECTIONAL_COUNT = 10;
+export const LIGHT_POOL_POINT_COUNT = 10;
+export const LIGHT_POOL_MAX_SHADOW_CASTERS = 2;
+export const LIGHT_POOL_KEY_SPOT_INDEX = 0;
+export const LIGHT_POOL_FILL_SPOT_INDEX = 1;
+/** Ortho shadow frustum half-size — 2.5 m → 5 m total coverage (directional / pool). */
+export const SHADOW_CAMERA_HALF_EXTENT = 2.5;
+/** Spot shadow coverage radius at the light target — 5 m diameter around scene center. */
+export const SHADOW_COVERAGE_RADIUS = 2.5;
+export const SHADOW_CAMERA_NEAR = 0.1;
+/** Past-target margin along the light axis (spot shadow camera far). */
+export const SHADOW_CAMERA_FAR_MARGIN = 2;
+/** PCF shadow softness — maps to light.shadow.radius (user slider in Lighting panel). */
+export const SHADOW_SOFTNESS_MIN = 0;
+export const SHADOW_SOFTNESS_MAX = 30;
+export const SHADOW_SOFTNESS_DEFAULT = 4;
+export const SHADOW_SOFTNESS_STEP = 0.5;
+/**
+ * Shadow map depth bias. Negative values → Peter Panning (gap under objects on ground).
+ */
+export const SHADOW_DEPTH_BIAS = 0;
+/** World-space normal bias — 0 for floor contact; raise only if print/frame acne appears. */
+export const SHADOW_NORMAL_BIAS = 0;
+
+export const CAMERA_TARGET_Y = 0.137;
+export const CAMERA_FOV = 45;
+export const CAMERA_FOV_MIN = 15;
+export const CAMERA_FOV_MAX = 90;
+export const CAMERA_ORBIT_MIN_RADIUS = 0.35;
+export const CAMERA_ORBIT_MAX_RADIUS = 10;
+export const CAMERA_ORBIT_DEFAULT_RADIUS = 0.55;
+/** Default navigation orbit at app start (degrees). */
+export const CAMERA_DEFAULT_AZIMUTH_DEG = 18.8;
+export const CAMERA_DEFAULT_ELEVATION_DEG = 14.1;
+/** Camera sub-panel navigation fields (meters). */
+export const CAMERA_NAV_LENGTH_DECIMALS = 3;
+export const CAMERA_ORBIT_SENSITIVITY = 0.005;
+export const CAMERA_PAN_SENSITIVITY = 0.003;
+export const CAMERA_ZOOM_SPEED = 0.08;
+export const CAMERA_ORTHO_MIN_ZOOM = 0.25;
+export const CAMERA_ORTHO_MAX_ZOOM = 4;
+
+/** Pixels before a pointer down becomes a camera drag instead of a click. */
+export const VIEWPORT_CLICK_DRAG_THRESHOLD_PX = 4;
+
+/** Inverted-hull selection outline color (matches --color-active-text). */
+export const SELECTION_OUTLINE_COLOR = 0x4d9fff;
+export const SELECTION_OUTLINE_SCALE = 1.03;
+export const SELECTION_OUTLINE_RENDER_ORDER = 1000;
+
+export const LIGHT_WIREFRAME_IDLE_OPACITY = 0.3;
+export const LIGHT_WIREFRAME_SELECTED_OPACITY = 1;
+export const LIGHT_WIREFRAME_SELECTED_SCALE = 1.35;
+
+/** Emissive softbox discs at Key / Fill rigs (world meters). */
+export const LIGHT_FIXTURE_DISC_KEY_RADIUS = 0.35;
+export const LIGHT_FIXTURE_DISC_FILL_RADIUS = 0.28;
+export const LIGHT_FIXTURE_DISC_EMISSIVE_INTENSITY = 1;
+export const LIGHT_FIXTURE_DISC_ROUGHNESS = 0.1;
+
+export const SIZE_SCALE_MIN = 0.05;
+export const SIZE_SCALE_MAX = 5;
+export const DEFAULT_SIZE_SCALE = 1;
+
+/** JPEG quality for viewport export (`image/jpeg` second argument to canvas.toBlob). */
+export const EXPORT_JPEG_QUALITY = 0.92;
+
+/** CPU matte path (`export-shadow-matte.ts`) — min luminance delta for shadow alpha. */
+export const EXPORT_SHADOW_CATCHER_DELTA_MIN = 0.002;
+
+/** CPU matte path — scale for shadow alpha from beauty vs no-shadow luminance delta. */
+export const EXPORT_SHADOW_CATCHER_LUMINANCE_SCALE = 1;
+

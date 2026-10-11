@@ -1,0 +1,19 @@
+---
+description: Dev-Server läuft beim User — Agent startet keinen Server
+alwaysApply: true
+---
+
+# Dev-Server (Mockup Studio 3D)
+
+Der Vite Dev-Server wird **vom User** gestartet und bleibt dauerhaft laufen (gelegentlicher Restart durch den User).
+
+## Regeln für den Agent
+
+- **Nie** `npm run dev`, `vite`, oder andere Dev-Server starten.
+- **Nie** versuchen, einen Server neu zu starten — auch nicht nach Code-Änderungen (HMR übernimmt der laufende Server).
+- Zum Testen/Prüfen der App: **http://localhost:4040** (Browser-MCP oder manuell).
+- Build/Lint sind ok: `npm run build`, `npm run lint`, `tsc`.
+
+## Vite
+
+- Port: **4040** (`vite.config.ts`)

@@ -1,0 +1,22 @@
+---
+description: Bilder nie verzerren — Aspect Ratio immer einhalten (Override per Checkbox)
+alwaysApply: true
+---
+
+# Image Aspect Ratio
+
+Vollständig: [`requirements-images.md`](../../_docs/requirements/requirements-images.md) (Abschnitt Aspect Ratio).
+
+## Regel (Pflicht)
+
+- **Nie** Bilder verzerren — **weder in UI noch in der 3D-Szene noch beim Export**.
+- Jedes Bild behält **immer** sein **originales Seitenverhältnis** (width/height).
+- Anzeige/Platzierung: **Cover** (crop), **Contain** (letterbox), **Tile** (Repeat) — alles **ohne** Stretch.
+- **Einzige Ausnahme:** User aktiviert explizit **Override aspect ratio** (Checkbox) — dann darf Verzerrung (Stretch) bewusst erlaubt werden.
+
+## Für den Agent
+
+- Kein `object-fit: fill`, kein UV-Stretch, kein CSS `width`/`height` unabhängig voneinander auf Bildern — **ohne** Override.
+- Thumbnails: `object-fit: cover` (crop ok) oder `contain` — **nie** fill.
+- Ground/Texturen: Default-Mapping **Tile**, **Cover** oder **Contain** — **nicht** Stretch, außer Override an.
+- Neue Features (Decals, Frames, Export): gleiche Regel von Anfang an in Requirements festhalten.

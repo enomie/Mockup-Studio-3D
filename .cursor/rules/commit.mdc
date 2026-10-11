@@ -1,0 +1,27 @@
+---
+description: "commit" = stage all, commit, push to main
+alwaysApply: true
+---
+
+# Git — shortcut "commit"
+
+When the user says **only** `commit` (or explicitly uses this shortcut), treat it as:
+
+1. **Stage everything** — `git add -A` (respects `.gitignore`; never force-add ignored paths like `.backups/`, `_deleted/`).
+2. **Commit** — if there are no changes, say so and **do not** create an empty commit.
+3. **Push** — `git push origin main` (create upstream `-u` on first push if needed).
+
+## Commit message
+
+- Follow existing repo style from `git log`.
+- Concise summary of **why** (1–2 sentences); use HEREDOC for the message.
+- Do **not** commit secrets (`.env`, credentials). Warn if the user asked to include them.
+
+## Safety (unchanged)
+
+- Never change `git config`, force-push `main`, or skip hooks unless the user explicitly asks.
+- Only create commits when the user requests it — the word **commit** (alone) counts as explicit request for this workflow.
+
+## Remote
+
+- Default: `origin` → `https://github.com/enomie/Mockup-Studio-3D.git`, branch **main**.
