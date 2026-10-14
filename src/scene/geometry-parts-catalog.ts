@@ -55,6 +55,12 @@ export const GEOMETRY_PARTS_TIN_CAN: readonly AssetGeometryPartDescriptor[] = [
   visibilityOnlyPart('label', 'Label (print)'),
 ];
 
+export const GEOMETRY_PARTS_PEN: readonly AssetGeometryPartDescriptor[] = [
+  partWithMaterial('cap', 'Cap', 'capMaterialId'),
+  partWithMaterial('ring', 'Ring', 'ringMaterialId'),
+  partWithMaterial('penBody', 'Body', 'bodyMaterialId'),
+];
+
 export const GEOMETRY_PARTS_WINE_BOTTLE: readonly AssetGeometryPartDescriptor[] = [
   partWithMaterial('body', 'Glass', 'glassMaterialId'),
   visibilityOnlyPart('label', 'Label'),

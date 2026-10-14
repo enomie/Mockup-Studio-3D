@@ -27,7 +27,7 @@ export function clampCornerRadius(
   return Math.max(0, Math.min(radius, maxRadius));
 }
 
-type RoundedRectContourTarget = {
+interface RoundedRectContourTarget {
   moveTo(x: number, y: number): void;
   lineTo(x: number, y: number): void;
   absarc(
@@ -38,7 +38,7 @@ type RoundedRectContourTarget = {
     endAngle: number,
     clockwise: boolean,
   ): void;
-};
+}
 
 /**
  * Rounded rectangle centered at origin (XY). Outer shapes: clockwise; holes: counter-clockwise.
@@ -125,7 +125,7 @@ export function createHandheldFrameRingShape(
 function assignPlanarUvs(geometry: BufferGeometry): void {
   geometry.computeBoundingBox();
   const box = geometry.boundingBox;
-  if (!box) return;
+  if (!box) {return;}
 
   const position = geometry.getAttribute('position');
   const uvArray = new Float32Array(position.count * 2);
@@ -156,14 +156,14 @@ export function createRoundedScreenGeometry(
 function alignExtrusionFrontToZZero(geometry: BufferGeometry): void {
   geometry.computeBoundingBox();
   const box = geometry.boundingBox;
-  if (!box) return;
+  if (!box) {return;}
   geometry.translate(0, 0, -box.max.z);
 }
 
-type ExtrudeAlongZOptions = {
+interface ExtrudeAlongZOptions {
   outerEdgeRadius?: number;
   curveSegments?: number;
-};
+}
 
 function extrudeShapeAlongZ(
   shape: Shape,
@@ -285,12 +285,8 @@ export function createLayerCutterGeometry(
 }
 
 /** Extrude groups: 0 = front/back caps, 1 = side walls (pair with frame material on sides). */
-const HANDHELD_EXTRUDE_CAP_GROUP = 0;
-const HANDHELD_EXTRUDE_SIDE_GROUP = 1;
-/** @deprecated Use HANDHELD_EXTRUDE_CAP_GROUP */
-export const HANDHELD_GLASS_EXTRUDE_CAP_GROUP = HANDHELD_EXTRUDE_CAP_GROUP;
-/** @deprecated Use HANDHELD_EXTRUDE_SIDE_GROUP */
-export const HANDHELD_GLASS_EXTRUDE_SIDE_GROUP = HANDHELD_EXTRUDE_SIDE_GROUP;
+export const HANDHELD_EXTRUDE_CAP_GROUP = 0;
+export const HANDHELD_EXTRUDE_SIDE_GROUP = 1;
 
 export function createRoundedGlassGeometry(
   width: number,

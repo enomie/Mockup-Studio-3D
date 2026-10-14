@@ -14,12 +14,12 @@ import {
 import { useAppStore } from '@/ui/store/use-app-store';
 import { getRecentColors, pushRecentColor } from './color-picker-recent';
 
-type ColorPickerPopoverProps = {
+interface ColorPickerPopoverProps {
   value: Rgb;
   onChange: (rgb: Rgb) => void;
   onClose: () => void;
   anchorRef: RefObject<HTMLElement | null>;
-};
+}
 
 function clamp01(value: number): number {
   return Math.max(0, Math.min(1, value));
@@ -63,7 +63,7 @@ export function ColorPickerPopover({
 
   useEffect(() => {
     const anchor = anchorRef.current;
-    if (!anchor) return;
+    if (!anchor) {return;}
 
     const updatePosition = (): void => {
       const rect = anchor.getBoundingClientRect();
@@ -72,8 +72,8 @@ export function ColorPickerPopover({
       let top = rect.top - height - 8;
       let left = rect.right - width;
 
-      if (top < 8) top = rect.bottom + 8;
-      if (left < 8) left = 8;
+      if (top < 8) {top = rect.bottom + 8;}
+      if (left < 8) {left = 8;}
       if (left + width > window.innerWidth - 8) {
         left = window.innerWidth - width - 8;
       }
@@ -83,14 +83,14 @@ export function ColorPickerPopover({
 
     updatePosition();
     window.addEventListener('resize', updatePosition);
-    return () => window.removeEventListener('resize', updatePosition);
+    return () => { window.removeEventListener('resize', updatePosition); };
   }, [anchorRef]);
 
   useEffect(() => {
     const handlePointerDown = (event: PointerEvent): void => {
       const target = event.target as Node;
-      if (popoverRef.current?.contains(target)) return;
-      if (anchorRef.current?.contains(target)) return;
+      if (popoverRef.current?.contains(target)) {return;}
+      if (anchorRef.current?.contains(target)) {return;}
       commitRecent();
       onClose();
     };
@@ -144,7 +144,7 @@ export function ColorPickerPopover({
 
   const handleRgbChannel = (channel: 'r' | 'g' | 'b', raw: string): void => {
     const parsed = Number.parseInt(raw, 10);
-    if (Number.isNaN(parsed)) return;
+    if (Number.isNaN(parsed)) {return;}
     const bytes = rgbToByte(hsvToRgb(hsvRef.current));
     bytes[channel] = Math.max(0, Math.min(255, parsed));
     const rgb = rgbFromByte(bytes.r, bytes.g, bytes.b);
@@ -176,7 +176,7 @@ export function ColorPickerPopover({
           );
         }}
         onPointerMove={(event) => {
-          if (!event.currentTarget.hasPointerCapture(event.pointerId)) return;
+          if (!event.currentTarget.hasPointerCapture(event.pointerId)) {return;}
           updateSvFromPointer(
             event.clientX,
             event.clientY,
@@ -208,7 +208,7 @@ export function ColorPickerPopover({
           updateHueFromPointer(event.clientX, event.currentTarget.getBoundingClientRect());
         }}
         onPointerMove={(event) => {
-          if (!event.currentTarget.hasPointerCapture(event.pointerId)) return;
+          if (!event.currentTarget.hasPointerCapture(event.pointerId)) {return;}
           updateHueFromPointer(event.clientX, event.currentTarget.getBoundingClientRect());
         }}
         onPointerUp={(event) => {
@@ -231,7 +231,7 @@ export function ColorPickerPopover({
             type="text"
             className={`color-picker-popover__input${hexInvalid ? ' color-picker-popover__input--invalid' : ''}`}
             value={hexInput}
-            onChange={(event) => handleHexChange(event.target.value)}
+            onChange={(event) => { handleHexChange(event.target.value); }}
             onBlur={handleHexBlur}
             spellCheck={false}
           />
@@ -244,7 +244,7 @@ export function ColorPickerPopover({
             max={255}
             className="color-picker-popover__input"
             value={bytes.r}
-            onChange={(event) => handleRgbChannel('r', event.target.value)}
+            onChange={(event) => { handleRgbChannel('r', event.target.value); }}
           />
         </label>
         <label className="color-picker-popover__field color-picker-popover__field--narrow">
@@ -255,7 +255,7 @@ export function ColorPickerPopover({
             max={255}
             className="color-picker-popover__input"
             value={bytes.g}
-            onChange={(event) => handleRgbChannel('g', event.target.value)}
+            onChange={(event) => { handleRgbChannel('g', event.target.value); }}
           />
         </label>
         <label className="color-picker-popover__field color-picker-popover__field--narrow">
@@ -266,7 +266,7 @@ export function ColorPickerPopover({
             max={255}
             className="color-picker-popover__input"
             value={bytes.b}
-            onChange={(event) => handleRgbChannel('b', event.target.value)}
+            onChange={(event) => { handleRgbChannel('b', event.target.value); }}
           />
         </label>
       </div>

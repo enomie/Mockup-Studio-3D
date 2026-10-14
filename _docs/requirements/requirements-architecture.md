@@ -51,8 +51,14 @@ Verknüpfte Feature-Docs: [`requirements-scenes.md`](./requirements-scenes.md), 
 ---
 
 **Category:** Architecture  
+**Title:** Shared UI — Sub-Panel Chrome, Split & Collapse  
+**Description:** **`AppShell`:** `leftSubCollapsed` / `rightSubCollapsed`, `leftSubWidthMode` → `data-left-sub-split`; Main-Nav-`onSelect` öffnet Sub; Main-Collapse schließt Sub mit. **`LeftSubPanel` / `RightSubPanel`:** `ShellSubPanelProvider` (`onToggleShellCollapse`, links `onSubWidthModeChange`). **`SubPanel`:** `layout: 'stack' | 'split'`; Split: `primary`, `primaryFooter`, `detail`, `detailCollapsed`, `onCollapseDetail`; `requestSubWidth('default' | 'split')`. **`SubPanelCollapseRow`** am Panel-Fuß. Erster Split-Konsument: **`MaterialsPanel`**. Layout-Regeln → [`requirements-app-layout.md`](./requirements-app-layout.md).
+
+---
+
+**Category:** Architecture  
 **Title:** Serialisierung & Projekt-Save (Querschnitt)  
-**Description:** Szene, Entities, Lights, Camera-Presets und später Assets müssen in **ein** projekt-speicherbares Format passen (JSON o. ä.). IDs stabil; keine UI-only State der nicht persistiert werden kann. **`AtmosphereSnapshot`** (`environment` + `ground` + `lighting`) — [`requirements-environments.md`](./requirements-environments.md), `environment-preset-types.ts` — Teilmenge von **`SceneSnapshot`** (Entities + Atmosphäre + Camera-Framing) für **Scene-Presets** (Left Scenes) und **Environments**-Bibliothek. Apply-Querschnitt: `applyAtmosphereSnapshot` in Scene-API. Konkretes Top-Level-Schema TBD — aber **ein** Save-Pfad, nicht pro Feature ein eigenes Format.
+**Description:** Szene, Entities, Lights, Camera-Presets und später Assets müssen in **ein** projekt-speicherbares Format passen (JSON o. ä.). IDs stabil; keine UI-only State der nicht persistiert werden kann. **`AtmosphereSnapshot`** (`environment` + `ground` + `lighting`) — [`requirements-environments.md`](./requirements-environments.md), `environment-preset-types.ts` — Teilmenge von **`SceneSnapshot`** (Entities + Atmosphäre + Camera-Framing) für **Scene-Presets** (Left Scenes) und **Environments**-Bibliothek. Apply-Querschnitt: `applyAtmosphereSnapshot` in Scene-API. Konkretes Top-Level-Schema TBD — aber **ein** Save-Pfad, nicht pro Feature ein eigenes Format. **Nicht** in `SceneSnapshot` / Entity-Liste: Engine-only **Physics rigid-test** (`physics-rigid-test-*`) → [`requirements-physics-test.md`](./requirements-physics-test.md).
 
 ---
 
@@ -123,6 +129,12 @@ Verknüpfte Feature-Docs: [`requirements-scenes.md`](./requirements-scenes.md), 
 ---
 
 **Category:** Architecture  
+**Title:** Rigid primitive scale — Params statt `sizeScale`  
+**Description:** Für **`block`**, **`cylinder`**, **`sphere`**, **`wheel-car`** ist **`sizeScale`** nicht die Größen-Wahrheit (bleibt Default `1`). Uniform-Scale vom Gizmo wird in **`buildRigidPrimitiveUniformScalePartial`** → `mergeKindParamPatch` → `EntityRegistry` → **`rebuildEntity`** überführt; `object.scale` am Asset-Root bleibt dauerhaft `(1,1,1)`. Physik: `rigidPrimitivePhysics.refreshOne` nach Rebuild. Querschnitt mit Gizmo → [`requirements-gimbals.md`](./requirements-gimbals.md).
+
+---
+
+**Category:** Architecture  
 **Title:** Picture framed — Rahmen-Geometrie & Material-Slot  
 **Description:** Rahmen = **ein** Engine-Mesh (`src/engine/frame-geometry.ts` → `asset-meshes/`), **ein** `frameMaterialId` pro Entity. Perimeter-UVs koppeln Procedural-Grain/Anisotropie an Balkenorientierung — kein Material-Split H/V. Details Z-Stack, Glas, UI → [`requirements-assets-picture-framed.md`](./requirements-assets-picture-framed.md); Presets → [`requirements-materials.md`](./requirements-materials.md).
 
@@ -133,3 +145,40 @@ Verknüpfte Feature-Docs: [`requirements-scenes.md`](./requirements-scenes.md), 
 **Description:** Parallele `is*AssetKind` / `set*Params` / Create-Slices in `entity-registry`, `asset-system`, `asset-sizing` werden durch **einen Katalog pro `AssetKind`** ersetzt (Registry v1 = bestehende Entity-Felder, keine Union). Domänen-Logik bleibt in `scene/asset-*.ts`; Registry delegiert Defaults, Clamp, Rebuild-Strategie, Screen-Image-Rolle, Material-Defaults. Vollständige Spezifikation und Implementierungsphasen → [`requirements-asset-kind-registry.md`](./requirements-asset-kind-registry.md). Ergänzt den Abschnitt „Scene Entity — gemeinsames Platzierungs-Modell“ (Engine-Registry für Assets, nicht Light-Entities).
 
 ---
+
+**Category:** Architecture — Physics / Fabric cloth  
+**Title:** Rapier Sim-State vs. Render-Mesh (kein SAB)  
+**Description:** Deformierbares `fabric-cloth` hält **Simulation** und **Anzeige** getrennt, **ohne** `SharedArrayBuffer`:
+
+1. **Live sim** — Rapier (MVP: Dynamic-Plane-Proxy; Ziel: Partikel+Joints) + deformed `BufferGeometry` während **`simulating`**; **`paused` (Freeze)** = letzte Deformation **sichtbar**, kein Pose-/Vertex-Sync aus `tick`.
+2. **Export v1** — **WYSIWYG:** `captureViewportImage` liest das **aktuelle** Render-Mesh (deformierte Vertices); **kein** separater Export-Bake-Schritt. Scene-Save serialisiert deformierte Vertices **nicht** v1.
+
+**Optional später:** statisches Bake-Mesh (Performance, Scene-Save) — nicht Pflicht für v1. **World physics session** (Snapshot, Start/Reset) ≠ Export. → [`requirements-physics.md`](./requirements-physics.md), [`requirements-export.md`](./requirements-export.md), [`requirements-assets-fabric-cloth.md`](./requirements-assets-fabric-cloth.md).
+
+---
+
+**Category:** Architecture — Physics  
+**Title:** World physics participants  
+**Description:** World physics (**Start / Pause / Reset**) orchestriert [`WorldPhysicsSessionController`](../../src/engine/world-physics-session.ts) in der Engine. Teilnehmer:
+
+| Rolle | Asset-Kinds | Idle (vor Start) | Nach **Start** |
+|---|---|---|---|
+| **Rigid primitives** | `block`, `cylinder`, `sphere` | **Fixed:** Rapier Fixed-Collider; **Dynamic:** kein Body | **Dynamic:** Rapier Dynamic-Body; **Fixed:** bleibt Fixed |
+| **Fabric cloth** | `fabric-cloth` | Kein Cloth-Body (Plane-MVP) | Dynamic Plane (MVP) |
+
+**Engine:** Ein Service **`RigidPrimitivePhysicsColliders`** (ehem. nur Block) implementiert `WorldPhysicsDynamicParticipant` — `spawnSessionDynamics`, `clearSessionDynamics`, `syncEntityTransformsFromPhysics`, `reconcileEntity` pro Entity. **Fabric:** `FabricClothPhysicsColliders` als zweiter Dynamic-Participant. **Scene-Layer:** Zähler/Hilfen in [`physics-participants.ts`](../../src/scene/physics-participants.ts) (kein Session-Phase-State — Phase lebt in der Engine).
+
+**Rapier Body-IDs:**
+
+- Rigid primitives: **`physics:${assetKind}:${entityId}`** (z. B. `physics:block:…`).
+- Fabric: **`fabric-physics:${entityId}`** (eigener Namespace, unverändert).
+- Ground: feste ID in `PhysicsWorld` (kein Asset).
+
+**Shared helpers:** [`physics-rigid-body.ts`](../../src/scene/physics-rigid-body.ts) — `physicsBodyMode`, Dichte-Clamps, Masse aus Volumen; Collider-Formen unter `src/physics/*-collider-shape.ts`. Details Margin / Damping → [`requirements-physics.md`](./requirements-physics.md). Assets → Block [`requirements-assets-block.md`](./requirements-assets-block.md), Cylinder [`requirements-assets-cylinder.md`](./requirements-assets-cylinder.md), Sphere [`requirements-assets-sphere.md`](./requirements-assets-sphere.md).
+
+---
+
+**Category:** Architecture  
+**Title:** Werkseitig vs. User-Inhalt (Bibliotheken)  
+**Description:** Projektweite Regel: **mitgelieferte** Presets/Starter/Katalog = **nicht löschbar**; **vom User angelegte** Einträge = **immer entfernbar** (`source: 'user'` / Upload), mit Referenz-Fallbacks. Einheitliches UI-Muster (Built-in-Badge, Remove nur User, Duplicate von Built-ins). Domänen-Tabelle und Store-Konvention → [`requirements-builtin-and-user-content.md`](./requirements-builtin-and-user-content.md). Kategorie-Dateien (Images, Colors, Materials, Environments, Light rigs, Scenes) spezifizieren Details; neue Bibliotheken müssen dieselbe Ownership-Linie mitbringen.
+

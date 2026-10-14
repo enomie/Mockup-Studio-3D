@@ -26,8 +26,24 @@ import {
 import {
   defaultWineBottleParams,
   isWineBottleAssetKind,
+  wineBottleFootprintAspect,
 } from './asset-wine-bottle';
+import {
+  computePenHeightM,
+  defaultPenParams,
+  isPenAssetKind,
+} from './asset-pen';
+import { penBodyWrapAspectNominal } from '@/engine/pen-body-wrap-unfold';
 import { defaultBlockParams, isBlockAssetKind } from './asset-block';
+import { defaultCylinderParams, isCylinderAssetKind } from './asset-cylinder';
+import { defaultSphereParams, isSphereAssetKind } from './asset-sphere';
+import { defaultWheelCarParams, isWheelCarAssetKind } from './asset-wheel-car';
+import {
+  FABRIC_CLOTH_MESH_THICKNESS_M,
+  FABRIC_CLOTH_PLACEHOLDER_ASPECT,
+  FABRIC_CLOTH_REF_WIDTH_M,
+} from './asset-fabric-cloth';
+import { BOOK_PLACEHOLDER_ASPECT, BOOK_REF_COVER_WIDTH_M } from './asset-book';
 import {
   computeLabelPrintableBandMm,
   computeLabelUnfoldAspect,
@@ -47,10 +63,10 @@ import {
 
 const FOOT_WORLD_Y_EPSILON_M = 1e-6;
 
-export type FaceSize = {
+export interface FaceSize {
   width: number;
   height: number;
-};
+}
 
 /** A5 width (148 mm) — portrait default when no front image is assigned. */
 const PRINT_REF_WIDTH = 0.148;
@@ -69,7 +85,7 @@ export function clampSizeScale(sizeScale: number): number {
 }
 
 export function defaultDepth(assetKind: AssetKind): number | undefined {
-  if (assetKind === 'print') return PRINT_DEFAULT_DEPTH;
+  if (assetKind === 'print') {return PRINT_DEFAULT_DEPTH;}
   return undefined;
 }
 
@@ -90,12 +106,25 @@ export function referenceFaceWidth(assetKind: AssetKind): number {
       return defaultWallParams().widthM;
     case 'block':
       return defaultBlockParams().widthM;
+    case 'cylinder':
+      return defaultCylinderParams().radiusM * 2;
+    case 'sphere':
+      return defaultSphereParams().radiusM * 2;
+    case 'wheel-car':
+      return defaultWheelCarParams().outerRadiusM * 2;
     case 'beverage-can':
       return defaultBeverageCanParams('standard').diameterM;
     case 'tin-can':
       return defaultTinCanParams().bodyRadiusM * 2;
     case 'wine-bottle':
       return defaultWineBottleParams('sparkling').heightM * (88 / 290);
+    case 'pen':
+      return defaultPenParams('marker').maxRadiusM * 2;
+    case 'fabric-cloth':
+      return FABRIC_CLOTH_REF_WIDTH_M;
+    case 'book-softcover':
+    case 'book-hardcover':
+      return BOOK_REF_COVER_WIDTH_M;
   }
 }
 
@@ -111,6 +140,8 @@ export function referenceFaceHeight(assetKind: AssetKind): number {
       return tinCanMeshHeightM(defaultTinCanParams());
     case 'wine-bottle':
       return defaultWineBottleParams('bordeaux').heightM;
+    case 'pen':
+      return computePenHeightM(defaultPenParams('marker').maxRadiusM);
     default:
       return referenceFaceWidth(assetKind);
   }
@@ -146,7 +177,14 @@ export function resolveAssetAspectRatio(
   }
 
   if (isWineBottleAssetKind(assetKind)) {
-    return 4 / 3;
+    const params = entity?.wineBottleParams ?? defaultWineBottleParams('bordeaux');
+    return wineBottleFootprintAspect(params.wineBottleBodyProfile, params.heightM);
+  }
+
+  if (isPenAssetKind(assetKind)) {
+    const maxRadiusM =
+      entity?.penParams?.maxRadiusM ?? defaultPenParams('marker').maxRadiusM;
+    return penBodyWrapAspectNominal(maxRadiusM);
   }
 
   if (imageWidth && imageHeight && imageWidth > 0 && imageHeight > 0) {
@@ -170,7 +208,13 @@ export function resolveAssetAspectRatio(
     case 'beverage-can':
     case 'tin-can':
     case 'wine-bottle':
+    case 'pen':
       return 1;
+    case 'fabric-cloth':
+      return FABRIC_CLOTH_PLACEHOLDER_ASPECT;
+    case 'book-softcover':
+    case 'book-hardcover':
+      return BOOK_PLACEHOLDER_ASPECT;
   }
 
   return 1;
@@ -189,19 +233,19 @@ export function sizeScaleFromFaceWidth(
   assetKind: AssetKind,
   widthM: number,
 ): number | null {
-  if (widthM <= 0) return null;
+  if (widthM <= 0) {return null;}
 
   if (usesHeightReference(assetKind)) {
     const aspect = HANDHELD_PLACEHOLDER_ASPECT;
     const refHeight = referenceFaceHeight(assetKind);
     const sizeScale = widthM / (refHeight * aspect);
-    if (!isSizeScaleInRange(sizeScale)) return null;
+    if (!isSizeScaleInRange(sizeScale)) {return null;}
     return sizeScale;
   }
 
   const refWidth = referenceFaceWidth(assetKind);
   const sizeScale = widthM / refWidth;
-  if (!isSizeScaleInRange(sizeScale)) return null;
+  if (!isSizeScaleInRange(sizeScale)) {return null;}
 
   return sizeScale;
 }
@@ -211,18 +255,18 @@ export function sizeScaleFromFaceHeight(
   heightM: number,
   aspect: number,
 ): number | null {
-  if (heightM <= 0 || aspect <= 0) return null;
+  if (heightM <= 0 || aspect <= 0) {return null;}
 
   if (usesHeightReference(assetKind)) {
     const refHeight = referenceFaceHeight(assetKind);
     const sizeScale = heightM / refHeight;
-    if (!isSizeScaleInRange(sizeScale)) return null;
+    if (!isSizeScaleInRange(sizeScale)) {return null;}
     return sizeScale;
   }
 
   const refWidth = referenceFaceWidth(assetKind);
   const sizeScale = (heightM * aspect) / refWidth;
-  if (!isSizeScaleInRange(sizeScale)) return null;
+  if (!isSizeScaleInRange(sizeScale)) {return null;}
 
   return sizeScale;
 }
@@ -281,6 +325,26 @@ export function computeFaceSize(
     };
   }
 
+  if (isCylinderAssetKind(assetKind)) {
+    const params = entity?.cylinderParams ?? defaultCylinderParams();
+    return {
+      width: params.radiusM * 2,
+      height: params.heightM,
+    };
+  }
+
+  if (isSphereAssetKind(assetKind)) {
+    const params = entity?.sphereParams ?? defaultSphereParams();
+    const d = params.radiusM * 2;
+    return { width: d, height: d };
+  }
+
+  if (isWheelCarAssetKind(assetKind)) {
+    const params = entity?.wheelCarParams ?? defaultWheelCarParams();
+    const d = params.outerRadiusM * 2;
+    return { width: d, height: d };
+  }
+
   if (isWallAssetKind(assetKind)) {
     return {
       width: wallParams.widthM,
@@ -297,7 +361,11 @@ export function computeFaceSize(
       : isWineBottleAssetKind(assetKind)
         ? (entity?.wineBottleParams?.heightM ??
           defaultWineBottleParams('bordeaux').heightM)
-        : referenceFaceHeight(assetKind);
+        : isPenAssetKind(assetKind)
+          ? computePenHeightM(
+              entity?.penParams?.maxRadiusM ?? defaultPenParams('marker').maxRadiusM,
+            )
+          : referenceFaceHeight(assetKind);
     const height = refHeight * scale;
     return { width: height * aspect, height };
   }
@@ -338,6 +406,14 @@ export function assetFootprintHeight(
       return entity?.wallParams?.heightM ?? defaultWallParams().heightM;
     case 'block':
       return entity?.blockParams?.heightM ?? defaultBlockParams().heightM;
+    case 'cylinder':
+      return entity?.cylinderParams?.heightM ?? defaultCylinderParams().heightM;
+    case 'sphere':
+      return (entity?.sphereParams?.radiusM ?? defaultSphereParams().radiusM) * 2;
+    case 'wheel-car':
+      return (
+        entity?.wheelCarParams?.outerRadiusM ?? defaultWheelCarParams().outerRadiusM
+      ) * 2;
     case 'beverage-can': {
       const params = entity?.beverageCanParams ?? defaultBeverageCanParams('standard');
       return params.heightM * scale;
@@ -353,6 +429,16 @@ export function assetFootprintHeight(
         params.capsuleDiscHeightM * scale
       );
     }
+    case 'pen': {
+      const maxRadiusM =
+        entity?.penParams?.maxRadiusM ?? defaultPenParams('marker').maxRadiusM;
+      return computePenHeightM(maxRadiusM) * scale;
+    }
+    case 'fabric-cloth':
+      return FABRIC_CLOTH_MESH_THICKNESS_M;
+    case 'book-softcover':
+    case 'book-hardcover':
+      return face.height;
   }
 }
 
@@ -369,12 +455,17 @@ export function assetGroundCenterY(
 
 export function assetTransformUsesFootPivot(assetKind: AssetKind): boolean {
   const family = getAssetKindFamily(assetKind);
-  if (family === 'print' || family === 'picture') return false;
-  if (family === 'architecture' || family === 'block' || family === 'packaging') {
+  if (family === 'print' || family === 'picture') {return false;}
+  if (
+    family === 'architecture' ||
+    family === 'block' ||
+    family === 'fabric' ||
+    family === 'book' ||
+    family === 'packaging'
+  ) {
     return true;
   }
-  if (family === 'device') return isMonitorAssetKind(assetKind);
-  return false;
+  return isMonitorAssetKind(assetKind);
 }
 
 function transformYForFootWorldYFromFootprint(

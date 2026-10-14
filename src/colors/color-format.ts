@@ -1,6 +1,6 @@
 import { rgbToColor, type Rgb } from './rgb';
 
-export type Hsv = { h: number; s: number; v: number };
+export interface Hsv { h: number; s: number; v: number }
 
 const HEX_PATTERN = /^#?[0-9a-fA-F]{6}$/;
 
@@ -37,19 +37,28 @@ export function rgbToHex(rgb: Rgb): string {
 
 function normalizeHexInput(input: string): string {
   const trimmed = input.trim();
-  if (trimmed.startsWith('#')) return trimmed.toUpperCase();
+  if (trimmed.startsWith('#')) {return trimmed.toUpperCase();}
   return `#${trimmed.toUpperCase()}`;
 }
 
 export function parseHexColor(input: string): Rgb | null {
   const normalized = normalizeHexInput(input);
-  if (!HEX_PATTERN.test(normalized)) return null;
+  if (!HEX_PATTERN.test(normalized)) {return null;}
 
   const hex = normalized.slice(1);
   const r = Number.parseInt(hex.slice(0, 2), 16);
   const g = Number.parseInt(hex.slice(2, 4), 16);
   const b = Number.parseInt(hex.slice(4, 6), 16);
   return rgbFromByte(r, g, b);
+}
+
+/** Built-in palette literals — throws if hex is invalid (should never happen for constants). */
+export function parseHexColorRequired(input: string): Rgb {
+  const rgb = parseHexColor(input);
+  if (rgb === null) {
+    throw new Error(`Invalid hex color: ${input}`);
+  }
+  return rgb;
 }
 
 export function rgbToHsv(rgb: Rgb): Hsv {
@@ -71,7 +80,7 @@ export function rgbToHsv(rgb: Rgb): Hsv {
       h = (rn - gn) / delta + 4;
     }
     h *= 60;
-    if (h < 0) h += 360;
+    if (h < 0) {h += 360;}
   }
 
   const s = max === 0 ? 0 : delta / max;

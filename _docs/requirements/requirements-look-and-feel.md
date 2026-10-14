@@ -54,7 +54,7 @@ Visuelles Design und UX von Mockup Studio 3D.
 
 **Category:** Look & Feel  
 **Title:** Icon-Zuordnung (Entwurf)  
-**Description:** Feste Lucide-Namen pro Feature-Bereich (anpassbar, aber immer Lucide): **Top:** `save`, `download`, `share-2`. **Kamera Quick Bar (Top Main, zentriert):** Text-Chips — **Persp/Ortho** (links), Built-ins (Default … Right), User-Slots; Shortcut-Badge in Chip. Optional Icons TBD (`home` Default, `bookmark` belegter Slot). Shortcut in `title`/`aria-label` (z. B. „Front (2)", „Slot 1 (8)"). **Images:** `image`, `plus` (add). **Layers:** `layers`. **Environment:** `sun`, `cloud-fog`. **Ground:** `layers`. **Camera (Right Main Nav):** `camera`. **Lights:** `lightbulb`, `lamp`, `sun`. **Viewport-Tools:** `mouse-pointer` (Select **W**), `move` (Move **E**), `rotate-cw` (Rotate **R**), `scaling` (Scale **T**) — Shortcut in `title`/`aria-label` (z. B. „Move (E)"). **Panels:** `chevron-down` / `chevron-right` (Accordion), `plus` / `trash-2` (Add/Remove), `sliders-horizontal` (Settings). **Modi:** `hand` (Pan-Hinweis). Mapping bei neuen Features hier ergänzen.
+**Description:** Feste Lucide-Namen pro Feature-Bereich (anpassbar, aber immer Lucide): **Top:** `save`, `download`, `share-2`. **Kamera Quick Bar (Top Main, zentriert):** Text-Chips — **Persp/Ortho** (links), Built-ins (Default … Right), User-Slots; Shortcut-Badge in Chip. Optional Icons TBD (`home` Default, `bookmark` belegter Slot). Shortcut in `title`/`aria-label` (z. B. „Front (2)", „Slot 1 (8)"). **Images:** `image`, `plus` (add). **Layers:** `layers`. **Environment:** `sun`, `cloud-fog`. **Ground:** `layers`. **Camera (Right Main Nav):** `camera`. **Lights:** `lightbulb`, `lamp`, `sun`. **Viewport-Tools:** `mouse-pointer` (Select **W**), `move` (Move **E**), `rotate-cw` (Rotate **R**), `scaling` (Scale **T**) — Shortcut in `title`/`aria-label` (z. B. „Move (E)"). **Physics (Top Main, rechts neben Kamera Quick Bar):** **On** / **Freeze** — **`P`** (nicht simulierend → On; simulierend → Freeze); Icons TBD (`activity`, `snowflake` o. ä.) → [`requirements-physics.md`](./requirements-physics.md). **Physics (Right Main Nav):** `atom` oder `waves`. **Panels:** `chevron-down` / `chevron-right` (Accordion), `plus` / `trash-2` (Add/Remove), `sliders-horizontal` (Settings). **Modi:** `hand` (Pan-Hinweis). Mapping bei neuen Features hier ergänzen.
 
 ---
 
@@ -66,7 +66,7 @@ Visuelles Design und UX von Mockup Studio 3D.
 
 **Category:** Look & Feel  
 **Title:** Design-Richtlinien — kompakte Dichte (Referenz: UI-Demo)  
-**Description:** Verbindliche UI-Dichte aus der **freigegebenen Demo-Shell** ([`requirements-demo.md`](./requirements-demo.md)). Basis-Schrift **13px** Body, **12px** Panel-Labels/Nav. **Top Main ~36px**, Icon-Buttons **28×28px**, Icons darin **16px** / stroke **1.75**. **Top Sub ~28px** — Breadcrumb + Viewport-Tools. **Status ~24px**, **11px** Text. Nicht plump — eher Figma/Linear-Dichte als Adobe-Toolbar.
+**Description:** Verbindliche UI-Dichte der **Produkt-Shell** ([`requirements-app-layout.md`](./requirements-app-layout.md)). Basis-Schrift **13px** Body, **12px** Panel-Labels/Nav. **Top Main ~36px**, Icon-Buttons **28×28px**, Icons darin **16px** / stroke **1.75**. **Top Sub ~28px** — Breadcrumb + Viewport-Tools. **Status ~24px**, **11px** Text. Nicht plump — eher Figma/Linear-Dichte als Adobe-Toolbar.
 
 ---
 
@@ -115,5 +115,11 @@ Visuelles Design und UX von Mockup Studio 3D.
 **Category:** Look & Feel  
 **Title:** Panel-Stack — vertikales Spacing-System  
 **Description:** Zwei Ebenen in `app.css`: **`--panel-gap`** (**2px**) — Felder innerhalb `sub-panel-section__body`; **`--panel-stack-gap`** (**6px**) — vertikaler Rhythmus zwischen Body-Kindern, Sektions-Trennern und Block-Abständen (Entity-Liste, Geometry-Rows, Light-Role-Block). Utility **`.panel-stack`**: `display: flex; flex-direction: column; gap: var(--panel-stack-gap)`. Auf **`sub-panel__body`** und **`scene-entity-block__body`** anwenden. Aufeinanderfolgende **`sub-panel-section`**: negativer `margin-top` cancelt flex-gap; **`border-top`** + **`padding-top: var(--panel-stack-gap)`** vor dem Titel — kein `padding-top`-Hack am Titel, keine kontextspezifischen Section-Padding-Overrides. Sub-Panel-Breite **`--panel-sub-width: 220px`**. Keine hardcodierten 8px/10px-Margins für Panel-Listen — nur die zwei Tokens.
+
+---
+
+**Category:** Look & Feel  
+**Title:** Sub-Panel — Collapse & Split  
+**Description:** **Collapse:** `.sub-panel__collapse` wie `.main-nav__collapse` (**24px** via `--panel-collapse-height`, `#f5f5f5`, Border-top); Shell und Detail **gleicher** Hintergrund; Icon über `Icon` (**16px**, stroke **1.75**). **Zeile** `.sub-panel__collapse-row` am Sub-Fuß — bei Split zwei Buttons **50/50**, spaltenbündig zu Primary/Detail. Shell-Icon: `PanelLeftClose` / `PanelRightClose`; Detail-Icon: gegenüberliegendes Pane-Icon. **Split:** `.sub-panel-split` — Row-Layout, Scroll in `.sub-panel-split__scroll`, Detail-Titel in `.sub-panel-split__detail-header` (ohne Collapse dort). **Tokens:** `--panel-sub-width` **220px**; `--panel-sub-split-total-width` **320px**; `--panel-sub-collapsed-width` **0**. **Code:** `SubPanel`, `SubPanelSplit`, `SubPanelCollapseRow`, `SubPanelCollapseBar`, `ShellSubPanelProvider` in `src/ui/components/`. Verhalten → [`requirements-app-layout.md`](./requirements-app-layout.md).
 
 ---

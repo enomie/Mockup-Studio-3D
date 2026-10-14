@@ -5,4 +5,5 @@ export {
   populateBeverageCanGroup,
   populateTinCanGroup,
   populateWineBottleGroup,
+  populatePenGroup,
 } from './populate-packaging';

@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 255 330.5">
+  <!--
+    Wheel Car — lathe profile, millimeters.
+    x: along axle (width 255). y: down; axis y=330.5 (r=0). y=0: tread (r=330.5).
+
+    Import colors (like pen-marker.svg):
+      stroke #000000 — tire rubber (closed path)
+      stroke #ff0000 — rim outer ring (band only, not solid disc)
+      stroke #0000ff — rim inner / hub
+    Speichen: engine only.
+
+    Shoulder fillets on tire: convex outward (rubber outer contour), not chamfer into tread.
+  -->
+  <defs>
+    <style>
+      .tire {
+        fill: none;
+        stroke: #000;
+        stroke-miterlimit: 10;
+      }
+
+      .rim-outer {
+        fill: none;
+        stroke: #f00;
+        stroke-miterlimit: 10;
+      }
+
+      .rim-inner {
+        fill: none;
+        stroke: #00f;
+        stroke-miterlimit: 10;
+      }
+
+      .guide {
+        fill: none;
+        stroke: #ccc;
+        stroke-dasharray: 2 2;
+      }
+    </style>
+  </defs>
+  <g id="wheel-car-profile">
+    <line class="guide" x1="0" y1="330.5" x2="255" y2="330.5"/>
+
+    <!-- Tire: inner bead y=76.5 (r=254), tread y=0, side inset 17.03, outer shoulder rounds -->
+    <path
+      class="tire"
+      d="M 17.03,0
+         H 237.97
+         C 247.37,0 255,7.63 255,17.03
+         V 67.02
+         C 255,72.25 250.75,76.5 245.52,76.5
+         H 9.48
+         C 4.25,76.5 0,72.25 0,67.02
+         V 17.03
+         C 0,7.63 7.63,0 17.03,0
+         Z"
+    />
+
+    <!-- Rim outer ring: radial band at bead (not full r=0..254 disc) -->
+    <path
+      class="rim-outer"
+      d="M 10,76.5
+         H 245
+         V 94.59
+         H 10
+         Z"
+    />
+
+    <!-- Rim inner / hub: centered on axle, r=0..48 -->
+    <path
+      class="rim-inner"
+      d="M 83.35,282.5
+         H 171.64
+         V 330.5
+         H 83.35
+         Z"
+    />
+  </g>
+</svg>

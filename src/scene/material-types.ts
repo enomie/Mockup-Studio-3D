@@ -7,10 +7,16 @@ export type ProceduralProfileId =
   | 'paper-grain'
   | 'fabric-linen'
   | 'silk-fine'
+  | 'concrete-stained'
   | 'concrete-porous'
   | 'metal-polished'
   | 'metal-brushed'
-  | 'glass-surface';
+  | 'glass-surface'
+  | 'grid-paper-opaque'
+  | 'grid-paper-lines'
+  | 'coated-gloss'
+  | 'plastic-matte'
+  | 'plastic-smooth';
 
 export type MaterialKind = 'solid-pbr' | 'transmission' | 'textured';
 
@@ -18,13 +24,27 @@ export type GlassVariant = 'pane' | 'solid';
 
 export type MaterialSource = 'builtin' | 'user';
 
-export type MaterialPreset = {
+/** Minor grid cell size for grid-paper procedural profiles. */
+export type GridPaperUnit = 'mm' | 'cm' | 'dm' | 'm';
+
+/** Rapier cloth drape profile (simulation only) — see requirements-materials.md */
+export type FabricDrapeProfile = 'silk' | 'linen' | 'heavy' | 'stiff';
+
+export interface FabricDrapePreset {
+  profile: FabricDrapeProfile;
+}
+
+export interface MaterialPreset {
   id: string;
   name: string;
   source: MaterialSource;
   kind: MaterialKind;
   proceduralProfile?: ProceduralProfileId;
   color?: Rgb;
+  /** Grid paper (opaque): line color; paper background uses `color`. */
+  lineColor?: Rgb;
+  /** Grid paper only — one minor cell = 1 unit; tileScale derived in engine. */
+  gridUnit?: GridPaperUnit;
   roughness?: number;
   metalness?: number;
   clearcoat?: number;
@@ -37,9 +57,13 @@ export type MaterialPreset = {
   glassVariant?: GlassVariant;
   ior?: number;
   tint?: Rgb;
-};
+  /** Transmission: procedural glass-surface micro-normal strength (default in engine). */
+  surfaceNormalScale?: number;
+  /** Fabric cloth: Rapier drape when assigned via `fabricClothMaterialId`. */
+  fabricDrape?: FabricDrapePreset;
+}
 
-export type AssetMaterialSlots = {
+export interface AssetMaterialSlots {
   frameMaterialId?: string;
   backWallMaterialId?: string;
   /** Handheld outer back glass (1 mm). */
@@ -54,13 +78,25 @@ export type AssetMaterialSlots = {
   sideMaterialId?: string;
   wallMaterialId?: string;
   blockMaterialId?: string;
+  cylinderMaterialId?: string;
+  sphereMaterialId?: string;
+  fabricClothMaterialId?: string;
+  bookPagesMaterialId?: string;
+  bookCoverMaterialId?: string;
+  bookPagesTint?: Rgb;
+  bookCoverTint?: Rgb;
   metalMaterialId?: string;
   glassMaterialId?: string;
   corkMaterialId?: string;
   capsuleFoilMaterialId?: string;
   capsuleDiscMaterialId?: string;
+  capMaterialId?: string;
+  ringMaterialId?: string;
+  bodyMaterialId?: string;
+  tireMaterialId?: string;
+  rimMaterialId?: string;
   faceTints?: Partial<Record<AssetFaceId, Rgb>>;
-};
+}
 
 export type MaterialEntitySlot =
   | 'frameMaterialId'
@@ -75,11 +111,21 @@ export type MaterialEntitySlot =
   | 'sideMaterialId'
   | 'wallMaterialId'
   | 'blockMaterialId'
+  | 'cylinderMaterialId'
+  | 'sphereMaterialId'
+  | 'fabricClothMaterialId'
+  | 'bookPagesMaterialId'
+  | 'bookCoverMaterialId'
   | 'metalMaterialId'
   | 'glassMaterialId'
   | 'corkMaterialId'
   | 'capsuleFoilMaterialId'
-  | 'capsuleDiscMaterialId';
+  | 'capsuleDiscMaterialId'
+  | 'capMaterialId'
+  | 'ringMaterialId'
+  | 'bodyMaterialId'
+  | 'tireMaterialId'
+  | 'rimMaterialId';
 
 export type MaterialPresetResolver = (materialId: string) => MaterialPreset | null;
 
@@ -99,5 +145,7 @@ export function cloneAssetMaterials(slots: AssetMaterialSlots): AssetMaterialSlo
   return {
     ...slots,
     faceTints,
+    bookPagesTint: slots.bookPagesTint ? { ...slots.bookPagesTint } : undefined,
+    bookCoverTint: slots.bookCoverTint ? { ...slots.bookCoverTint } : undefined,
   };
 }

@@ -9,10 +9,10 @@ import {
 const csgMaterial = new MeshBasicMaterial({ visible: false });
 const csgEvaluator = new Evaluator();
 
-export type CsgCutterPlacement = {
+export interface CsgCutterPlacement {
   geometry: BufferGeometry;
   position?: Vector3;
-};
+}
 
 /**
  * Sequential CSG subtraction (frame/wall booleans). Disposes base geometry and caller-owned cutters after use.

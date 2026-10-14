@@ -7,6 +7,13 @@ export type AssetKind =
   | 'wall'
   | 'wall-door'
   | 'block'
+  | 'cylinder'
+  | 'sphere'
   | 'beverage-can'
   | 'tin-can'
-  | 'wine-bottle';
+  | 'wine-bottle'
+  | 'pen'
+  | 'fabric-cloth'
+  | 'wheel-car'
+  | 'book-softcover'
+  | 'book-hardcover';

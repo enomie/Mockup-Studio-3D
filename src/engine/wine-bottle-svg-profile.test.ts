@@ -13,7 +13,7 @@ import {
 } from './wine-bottle-svg-profile';
 import { closeOuterWallProfileToLatheRing } from './wine-bottle-closed-wall-profile';
 
-const PUBLIC = join(process.cwd(), 'public');
+const PUBLIC_LATHE = join(process.cwd(), 'public', 'profiles', 'lathe');
 
 function syntheticClosedWallRaw(holeX: number, outerX: number, innerX: number, spanY: number) {
   const yFoot = spanY;
@@ -89,7 +89,7 @@ describe('wine-bottle-svg-profile', () => {
     expect(sampleWineBottleRadiusAtY(wall, 0.29)).toBeCloseTo(0.04, 3);
   });
 
-  it('parses closed bottle SVGs with expected belly radius', () => {
+  it('parses open outer bottle SVGs with expected belly radius', () => {
     const cases: { file: string; maxRadius: number }[] = [
       { file: 'bottle-bordeaux-open.svg', maxRadius: 0.038 },
       { file: 'bottle-alsace-open.svg', maxRadius: 0.038 },
@@ -98,8 +98,8 @@ describe('wine-bottle-svg-profile', () => {
     const heightM = 0.29;
 
     for (const { file, maxRadius } of cases) {
-      const svgText = readFileSync(join(PUBLIC, file), 'utf8');
-      expect(svgText).toMatch(/Z"/i);
+      const svgText = readFileSync(join(PUBLIC_LATHE, file), 'utf8');
+      expect(svgText).toContain('<path');
       const raw = extractOpenPathPointsFromSvgText(svgText, 48);
       expect(raw.length).toBeGreaterThan(20);
 
@@ -112,5 +112,24 @@ describe('wine-bottle-svg-profile', () => {
       const latheProfile = prepareWineBottleGlassLatheProfile(wall);
       expect(sampleWineBottleRadiusAtY(latheProfile, heightM * 0.5)).toBeCloseTo(maxRadius, 2);
     }
+  });
+
+  it('each profile SVG is parsed independently (no runtime reshape)', () => {
+    const heightM = 0.29;
+    const files = [
+      'bottle-bordeaux-open.svg',
+      'bottle-alsace-open.svg',
+      'bottle-sparkling-open.svg',
+    ] as const;
+    const maxRadii: number[] = [];
+    for (const file of files) {
+      const svgText = readFileSync(join(PUBLIC_LATHE, file), 'utf8');
+      const wall = normalizeOpenWallSvgToLathePoints(
+        extractOpenPathPointsFromSvgText(svgText, 48),
+        heightM,
+      );
+      maxRadii.push(wineBottleLatheProfileBounds(wall).maxRadius);
+    }
+    expect(maxRadii[2]).toBeGreaterThan(maxRadii[0] + 0.004);
   });
 });

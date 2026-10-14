@@ -1,4 +1,4 @@
-export type WallpaperUvInput = {
+export interface WallpaperUvInput {
   /** Wall-local X (centered on wall width). */
   x: number;
   /** Wall-local Y from bottom. */
@@ -7,15 +7,15 @@ export type WallpaperUvInput = {
   stripWidthM: number;
   stripHeightM: number;
   columnOffsetM: number;
-};
+}
 
-export type WallpaperUv = {
+export interface WallpaperUv {
   u: number;
   v: number;
-};
+}
 
 export function positiveMod(value: number, modulus: number): number {
-  if (modulus <= 0) return 0;
+  if (modulus <= 0) {return 0;}
   const m = value % modulus;
   return m < 0 ? m + modulus : m;
 }

@@ -1,3 +1,4 @@
+import { builtinLatheProfileUrl } from '@/constants/builtin-profile-paths';
 import type { AssetKind } from './asset-kind';
 import {
   BEVERAGE_CAN_LABEL_METAL_ZONES_MM,
@@ -10,7 +11,7 @@ import { clamp } from '@/units/math';
 
 export type { BeverageCanBodyProfile };
 
-export type BeverageCanParams = {
+export interface BeverageCanParams {
   canBodyProfile: BeverageCanBodyProfile;
   heightM: number;
   neckLengthM: number;
@@ -24,7 +25,7 @@ export type BeverageCanParams = {
   topRingThicknessM: number;
   closureOuterDiameterM: number;
   closureInnerDiameterM: number;
-};
+}
 
 const HEIGHT_MIN = 0.05;
 const HEIGHT_MAX = 0.3;
@@ -48,7 +49,9 @@ const PROFILE_STAND_DIAMETER_M: Record<BeverageCanBodyProfile, number> = {
 };
 
 export function beverageCanSvgUrl(profile: BeverageCanBodyProfile): string {
-  return profile === 'standard' ? '/330ml-classic.svg' : '/330ml-sleek.svg';
+  return profile === 'standard'
+    ? builtinLatheProfileUrl('330ml-classic.svg')
+    : builtinLatheProfileUrl('330ml-sleek.svg');
 }
 
 export function defaultBeverageCanParams(

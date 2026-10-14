@@ -1,0 +1,43 @@
+---
+description: Strict ESLint (type-checked) — Pflichtregeln für src/** und Agent-Verhalten bei „fix“
+alwaysApply: true
+---
+
+# Strict ESLint
+
+Vollständig in [`requirements-code.md`](../../_docs/requirements/requirements-code.md) (Abschnitt *Strict ESLint*). Konfiguration: [`eslint.config.js`](../../eslint.config.js) — `strictTypeChecked` + `stylisticTypeChecked` plus explizite Projektregeln.
+
+## Pflicht (`error` in `src/**/*.{ts,tsx}`)
+
+| Regel | Kurz |
+|---|---|
+| `@typescript-eslint/no-unnecessary-condition` | Keine überflüssigen `?.` / Truthiness-Checks, die der Typ schon ausschließt |
+| `@typescript-eslint/no-non-null-assertion` | Kein `!` — narrow, Guard, oder `??` |
+| `@typescript-eslint/prefer-nullish-coalescing` | `??` statt `\|\|` wenn nur `null`/`undefined` gemeint |
+| `@typescript-eslint/prefer-optional-chain` | `a?.b` statt `a && a.b` |
+| `@typescript-eslint/no-empty-function` | Keine leeren Funktionen (Stub nur mit Kommentar + bewusster Ausnahme) |
+| `@typescript-eslint/no-unused-vars` | Unbenutzte Vars/Args (`_`-Prefix erlaubt) |
+| `@typescript-eslint/no-unsafe-argument` | Kein `any`/unsicherer Wert als Argument |
+| `@typescript-eslint/require-await` | `async` nur wenn `await` drin |
+| `@typescript-eslint/no-deprecated` | Keine Nutzung von als `@deprecated` markierten APIs |
+| `@typescript-eslint/no-floating-promises` | Promises `await`, `void`, oder `.catch()` |
+| `@typescript-eslint/no-unsafe-assignment` | Keine Zuweisung aus `any`/unsicheren Quellen |
+| `@typescript-eslint/no-redundant-type-constituents` | Keine toten Union-Mitglieder (`string \| never`) |
+
+Zusätzlich Projekt: `no-explicit-any`, `no-floating-promises`, `eqeqeq`, `@/`-Imports — siehe `eslint.config.js`.
+
+## Policy vs. ESLint
+
+- **`@typescript-eslint/no-deprecated`**: TypeScript/JS-Symbole mit `@deprecated` JSDoc nicht aufrufen.
+- **Kein deprecated Code im Repo** (keine eigenen `@deprecated`-Exports, keine Alias-Shims): [`no-deprecated.mdc`](./no-deprecated.mdc) — ergänzt ESLint, ersetzt es nicht.
+
+## Ausnahmen (nur wo in `eslint.config.js` dokumentiert)
+
+- **`src/materials/procedural/**`**: `no-unsafe-*` / `any` an TSL-Grenzen — bewusst gelockert.
+- **`src/**/*.test.{ts,tsx}`**, **integration tests**: u. a. `no-non-null-assertion`, `no-floating-promises`, `no-unnecessary-condition`, `no-empty-function` aus — Tests dürfen pragmatischer sein.
+
+## Für den Agent
+
+- Neuen Code **so schreiben**, dass `npm run lint` ohne Disable-Kommentare durchläuft.
+- User sagt **„fix“**: `npm run lint` und `npm run build` — Lint-Fehler durch korrekten Code lösen, nicht `eslint-disable` (außer User verlangt es).
+- Typische Fixes: Guards statt `!`; `??` / optional chain; `void promiseFn()` für fire-and-forget mit Absicht; schmale Typen statt `as any`; ungenutztes entfernen oder `_` prefix.

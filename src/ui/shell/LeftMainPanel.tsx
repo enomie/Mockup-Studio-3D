@@ -1,12 +1,12 @@
 import { MainNavPanel } from '@/ui/components/MainNavPanel';
 import { LEFT_SHELL_NAV } from './shell-nav';
 
-type LeftMainPanelProps = {
+interface LeftMainPanelProps {
   selectedId: string;
   collapsed: boolean;
   onSelect: (id: string) => void;
   onToggleCollapse: () => void;
-};
+}
 
 export function LeftMainPanel({
   selectedId,

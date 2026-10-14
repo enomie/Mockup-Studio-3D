@@ -34,7 +34,7 @@ export function BeverageCanFields({
           images={images}
           imageLabel="Label"
           imageFieldId={screenImageFieldId}
-          onImageChange={(imageId) => setAssetScreenImage(entity.id, imageId)}
+          onImageChange={(imageId) => { setAssetScreenImage(entity.id, imageId); }}
         />
       </SubPanelSection>
 
@@ -54,10 +54,9 @@ export function BeverageCanFields({
             { value: 'standard', label: 'Standard (330 ml)' },
             { value: 'sleek', label: 'Sleek (330 ml)' },
           ]}
-          onChange={(value) =>
-            setBeverageCanParams(entity.id, {
+          onChange={(value) => { setBeverageCanParams(entity.id, {
               canBodyProfile: value as BeverageCanBodyProfile,
-            })
+            }); }
           }
         />
       </SubPanelSection>

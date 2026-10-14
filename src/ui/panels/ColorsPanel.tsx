@@ -19,9 +19,9 @@ function swatchColor(preset: ColorPreset): string {
   return rgbToCss(preset.rgb);
 }
 
-type ColorEditorProps = {
+interface ColorEditorProps {
   preset: ColorPreset;
-};
+}
 
 function ColorEditor({ preset }: ColorEditorProps) {
   const isBuiltin = preset.source === 'builtin';
@@ -33,32 +33,32 @@ function ColorEditor({ preset }: ColorEditorProps) {
         label="Name"
         value={preset.name}
         disabled={isBuiltin}
-        onChange={(name) => updateColor(preset.id, { name })}
+        onChange={(name) => { updateColor(preset.id, { name }); }}
       />
 
       <ColorPicker
         label="Color"
         value={preset.rgb}
-        onChange={(rgb) => updateColor(preset.id, { rgb })}
+        onChange={(rgb) => { updateColor(preset.id, { rgb }); }}
         disabled={isBuiltin}
       />
 
       <div className="material-editor-actions">
         <button
           type="button"
-          className="material-action-btn"
+          className="toolbar-chip-btn"
           onClick={() => duplicateColor(preset.id)}
         >
-          <Icon icon={Copy} />
+          <Icon icon={Copy} size={16} strokeWidth={1.75} />
           Duplicate
         </button>
         {preset.source === 'user' ? (
           <button
             type="button"
-            className="material-action-btn material-action-btn--danger"
-            onClick={() => removeColor(preset.id)}
+            className="toolbar-chip-btn toolbar-chip-btn--danger"
+            onClick={() => { removeColor(preset.id); }}
           >
-            <Icon icon={Trash2} />
+            <Icon icon={Trash2} size={16} strokeWidth={1.75} />
             Remove
           </button>
         ) : null}
@@ -96,7 +96,7 @@ export function ColorsPanel() {
               className={`material-tile${selectedColorId === color.id ? ' material-tile--selected' : ''}`}
               aria-label={color.name}
               title={color.name}
-              onClick={() => selectColor(color.id)}
+              onClick={() => { selectColor(color.id); }}
             >
               <span
                 className="material-tile__swatch"

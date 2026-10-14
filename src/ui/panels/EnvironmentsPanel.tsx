@@ -28,9 +28,9 @@ function environmentSwatchStyle(preset: EnvironmentPreset): CSSProperties {
   };
 }
 
-type EnvironmentEditorProps = {
+interface EnvironmentEditorProps {
   preset: EnvironmentPreset;
-};
+}
 
 function EnvironmentEditor({ preset }: EnvironmentEditorProps) {
   return (
@@ -39,24 +39,24 @@ function EnvironmentEditor({ preset }: EnvironmentEditorProps) {
         id="environment-name"
         label="Name"
         value={preset.name}
-        onChange={(name) => updateEnvironment(preset.id, { name })}
+        onChange={(name) => { updateEnvironment(preset.id, { name }); }}
       />
 
       <div className="material-editor-actions">
         <button
           type="button"
-          className="material-action-btn"
+          className="toolbar-chip-btn"
           onClick={() => duplicateEnvironment(preset.id)}
         >
-          <Icon icon={Copy} />
+          <Icon icon={Copy} size={16} strokeWidth={1.75} />
           Duplicate
         </button>
         <button
           type="button"
-          className="material-action-btn material-action-btn--danger"
-          onClick={() => removeEnvironment(preset.id)}
+          className="toolbar-chip-btn toolbar-chip-btn--danger"
+          onClick={() => { removeEnvironment(preset.id); }}
         >
-          <Icon icon={Trash2} />
+          <Icon icon={Trash2} size={16} strokeWidth={1.75} />
           Remove
         </button>
       </div>
@@ -95,7 +95,7 @@ export function EnvironmentsPanel() {
               className={`material-tile${activeEnvironmentId === preset.id ? ' material-tile--selected' : ''}`}
               aria-label={preset.name}
               title={preset.description ?? preset.name}
-              onClick={() => loadEnvironment(preset.id)}
+              onClick={() => { loadEnvironment(preset.id); }}
             >
               <span
                 className="material-tile__swatch"

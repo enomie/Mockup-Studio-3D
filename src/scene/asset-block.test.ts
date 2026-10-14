@@ -8,9 +8,9 @@ import {
 describe('defaultBlockParams', () => {
   it('matches v1 defaults', () => {
     expect(defaultBlockParams()).toEqual({
-      widthM: 1,
-      heightM: 1,
-      depthM: 1,
+      widthM: 0.3,
+      heightM: 0.3,
+      depthM: 0.3,
       cornerRadiusMm: 5,
     });
   });

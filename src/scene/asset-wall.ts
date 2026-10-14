@@ -1,18 +1,18 @@
 import type { AssetKind } from './asset-kind';
 import { clamp } from '@/units/math';
 
-export type WallParams = {
+export interface WallParams {
   widthM: number;
   heightM: number;
   thicknessM: number;
-};
+}
 
-export type WallpaperPattern = {
+export interface WallpaperPattern {
   stripWidthM: number;
   stripHeightM: number;
   /** Y shift for odd columns (half-drop when = stripHeightM / 2). */
   columnOffsetM: number;
-};
+}
 
 export const DOOR_WIDTH_M = 2;
 export const DOOR_HEIGHT_M = 2.5;

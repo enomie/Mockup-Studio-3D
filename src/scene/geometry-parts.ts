@@ -3,13 +3,13 @@ import type { MaterialEntitySlot } from './material-types';
 
 export type GeometryPartUiMode = 'visibility-and-material' | 'visibility-only';
 
-export type AssetGeometryPartDescriptor = {
+export interface AssetGeometryPartDescriptor {
   part: AssetGeometryPart;
   label: string;
   ui: GeometryPartUiMode;
   materialSlot?: MaterialEntitySlot;
   defaultVisible?: boolean;
-};
+}
 
 export function geometryVisibilityFromPartDescriptors(
   parts: readonly AssetGeometryPartDescriptor[],

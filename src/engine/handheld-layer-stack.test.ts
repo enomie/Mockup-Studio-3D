@@ -63,7 +63,7 @@ describe('computeHandheldLayerStack', () => {
 
   it('passes validateHandheldLayerStack', () => {
     const stack = computeHandheldLayerStack(base);
-    expect(() => validateHandheldLayerStack(stack)).not.toThrow();
+    expect(() => { validateHandheldLayerStack(stack); }).not.toThrow();
   });
 
   it('places screen at frame front when display glass is hidden', () => {

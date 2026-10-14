@@ -12,8 +12,8 @@ import {
   createSideButtonGeometry,
   createSideButtonHoleCutterGeometry,
   createVerticalPillShape,
-  HANDHELD_GLASS_EXTRUDE_CAP_GROUP,
-  HANDHELD_GLASS_EXTRUDE_SIDE_GROUP,
+  HANDHELD_EXTRUDE_CAP_GROUP,
+  HANDHELD_EXTRUDE_SIDE_GROUP,
 } from './handheld-geometry';
 
 describe('clampOuterEdgeRadiusMm', () => {
@@ -97,8 +97,8 @@ describe('createRoundedGlassGeometry', () => {
   it('exposes cap and side wall material groups', () => {
     const glass = createRoundedGlassGeometry(0.09, 0.16, 0.006, 0.001);
     expect(glass.groups).toHaveLength(2);
-    expect(glass.groups[0].materialIndex).toBe(HANDHELD_GLASS_EXTRUDE_CAP_GROUP);
-    expect(glass.groups[1].materialIndex).toBe(HANDHELD_GLASS_EXTRUDE_SIDE_GROUP);
+    expect(glass.groups[0].materialIndex).toBe(HANDHELD_EXTRUDE_CAP_GROUP);
+    expect(glass.groups[1].materialIndex).toBe(HANDHELD_EXTRUDE_SIDE_GROUP);
     glass.dispose();
   });
 });

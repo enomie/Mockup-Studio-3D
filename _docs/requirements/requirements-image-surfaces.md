@@ -4,7 +4,7 @@ Einheitliche Oberflächen-Settings für **alle Bild-Flächen** (Front, Back, ggf
 
 **Status:** Finish + Emissive **implementiert** (2026-10-08). **Passepartout** (Datenmodell, UI, Engine v2 Zwei-Meshes) **implementiert** (2026-10-09). **Alpha / Transparenz** (Viewport, asset-spezifisch) **implementiert** (2026-10-10).
 
-**Code:** `src/scene/image-surface.ts` (`computePassepartoutInnerBounds`), `src/engine/passepartout-meshes.ts` (`createPassepartoutDisplayMeshes`), `createImagePbrMaterial` / `createPassepartoutPbrMaterial` / `createCanLabelMaterial`, `image-surface-alpha.ts`, `cylindrical-label-uv.ts`, `asset-meshes.ts`, `ImageSurfaceFields`, `setImageSurface`.
+**Code:** `src/scene/image-surface.ts` (`computePassepartoutInnerBounds`), `src/engine/passepartout-meshes.ts` (`createPassepartoutDisplayMeshes`), `createImagePbrMaterial` / `createPassepartoutPbrMaterial` / `createCanLabelMaterial` / `createPenBodyWrapMaterial`, `image-surface-alpha.ts`, `cylindrical-label-uv.ts`, `asset-meshes.ts`, `ImageSurfaceFields`, `setImageSurface`.
 
 ---
 
@@ -65,6 +65,9 @@ Roughness/Metalness kommen vom Preset; Cover-Texture (Bild) bleibt ratio-treu �
 | `picture` | `front` (Sektion Screen / Image) |
 | `wall`, `wall-door` | `front` (Tapetenmuster — [`requirements-assets-wall.md`](./requirements-assets-wall.md)) |
 | `print` | `front` (immer), `back` (nur `mode === 'image'`) |
+| `fabric-cloth` | **—** (Ausnahme) |
+
+**`fabric-cloth`:** **kein** `ImageSurfaceFields` (kein Matt/Glossy, kein Emissive hier). **Farbe/Motiv** auf der Bahn **ausschließlich** über **`screenImageId`** (Image-Picker, beidseitig); **Bordüre** separat über `borderColor` — **nicht** über Image Surfaces. **`fabricClothMaterialId`** = volles Materials-Dropdown nur für **Struktur** (Roughness, Sheen, …); Preset-`color` auf der Motivfläche **nicht** anwenden → [`requirements-assets-fabric-cloth.md`](./requirements-assets-fabric-cloth.md).
 
 Print: Side-Material + Tint für Color-Seiten unverändert.
 
@@ -253,5 +256,11 @@ Scene Save / Entity-JSON: neue Felder optional in `imageSurfaces[faceId]`.
 | `beverage-can`, `tin-can` — Label | Opaque Label-Material; Alpha → **Metall-Underlay** (nicht Glas/Weiß) |
 
 **Kein** globales „Alpha aus“ pro Finish — Alpha kommt immer aus der Textur (bzw. Heuristik bei alpha-fähigen Dateiendungen).
+
+---
+
+**Category:** Image Surfaces  
+**Title:** Fabric cloth — Ausnahme (kein Finish, Farbe aus Image)  
+**Description:** `fabric-cloth` nutzt **dieses** Panel-Modell **nicht**. Sichtbare **Farben auf der Stoffbahn** kommen **nur** aus der Images-Bibliothek (`screenImageId`); optionale **Bordüre** = `borderColor` am Asset. Material-Presets liefern **keine** Ersatz-Stofffarbe (auch nicht „Silk“). Vollständig → [`requirements-assets-fabric-cloth.md`](./requirements-assets-fabric-cloth.md).
 
 ---

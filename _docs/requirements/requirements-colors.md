@@ -108,4 +108,3 @@ Gold/Aluminum **Material** = glänzende/gebürstete Oberfläche. Gold/Aluminum *
 **Title:** Bewusst nicht in v1  
 **Description:** `colorId`-Referenzen auf Entities/Ground/Lights; „Save to library" aus ColorPicker; Built-ins editierbar; Projekt Save/Load-Implementierung (nur Schema dokumentiert).
 
----

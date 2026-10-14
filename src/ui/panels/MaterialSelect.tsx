@@ -1,8 +1,9 @@
 import type { MaterialEntitySlot, MaterialPreset } from '@/scene/entity-types';
+import type { MaterialKind } from '@/scene/material-types';
 import { PanelSelect } from '@/ui/components/PanelSelect';
 import { setEntityMaterial } from '@/ui/store/app-store';
 
-type MaterialSelectProps = {
+interface MaterialSelectProps {
   entityId: string;
   slot: MaterialEntitySlot;
   label?: string;
@@ -11,10 +12,11 @@ type MaterialSelectProps = {
   materials: MaterialPreset[];
   id?: string;
   filterKind?: 'solid-pbr' | 'transmission';
+  excludeKinds?: MaterialKind[];
   filterGlassVariant?: 'pane' | 'solid';
   allowedMaterialIds?: readonly string[];
   disabled?: boolean;
-};
+}
 
 export function MaterialSelect({
   entityId,
@@ -25,13 +27,15 @@ export function MaterialSelect({
   materials,
   id,
   filterKind,
+  excludeKinds,
   filterGlassVariant,
   allowedMaterialIds,
   disabled = false,
 }: MaterialSelectProps) {
   const filtered = materials.filter((material) => {
-    if (allowedMaterialIds && !allowedMaterialIds.includes(material.id)) return false;
-    if (filterKind && material.kind !== filterKind) return false;
+    if (allowedMaterialIds && !allowedMaterialIds.includes(material.id)) {return false;}
+    if (excludeKinds?.includes(material.kind)) {return false;}
+    if (filterKind && material.kind !== filterKind) {return false;}
     if (
       filterGlassVariant &&
       material.glassVariant &&
@@ -62,7 +66,7 @@ export function MaterialSelect({
         label: material.name,
       }))}
       onChange={(next) => {
-        if (next) setEntityMaterial(entityId, slot, next);
+        if (next) {setEntityMaterial(entityId, slot, next);}
       }}
     />
   );

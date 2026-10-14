@@ -56,3 +56,21 @@ Neue Tipps **ans Dateiende** anfügen. Bestehende nicht überschreiben.
 **Später promoten nach:** — (bereits in Requirements).
 
 ---
+
+**Category:** Environment / Viewport helpers  
+**Title:** Forward arrow — Richtung +Z  
+**Symptom:** Unklar, wohin der Boden-Pfeil zeigt oder was „Forward“ in der Szene bedeutet.  
+**Ursache:** Pfeil ist kein Kamera-Forward und zeigt nicht zum Key Light — feste Studio-Weltorientierung.  
+**Fix (UI):** **Environment → Viewport helpers → Forward arrow** aktivieren. Der Pfeil liegt auf der Bodenebene und zeigt in **Welt +Z** — dieselbe Richtung wie die **blaue** Achse bei **World origin**. Anker folgt dem Scene center (wie andere Helpers). Details → [`requirements-environment.md`](./requirements-environment.md) (*Forward arrow (+Z)*).  
+**Später promoten nach:** — (Norm in Requirements; Tipp nur für Lesbarkeit im Panel).
+
+---
+
+**Category:** Environment / Viewport helpers / Lighting  
+**Title:** Spot beams — Kegel an Key/Fill  
+**Symptom:** Man sieht Fixture-Discs, aber nicht Richtung oder Öffnungswinkel der Spots.  
+**Ursache:** Fixtures sind Mockup-Look; Richtung/Kegel sind ein separates Overlay.  
+**Fix (UI):** **Environment → Viewport helpers → Spot beams** (nicht **Lighting → Show fixtures**). Zeigt pro aktivem Key/Fill einen **SpotLightHelper** — Richtung und harter Kegel, Anzeigelänge **8 m**. Export WYSIWYG wenn Toggle an. Details → [`requirements-environment.md`](./requirements-environment.md) (*Spot beams*).  
+**Später promoten nach:** — (Norm in Requirements).
+
+---

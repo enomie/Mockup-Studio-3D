@@ -23,7 +23,7 @@ import { SubPanelSection } from '@/ui/components/SubPanelSection';
 import { setImageSurface } from '@/ui/store/app-store';
 import { useAppStore } from '@/ui/store/use-app-store';
 
-type ImageSurfaceFieldsProps = {
+interface ImageSurfaceFieldsProps {
   entityId: string;
   faceId: AssetImageSurfaceId;
   imageId: string | null;
@@ -32,9 +32,9 @@ type ImageSurfaceFieldsProps = {
   imageFieldId?: string;
   onImageChange?: (imageId: string | null) => void;
   showImagePicker?: boolean;
-};
+}
 
-function ImageSelect({
+export function ImageSelect({
   id,
   label,
   value,
@@ -59,7 +59,7 @@ function ImageSelect({
         value: image.id,
         label: image.name,
       }))}
-      onChange={(next) => onChange(next === '' ? null : next)}
+      onChange={(next) => { onChange(next === '' ? null : next); }}
     />
   );
 }
@@ -84,7 +84,7 @@ function ImageFinishSelect({
         { value: 'matt', label: 'Matt' },
         { value: 'glossy', label: 'Glossy' },
       ]}
-      onChange={(next) => onChange(next as ImageSurfaceFinish)}
+      onChange={(next) => { onChange(next as ImageSurfaceFinish); }}
     />
   );
 }

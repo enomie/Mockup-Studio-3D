@@ -25,7 +25,7 @@ function float16ToNumber(bits: number): number {
   const fraction = bits & 0x03ff;
 
   if (exponent === 0) {
-    if (fraction === 0) return sign ? -0 : 0;
+    if (fraction === 0) {return sign ? -0 : 0;}
     return (sign ? -1 : 1) * Math.pow(2, -14) * (fraction / 0x400);
   }
   if (exponent === 0x1f) {
@@ -78,7 +78,7 @@ export async function readCompositeRgbaLinear(
 }
 
 function smoothShadowAlpha(delta: number, scale: number, deltaMin: number): number {
-  if (delta <= deltaMin) return 0;
+  if (delta <= deltaMin) {return 0;}
   const t = Math.min(1, (delta - deltaMin) / 0.08);
   return Math.min(1, delta * scale * t);
 }

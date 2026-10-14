@@ -65,3 +65,14 @@ Bezüge: [`requirements-lighting.md`](./requirements-lighting.md), [`requirement
 **Description:** Jedes Asset im Szene-Panel hat einen **Eye/EyeOff-Icon-Button** im Entity-Header — **links vom Trash**. Toggle setzt `AssetEntity.visible` und `object.visible` in der Engine. Default: **sichtbar**. Unsichtbare Entities werden im Viewport nicht gerendert und sind **nicht per Raycast selektierbar**; Panel-Selection per Entity-Namen bleibt möglich. Gizmo wird bei versteckter Selection deaktiviert. Pattern wie Ground-Sichtbarkeit → [`requirements-ground.md`](./requirements-ground.md). API: `setEntityVisible(id, visible)`.
 
 ---
+
+**Category:** Scene Placement  
+**Title:** World physics — fabric-cloth Gizmo  
+**Description:** Während **`worldPhysicsPhase`** **`simulating`** oder **`paused`**: Transform-Gizmo auf **`fabric-cloth`** **nicht** nutzbar (kein Move/Rotate/Scale) — Pose nur nach **Reset** in **`idle`**. Details → [`requirements-gimbals.md`](./requirements-gimbals.md), [`requirements-physics.md`](./requirements-physics.md).
+
+---
+
+**Category:** Scene Placement  
+**Title:** Transform-Panel — zwei Scale-Pfade  
+**Description:** **Bild-/Referenz-Assets** (Print, Picture, Devices, Dosen, Cloth, …): Transform-Section **Size**, **Width (m)**, **Height (m)** — persistiert als **`sizeScale`**; Gizmo-Commit → `setAssetSizeScale`. **Rigid primitives** (`block`, `cylinder`, `sphere`, `wheel-car`): Transform-Section nur **Position + Rotation**; Größe über **Geometries-Panel** (`*Params`) **oder** Uniform-Scale-Gizmo → Commit baked in Params (`applyRigidPrimitiveUniformScale`, kein `sizeScale`). Fuß-Pivot-Assets: nach Param-/Gizmo-Scale **`position.y`** ggf. angepasst (`syncEntityYForFoot`), X/Z/Rotation unverändert.
+

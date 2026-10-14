@@ -32,38 +32,38 @@ const KEY_PICK_COLOR: Rgb = { r: 1, g: 0.85, b: 0.6 };
 const FILL_PICK_COLOR: Rgb = { r: 0.75, g: 0.85, b: 1 };
 const EXTRA_PICK_COLOR: Rgb = { r: 0.85, g: 0.85, b: 0.85 };
 
-export type PooledDirectionalSlot = {
+export interface PooledDirectionalSlot {
   index: number;
   light: DirectionalLight;
   target: Group;
-};
+}
 
-export type PooledPointSlot = {
+export interface PooledPointSlot {
   index: number;
   light: PointLight;
-};
+}
 
 function spotSlotId(index: number): string {
-  if (index === LIGHT_POOL_KEY_SPOT_INDEX) return LIGHT_KEY_ID;
-  if (index === LIGHT_POOL_FILL_SPOT_INDEX) return LIGHT_FILL_ID;
+  if (index === LIGHT_POOL_KEY_SPOT_INDEX) {return LIGHT_KEY_ID;}
+  if (index === LIGHT_POOL_FILL_SPOT_INDEX) {return LIGHT_FILL_ID;}
   return `light-spot-${index}`;
 }
 
 function spotDecay(index: number): number {
-  if (index === LIGHT_POOL_KEY_SPOT_INDEX) return KEY_DECAY;
-  if (index === LIGHT_POOL_FILL_SPOT_INDEX) return FILL_DECAY;
+  if (index === LIGHT_POOL_KEY_SPOT_INDEX) {return KEY_DECAY;}
+  if (index === LIGHT_POOL_FILL_SPOT_INDEX) {return FILL_DECAY;}
   return EXTRA_SPOT_DECAY;
 }
 
 function spotPickColor(index: number): Rgb {
-  if (index === LIGHT_POOL_KEY_SPOT_INDEX) return KEY_PICK_COLOR;
-  if (index === LIGHT_POOL_FILL_SPOT_INDEX) return FILL_PICK_COLOR;
+  if (index === LIGHT_POOL_KEY_SPOT_INDEX) {return KEY_PICK_COLOR;}
+  if (index === LIGHT_POOL_FILL_SPOT_INDEX) {return FILL_PICK_COLOR;}
   return EXTRA_PICK_COLOR;
 }
 
 function spotFixtureDiscRadius(index: number): number | undefined {
-  if (index === LIGHT_POOL_KEY_SPOT_INDEX) return LIGHT_FIXTURE_DISC_KEY_RADIUS;
-  if (index === LIGHT_POOL_FILL_SPOT_INDEX) return LIGHT_FIXTURE_DISC_FILL_RADIUS;
+  if (index === LIGHT_POOL_KEY_SPOT_INDEX) {return LIGHT_FIXTURE_DISC_KEY_RADIUS;}
+  if (index === LIGHT_POOL_FILL_SPOT_INDEX) {return LIGHT_FIXTURE_DISC_FILL_RADIUS;}
   return undefined;
 }
 
@@ -72,7 +72,7 @@ function deactivateSpotRig(rig: SpotLightRig): void {
   rig.light.castShadow = false;
   rig.helper.visible = false;
   rig.pickMesh.visible = false;
-  rig.wireframe.visible = false;
+  rig.spotBeam.visible = false;
 }
 
 function deactivateDirectionalSlot(slot: PooledDirectionalSlot, ownerIds: string[]): void {
@@ -151,17 +151,17 @@ export class LightPool {
 
   getSpotRigById(id: string): SpotLightRig | null {
     const index = this.spotSlotOwners.indexOf(id);
-    if (index < 0) return null;
+    if (index < 0) {return null;}
     return this.spotRigs[index];
   }
 
   /** Allocate a free spot slot for v2 extra lights. Returns null when pool is full. */
   allocateSpot(id: string): SpotLightRig | null {
     const existing = this.getSpotRigById(id);
-    if (existing) return existing;
+    if (existing) {return existing;}
 
     for (let index = 2; index < LIGHT_POOL_SPOT_COUNT; index += 1) {
-      if (this.spotSlotOwners[index] !== '') continue;
+      if (this.spotSlotOwners[index] !== '') {continue;}
       this.spotSlotOwners[index] = id;
       const rig = this.spotRigs[index];
       rig.helper.userData.entityId = id;
@@ -174,17 +174,17 @@ export class LightPool {
 
   releaseSpot(id: string): void {
     const index = this.spotSlotOwners.indexOf(id);
-    if (index < 2 || index < 0) return;
+    if (index < 2 || index < 0) {return;}
     deactivateSpotRig(this.spotRigs[index]);
     this.spotSlotOwners[index] = '';
   }
 
   allocateDirectional(id: string): PooledDirectionalSlot | null {
     const existingIndex = this.directionalSlotOwners.indexOf(id);
-    if (existingIndex >= 0) return this.directionalSlots[existingIndex];
+    if (existingIndex >= 0) {return this.directionalSlots[existingIndex];}
 
     const index = this.directionalSlotOwners.findIndex((owner) => owner === '');
-    if (index < 0) return null;
+    if (index < 0) {return null;}
     this.directionalSlotOwners[index] = id;
     const slot = this.directionalSlots[index];
     slot.light.visible = true;
@@ -194,16 +194,16 @@ export class LightPool {
 
   releaseDirectional(id: string): void {
     const index = this.directionalSlotOwners.indexOf(id);
-    if (index < 0) return;
+    if (index < 0) {return;}
     deactivateDirectionalSlot(this.directionalSlots[index], this.directionalSlotOwners);
   }
 
   allocatePoint(id: string): PooledPointSlot | null {
     const existingIndex = this.pointSlotOwners.indexOf(id);
-    if (existingIndex >= 0) return this.pointSlots[existingIndex];
+    if (existingIndex >= 0) {return this.pointSlots[existingIndex];}
 
     const index = this.pointSlotOwners.findIndex((owner) => owner === '');
-    if (index < 0) return null;
+    if (index < 0) {return null;}
     this.pointSlotOwners[index] = id;
     const slot = this.pointSlots[index];
     slot.light.visible = true;
@@ -212,24 +212,24 @@ export class LightPool {
 
   releasePoint(id: string): void {
     const index = this.pointSlotOwners.indexOf(id);
-    if (index < 0) return;
+    if (index < 0) {return;}
     deactivatePointSlot(this.pointSlots[index], this.pointSlotOwners);
   }
 
   countActiveShadowCasters(): number {
     let count = 0;
     for (const rig of this.spotRigs) {
-      if (rig.light.castShadow && rig.light.intensity > 0) count += 1;
+      if (rig.light.castShadow && rig.light.intensity > 0) {count += 1;}
     }
     for (let index = 0; index < this.directionalSlots.length; index += 1) {
-      if (this.directionalSlotOwners[index] === '') continue;
+      if (this.directionalSlotOwners[index] === '') {continue;}
       const slot = this.directionalSlots[index];
-      if (slot.light.castShadow && slot.light.intensity > 0) count += 1;
+      if (slot.light.castShadow && slot.light.intensity > 0) {count += 1;}
     }
     for (let index = 0; index < this.pointSlots.length; index += 1) {
-      if (this.pointSlotOwners[index] === '') continue;
+      if (this.pointSlotOwners[index] === '') {continue;}
       const slot = this.pointSlots[index];
-      if (slot.light.castShadow && slot.light.intensity > 0) count += 1;
+      if (slot.light.castShadow && slot.light.intensity > 0) {count += 1;}
     }
     return count;
   }

@@ -25,7 +25,7 @@ export function CameraQuickBar() {
               className="camera-quick-bar__chip"
               aria-label={label}
               title={label}
-              onClick={() => loadBuiltinView(view.id)}
+              onClick={() => { loadBuiltinView(view.id); }}
             >
               <span className="camera-quick-bar__chip-label">{view.label}</span>
               <span className="camera-quick-bar__chip-key">{view.shortcut}</span>
@@ -41,7 +41,7 @@ export function CameraQuickBar() {
           const slot = camera.slots[slotDef.index - 1];
           const occupied = Boolean(slot);
           const label = cameraSlotLabel(slotDef, slot?.name);
-          const displayLabel = slot?.name?.trim() || slotDef.label;
+          const displayLabel = slot?.name.trim() ?? slotDef.label;
 
           return (
             <button
@@ -52,7 +52,7 @@ export function CameraQuickBar() {
               title={label}
               disabled={!occupied}
               onClick={() => {
-                if (occupied) loadSlot(slotDef.index);
+                if (occupied) {loadSlot(slotDef.index);}
               }}
             >
               <span className="camera-quick-bar__chip-label">{displayLabel}</span>

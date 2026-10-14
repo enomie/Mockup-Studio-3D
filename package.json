@@ -5,9 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "predev": "tsx scripts/generate-builtin-images.ts",
     "build": "tsc && vite build",
+    "prebuild": "tsx scripts/generate-builtin-images.ts",
     "preview": "vite preview",
-    "lint": "eslint src",
+    "lint": "eslint src --max-warnings 0",
     "backup": "bash _scripts/backup.sh",
     "test": "vitest run",
     "postinstall": "patch-package"
@@ -32,8 +34,10 @@
     "@vitejs/plugin-react": "^6.1.2",
     "eslint": "^10.12.0",
     "eslint-plugin-react-hooks": "^7.0.1",
+    "image-size": "^2.0.4",
     "jsdom": "^30.1.2",
     "patch-package": "^8.0.1",
+    "tsx": "^4.23.15",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.56.1",
     "vite": "^8.3.3",

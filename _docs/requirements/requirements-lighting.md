@@ -346,3 +346,45 @@ API: `applyLighting(state)`, `setLighting(partial: DeepPartial<LightingSettings>
 **Category:** Lighting  
 **Title:** Light fixtures v0 — Sichtbarkeit & Reflexionen  
 **Description:** **Main View:** Discs rendern als normale Main-Scene-Meshes (wenn Key/Fill `enabled`). **Planar Mirror:** Discs sind Teil der Main Scene → im TSL-`reflector()`-Pass mitspiegelbar, wenn **Mirror floor** an und die Disc im Frustum der gespiegelten Kamera liegt (Mix über Ground: `mirrorOpacity`, Material-Roughness, Disc-Emissive). Details → [`requirements-reflections.md`](./requirements-reflections.md) (Abschnitt Light fixtures). **IBL (`scene.environment`):** Discs **nicht** in der Environment Map — PMREM bleibt **Sky-only**; glänzende Assets reflektieren darüber **keine** Softbox-Kreise (bewusst bis Studio-IBL / HDRI). **Specular am Asset:** Highlights kommen v0 vom **SpotLight** (punktartig); Discs **beleuchten andere Meshes nicht** als Flächenlicht. Weiche Flächen-Speculars → **RectArea** / Lighting v2. **Export:** Default (**Hide light fixtures** aus) = WYSIWYG — Discs und Wireframe im Bild, wenn sichtbar. Checkbox **an** → nur im Capture Discs + Wireframe aus; Spots/Schatten bleiben → [`requirements-export.md`](./requirements-export.md). **Editor-Chrome:** Pick-Sphere bleibt unsichtbar; Wireframe = Placement-Hilfe, wird mit **Hide light fixtures** im Export ausgeblendet.
+
+---
+
+**Category:** Lighting  
+**Title:** Light fixtures — keine Viewport helpers  
+**Description:** Emissive **Fixture-Discs** sind **Teil des Licht-Setups** (sichtbare Softbox, Spiegel am Boden, bewusst im Mockup-Frame) — **nicht** die Sektion **Viewport helpers** im Environment-Panel → [`requirements-environment.md`](./requirements-environment.md) (Viewport helpers — Abgrenzung). **Wireframe-Handles** am Rig = Viewport helpers (**Light handles**), nicht Fixtures.
+
+---
+
+**Category:** Lighting  
+**Title:** Light fixtures — Sichtbarkeit (UI, Ziel)  
+**Description:** **Right Main → Lighting → Right Sub** (`LightingSubPanel`): Sichtbarkeit der Discs über **Lighting-State**, nicht über Environment. v1 UI (nach Implementierung): mindestens eine **`PanelCheckbox` Show fixtures** (global Key + Fill) oder pro Rolle im Key-/Fill-`scene-entity-block` — **Show fixture** neben **Enabled** / Schatten-Checkboxen. `visible` der Disc **entkoppelt** von Spot-`enabled` (Licht wirkt, Disc unsichtbar = gültiger Use Case). **Serialisierung:** Teil von `LightingSettings` / Scene Save. **Export:** **WYSIWYG** — Fixture im Bild genau dann, wenn Show fixtures an (und Rolle enabled, falls Produktregel „nur wenn Licht an“ — Prefer: Show fixtures unabhängig). Migration vom Export-Only-Flag → nächster Block in [`requirements-export.md`](./requirements-export.md).
+
+---
+
+**Category:** Lighting  
+**Title:** Light handles — Wireframe (Querverweis)  
+**Description:** Sichtbares **Wireframe** am Key/Fill-Rig = **Light handles** unter Environment **Viewport helpers** (Toggle global), nicht Fixture-Sichtbarkeit. Selection verstärkt Wireframe (bestehend `SelectionHighlight`) — unverändert. Export: Light handles folgen Viewport-helpers-Regel (an = mitexportieren); **nicht** über **Hide light fixtures** steuern (Ziel: Export-Checkbox blendet nur noch Fixtures aus, nicht Wireframe — siehe Export-Zielbild).
+
+---
+
+**Category:** Lighting  
+**Title:** Spot beams — SpotLightHelper (Querverweis)  
+**Description:** Environment-Toggle **Spot beams** (`viewportHelpers.lightHandles`) steuert **`SpotLightHelper`** pro Key/Fill — Kegel zur `SpotLight` + Target, nicht die Fixture-Disc. Details → [`requirements-environment.md`](./requirements-environment.md) (*Viewport helpers — Spot beams*).
+
+---
+
+**Category:** Lighting  
+**Title:** Forward arrow — Bezug zu Key/Fill (Querverweis)  
+**Description:** Environment-Helper **Forward arrow** zeigt horizontal **zum Key** (Fallback Fill) — Richtung kommt aus **denselben Rig-Positionen** wie Studio-Pose (`studio-pose.ts`, `LightingSystem.updateFrame`), nicht aus Kamera- oder Asset-Forward. Key **Side** Left/Right ist die Drehung des Pfeils. Kein eigenes Lighting-UI; nur Abhängigkeit: Pfeil aktualisiert wenn Rigs repositioniert werden (Scene center, Gizmo, Side-Toggle).
+
+---
+
+**Category:** Lighting  
+**Title:** Forward arrow — +Z (aktualisiert)  
+**Description:** **Forward arrow** folgt **nicht** mehr Key/Fill — feste **Welt +Z** (wie blaue World-origin-Achse). Nur **Anker** = `getReferenceCenter()` (Scene center mitwandern). Siehe [`requirements-environment.md`](./requirements-environment.md) (*Forward arrow (+Z)*).
+
+---
+
+**Category:** Lighting  
+**Title:** Fixtures — Panel section (implementiert)  
+**Description:** **Right Sub → Lighting:** `SubPanelSection` **Fixtures** (unter **Follow scene center**, vor Ambient/Key). **`PanelCheckbox` Show fixtures** → `LightingSettings.showFixtures` (Default **true**). Disc-Sichtbarkeit: `key.enabled && showFixtures` / `fill.enabled && showFixtures` — Spot/Schatten unabhängig. **`PanelCheckbox` Reflect in mirror floor** → `fixturesReflectInMirror` (Default **true**); **disabled** wenn `ground.mirrorEnabled === false`, Hint *Turn on mirror floor in Environment → Ground.* State bleibt gespeichert. Engine: Discs auf `FIXTURE_DISC_LAYER`; `PlanarReflectionPass.setFixturesVisibleInReflection` steuert Reflector-Kamera-Layer. Export **WYSIWYG** — kein Export-Panel-Hide mehr.

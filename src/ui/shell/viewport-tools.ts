@@ -9,12 +9,12 @@ import type { AppMode } from '@/scene/scene-api';
 
 export type ViewportToolShortcut = 'W' | 'E' | 'R' | 'T';
 
-export type ViewportToolDefinition = {
+export interface ViewportToolDefinition {
   id: AppMode;
   label: string;
   icon: LucideIcon;
   shortcut: ViewportToolShortcut;
-};
+}
 
 export const VIEWPORT_TOOLS: ViewportToolDefinition[] = [
   { id: 'select', label: 'Select', icon: MousePointer2, shortcut: 'W' },

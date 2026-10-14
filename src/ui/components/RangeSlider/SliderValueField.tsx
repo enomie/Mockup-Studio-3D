@@ -1,4 +1,4 @@
-type SliderValueFieldProps = {
+interface SliderValueFieldProps {
   id: string;
   label: string;
   value: string;
@@ -8,7 +8,7 @@ type SliderValueFieldProps = {
   onFocus: () => void;
   onChange: (value: string) => void;
   onBlur: () => void;
-};
+}
 
 export function SliderValueField({
   id,
@@ -35,7 +35,7 @@ export function SliderValueField({
           disabled={disabled}
           spellCheck={false}
           onFocus={onFocus}
-          onChange={(event) => onChange(event.target.value)}
+          onChange={(event) => { onChange(event.target.value); }}
           onBlur={onBlur}
         />
         {unit ? <span className="panel-field-unit">{unit}</span> : null}

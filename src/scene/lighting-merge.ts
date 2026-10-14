@@ -14,7 +14,7 @@ function mergeTransform(
   current: EntityTransform,
   partial?: DeepPartial<EntityTransform>,
 ): EntityTransform {
-  if (!partial) return cloneTransform(current);
+  if (!partial) {return cloneTransform(current);}
   return {
     position: {
       x: partial.position?.x ?? current.position.x,
@@ -29,8 +29,8 @@ function mergeTransform(
   };
 }
 
-/** @deprecated Root-level shadowSoftness before per-light split. */
-type LegacyLightingPartial = DeepPartial<LightingSettings> & {
+/** Saved payloads may still carry root-level shadowSoftness before per-light split. */
+type LightingPartialWithRootShadowSoftness = DeepPartial<LightingSettings> & {
   shadowSoftness?: number;
 };
 
@@ -38,12 +38,15 @@ export function mergeLightingSettings(
   current: LightingSettings,
   partial: DeepPartial<LightingSettings>,
 ): LightingSettings {
-  const legacy = partial as LegacyLightingPartial;
-  const legacyShadowSoftness = legacy.shadowSoftness;
+  const partialWithRootSoftness = partial as LightingPartialWithRootShadowSoftness;
+  const rootShadowSoftness = partialWithRootSoftness.shadowSoftness;
 
   const prevKeySide = current.key.side;
   const next: LightingSettings = {
     referenceMode: partial.referenceMode ?? current.referenceMode,
+    showFixtures: partial.showFixtures ?? current.showFixtures,
+    fixturesReflectInMirror:
+      partial.fixturesReflectInMirror ?? current.fixturesReflectInMirror,
     ambient: {
       enabled: partial.ambient?.enabled ?? current.ambient.enabled,
       color: mergeRgb(current.ambient.color, partial.ambient?.color),
@@ -57,7 +60,7 @@ export function mergeLightingSettings(
       castShadow: partial.key?.castShadow ?? current.key.castShadow,
       shadowSoftness:
         partial.key?.shadowSoftness ??
-        legacyShadowSoftness ??
+        rootShadowSoftness ??
         current.key.shadowSoftness,
       transformOffset: mergeTransform(current.key.transformOffset, partial.key?.transformOffset),
     },
@@ -69,7 +72,7 @@ export function mergeLightingSettings(
       castShadow: partial.fill?.castShadow ?? current.fill.castShadow,
       shadowSoftness:
         partial.fill?.shadowSoftness ??
-        legacyShadowSoftness ??
+        rootShadowSoftness ??
         current.fill.shadowSoftness,
       transformOffset: mergeTransform(current.fill.transformOffset, partial.fill?.transformOffset),
     },

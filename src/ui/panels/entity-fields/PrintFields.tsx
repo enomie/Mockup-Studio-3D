@@ -24,7 +24,7 @@ export function PrintFields({
   const materials = useAppStore((s) => s.materials);
   const slots = entity.materials;
   const faces = entity.faces;
-  if (!faces) return null;
+  if (!faces) {return null;}
 
   const frontImageId =
     faces.front.mode === 'image' ? faces.front.imageId : entity.screenImageId;
@@ -37,7 +37,7 @@ export function PrintFields({
 
   const getTint = (faceId: AssetFaceId): Rgb => {
     if (slots?.faceTints?.[faceId]) {
-      return slots.faceTints[faceId]!;
+      return slots.faceTints[faceId];
     }
     if (faceId === 'back' && back.mode === 'color') {
       return back.color;
@@ -74,7 +74,7 @@ export function PrintFields({
         images={images}
         imageLabel="Front image"
         imageFieldId={fieldIdPrefix}
-        onImageChange={(imageId) => setAssetScreenImage(entity.id, imageId)}
+        onImageChange={(imageId) => { setAssetScreenImage(entity.id, imageId); }}
       />
 
       <PanelSelect
@@ -85,14 +85,14 @@ export function PrintFields({
           { value: 'color', label: 'Color' },
           { value: 'image', label: 'Image' },
         ]}
-        onChange={(next) => updateBackMode(next as 'color' | 'image')}
+        onChange={(next) => { updateBackMode(next as 'color' | 'image'); }}
       />
 
       {back.mode === 'color' ? (
         <ColorPicker
           label="Back tint"
           value={getTint('back')}
-          onChange={(color) => setFaceTint(entity.id, 'back', color)}
+          onChange={(color) => { setFaceTint(entity.id, 'back', color); }}
         />
       ) : (
         <ImageSurfaceFields
@@ -121,7 +121,7 @@ export function PrintFields({
           key={faceId}
           label={`${faceLabel(faceId)} tint`}
           value={getTint(faceId)}
-          onChange={(next) => setFaceTint(entity.id, faceId, next)}
+          onChange={(next) => { setFaceTint(entity.id, faceId, next); }}
         />
       ))}
 
@@ -143,7 +143,7 @@ export function PrintFields({
         format={(value) => formatLengthMeters(value, LENGTH_DECIMALS)}
         parse={parseLengthMetersInput}
         onChange={(value) => {
-          if (value > 0) setAssetDepth(entity.id, value);
+          if (value > 0) {setAssetDepth(entity.id, value);}
         }}
       />
     </SubPanelSection>

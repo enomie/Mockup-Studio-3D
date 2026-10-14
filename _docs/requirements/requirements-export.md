@@ -45,6 +45,12 @@
 ---
 
 **Category:** Export  
+**Title:** Physics rigid-test mesh — Ausschluss  
+**Description:** Der **Panel-Falltest**-Würfel (`physics-rigid-test`, siehe [`requirements-physics-test.md`](./requirements-physics-test.md)) erscheint **nicht** in PNG/JPG-Export — nur während `captureViewportImage` per `pushExportHidePhysicsTest` ausgeblendet; **Live-Viewport** bleibt unverändert. Gilt für alle Export-Formate.
+
+---
+
+**Category:** Export  
 **Title:** JPG — Semantik  
 **Description:** **WYSIWYG** inkl. Sky und opaken Hintergrund. `image/jpeg`, Qualität **`EXPORT_JPEG_QUALITY`** (0,92) in `src/constants.ts`. Kein Alpha. `groundSurface` immer **`viewport`**. Dateiname → Block **Dateinamen**.
 
@@ -83,3 +89,40 @@
 **Category:** Export  
 **Title:** Nicht v1  
 **Description:** Höhere Export-Auflösung (temporäres Pipeline-Resize). Batch-Export. Export nur aus Kamera-Preset ohne Live-View. JPEG-Hintergrundfarbe. Separater Export-Button im Panel. Scene-Save für Export-Einstellungen. Optionale CPU-Matte-Pfade (`src/render/export-shadow-matte.ts`) — **nicht** Produktpfad; Produkt = GroundMaterial-Catcher oben.
+
+---
+
+**Category:** Export — Physics / Fabric cloth  
+**Title:** Deformiertes Tuch — WYSIWYG (kein Bake-Schritt v1)  
+**Description:** **World-Freeze** = Pause — hält letzten Mesh-Zustand sichtbar, **kein** separater Export-Bake → [`requirements-physics.md`](./requirements-physics.md).
+
+| Thema | Regel |
+|---|---|
+| **Plane-MVP (heute)** | Normales Viewport-Capture — Mesh ist **flach**; **kein** Cloth-Sonderfall |
+| **Cloth-Mesh (Ziel)** | **WYSIWYG:** `captureViewportImage` rendert das **aktuelle** Stoff-`BufferGeometry` (deformierte `position` wie im Viewport) |
+| **`paused` (Freeze)** | Export zeigt **eingefrorene** Falten — gleiches Mesh wie zuletzt in `simulating` |
+| **Kein Bake-Button v1** | Kein expliziter „Bake cloth“-Schritt; **kein** `SharedArrayBuffer` |
+| Export startet **keine** Simulation | unverändert |
+| **Scene Save** | Deformierte Vertices **nicht** serialisieren v1 — nach Load: Ruhe-Quad; User startet Physik neu |
+
+Optional später (nicht v1): statisches Bake-Mesh für Performance oder Scene-Save — → [`requirements-architecture.md`](./requirements-architecture.md).
+
+---
+
+**Category:** Export  
+**Title:** Viewport helpers — WYSIWYG  
+**Description:** Overlays aus Environment **Viewport helpers** (Floor grid, World origin, Forward arrow, Light handles) — wenn im Viewport **sichtbar**, erscheinen sie im Export **ohne** separaten Capture-Strip (gleiche Main-Scene-Pipeline), inkl. **see-through**-Darstellung wie Live. Details → [`requirements-environment.md`](./requirements-environment.md) (Viewport helpers — Export). **Nicht** betroffen: Transform-Gizmo, Selection-Outline, Physics-Test-Würfel (immer export-aus).
+
+---
+
+**Category:** Export  
+**Title:** Light fixtures — Zielbild (Lighting-State)  
+**Description:** **Primär:** Sichtbarkeit der **Fixture-Discs** = **`LightingSettings`** (Show fixtures) → Export **WYSIWYG** — kein separates Ausblenden beim Capture, sobald UI migriert ist → [`requirements-lighting.md`](./requirements-lighting.md) (Light fixtures — Sichtbarkeit UI). **Wireframe Light handles** nicht über Fixture-Export-Logik; siehe Viewport helpers. **Übergang (Ist-Code):** Block *Light fixtures — Hide in export* oben — `exportHideLightFixtures` blendet heute Disc **und** Wireframe nur beim Capture aus; **Ziel:** Checkbox entfernen oder auf **optionalen Export-Override** reduzieren („Hide fixtures in export“ nur wenn Viewport sie zeigt, File aber ohne Discs) — **nicht** Ersatz für Lighting **Show fixtures**.
+
+---
+
+**Category:** Export  
+**Title:** Light fixtures — Hide in export (entfernt)  
+**Description:** **Nicht mehr implementiert** (v1 Viewport helpers + Lighting Fixtures). Export-Sub-Panel **Lighting** / `exportHideLightFixtures` / `CaptureViewportImageOptions.hideLightFixtures` entfernt. Fixtures und Viewport helpers exportieren **WYSIWYG** → Abschnitte *Viewport helpers — WYSIWYG* und [`requirements-lighting.md`](./requirements-lighting.md) (*Fixtures — Panel section*).
+
+---

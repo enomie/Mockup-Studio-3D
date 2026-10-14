@@ -1,6 +1,12 @@
 import { BoxGeometry, Mesh, type Group, type Texture } from 'three/webgpu';
 import type { AssetFaceId, AssetFaces } from '@/scene/asset-faces';
 import { defaultBlockParams, type BlockParams } from '@/scene/asset-block';
+import {
+  defaultFabricClothParams,
+  type FabricClothParams,
+} from '@/scene/asset-fabric-cloth';
+import { buildFabricClothMesh } from '@/engine/fabric-cloth-geometry';
+import { createFabricClothMaterial } from '@/engine/fabric-cloth-material';
 import { defaultPrintParams, printCornerRadiusM, type PrintDeviceParams } from '@/scene/asset-print';
 import {
   defaultWallParams,
@@ -19,10 +25,15 @@ import type { AssetMaterialSlots } from '@/scene/material-types';
 import {
   MATERIAL_GLASS_PANE_ID,
   MATERIAL_GOLD_ID,
+  MATERIAL_FABRIC_ID,
   MATERIAL_GLOSSY_PRINT_ID,
   MATERIAL_PAPER_ID,
 } from '@/scene/material-ids';
 import { buildBlockGeometry } from '@/engine/block-geometry';
+import { buildCylinderGeometry } from '@/engine/cylinder-geometry';
+import { buildSphereGeometry } from '@/engine/sphere-geometry';
+import { defaultCylinderParams, type CylinderParams } from '@/scene/asset-cylinder';
+import { defaultSphereParams, type SphereParams } from '@/scene/asset-sphere';
 import {
   createWallpaperImageMaterial,
   type MaterialResolver,
@@ -124,7 +135,7 @@ export function addFacetedPrism(
     const tint = resolveFaceTint(placement.faceId, materials, faces);
     const material =
       resolver.create(materialId, { tint }) ?? resolver.create(MATERIAL_PAPER_ID);
-    if (!material) continue;
+    if (!material) {continue;}
 
     const mesh = new Mesh(placement.geometry, material);
     mesh.position.set(
@@ -232,9 +243,9 @@ export function addPicture(
   glazing.renderOrder = 3;
 
   const meshes: Mesh[] = [...screenMeshes];
-  if (isGeometryVisible(geometryVisibility, 'frame')) meshes.push(frame);
-  if (isGeometryVisible(geometryVisibility, 'backWall')) meshes.push(backWall);
-  if (isGeometryVisible(geometryVisibility, 'glazing')) meshes.push(glazing);
+  if (isGeometryVisible(geometryVisibility, 'frame')) {meshes.push(frame);}
+  if (isGeometryVisible(geometryVisibility, 'backWall')) {meshes.push(backWall);}
+  if (isGeometryVisible(geometryVisibility, 'glazing')) {meshes.push(glazing);}
 
   for (const mesh of meshes) {
     group.add(mesh);
@@ -259,7 +270,7 @@ export function addWall(
   body.userData.assetMeshRole = 'wallBody';
   group.add(body);
 
-  if (!imageTexture) return;
+  if (!imageTexture) {return;}
 
   const frontSurface = resolveImageSurfaceSettings(imageSurfaces, 'front');
   const screenMaterialId = finishToMaterialId(frontSurface.finish);
@@ -304,4 +315,60 @@ export function addBlock(
   const mesh = new Mesh(geometry, material);
   mesh.userData.assetMeshRole = 'blockBody';
   group.add(mesh);
+}
+
+export function addCylinder(
+  group: Group,
+  resolver: MaterialResolver,
+  materials: AssetMaterialSlots = {},
+  cylinderParams: CylinderParams = defaultCylinderParams(),
+): void {
+  const cylinderMaterialId = materials.cylinderMaterialId ?? MATERIAL_PAPER_ID;
+  const material = resolveMeshMaterial(resolver, cylinderMaterialId);
+  const geometry = buildCylinderGeometry(cylinderParams);
+  const mesh = new Mesh(geometry, material);
+  mesh.userData.assetMeshRole = 'cylinderBody';
+  group.add(mesh);
+}
+
+export function addSphere(
+  group: Group,
+  resolver: MaterialResolver,
+  materials: AssetMaterialSlots = {},
+  sphereParams: SphereParams = defaultSphereParams(),
+): void {
+  const sphereMaterialId = materials.sphereMaterialId ?? MATERIAL_PAPER_ID;
+  const material = resolveMeshMaterial(resolver, sphereMaterialId);
+  const geometry = buildSphereGeometry(sphereParams);
+  const mesh = new Mesh(geometry, material);
+  mesh.userData.assetMeshRole = 'sphereBody';
+  group.add(mesh);
+}
+
+export function addFabricCloth(
+  group: Group,
+  faceWidth: number,
+  faceHeight: number,
+  resolver: MaterialResolver,
+  imageTexture: Texture | null,
+  materials: AssetMaterialSlots = {},
+  imageWidth?: number,
+  imageHeight?: number,
+  imageName?: string,
+  fabricClothParams: FabricClothParams = defaultFabricClothParams(),
+): void {
+  const clothMaterialId = materials.fabricClothMaterialId ?? MATERIAL_FABRIC_ID;
+  const clothMaterial = createFabricClothMaterial(
+    (id: string) => resolver.resolvePreset(id),
+    clothMaterialId,
+    imageTexture,
+    faceWidth,
+    faceHeight,
+    fabricClothParams,
+    imageWidth,
+    imageHeight,
+    imageName,
+  );
+
+  group.add(buildFabricClothMesh(faceWidth, faceHeight, clothMaterial));
 }

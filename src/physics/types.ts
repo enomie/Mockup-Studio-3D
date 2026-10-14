@@ -1,10 +1,10 @@
-export type Vec3 = { x: number; y: number; z: number };
+export interface Vec3 { x: number; y: number; z: number }
 
-export type Quat = { x: number; y: number; z: number; w: number };
+export interface Quat { x: number; y: number; z: number; w: number }
 
-export type PhysicsTransform = {
+export interface PhysicsTransform {
   position: Vec3;
   rotation: Quat;
-};
+}
 
-export type HalfExtents = { x: number; y: number; z: number };
+export interface HalfExtents { x: number; y: number; z: number }

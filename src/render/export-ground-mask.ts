@@ -13,7 +13,7 @@ const _raycaster = new Raycaster();
 function isGroundHit(hitObject: Object3D, groundMesh: Mesh): boolean {
   let current: Object3D | null = hitObject;
   while (current) {
-    if (current === groundMesh) return true;
+    if (current === groundMesh) {return true;}
     current = current.parent;
   }
   return false;
@@ -38,8 +38,9 @@ export function buildGroundPixelMask(
       _ndc.y = -v * 2 + 1;
       _raycaster.setFromCamera(_ndc, camera);
       const hits = _raycaster.intersectObjects(roots, true);
+      if (hits.length === 0) {continue;}
       const first = hits[0];
-      if (first && isGroundHit(first.object, groundMesh)) {
+      if (isGroundHit(first.object, groundMesh)) {
         mask[y * width + x] = 1;
       }
     }

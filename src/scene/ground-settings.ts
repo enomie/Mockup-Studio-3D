@@ -3,7 +3,7 @@ import { MATERIAL_PAPER_ID, migrateMaterialId } from './material-ids';
 import type { GroundSettings } from './scene-api';
 
 /** Legacy scene / environment payloads before ground.materialId. */
-export type LegacyGroundPayload = {
+export interface LegacyGroundPayload {
   visible?: boolean;
   materialId?: string;
   receiveShadow?: boolean;
@@ -15,7 +15,7 @@ export type LegacyGroundPayload = {
   opacity?: number;
   emissiveColor?: { r: number; g: number; b: number };
   emissiveIntensity?: number;
-};
+}
 
 export function normalizeGroundSettings(
   input: LegacyGroundPayload | GroundSettings | null | undefined,

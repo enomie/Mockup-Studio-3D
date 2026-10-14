@@ -23,9 +23,9 @@ function lightRigSwatchStyle(preset: LightingPreset): CSSProperties {
   };
 }
 
-type LightRigEditorProps = {
+interface LightRigEditorProps {
   preset: LightingPreset;
-};
+}
 
 function LightRigEditor({ preset }: LightRigEditorProps) {
   return (
@@ -34,24 +34,24 @@ function LightRigEditor({ preset }: LightRigEditorProps) {
         id="light-rig-name"
         label="Name"
         value={preset.name}
-        onChange={(name) => updateLightingPreset(preset.id, { name })}
+        onChange={(name) => { updateLightingPreset(preset.id, { name }); }}
       />
 
       <div className="material-editor-actions">
         <button
           type="button"
-          className="material-action-btn"
+          className="toolbar-chip-btn"
           onClick={() => duplicateLightingPreset(preset.id)}
         >
-          <Icon icon={Copy} />
+          <Icon icon={Copy} size={16} strokeWidth={1.75} />
           Duplicate
         </button>
         <button
           type="button"
-          className="material-action-btn material-action-btn--danger"
-          onClick={() => removeLightingPreset(preset.id)}
+          className="toolbar-chip-btn toolbar-chip-btn--danger"
+          onClick={() => { removeLightingPreset(preset.id); }}
         >
-          <Icon icon={Trash2} />
+          <Icon icon={Trash2} size={16} strokeWidth={1.75} />
           Remove
         </button>
       </div>
@@ -90,7 +90,7 @@ export function LightRigsPanel() {
               className={`material-tile${activeLightingPresetId === preset.id ? ' material-tile--selected' : ''}`}
               aria-label={preset.name}
               title={preset.description ?? preset.name}
-              onClick={() => loadLightingPreset(preset.id)}
+              onClick={() => { loadLightingPreset(preset.id); }}
             >
               <span
                 className="material-tile__swatch"

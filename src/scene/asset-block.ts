@@ -2,12 +2,12 @@ import type { AssetKind } from './asset-kind';
 import { MM_TO_M } from '@/units/length';
 import { clamp } from '@/units/math';
 
-export type BlockParams = {
+export interface BlockParams {
   widthM: number;
   heightM: number;
   depthM: number;
   cornerRadiusMm: number;
-};
+}
 
 const BLOCK_DIM_MIN = 0.01;
 const BLOCK_DIM_MAX = 20;
@@ -16,9 +16,9 @@ const CORNER_EPSILON_M = 0.0001;
 
 export function defaultBlockParams(): BlockParams {
   return {
-    widthM: 1,
-    heightM: 1,
-    depthM: 1,
+    widthM: 0.3,
+    heightM: 0.3,
+    depthM: 0.3,
     cornerRadiusMm: 5,
   };
 }

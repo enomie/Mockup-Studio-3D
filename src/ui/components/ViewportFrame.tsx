@@ -10,7 +10,7 @@ export function ViewportFrame() {
   const engineRef = useRef<MockupEngine | null>(null);
 
   useEffect(() => {
-    if (!webgpuAvailable || !hostRef.current) return;
+    if (!webgpuAvailable || !hostRef.current) {return;}
 
     const host = hostRef.current;
     let cancelled = false;

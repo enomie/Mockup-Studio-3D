@@ -11,9 +11,16 @@ const ALL_ASSET_KINDS: Record<AssetKind, true> = {
   wall: true,
   'wall-door': true,
   block: true,
+  cylinder: true,
+  sphere: true,
+  'wheel-car': true,
   'beverage-can': true,
   'tin-can': true,
   'wine-bottle': true,
+  pen: true,
+  'fabric-cloth': true,
+  'book-softcover': true,
+  'book-hardcover': true,
 };
 
 describe('asset catalog', () => {

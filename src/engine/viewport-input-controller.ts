@@ -21,8 +21,6 @@ export class ViewportInputController {
   private gizmoConsumedPointer = false;
 
   private readonly onPointerDown = (event: PointerEvent): void => {
-    if (!this.domElement) return;
-
     this.pointers.set(event.pointerId, new Vector2(event.clientX, event.clientY));
 
     if (this.pointers.size === 2) {
@@ -31,7 +29,7 @@ export class ViewportInputController {
       return;
     }
 
-    if (this.pointers.size > 2) return;
+    if (this.pointers.size > 2) {return;}
 
     if (event.button === 1 || event.button === 2) {
       event.preventDefault();
@@ -45,7 +43,7 @@ export class ViewportInputController {
       return;
     }
 
-    if (event.button !== 0) return;
+    if (event.button !== 0) {return;}
 
     if (this.gizmo.isPointerOverHandle()) {
       this.gizmoConsumedPointer = true;
@@ -62,7 +60,7 @@ export class ViewportInputController {
   };
 
   private readonly onPointerMove = (event: PointerEvent): void => {
-    if (!this.pointers.has(event.pointerId)) return;
+    if (!this.pointers.has(event.pointerId)) {return;}
 
     this.pointers.set(event.pointerId, new Vector2(event.clientX, event.clientY));
 
@@ -71,8 +69,8 @@ export class ViewportInputController {
       return;
     }
 
-    if (this.activePointerId !== event.pointerId) return;
-    if (this.gizmoConsumedPointer || this.gizmo.isDragging()) return;
+    if (this.activePointerId !== event.pointerId) {return;}
+    if (this.gizmoConsumedPointer || this.gizmo.isDragging()) {return;}
 
     const dx = event.clientX - this.pointerDownPos.x;
     const dy = event.clientY - this.pointerDownPos.y;
@@ -105,7 +103,9 @@ export class ViewportInputController {
     this.pointers.delete(event.pointerId);
 
     if (this.pointers.size === 1) {
-      const remaining = this.pointers.entries().next().value as [number, Vector2];
+      const nextEntry = this.pointers.entries().next();
+      if (nextEntry.done) {return;}
+      const remaining = nextEntry.value;
       this.activePointerId = remaining[0];
       this.pointerDownPos.copy(remaining[1]);
       this.dragStarted = false;
@@ -118,7 +118,7 @@ export class ViewportInputController {
       this.camera.endPinch();
     }
 
-    if (this.activePointerId !== event.pointerId) return;
+    if (this.activePointerId !== event.pointerId) {return;}
 
     const wasClick =
       !this.dragStarted &&

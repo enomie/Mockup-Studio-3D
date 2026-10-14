@@ -18,7 +18,7 @@ export function SceneSubPanel() {
     setPrevSelectedEntityId(selectedEntityId);
     if (selectedEntityId) {
       setCollapsedIds((prev) => {
-        if (!prev.has(selectedEntityId)) return prev;
+        if (!prev.has(selectedEntityId)) {return prev;}
         const next = new Set(prev);
         next.delete(selectedEntityId);
         return next;
@@ -27,7 +27,7 @@ export function SceneSubPanel() {
   }
 
   useEffect(() => {
-    if (!selectedEntityId) return;
+    if (!selectedEntityId) {return;}
     const section = sectionRefs.current.get(selectedEntityId);
     section?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   }, [selectedEntityId]);
@@ -47,7 +47,7 @@ export function SceneSubPanel() {
   const handleRemove = (entityId: string): void => {
     removeEntity(entityId);
     setCollapsedIds((prev) => {
-      if (!prev.has(entityId)) return prev;
+      if (!prev.has(entityId)) {return prev;}
       const next = new Set(prev);
       next.delete(entityId);
       return next;
@@ -81,7 +81,7 @@ export function SceneSubPanel() {
                       className="scene-entity-block__collapse"
                       aria-expanded={!isCollapsed}
                       aria-label={isCollapsed ? 'Expand properties' : 'Collapse properties'}
-                      onClick={() => toggleCollapsed(entity.id)}
+                      onClick={() => { toggleCollapsed(entity.id); }}
                     >
                       <Icon icon={isCollapsed ? ChevronRight : ChevronDown} />
                     </button>
@@ -89,7 +89,7 @@ export function SceneSubPanel() {
                       type="button"
                       className="scene-entity-block__title"
                       aria-current={isSelected ? 'true' : undefined}
-                      onClick={() => setSelectedEntity(isSelected ? null : entity.id)}
+                      onClick={() => { setSelectedEntity(isSelected ? null : entity.id); }}
                     >
                       {entity.name}
                     </button>
@@ -99,7 +99,7 @@ export function SceneSubPanel() {
                       aria-label={entity.visible ? `Hide ${entity.name}` : `Show ${entity.name}`}
                       aria-pressed={entity.visible}
                       title={entity.visible ? 'Hide' : 'Show'}
-                      onClick={() => setEntityVisible(entity.id, !entity.visible)}
+                      onClick={() => { setEntityVisible(entity.id, !entity.visible); }}
                     >
                       <Icon icon={entity.visible ? Eye : EyeOff} />
                     </button>
@@ -108,7 +108,7 @@ export function SceneSubPanel() {
                       className="scene-entity-block__remove"
                       aria-label={`Remove ${entity.name}`}
                       title="Remove"
-                      onClick={() => handleRemove(entity.id)}
+                      onClick={() => { handleRemove(entity.id); }}
                     >
                       <Icon icon={Trash2} />
                     </button>

@@ -3,6 +3,7 @@ import { GroundSettingsSection } from './GroundSettingsSection';
 import { SceneEntityBlock } from './SceneEntityBlock';
 import { ColorPicker } from '@/ui/components/ColorPicker';
 import { DualRangeSlider, RangeSlider } from '@/ui/components/RangeSlider';
+import { PanelCheckbox } from '@/ui/components/PanelCheckbox';
 import { SubPanel } from '@/ui/components/SubPanel';
 import { LENGTH_DECIMALS, LENGTH_STEP_M } from '@/units/length';
 import { NORMALIZED_DECIMALS, NORMALIZED_STEP } from '@/units/normalized';
@@ -17,6 +18,12 @@ import {
   setSkyHorizonColor,
   setSkyZenithColor,
   setGroundVisible,
+  setViewportHelperFloorGrid,
+  setViewportHelperForwardArrow,
+  setViewportHelperLightHandles,
+  setViewportHelperWorldOrigin,
+  isAnyViewportHelperEnabled,
+  toggleViewportHelpersAll,
 } from '@/ui/store/app-store';
 import { useAppStore } from '@/ui/store/use-app-store';
 
@@ -25,6 +32,7 @@ const ENV_BLOCK_IDS = {
   reflections: 'env-reflections',
   fog: 'env-fog',
   ground: 'env-ground',
+  viewportHelpers: 'env-viewport-helpers',
 } as const;
 
 export function EnvironmentSubPanel() {
@@ -39,6 +47,7 @@ export function EnvironmentSubPanel() {
   const reflectionEnabled = useAppStore((s) => s.reflectionEnabled);
   const reflectionIntensity = useAppStore((s) => s.reflectionIntensity);
   const groundVisible = useAppStore((s) => s.ground.visible);
+  const viewportHelpers = useAppStore((s) => s.viewportHelpers);
 
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(() => new Set());
 
@@ -61,8 +70,8 @@ export function EnvironmentSubPanel() {
           title="Sky"
           enabled={skyEnabled}
           collapsed={collapsedIds.has(ENV_BLOCK_IDS.sky)}
-          onToggleCollapse={() => toggleCollapsed(ENV_BLOCK_IDS.sky)}
-          onToggleEnabled={() => setSkyEnabled(!skyEnabled)}
+          onToggleCollapse={() => { toggleCollapsed(ENV_BLOCK_IDS.sky); }}
+          onToggleEnabled={() => { setSkyEnabled(!skyEnabled); }}
         >
           <ColorPicker
             label="Horizon color"
@@ -95,8 +104,8 @@ export function EnvironmentSubPanel() {
           title="Reflections"
           enabled={reflectionEnabled}
           collapsed={collapsedIds.has(ENV_BLOCK_IDS.reflections)}
-          onToggleCollapse={() => toggleCollapsed(ENV_BLOCK_IDS.reflections)}
-          onToggleEnabled={() => setReflectionEnabled(!reflectionEnabled)}
+          onToggleCollapse={() => { toggleCollapsed(ENV_BLOCK_IDS.reflections); }}
+          onToggleEnabled={() => { setReflectionEnabled(!reflectionEnabled); }}
         >
           <RangeSlider
             label="Reflection intensity"
@@ -115,8 +124,8 @@ export function EnvironmentSubPanel() {
           title="Fog"
           enabled={fogEnabled}
           collapsed={collapsedIds.has(ENV_BLOCK_IDS.fog)}
-          onToggleCollapse={() => toggleCollapsed(ENV_BLOCK_IDS.fog)}
-          onToggleEnabled={() => setFogEnabled(!fogEnabled)}
+          onToggleCollapse={() => { toggleCollapsed(ENV_BLOCK_IDS.fog); }}
+          onToggleEnabled={() => { setFogEnabled(!fogEnabled); }}
         >
           <ColorPicker
             label="Fog color"
@@ -135,7 +144,7 @@ export function EnvironmentSubPanel() {
             valueInputDecimals={LENGTH_DECIMALS}
             valueUnit="m"
             disabled={!fogEnabled}
-            onChange={({ low, high }) => setFogDistances(low, high)}
+            onChange={({ low, high }) => { setFogDistances(low, high); }}
           />
         </SceneEntityBlock>
 
@@ -143,10 +152,39 @@ export function EnvironmentSubPanel() {
           title="Ground"
           enabled={groundVisible}
           collapsed={collapsedIds.has(ENV_BLOCK_IDS.ground)}
-          onToggleCollapse={() => toggleCollapsed(ENV_BLOCK_IDS.ground)}
-          onToggleEnabled={() => setGroundVisible(!groundVisible)}
+          onToggleCollapse={() => { toggleCollapsed(ENV_BLOCK_IDS.ground); }}
+          onToggleEnabled={() => { setGroundVisible(!groundVisible); }}
         >
           <GroundSettingsSection disabled={!groundVisible} />
+        </SceneEntityBlock>
+
+        <SceneEntityBlock
+          title="Viewport helpers"
+          enabled={isAnyViewportHelperEnabled(viewportHelpers)}
+          collapsed={collapsedIds.has(ENV_BLOCK_IDS.viewportHelpers)}
+          onToggleCollapse={() => { toggleCollapsed(ENV_BLOCK_IDS.viewportHelpers); }}
+          onToggleEnabled={toggleViewportHelpersAll}
+        >
+          <PanelCheckbox
+            label="Floor grid"
+            checked={viewportHelpers.floorGrid}
+            onChange={setViewportHelperFloorGrid}
+          />
+          <PanelCheckbox
+            label="World origin"
+            checked={viewportHelpers.worldOrigin}
+            onChange={setViewportHelperWorldOrigin}
+          />
+          <PanelCheckbox
+            label="Forward arrow"
+            checked={viewportHelpers.forwardArrow}
+            onChange={setViewportHelperForwardArrow}
+          />
+          <PanelCheckbox
+            label="Spot beams"
+            checked={viewportHelpers.lightHandles}
+            onChange={setViewportHelperLightHandles}
+          />
         </SceneEntityBlock>
       </div>
     </SubPanel>

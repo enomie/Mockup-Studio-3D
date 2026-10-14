@@ -23,7 +23,7 @@ export function TopSubBar() {
               aria-label={label}
               aria-pressed={active}
               title={label}
-              onClick={() => setMode(tool.id)}
+              onClick={() => { setMode(tool.id); }}
             >
               <Icon icon={tool.icon} />
               <span className="camera-quick-bar__chip-key" aria-hidden="true">{tool.shortcut}</span>

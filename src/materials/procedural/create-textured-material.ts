@@ -34,8 +34,12 @@ export function createTexturedMaterial(
   const usePhysical =
     isMetalProceduralProfile(profile) ||
     isWoodProceduralProfile(profile) ||
+    profile === 'coated-gloss' ||
+    profile === 'plastic-smooth' ||
+    profile === 'silk-fine' ||
     (preset.metalness ?? 0) >= 0.5 ||
-    (preset.anisotropy ?? 0) > 0;
+    (preset.anisotropy ?? 0) > 0 ||
+    (preset.clearcoat ?? 0) > 0;
 
   const material = usePhysical
     ? new MeshPhysicalNodeMaterial({ metalness: preset.metalness ?? 0 })
@@ -48,11 +52,22 @@ export function createTexturedMaterial(
   material.roughnessNode = nodes.roughnessNode;
   material.metalnessNode = float(preset.metalness ?? 0);
 
+  if (nodes.opacityNode) {
+    material.transparent = nodes.transparent ?? true;
+    material.opacityNode = nodes.opacityNode;
+    if (nodes.depthWrite === false) {
+      material.depthWrite = false;
+    }
+  }
+
   if (material instanceof MeshPhysicalNodeMaterial) {
     applyPhysicalAnisotropy(material, preset);
     if (isWoodProceduralProfile(profile)) {
       material.clearcoat = WOOD_CLEARCOAT;
       material.clearcoatRoughness = WOOD_CLEARCOAT_ROUGHNESS;
+    } else if (preset.clearcoat != null && preset.clearcoat > 0) {
+      material.clearcoat = preset.clearcoat;
+      material.clearcoatRoughness = preset.clearcoatRoughness ?? 0.12;
     }
   }
 

@@ -5,7 +5,7 @@ import {
   wineBottleSvgUrl,
 } from '@/scene/asset-wine-bottle';
 
-export type WineBottleSvgPoint2 = { x: number; y: number };
+export interface WineBottleSvgPoint2 { x: number; y: number }
 
 const rawPointsCache = new Map<WineBottleBodyProfile, WineBottleSvgPoint2[]>();
 
@@ -16,8 +16,8 @@ export function extractOpenPathPointsFromSvgText(
 ): WineBottleSvgPoint2[] {
   const loader = new SVGLoader();
   const data = loader.parse(svgText);
-  const path = data.paths[0];
-  if (!path || path.subPaths.length === 0) {
+  const path = data.paths.at(0);
+  if (path === undefined || path.subPaths.length === 0) {
     return [];
   }
 
@@ -147,10 +147,10 @@ function collectWallRadiiAtY(wallProfile: Vector2[], y: number): number[] {
   return radii;
 }
 
-export type WineBottleWallRadiiAtY = {
+export interface WineBottleWallRadiiAtY {
   rOuter: number;
   rInner: number;
-};
+}
 
 /**
  * Inner and outer radius on a horizontal cut through the wall profile.
@@ -238,7 +238,7 @@ async function loadRawWineBottleSvgPoints(
   return points;
 }
 
-/** Normalized open wall from `public/bottle-*-open.svg`. */
+/** Normalized open wall from `public/profiles/lathe/bottle-*-open.svg`. */
 export async function loadWineBottleOpenWallProfile(
   profile: WineBottleBodyProfile,
   heightM: number,

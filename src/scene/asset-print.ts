@@ -1,9 +1,9 @@
 import { MM_TO_M } from '@/units/length';
 
 /** Geometry params for print assets — mm values at sizeScale 1. */
-export type PrintDeviceParams = {
+export interface PrintDeviceParams {
   cornerRadiusMm: number;
-};
+}
 const CORNER_EPSILON_M = 0.0001;
 
 export function defaultPrintParams(): PrintDeviceParams {

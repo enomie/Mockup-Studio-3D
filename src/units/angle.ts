@@ -22,9 +22,9 @@ export function parseDegreesDisplayInput(
 ): number | null {
   const trimmed = raw.trim().replace(',', '.');
   const pattern = new RegExp(`^-?\\d+(\\.\\d{0,${decimals}})?$`);
-  if (!pattern.test(trimmed)) return null;
+  if (!pattern.test(trimmed)) {return null;}
 
   const value = Number.parseFloat(trimmed);
-  if (Number.isNaN(value)) return null;
+  if (Number.isNaN(value)) {return null;}
   return value;
 }

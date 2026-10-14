@@ -10,12 +10,12 @@ import { resolveMeshMaterial } from './asset-meshes/shared';
 
 export type CylindricalCanLabelAssetKind = 'beverage-can' | 'tin-can';
 
-export type CylindricalCanPopulateSetup = {
+export interface CylindricalCanPopulateSetup {
   bodyMetalMaterial: Material;
   labelMaterial: Material;
   topRingMetalMaterial?: Material;
   hasLabelImage: boolean;
-};
+}
 
 export function prepareCylindricalCanPopulateSetup(
   context: AssetBuildContext,
@@ -28,7 +28,7 @@ export function prepareCylindricalCanPopulateSetup(
   },
 ): CylindricalCanPopulateSetup | null {
   const resolver = context.materialResolver;
-  if (!resolver) return null;
+  if (!resolver) {return null;}
 
   const materials = context.materials ?? {};
   const metalMaterialId = materials.metalMaterialId ?? MATERIAL_ALUMINUM_BRUSHED_ID;

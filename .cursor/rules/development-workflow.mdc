@@ -35,7 +35,7 @@ Vor dem ersten Edit in `src/**`:
 - **Erweitern vor Neuschreiben** — vorhandene Module nutzen und vereinheitlichen.
 - Berührt bestehender Code das Feature: **mit aufräumen** (nur im relevanten Scope, kein Drive-by-Refactor).
 - Ein Verantwortungsbereich pro Modul; Scene-API als UI↔Engine-Grenze.
-- `npm run lint` + `npm run build` wenn Code geändert wird (User sagt „fix" → Pflicht).
+- `npm run lint` + `npm run build` wenn Code geändert wird (User sagt „fix" → Pflicht). Lint-Standards: [`eslint.mdc`](./eslint.mdc).
 
 ## Wann Code schreiben?
 

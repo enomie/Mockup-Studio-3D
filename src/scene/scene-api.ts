@@ -11,7 +11,13 @@ import type {
   BeverageCanParams,
   TinCanParams,
   WineBottleParams,
+  PenParams,
   BlockParams,
+  CylinderParams,
+  SphereParams,
+  WheelCarParams,
+  FabricClothParams,
+  BookParams,
   PrintDeviceParams,
   WallParams,
   WallpaperPattern,
@@ -23,6 +29,9 @@ import type { AssetImageSurfaceId, ImageSurfaceSettings } from './image-surface'
 import type { AtmosphereSnapshot } from './environment-preset-types';
 import type { CaptureViewportImageOptions } from './export-image';
 import type { MaterialPresetResolver } from './material-types';
+import type { PhysicsSettings } from './physics-settings';
+import type { PhysicsBodyMode } from './physics-rigid-body';
+import type { BookMaterialTintPart } from './book-material-tints';
 
 export type {
   AssetEntity,
@@ -37,7 +46,7 @@ export type {
 
 export type AppMode = 'select' | 'translate' | 'rotate' | 'scale' | 'place-texture' | 'export';
 
-export type EnvironmentState = {
+export interface EnvironmentState {
   skyEnabled: boolean;
   skyHorizonColor: Rgb;
   skyZenithColor: Rgb;
@@ -48,27 +57,34 @@ export type EnvironmentState = {
   fogFar: number;
   reflectionEnabled: boolean;
   reflectionIntensity: number;
-};
+}
 
-export type GroundSettings = {
+export interface GroundSettings {
   visible: boolean;
   materialId: string;
   receiveShadow: boolean;
   mirrorEnabled: boolean;
   mirrorOpacity: number;
-};
+}
+
+export interface ViewportHelpersState {
+  floorGrid: boolean;
+  worldOrigin: boolean;
+  forwardArrow: boolean;
+  lightHandles: boolean;
+}
 
 export type LightingReferenceMode = 'scene-center' | 'world-fixed';
 
 export type StudioLightSide = 'left' | 'right';
 
-export type AmbientLightSettings = {
+export interface AmbientLightSettings {
   enabled: boolean;
   color: Rgb;
   intensity: number;
-};
+}
 
-export type KeyLightSettings = {
+export interface KeyLightSettings {
   enabled: boolean;
   side: StudioLightSide;
   color: Rgb;
@@ -77,9 +93,9 @@ export type KeyLightSettings = {
   /** PCF penumbra — maps to light.shadow.radius (0 = hard, 30 = very soft). */
   shadowSoftness: number;
   transformOffset: EntityTransform;
-};
+}
 
-export type FillLightSettings = {
+export interface FillLightSettings {
   enabled: boolean;
   color: Rgb;
   intensityRatio: number;
@@ -88,14 +104,16 @@ export type FillLightSettings = {
   /** PCF penumbra — maps to light.shadow.radius (0 = hard, 30 = very soft). */
   shadowSoftness: number;
   transformOffset: EntityTransform;
-};
+}
 
-export type LightingSettings = {
+export interface LightingSettings {
   referenceMode: LightingReferenceMode;
+  showFixtures: boolean;
+  fixturesReflectInMirror: boolean;
   ambient: AmbientLightSettings;
   key: KeyLightSettings;
   fill: FillLightSettings;
-};
+}
 
 export type CameraProjection = 'perspective' | 'orthographic';
 
@@ -110,33 +128,33 @@ export type BuiltinCameraViewId =
 
 export type CameraSlotIndex = 1 | 2 | 3;
 
-export type CameraViewState = {
+export interface CameraViewState {
   projection: CameraProjection;
   position: Vec3;
   target: Vec3;
   fov: number;
   orthoZoom: number;
-};
+}
 
 export type CameraSlotData = CameraViewState & { name: string };
 
 export type CameraSlot = CameraSlotData | null;
 
-export type CameraSettings = {
+export interface CameraSettings {
   projection: CameraProjection;
   fov: number;
   orthoZoom: number;
   slots: [CameraSlot, CameraSlot, CameraSlot];
-};
+}
 
 /** Live navigation readout — position, orbit target, distance and orbit angles. */
-export type CameraReadout = {
+export interface CameraReadout {
   position: Vec3;
   target: Vec3;
   distance: number;
   azimuthDeg: number;
   elevationDeg: number;
-};
+}
 
 export type SceneApiListener = () => void;
 
@@ -151,6 +169,13 @@ export interface SceneApi {
   applyLighting(state: LightingSettings): void;
   setLighting(partial: DeepPartial<LightingSettings>): void;
   getLighting(): LightingSettings;
+  getPhysicsSettings(): PhysicsSettings;
+  setPhysicsSettings(partial: Partial<PhysicsSettings>): void;
+  startPhysicsRigidTest(): void;
+  stopPhysicsRigidTest(): void;
+  startWorldPhysics(): void;
+  toggleWorldPhysicsPause(): void;
+  resetWorldPhysics(): void;
   applyEnvironment(state: EnvironmentState): void;
   applyAtmosphereSnapshot(snapshot: AtmosphereSnapshot): void;
   applyGround(state: GroundSettings): void;
@@ -164,6 +189,9 @@ export interface SceneApi {
   setFogDistances(near: number, far: number): void;
   setReflectionEnabled(enabled: boolean): void;
   setReflectionIntensity(intensity: number): void;
+  applyViewportHelpers(state: ViewportHelpersState): void;
+  setViewportHelpers(partial: Partial<ViewportHelpersState>): void;
+  getViewportHelpers(): ViewportHelpersState;
   addAsset(assetKind: AssetKind): string;
   removeEntity(entityId: string): void;
   selectEntity(entityId: string | null): void;
@@ -171,6 +199,7 @@ export interface SceneApi {
   getEntities(): readonly AssetEntity[];
   setEntityTransform(entityId: string, partial: Partial<EntityTransform>): void;
   setAssetImage(entityId: string, imageId: string | null): void;
+  releaseImageTexture(imageId: string): void;
   setAssetFace(entityId: string, faceId: AssetFaceId, content: AssetFaceContent): void;
   setAssetDepth(entityId: string, depthM: number): void;
   setAssetSizeScale(entityId: string, sizeScale: number): void;
@@ -197,6 +226,16 @@ export interface SceneApi {
   setWallParams(entityId: string, partial: Partial<WallParams>): void;
   setWallpaperPattern(entityId: string, partial: Partial<WallpaperPattern>): void;
   setBlockParams(entityId: string, partial: Partial<BlockParams>): void;
+  setCylinderParams(entityId: string, partial: Partial<CylinderParams>): void;
+  setSphereParams(entityId: string, partial: Partial<SphereParams>): void;
+  setWheelCarParams(entityId: string, partial: Partial<WheelCarParams>): void;
+  setPhysicsBodyMode(entityId: string, mode: PhysicsBodyMode): void;
+  setPhysicsDensityKgPerM3(entityId: string, densityKgPerM3: number): void;
+  setFabricClothParams(entityId: string, partial: Partial<FabricClothParams>): void;
+  setBookParams(entityId: string, partial: Partial<BookParams>): void;
+  setBookBackCoverImageId(entityId: string, imageId: string | null): void;
+  setBookSpineImageId(entityId: string, imageId: string | null): void;
+  setBookMaterialTint(entityId: string, part: BookMaterialTintPart, tint: Rgb): void;
   setBeverageCanParams(
     entityId: string,
     partial: Partial<BeverageCanParams>,
@@ -206,6 +245,7 @@ export interface SceneApi {
     entityId: string,
     partial: Partial<WineBottleParams>,
   ): void;
+  setPenParams(entityId: string, partial: Partial<PenParams>): void;
   loadBuiltinView(id: BuiltinCameraViewId): void;
   captureSlot(index: CameraSlotIndex): void;
   loadSlot(index: CameraSlotIndex): void;

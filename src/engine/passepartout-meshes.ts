@@ -19,7 +19,7 @@ import {
   type MaterialResolver,
 } from './material-resolver';
 
-export type PassepartoutMeshOptions = {
+export interface PassepartoutMeshOptions {
   resolver: MaterialResolver;
   surface: ImageSurfaceSettings;
   outerW: number;
@@ -35,7 +35,7 @@ export type PassepartoutMeshOptions = {
   screenPick?: boolean;
   renderOrder?: { passepartout: number; image: number };
   applyHandheldScreenMaterialFlags?: boolean;
-};
+}
 
 function createOpeningGeometry(
   width: number,

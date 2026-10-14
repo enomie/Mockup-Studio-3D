@@ -56,9 +56,9 @@ export class EnvironmentSystem {
   }
 
   pushGroundExportCaptureMode(mode: ExportGroundSurface): void {
-    if (mode !== 'contact-shadows-only') return;
-    if (!this.canUseGroundShadowCatcherExport()) return;
-    if (this.exportCaptureDepth > 0) return;
+    if (mode !== 'contact-shadows-only') {return;}
+    if (!this.canUseGroundShadowCatcherExport()) {return;}
+    if (this.exportCaptureDepth > 0) {return;}
 
     this.exportCaptureDepth += 1;
     this.groundMaterial.setMirrorEnabled(false);
@@ -66,7 +66,7 @@ export class EnvironmentSystem {
   }
 
   popGroundExportCaptureMode(): void {
-    if (this.exportCaptureDepth === 0) return;
+    if (this.exportCaptureDepth === 0) {return;}
 
     this.exportCaptureDepth -= 1;
     this.groundMaterial.setExportShadowCatcherActive(false);
@@ -145,7 +145,7 @@ export class EnvironmentSystem {
   }
 
   refreshGroundMaterialIfMatches(materialId: string): void {
-    if (this.groundSettings.materialId !== materialId) return;
+    if (this.groundSettings.materialId !== materialId) {return;}
     this.applyGroundMaterialFromId(materialId);
   }
 
@@ -155,7 +155,7 @@ export class EnvironmentSystem {
 
   private applyGroundMaterialFromId(materialId: string): void {
     const preset = this.materialResolver?.resolvePreset(materialId);
-    if (!preset) return;
+    if (!preset) {return;}
     this.groundMaterial.applyMaterialPreset(preset);
   }
 

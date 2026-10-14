@@ -3,7 +3,7 @@ import { SVGLoader } from 'three/addons/loaders/SVGLoader.js';
 import type { BeverageCanBodyProfile } from './beverage-can-label-unfold';
 import { beverageCanSvgUrl } from '@/scene/asset-beverage-can';
 
-export type SvgPoint2 = { x: number; y: number };
+export interface SvgPoint2 { x: number; y: number }
 
 const rawPointsCache = new Map<BeverageCanBodyProfile, SvgPoint2[]>();
 
@@ -73,14 +73,14 @@ export function orientLatheProfileBottomToTop(points: Vector2[]): Vector2[] {
 export function extractPointsFromSvgText(svgText: string, curveSegments = 24): SvgPoint2[] {
   const loader = new SVGLoader();
   const data = loader.parse(svgText);
-  const path = data.paths[0];
-  if (!path) {
+  const path = data.paths.at(0);
+  if (path === undefined) {
     return [];
   }
 
-  const shapes = SVGLoader.createShapes(path);
-  const shape = shapes[0];
-  if (!shape) {
+  const shapes = path.toShapes();
+  const shape = shapes.at(0);
+  if (shape === undefined) {
     return [];
   }
 

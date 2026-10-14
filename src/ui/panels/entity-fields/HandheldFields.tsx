@@ -78,7 +78,7 @@ export function HandheldFields({
           images={images}
           imageLabel="Image"
           imageFieldId={screenImageFieldId}
-          onImageChange={(imageId) => setAssetScreenImage(entity.id, imageId)}
+          onImageChange={(imageId) => { setAssetScreenImage(entity.id, imageId); }}
         />
       </SubPanelSection>
     </>

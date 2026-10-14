@@ -10,6 +10,7 @@ import { ColorPicker } from '@/ui/components/ColorPicker';
 import { PanelCheckbox } from '@/ui/components/PanelCheckbox';
 import { RangeSlider } from '@/ui/components/RangeSlider';
 import { SubPanel } from '@/ui/components/SubPanel';
+import { SubPanelSection } from '@/ui/components/SubPanelSection';
 import { SceneEntityBlock } from './SceneEntityBlock';
 import {
   setAmbientColor,
@@ -27,8 +28,10 @@ import {
   setKeyIntensity,
   setKeyShadowSoftness,
   setKeySide,
+  setFixturesReflectInMirror,
   setLightingReferenceMode,
   setSelectedEntity,
+  setShowLightFixtures,
 } from '@/ui/store/app-store';
 import { useAppStore } from '@/ui/store/use-app-store';
 
@@ -36,6 +39,7 @@ const LIGHT_BLOCK_IDS = new Set<string>([LIGHT_AMBIENT_ID, LIGHT_KEY_ID, LIGHT_F
 
 export function LightingSubPanel() {
   const lighting = useAppStore((s) => s.lighting);
+  const ground = useAppStore((s) => s.ground);
   const selectedEntityId = useAppStore((s) => s.selectedEntityId);
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(() => new Set());
   const [prevSelectedEntityId, setPrevSelectedEntityId] = useState(selectedEntityId);
@@ -44,7 +48,7 @@ export function LightingSubPanel() {
     setPrevSelectedEntityId(selectedEntityId);
     if (selectedEntityId && LIGHT_BLOCK_IDS.has(selectedEntityId)) {
       setCollapsedIds((prev) => {
-        if (!prev.has(selectedEntityId)) return prev;
+        if (!prev.has(selectedEntityId)) {return prev;}
         const next = new Set(prev);
         next.delete(selectedEntityId);
         return next;
@@ -73,18 +77,36 @@ export function LightingSubPanel() {
       <PanelCheckbox
         label="Follow scene center"
         checked={lighting.referenceMode === 'scene-center'}
-        onChange={(checked) =>
-          setLightingReferenceMode(checked ? 'scene-center' : 'world-fixed')
+        onChange={(checked) => { setLightingReferenceMode(checked ? 'scene-center' : 'world-fixed'); }
         }
       />
+
+      <SubPanelSection title="Fixtures">
+        <PanelCheckbox
+          label="Show fixtures"
+          checked={lighting.showFixtures}
+          onChange={setShowLightFixtures}
+        />
+        <PanelCheckbox
+          label="Reflect in mirror floor"
+          checked={lighting.fixturesReflectInMirror}
+          disabled={!ground.mirrorEnabled}
+          onChange={setFixturesReflectInMirror}
+        />
+        {!ground.mirrorEnabled ? (
+          <p className="panel-hint">
+            Turn on mirror floor in Environment → Ground.
+          </p>
+        ) : null}
+      </SubPanelSection>
 
       <div className="panel-stack">
         <SceneEntityBlock
           title="Ambient Light"
           enabled={lighting.ambient.enabled}
           collapsed={collapsedIds.has(LIGHT_AMBIENT_ID)}
-          onToggleCollapse={() => toggleCollapsed(LIGHT_AMBIENT_ID)}
-          onToggleEnabled={() => setAmbientEnabled(!lighting.ambient.enabled)}
+          onToggleCollapse={() => { toggleCollapsed(LIGHT_AMBIENT_ID); }}
+          onToggleEnabled={() => { setAmbientEnabled(!lighting.ambient.enabled); }}
         >
           <ColorPicker
             label="Color"
@@ -109,10 +131,9 @@ export function LightingSubPanel() {
           collapsed={collapsedIds.has(LIGHT_KEY_ID)}
           selected={selectedEntityId === LIGHT_KEY_ID}
           selectable
-          onToggleCollapse={() => toggleCollapsed(LIGHT_KEY_ID)}
-          onToggleEnabled={() => setKeyEnabled(!lighting.key.enabled)}
-          onTitleClick={() =>
-            handleLightTitleClick(LIGHT_KEY_ID, selectedEntityId === LIGHT_KEY_ID)
+          onToggleCollapse={() => { toggleCollapsed(LIGHT_KEY_ID); }}
+          onToggleEnabled={() => { setKeyEnabled(!lighting.key.enabled); }}
+          onTitleClick={() => { handleLightTitleClick(LIGHT_KEY_ID, selectedEntityId === LIGHT_KEY_ID); }
           }
         >
           <div className="panel-field-row">
@@ -122,7 +143,7 @@ export function LightingSubPanel() {
                 type="button"
                 className={`preset-chip side-toggle__btn${lighting.key.side === 'left' ? ' side-toggle__btn--active' : ''}`}
                 aria-pressed={lighting.key.side === 'left'}
-                onClick={() => setKeySide('left')}
+                onClick={() => { setKeySide('left'); }}
               >
                 Left
               </button>
@@ -130,7 +151,7 @@ export function LightingSubPanel() {
                 type="button"
                 className={`preset-chip side-toggle__btn${lighting.key.side === 'right' ? ' side-toggle__btn--active' : ''}`}
                 aria-pressed={lighting.key.side === 'right'}
-                onClick={() => setKeySide('right')}
+                onClick={() => { setKeySide('right'); }}
               >
                 Right
               </button>
@@ -172,10 +193,9 @@ export function LightingSubPanel() {
           collapsed={collapsedIds.has(LIGHT_FILL_ID)}
           selected={selectedEntityId === LIGHT_FILL_ID}
           selectable
-          onToggleCollapse={() => toggleCollapsed(LIGHT_FILL_ID)}
-          onToggleEnabled={() => setFillEnabled(!lighting.fill.enabled)}
-          onTitleClick={() =>
-            handleLightTitleClick(LIGHT_FILL_ID, selectedEntityId === LIGHT_FILL_ID)
+          onToggleCollapse={() => { toggleCollapsed(LIGHT_FILL_ID); }}
+          onToggleEnabled={() => { setFillEnabled(!lighting.fill.enabled); }}
+          onTitleClick={() => { handleLightTitleClick(LIGHT_FILL_ID, selectedEntityId === LIGHT_FILL_ID); }
           }
         >
           <div className="panel-field-row">

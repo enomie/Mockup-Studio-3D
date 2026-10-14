@@ -1,6 +1,6 @@
 import { useId } from 'react';
 
-type PanelTextFieldProps = {
+interface PanelTextFieldProps {
   label: string;
   value: string;
   onChange: (value: string) => void;
@@ -14,7 +14,7 @@ type PanelTextFieldProps = {
   unit?: string;
   onFocus?: () => void;
   onBlur?: () => void;
-};
+}
 
 export function PanelTextField({
   label,
@@ -54,7 +54,7 @@ export function PanelTextField({
             aria-label={label}
             aria-invalid={invalid}
             onFocus={onFocus}
-            onChange={(event) => onChange(event.target.value)}
+            onChange={(event) => { onChange(event.target.value); }}
             onBlur={onBlur}
           />
           {unit ? <span className="panel-field-unit">{unit}</span> : null}
@@ -77,7 +77,7 @@ export function PanelTextField({
         spellCheck={spellCheck}
         aria-invalid={invalid}
         onFocus={onFocus}
-        onChange={(event) => onChange(event.target.value)}
+        onChange={(event) => { onChange(event.target.value); }}
         onBlur={onBlur}
       />
     </div>

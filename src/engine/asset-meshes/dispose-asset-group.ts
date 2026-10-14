@@ -1,11 +1,16 @@
-import { Mesh, type Group, type Material } from 'three/webgpu';
+import {
+  Mesh,
+  type BufferGeometry,
+  type Group,
+  type Material,
+} from 'three/webgpu';
 import { disposeEngineMaterial } from '@/engine/material-resolver';
 
 export function disposeAssetGroup(group: Group): void {
-  const meshes: Mesh[] = [];
+  const meshes: Mesh<BufferGeometry, Material>[] = [];
   group.traverse((child) => {
     if (child instanceof Mesh) {
-      meshes.push(child);
+      meshes.push(child as Mesh<BufferGeometry, Material>);
     }
   });
 
@@ -13,7 +18,8 @@ export function disposeAssetGroup(group: Group): void {
   for (const mesh of meshes) {
     mesh.geometry.dispose();
     const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-    for (const material of materials) {
+    for (const rawMaterial of materials) {
+      const material = rawMaterial as Material;
       if (!disposedMaterials.has(material)) {
         disposeEngineMaterial(material);
         disposedMaterials.add(material);

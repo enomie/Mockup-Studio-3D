@@ -1,4 +1,4 @@
-export type Rgb = { r: number; g: number; b: number };
+export interface Rgb { r: number; g: number; b: number }
 
 export function rgbToColor(rgb: Rgb): Rgb {
   return {

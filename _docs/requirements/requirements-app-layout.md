@@ -31,7 +31,7 @@ Links: Main außen → Sub innen (Richtung Viewport). Rechts: Sub innen → Main
 
 **Category:** App Layout  
 **Title:** Top Main Panel  
-**Description:** **Full width**, oberste Zeile. Drei Zonen: **links** App-Titel/Branding; **mitte** **Kamera Quick Bar** (Persp/Ortho · Built-in Views · User-Slot-Chips — zentriert, Details → [`requirements-camera.md`](./requirements-camera.md)); **rechts** Datei-Aktionen (z. B. *Save*, *Export*). Mindest-Höhe touch-ready (~44px).
+**Description:** **Full width**, oberste Zeile. Zonen: **links** App-Titel/Branding; **mitte** **Kamera Quick Bar** (Details → [`requirements-camera.md`](./requirements-camera.md)) **+ direkt rechts daran** **Physics**-Cluster (**On** / **Freeze** — → [`requirements-physics.md`](./requirements-physics.md)); **rechts** Datei-Aktionen (z. B. *Save*, *Export*). Mindest-Höhe touch-ready (~44px).
 
 ---
 
@@ -97,12 +97,35 @@ Links: Main außen → Sub innen (Richtung Viewport). Rechts: Sub innen → Main
 
 **Category:** App Layout  
 **Title:** Panel-Zuordnung (Entwurf)  
-**Description:** Vorläufige Zuordnung — kann sich verschieben, Struktur (scroll + sections) bleibt: **Right Main** = Nav-Rail (**Scene**, **Environment**, **Camera**, **Lighting**, **Export** — kein Ground). **Right Sub** = Detail zum gewählten Nav-Punkt (`EnvironmentSubPanel` inkl. Ground-Sektion, `CameraSubPanel`, `ExportSubPanel`, …). **Export**-Inhalt (Format, Ground-Catcher, Pipeline) → ausschließlich [`requirements-export.md`](./requirements-export.md). **Kamera-Quick-Auswahl (Views + Slots) → Top Main**, nicht Right Sub. **Left Main** = Bibliotheken — **Ziel:** Scenes, Environments, **Light rigs**, Assets, Images, Colors, Materials; **aktuell:** **Environments**, **Light rigs** (live), Assets, Images, Colors, Materials (`shell-nav.ts` (`src/ui/shell/`); Scenes folgt). **Left Sub** = Listen + Apply/Save (`EnvironmentsPanel`, `ColorsPanel`, …). Konkrete Feature-Panels → jeweilige Requirement-Datei.
+**Description:** Vorläufige Zuordnung — kann sich verschieben, Struktur (scroll + sections) bleibt: **Right Main** = Nav-Rail (**Scene**, **Environment**, **Camera**, **Lighting**, **Physics**, **Export** — kein Ground). **Right Sub** = Detail zum gewählten Nav-Punkt (`EnvironmentSubPanel` inkl. Ground-Sektion, `CameraSubPanel`, `PhysicsSubPanel`, `ExportSubPanel`, …). **Physics Sub:** **World physics** (Start / Freeze-Toggle / Reset), **Test** (Rigid fall), **Gravity scale** — Details → [`requirements-physics.md`](./requirements-physics.md). **Export**-Inhalt (Format, Ground-Catcher, Pipeline) → ausschließlich [`requirements-export.md`](./requirements-export.md). **Kamera-Quick-Auswahl (Views + Slots) → Top Main**, nicht Right Sub. **Left Main** = Bibliotheken — **Ziel:** Scenes, Environments, **Light rigs**, Assets, Images, Colors, Materials; **aktuell:** **Environments**, **Light rigs** (live), Assets, Images, Colors, Materials (`shell-nav.ts` (`src/ui/shell/`); Scenes folgt). **Left Sub** = Listen + Apply/Save (`EnvironmentsPanel`, `ColorsPanel`, …). Konkrete Feature-Panels → jeweilige Requirement-Datei.
 
 ---
 
 **Category:** App Layout  
 **Title:** Main-Nav + Sub-Detail (entschieden)  
-**Description:** **Main** (außen) = **Navigations-Rail**: Hauptbereiche mit Icon + Label, wählbar; **einklappbar auf Icon-only**. **Sub** (innen, am Viewport) = **Einstellungen/Inhalt** des gewählten Hauptbereichs — scrollbar, Formular/Liste/Presets. Kein Accordion-Mehrfach-Stack im Main. Links und rechts gleiches Muster. Demo → [`requirements-demo.md`](./requirements-demo.md).
+**Description:** **Main** (außen) = **Navigations-Rail**: Hauptbereiche mit Icon + Label, wählbar; **einklappbar auf Icon-only**. **Sub** (innen, am Viewport) = **Einstellungen/Inhalt** des gewählten Hauptbereichs — scrollbar, Formular/Liste/Presets. Kein Accordion-Mehrfach-Stack im Main. Links und rechts gleiches Muster. Shell-Details → [`requirements-look-and-feel.md`](./requirements-look-and-feel.md).
 
 ---
+
+**Category:** App Layout  
+**Title:** Sub-Panel — Collapse (Shell & Detail)  
+**Description:** **Left Sub** und **Right Sub** unabhängig voneinander und von Main **vollständig einklappbar** (`0px` via `--left-sub-width` / `--right-sub-width` in `AppShell`). **Hierarchie:** (1) **Main** — `main-nav__collapse` unten; beim Einklappen zusätzlich **Sub derselben Seite** schließen. (2) **Sub (Shell)** — gesamte Sub-Spalte zu (Liste + Detail); Schließen über **linken** Button in `sub-panel__collapse-row` (spaltenbündig unter Primary). (3) **Detail (Sub-Sub)** — nur Editor-Spalte im Split zu; **rechter** Button in derselben Zeile. **Wieder öffnen Sub:** Klick auf **Main-Nav-Eintrag** (öffnet Sub, auch bei bereits aktivem Tab). **Kein** Reopen-Streifen am Viewport. Selection im Store bleibt bei Sub- und Detail-Close. Session-State in `AppShell` (Sub) bzw. lokal im Feature-Panel (Detail, z. B. `MaterialsPanel`). Add-/Action-Footer **oberhalb** der Collapse-Zeile (`sub-panel__footer` oder `sub-panel-split__primary-footer`).
+
+---
+
+**Category:** App Layout  
+**Title:** Sub-Panel — List + Detail Split  
+**Description:** **Kein** drittes Shell-Segment — **Primary | Detail** horizontal **in** der Sub-Spalte (`SubPanel` `layout="split"`, `SubPanelSplit`). **Primary** links (zur Main-Nav), **Detail** rechts (zum Viewport); auf der rechten Seite spiegelbildlich (Primary am Viewport). Je Spalte eigener Scroll (`sub-panel-split__scroll`); Sub-Header sticky. **Breite:** Stack **220px**; Split mit offenem Detail **320px** (`data-left-sub-split` / `--panel-sub-split-total-width`); nur Primary **220px**. Wheel in Panels stoppt Propagation. **Split:** **Materials** (live). **Geplant gleiches Muster:** Colors, Images (Left); Scene (Right). **Stack:** Camera, Physics, Export, Environment, Assets; Environments / Light rigs / Scenes nur Primary. UI-Bausteine → [`requirements-architecture.md`](./requirements-architecture.md); CSS → [`requirements-look-and-feel.md`](./requirements-look-and-feel.md).
+
+---
+
+**Category:** App Layout  
+**Title:** Environment Sub-Panel — Viewport helpers (Sektion)  
+**Description:** **Stack**-Panel **Environment:** nach den vier `scene-entity-block`s (Sky … Ground) eine flache Sektion **Viewport helpers** (Checkboxen, kein Eye-Header) — Spec → [`requirements-environment.md`](./requirements-environment.md). **Light fixtures**-Sichtbarkeit → **Lighting** Sub-Panel, nicht hier.
+
+---
+
+**Category:** App Layout  
+**Title:** Environment Sub-Panel — Viewport helpers (scene-entity-block)  
+**Description:** **Viewport helpers** im Environment-`panel-stack` als **`scene-entity-block`** (fünfter Block nach Ground) — aufklappbar, Eye schaltet **alle** Helper-Toggles gemeinsam ein/aus (Details → [`requirements-environment.md`](./requirements-environment.md) *Viewport helpers — Panel (scene-entity-block)*). **Light fixtures** bleiben im **Lighting** Sub-Panel.
+

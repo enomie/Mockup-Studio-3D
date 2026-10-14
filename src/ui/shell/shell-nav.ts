@@ -1,4 +1,5 @@
 import {
+  Atom,
   Boxes,
   Camera,
   CloudSun,
@@ -13,11 +14,11 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 
-export type ShellNavItem = {
+export interface ShellNavItem {
   id: string;
   label: string;
   icon: LucideIcon;
-};
+}
 
 export const LEFT_SHELL_NAV: ShellNavItem[] = [
   { id: 'environments', label: 'Environments', icon: CloudSun },
@@ -33,5 +34,6 @@ export const RIGHT_SHELL_NAV: ShellNavItem[] = [
   { id: 'environment', label: 'Environment', icon: Sun },
   { id: 'camera', label: 'Camera', icon: Camera },
   { id: 'lighting', label: 'Lighting', icon: Lightbulb },
+  { id: 'physics', label: 'Physics', icon: Atom },
   { id: 'export', label: 'Export', icon: Download },
 ];

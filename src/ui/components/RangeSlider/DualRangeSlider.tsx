@@ -11,12 +11,12 @@ import {
 } from './dual-range-slider-utils';
 import { SliderValueField } from './SliderValueField';
 
-export type DualRangeValue = {
+export interface DualRangeValue {
   low: number;
   high: number;
-};
+}
 
-type DualRangeSliderProps = {
+interface DualRangeSliderProps {
   label?: string;
   min: number;
   max: number;
@@ -30,7 +30,7 @@ type DualRangeSliderProps = {
   /** Show editable text inputs; decimals = mm precision in meters (e.g. 3 → 8.000 m). */
   valueInputDecimals?: number;
   valueUnit?: string;
-};
+}
 
 type ActiveThumb = 'low' | 'high';
 type DraftField = 'low' | 'high';
@@ -88,10 +88,10 @@ export function DualRangeSlider({
   const emitFromPointer = useCallback(
     (clientX: number, thumb: ActiveThumb): void => {
       const track = trackRef.current;
-      if (!track) return;
+      if (!track) {return;}
 
       const rect = track.getBoundingClientRect();
-      if (rect.width <= 0) return;
+      if (rect.width <= 0) {return;}
 
       const nextValue = ratioToValue(pointerToRatio(clientX, rect), min, max, step);
 
@@ -140,7 +140,7 @@ export function DualRangeSlider({
     setDraftValue(raw);
 
     const parsed = parseInputValue(raw, valueInputDecimals);
-    if (parsed === null) return;
+    if (parsed === null) {return;}
 
     if (field === 'low') {
       const low = clamp(parsed, min, valueHigh - step);
@@ -153,7 +153,7 @@ export function DualRangeSlider({
   };
 
   const handleInputBlur = (field: DraftField): void => {
-    if (draftField !== field) return;
+    if (draftField !== field) {return;}
     commitDraft(field);
   };
 
@@ -161,7 +161,7 @@ export function DualRangeSlider({
     event: React.PointerEvent<HTMLButtonElement>,
     thumb: ActiveThumb,
   ): void => {
-    if (disabled) return;
+    if (disabled) {return;}
     clearDraft();
     event.preventDefault();
     event.currentTarget.setPointerCapture(event.pointerId);
@@ -170,8 +170,8 @@ export function DualRangeSlider({
   };
 
   const handleThumbPointerMove = (event: React.PointerEvent<HTMLButtonElement>): void => {
-    if (disabled || !activeThumb) return;
-    if (!event.currentTarget.hasPointerCapture(event.pointerId)) return;
+    if (disabled || !activeThumb) {return;}
+    if (!event.currentTarget.hasPointerCapture(event.pointerId)) {return;}
     emitFromPointer(event.clientX, activeThumb);
   };
 
@@ -183,13 +183,13 @@ export function DualRangeSlider({
   };
 
   const handleTrackPointerDown = (event: React.PointerEvent<HTMLDivElement>): void => {
-    if (disabled) return;
+    if (disabled) {return;}
     const target = event.target as HTMLElement;
-    if (target.classList.contains('panel-slider__thumb')) return;
+    if (target.classList.contains('panel-slider__thumb')) {return;}
 
     clearDraft();
     const track = trackRef.current;
-    if (!track) return;
+    if (!track) {return;}
 
     const rect = track.getBoundingClientRect();
     const clickValue = ratioToValue(pointerToRatio(event.clientX, rect), min, max, step);
@@ -203,8 +203,8 @@ export function DualRangeSlider({
   };
 
   const handleTrackPointerMove = (event: React.PointerEvent<HTMLDivElement>): void => {
-    if (disabled || !activeThumb) return;
-    if (!event.currentTarget.hasPointerCapture(event.pointerId)) return;
+    if (disabled || !activeThumb) {return;}
+    if (!event.currentTarget.hasPointerCapture(event.pointerId)) {return;}
     emitFromPointer(event.clientX, activeThumb);
   };
 
@@ -253,7 +253,7 @@ export function DualRangeSlider({
           aria-valuemax={valueHigh - step}
           aria-valuenow={valueLow}
           disabled={disabled}
-          onPointerDown={(event) => handleThumbPointerDown(event, 'low')}
+          onPointerDown={(event) => { handleThumbPointerDown(event, 'low'); }}
           onPointerMove={handleThumbPointerMove}
           onPointerUp={handleThumbPointerUp}
           onPointerCancel={handleThumbPointerUp}
@@ -268,7 +268,7 @@ export function DualRangeSlider({
           aria-valuemax={max}
           aria-valuenow={valueHigh}
           disabled={disabled}
-          onPointerDown={(event) => handleThumbPointerDown(event, 'high')}
+          onPointerDown={(event) => { handleThumbPointerDown(event, 'high'); }}
           onPointerMove={handleThumbPointerMove}
           onPointerUp={handleThumbPointerUp}
           onPointerCancel={handleThumbPointerUp}
@@ -284,9 +284,9 @@ export function DualRangeSlider({
             unit={valueUnit}
             invalid={lowInvalid}
             disabled={disabled}
-            onFocus={() => handleInputFocus('low', valueLow)}
-            onChange={(raw) => handleInputChange('low', raw)}
-            onBlur={() => handleInputBlur('low')}
+            onFocus={() => { handleInputFocus('low', valueLow); }}
+            onChange={(raw) => { handleInputChange('low', raw); }}
+            onBlur={() => { handleInputBlur('low'); }}
           />
           <SliderValueField
             id={highInputId}
@@ -295,9 +295,9 @@ export function DualRangeSlider({
             unit={valueUnit}
             invalid={highInvalid}
             disabled={disabled}
-            onFocus={() => handleInputFocus('high', valueHigh)}
-            onChange={(raw) => handleInputChange('high', raw)}
-            onBlur={() => handleInputBlur('high')}
+            onFocus={() => { handleInputFocus('high', valueHigh); }}
+            onChange={(raw) => { handleInputChange('high', raw); }}
+            onBlur={() => { handleInputBlur('high'); }}
           />
         </div>
       ) : (

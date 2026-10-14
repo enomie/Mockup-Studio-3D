@@ -31,13 +31,13 @@ const LABEL_MANTLE_RADIAL_SEGMENTS = 80;
 const LABEL_MANTLE_HEIGHT_SEGMENTS = 24;
 const MANTLE_RADIUS_TOLERANCE = 0.04;
 
-export type CanHullBuildOptions = {
+export interface CanHullBuildOptions {
   params?: BeverageCanParams;
   /** When a label mesh covers the cylindrical band, drop those hull triangles to avoid z-fighting. */
   omitLabelBand?: boolean;
-};
+}
 
-export type BeverageCanMeshBuildInput = {
+export interface BeverageCanMeshBuildInput {
   params: BeverageCanParams;
   sizeScale: number;
   geometryVisibility?: AssetGeometryVisibility;
@@ -47,13 +47,13 @@ export type BeverageCanMeshBuildInput = {
   /** Brushed aluminum — top ring only (never label / print). */
   topRingMetalMaterial: Material;
   labelMaterial: Material;
-};
+}
 
-export type BeverageCanMeshBuildResult = {
+export interface BeverageCanMeshBuildResult {
   bodyMesh: Mesh;
   labelMesh: Mesh | null;
   topRingMesh: Mesh;
-};
+}
 
 export function labelBandYBounds(params: BeverageCanParams): {
   labelY0: number;

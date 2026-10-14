@@ -1,4 +1,4 @@
-import { isBlockAssetKind } from '@/scene/asset-block';
+import { isRigidPrimitiveAssetKind } from '@/scene/rigid-primitive-asset';
 import { isWallAssetKind } from '@/scene/asset-wall';
 import {
   sizeScaleFromFaceHeight,
@@ -20,11 +20,11 @@ import {
   parseSizeScaleInput,
 } from './field-input-helpers';
 
-export type EntityTransformSectionProps = {
+export interface EntityTransformSectionProps {
   entity: AssetEntity;
   faceSize: { width: number; height: number };
   aspect: number;
-};
+}
 
 export function EntityTransformSection({
   entity,
@@ -45,14 +45,14 @@ export function EntityTransformSection({
 
   return (
     <SubPanelSection title="Transform">
-      {!isWallAssetKind(entity.assetKind) && !isBlockAssetKind(entity.assetKind) ? (
+      {!isWallAssetKind(entity.assetKind) && !isRigidPrimitiveAssetKind(entity.assetKind) ? (
         <>
           <PanelAxisField
             label="Size"
             value={entity.sizeScale}
             format={formatSizeScale}
             parse={parseSizeScaleInput}
-            onChange={(value) => setAssetSizeScale(entity.id, value)}
+            onChange={(value) => { setAssetSizeScale(entity.id, value); }}
           />
           <PanelAxisField
             label="Width"
@@ -62,7 +62,7 @@ export function EntityTransformSection({
             parse={parseLengthMetersInput}
             onChange={(value) => {
               const nextScale = sizeScaleFromFaceWidth(entity.assetKind, value);
-              if (nextScale !== null) setAssetSizeScale(entity.id, nextScale);
+              if (nextScale !== null) {setAssetSizeScale(entity.id, nextScale);}
             }}
           />
           <PanelAxisField
@@ -77,7 +77,7 @@ export function EntityTransformSection({
                 value,
                 aspect,
               );
-              if (nextScale !== null) setAssetSizeScale(entity.id, nextScale);
+              if (nextScale !== null) {setAssetSizeScale(entity.id, nextScale);}
             }}
           />
         </>
@@ -88,7 +88,7 @@ export function EntityTransformSection({
         value={entity.transform.position.x}
         format={(value) => formatLengthMeters(value, LENGTH_DECIMALS)}
         parse={parseLengthMetersInput}
-        onChange={(value) => updatePosition('x', value)}
+        onChange={(value) => { updatePosition('x', value); }}
       />
       <PanelAxisField
         label="Pos Y"
@@ -96,7 +96,7 @@ export function EntityTransformSection({
         value={entity.transform.position.y}
         format={(value) => formatLengthMeters(value, LENGTH_DECIMALS)}
         parse={parseLengthMetersInput}
-        onChange={(value) => updatePosition('y', value)}
+        onChange={(value) => { updatePosition('y', value); }}
       />
       <PanelAxisField
         label="Pos Z"
@@ -104,7 +104,7 @@ export function EntityTransformSection({
         value={entity.transform.position.z}
         format={(value) => formatLengthMeters(value, LENGTH_DECIMALS)}
         parse={parseLengthMetersInput}
-        onChange={(value) => updatePosition('z', value)}
+        onChange={(value) => { updatePosition('z', value); }}
       />
       <PanelAxisField
         label="Rot X"
@@ -112,7 +112,7 @@ export function EntityTransformSection({
         value={entity.transform.rotation.x}
         format={formatDegrees}
         parse={parseDegreesInput}
-        onChange={(value) => updateRotation('x', value)}
+        onChange={(value) => { updateRotation('x', value); }}
       />
       <PanelAxisField
         label="Rot Y"
@@ -120,7 +120,7 @@ export function EntityTransformSection({
         value={entity.transform.rotation.y}
         format={formatDegrees}
         parse={parseDegreesInput}
-        onChange={(value) => updateRotation('y', value)}
+        onChange={(value) => { updateRotation('y', value); }}
       />
       <PanelAxisField
         label="Rot Z"
@@ -128,7 +128,7 @@ export function EntityTransformSection({
         value={entity.transform.rotation.z}
         format={formatDegrees}
         parse={parseDegreesInput}
-        onChange={(value) => updateRotation('z', value)}
+        onChange={(value) => { updateRotation('z', value); }}
       />
     </SubPanelSection>
   );

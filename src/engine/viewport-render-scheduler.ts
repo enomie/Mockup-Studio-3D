@@ -14,7 +14,7 @@ export class ViewportRenderScheduler {
   private disposed = false;
 
   private readonly onVisibilityChange = (): void => {
-    if (this.disposed) return;
+    if (this.disposed) {return;}
     if (document.hidden) {
       this.stopLoop();
       return;
@@ -30,13 +30,13 @@ export class ViewportRenderScheduler {
   }
 
   requestRender(): void {
-    if (this.disposed || document.hidden) return;
+    if (this.disposed || document.hidden) {return;}
     this.pendingRender = true;
     this.ensureLoop();
   }
 
   setContinuousRendering(enabled: boolean): void {
-    if (this.disposed) return;
+    if (this.disposed) {return;}
     this.continuousRendering = enabled;
     if (enabled) {
       this.ensureLoop();
@@ -46,21 +46,23 @@ export class ViewportRenderScheduler {
   }
 
   dispose(): void {
-    if (this.disposed) return;
+    if (this.disposed) {return;}
     this.disposed = true;
     document.removeEventListener('visibilitychange', this.onVisibilityChange);
     this.stopLoop();
   }
 
   private ensureLoop(): void {
-    if (this.disposed || document.hidden) return;
-    if (this.loopRunning) return;
+    if (this.disposed || document.hidden) {return;}
+    if (this.loopRunning) {return;}
     this.loopRunning = true;
-    this.renderer.setAnimationLoop((time) => this.tick(time));
+    void this.renderer.setAnimationLoop((time) => {
+      this.tick(time);
+    });
   }
 
   private tick(time: number): void {
-    if (this.disposed) return;
+    if (this.disposed) {return;}
 
     if (!this.pendingRender && !this.continuousRendering) {
       this.stopLoop();
@@ -74,9 +76,7 @@ export class ViewportRenderScheduler {
       this.onFrame(time);
     }
 
-    if (!this.pendingRender && !this.continuousRendering) {
-      this.stopLoop();
-    }
+    this.evaluateStopLoop();
   }
 
   private evaluateStopLoop(): void {
@@ -86,8 +86,8 @@ export class ViewportRenderScheduler {
   }
 
   private stopLoop(): void {
-    if (!this.loopRunning) return;
+    if (!this.loopRunning) {return;}
     this.loopRunning = false;
-    this.renderer.setAnimationLoop(null);
+    void this.renderer.setAnimationLoop(null);
   }
 }

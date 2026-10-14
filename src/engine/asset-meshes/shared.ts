@@ -65,7 +65,7 @@ export function resolveFaceTint(
   faces: AssetFaces,
 ): Rgb {
   if (materials.faceTints?.[faceId]) {
-    return materials.faceTints[faceId]!;
+    return materials.faceTints[faceId];
   }
 
   if (faceId === 'back' && faces.back.mode === 'color') {

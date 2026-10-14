@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rapier Physics & TSL High-Res Cloth Simulation</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background-color: #0b0e14;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      user-select: none;
+    }
+    #canvas-container {
+      position: absolute;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      display: block;
+      z-index: 1;
+    }
+    .glass-card {
+      background: rgba(15, 23, 42, 0.82);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+  </style>
+
+  <script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.webgpu.js",
+        "three/webgpu": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.webgpu.js",
+        "three/tsl": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.webgpu.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body class="text-slate-100">
+
+  <!-- 3D Canvas Target -->
+  <div id="canvas-container"></div>
+
+  <div class="fixed top-4 left-4 z-20 glass-card p-5 rounded-2xl w-84 max-w-[calc(100vw-2rem)] shadow-2xl text-xs space-y-4">
+    <!-- Header -->
+    <div class="flex items-center justify-between border-b border-slate-700/60 pb-3">
+      <div>
+        <h1 class="font-bold text-sm text-sky-400 flex items-center gap-1.5">
+          <svg class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+          </svg>
+          TSL Stoff & Rapier3D
+        </h1>
+        <p id="engine-status" class="text-[10px] text-emerald-400 font-mono mt-0.5">Initialisiere WebGPU & Physik...</p>
+      </div>
+      <span id="fps-badge" class="px-2 py-0.5 text-[11px] font-mono bg-sky-500/10 text-sky-300 border border-sky-500/30 rounded-md">60 FPS</span>
+    </div>
+
+    <!-- Cloth Grid Resolution -->
+    <div>
+      <div class="flex justify-between items-center mb-1.5">
+        <label class="text-slate-300 font-medium">Stoff-Auflösung (Grid):</label>
+        <span id="res-indicator" class="font-mono text-sky-400 font-semibold">60×60</span>
+      </div>
+      <div class="grid grid-cols-4 gap-1.5">
+        <button data-res="32" class="res-btn py-1.5 px-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono transition text-center">32²</button>
+        <button data-res="48" class="res-btn py-1.5 px-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono transition text-center">48²</button>
+        <button data-res="60" class="res-btn py-1.5 px-1 rounded-lg bg-sky-600 text-white font-bold font-mono transition text-center border border-sky-400/50">60²</button>
+        <button data-res="80" class="res-btn py-1.5 px-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono transition text-center">80²</button>
+      </div>
+    </div>
+
+    <!-- PBD Iterations / Stiffness -->
+    <div>
+      <div class="flex justify-between text-slate-300 mb-1">
+        <span>Steifigkeit (PBD Iterationen):</span>
+        <span id="val-stiffness" class="font-mono text-sky-400">10x</span>
+      </div>
+      <input type="range" id="input-stiffness" min="4" max="22" value="10" step="2" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-sky-500">
+    </div>
+
+    <!-- Cloth Thickness / Edge Margin -->
+    <div>
+      <div class="flex justify-between text-slate-300 mb-1">
+        <span>Kantenabstand (Stoff-Dicke):</span>
+        <span id="val-thickness" class="font-mono text-sky-400">0.035</span>
+      </div>
+      <input type="range" id="input-thickness" min="0.015" max="0.08" value="0.035" step="0.005" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-sky-500">
+    </div>
+
+    <!-- Wind turbulence -->
+    <div>
+      <div class="flex items-center justify-between mb-1">
+        <label for="input-wind" class="text-slate-300 flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" id="input-wind" class="rounded bg-slate-800 border-slate-600 text-sky-500 focus:ring-0">
+          <span>Wind-Brise</span>
+        </label>
+        <span id="val-wind" class="font-mono text-sky-400">1.2</span>
+      </div>
+      <input type="range" id="input-wind-force" min="0.2" max="4.0" value="1.2" step="0.2" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-sky-500">
+    </div>
+
+    <!-- TSL Material Style Preset -->
+    <div>
+      <label class="block text-slate-300 mb-1">TSL Stoff-Gewebe Textur:</label>
+      <select id="select-material" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-200 focus:outline-none focus:border-sky-500">
+        <option value="red_velvet" selected>Roter Edelsamt (Velvet TSL)</option>
+        <option value="indigo_denim">Indigo Twill Denim (TSL Weave)</option>
+        <option value="silk_gold">Goldseide Glanz (Satin TSL)</option>
+        <option value="cyber_grid">Matrix Grid (Procedural Wire)</option>
+      </select>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="pt-1 flex gap-2">
+      <button id="btn-drop" class="flex-1 bg-sky-600 hover:bg-sky-500 active:scale-95 text-white font-medium py-2 px-3 rounded-xl shadow-lg shadow-sky-600/30 transition flex items-center justify-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/>
+        </svg>
+        Tuch neu fallen lassen
+      </button>
+    </div>
+
+    <!-- Simulation Statistics -->
+    <div class="pt-2 border-t border-slate-700/60 text-[11px] text-slate-400 flex justify-between">
+      <span>Partikel: <strong id="stat-particles" class="text-slate-200">3,600</strong></span>
+      <span>Constraints: <strong id="stat-constraints" class="text-slate-200">14,042</strong></span>
+    </div>
+  </div>
+
+  <!-- Instruction Hint -->
+  <div class="fixed bottom-4 left-1/2 -translate-x-1/2 z-10 glass-card px-4 py-2 rounded-full text-xs text-slate-300 pointer-events-none shadow-xl border border-slate-700/50 flex items-center gap-2">
+    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+    Maus: Linksklick drehen | Rechtsklick verschieben | Scrollen zoomen
+  </div>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    // Application State
+    let renderer, scene, camera, controls;
+    let rapierWorld = null;
+    let RAPIER = null;
+
+    let cubeMesh1, cubeMesh2;
+    let cubeBody1 = null, cubeBody2 = null;
+    let clothMesh, clothGeometry, clothPhysics;
+
+    // Simulation Parameters
+    let clothRes = 60; // Default resolution (60x60 = 3600 particles)
+    const clothSize = 4.8;
+    let pbdIterations = 10;
+    let clothMargin = 0.035; // Prevents cube edge penetration
+    let windActive = false;
+    let windStrength = 1.2;
+    let currentPreset = 'red_velvet';
+
+    // Cubes physical dimensions & positions
+    const cube1Config = {
+      size: [0.85, 0.85, 0.85],
+      pos: [-0.65, 0.425, 0.25],
+      rot: [0.0, 0.38, 0.0, 0.925]
+    };
+    const cube2Config = {
+      size: [0.7, 0.7, 0.7],
+      pos: [0.75, 0.35, -0.3],
+      rot: [0.12, -0.15, 0.05, 0.98]
+    };
+
+    async function initRapier() {
+      const statusEl = document.getElementById('engine-status');
+      
+      const cdnList = [
+        'https://cdn.skypack.dev/@dimforge/rapier3d-compat',
+        'https://esm.sh/@dimforge/rapier3d-compat@0.12.0',
+        'https://cdn.jsdelivr.net/npm/@dimforge/rapier3d-compat@0.12.0/+esm'
+      ];
+
+      for (const url of cdnList) {
+        try {
+          const mod = await import(url);
+          const r = mod.default || mod;
+          await r.init();
+          RAPIER = r;
+          console.log('Rapier3D WASM erfolgreich geladen von:', url);
+          break;
+        } catch (err) {
+          console.warn('Rapier-CDN-Versuch fehlgeschlagen:', url, err);
+        }
+      }
+
+      if (RAPIER) {
+        const gravity = new RAPIER.Vector3(0.0, -9.81, 0.0);
+        rapierWorld = new RAPIER.World(gravity);
+
+        // Ground Static Collider
+        const groundDesc = RAPIER.ColliderDesc.cuboid(15.0, 0.1, 15.0).setTranslation(0, -0.1, 0);
+        rapierWorld.createCollider(groundDesc);
+
+        // Cube 1 Body
+        const bodyDesc1 = RAPIER.RigidBodyDesc.dynamic()
+          .setTranslation(...cube1Config.pos)
+          .setRotation({ x: cube1Config.rot[0], y: cube1Config.rot[1], z: cube1Config.rot[2], w: cube1Config.rot[3] });
+        cubeBody1 = rapierWorld.createRigidBody(bodyDesc1);
+        const colDesc1 = RAPIER.ColliderDesc.cuboid(cube1Config.size[0] / 2, cube1Config.size[1] / 2, cube1Config.size[2] / 2)
+          .setFriction(0.6).setRestitution(0.05);
+        rapierWorld.createCollider(colDesc1, cubeBody1);
+
+        // Cube 2 Body
+        const bodyDesc2 = RAPIER.RigidBodyDesc.dynamic()
+          .setTranslation(...cube2Config.pos)
+          .setRotation({ x: cube2Config.rot[0], y: cube2Config.rot[1], z: cube2Config.rot[2], w: cube2Config.rot[3] });
+        cubeBody2 = rapierWorld.createRigidBody(bodyDesc2);
+        const colDesc2 = RAPIER.ColliderDesc.cuboid(cube2Config.size[0] / 2, cube2Config.size[1] / 2, cube2Config.size[2] / 2)
+          .setFriction(0.6).setRestitution(0.05);
+        rapierWorld.createCollider(colDesc2, cubeBody2);
+
+        statusEl.innerText = "Rapier3D (WASM) & TSL Aktiv";
+        statusEl.className = "text-[10px] text-emerald-400 font-mono mt-0.5";
+      } else {
+        // Built-in Rigid Body fallback
+        statusEl.innerText = "Rigid-Body Solver & TSL Aktiv";
+        statusEl.className = "text-[10px] text-amber-400 font-mono mt-0.5";
+      }
+    }
+
+    function createClothMaterial(stylePreset) {
+      let material;
+
+      try {
+        // Build TSL Material with Three.js Node System
+        material = new THREE.MeshPhysicalNodeMaterial({
+          side: THREE.DoubleSide,
+          roughness: 0.65,
+          metalness: 0.05,
+          clearcoat: 0.35,
+          clearcoatRoughness: 0.4
+        });
+
+        // Use TSL Node constructs
+        const uvNode = THREE.uv ? THREE.uv() : null;
+
+        if (uvNode && THREE.fn && THREE.vec3 && THREE.float && THREE.sin && THREE.mix) {
+          const proceduralWeave = THREE.fn(([uvCoords]) => {
+            const freq = THREE.float(180.0);
+            const u = uvCoords.x;
+            const v = uvCoords.y;
+
+            // Micro-weave interlacing threads
+            const threadU = THREE.sin(THREE.mul(u, freq));
+            const threadV = THREE.cos(THREE.mul(v, freq));
+            const weave = THREE.mul(threadU, threadV);
+
+            // Palette colors according to preset
+            let colA, colB;
+            if (stylePreset === 'indigo_denim') {
+              colA = THREE.vec3(0.1, 0.22, 0.48); // Denim Blue
+              colB = THREE.vec3(0.25, 0.45, 0.75); // Light Thread
+            } else if (stylePreset === 'silk_gold') {
+              colA = THREE.vec3(0.85, 0.65, 0.18); // Gold Silk
+              colB = THREE.vec3(1.0, 0.88, 0.45); // Highlight
+            } else if (stylePreset === 'cyber_grid') {
+              colA = THREE.vec3(0.05, 0.08, 0.12); // Dark Navy
+              colB = THREE.vec3(0.15, 0.85, 0.95); // Cyan Glow
+            } else {
+              // red_velvet
+              colA = THREE.vec3(0.68, 0.06, 0.14); // Royal Deep Red
+              colB = THREE.vec3(0.92, 0.22, 0.3); // Velvet Sheen
+            }
+
+            const blend = THREE.add(THREE.mul(weave, THREE.float(0.3)), THREE.float(0.5));
+            return THREE.mix(colA, colB, blend);
+          });
+
+          material.colorNode = proceduralWeave(uvNode);
+        } else {
+          throw new Error('TSL nodes not supported on current renderer profile');
+        }
+      } catch (err) {
+        console.warn('TSL fallback to procedural Canvas/Standard Material:', err);
+        // Fallback procedural texture
+        const canvas = document.createElement('canvas');
+        canvas.width = 256;
+        canvas.height = 256;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = stylePreset === 'indigo_denim' ? '#1d3557' : (stylePreset === 'silk_gold' ? '#c59b27' : '#9e1a2d');
+        ctx.fillRect(0, 0, 256, 256);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.18)';
+        for (let y = 0; y < 256; y += 4) {
+          ctx.fillRect(0, y, 256, 2);
+          ctx.fillRect(y, 0, 2, 256);
+        }
+        const tex = new THREE.CanvasTexture(canvas);
+        tex.wrapS = THREE.RepeatWrapping;
+        tex.wrapT = THREE.RepeatWrapping;
+        tex.repeat.set(12, 12);
+
+        material = new THREE.MeshStandardMaterial({
+          map: tex,
+          side: THREE.DoubleSide,
+          roughness: 0.6,
+          metalness: 0.1
+        });
+      }
+
+      return material;
+    }
+
+    class PBDClothSolver {
+      constructor(width, length, resX, resY) {
+        this.resX = resX;
+        this.resY = resY;
+        this.count = resX * resY;
+
+        this.pos = new Float32Array(this.count * 3);
+        this.prev = new Float32Array(this.count * 3);
+        this.invMass = new Float32Array(this.count);
+
+        const dx = width / (resX - 1);
+        const dz = length / (resY - 1);
+
+        // Place horizontal cloth above the ground and cubes
+        const initialHeight = 2.8;
+
+        for (let j = 0; j < resY; j++) {
+          for (let i = 0; i < resX; i++) {
+            const idx = (j * resX + i) * 3;
+            const x = (i - (resX - 1) / 2) * dx;
+            const z = (j - (resY - 1) / 2) * dz;
+            // Slight initial curl for organic draping
+            const y = initialHeight + Math.sin(x * 1.5) * 0.05 + Math.cos(z * 1.5) * 0.05;
+
+            this.pos[idx] = x;
+            this.pos[idx + 1] = y;
+            this.pos[idx + 2] = z;
+
+            this.prev[idx] = x;
+            this.prev[idx + 1] = y;
+            this.prev[idx + 2] = z;
+
+            this.invMass[j * resX + i] = 1.0;
+          }
+        }
+
+        // Generate Distance Constraints: Structural, Shear & Bending
+        this.constraints = [];
+        const addConstraint = (p1, p2, stiffness = 1.0) => {
+          const i1 = p1 * 3;
+          const i2 = p2 * 3;
+          const dist = Math.hypot(
+            this.pos[i1] - this.pos[i2],
+            this.pos[i1 + 1] - this.pos[i2 + 1],
+            this.pos[i1 + 2] - this.pos[i2 + 2]
+          );
+          this.constraints.push({ p1, p2, rest: dist, stiff: stiffness });
+        };
+
+        for (let j = 0; j < resY; j++) {
+          for (let i = 0; i < resX; i++) {
+            const p = j * resX + i;
+            // 1. Structural constraints
+            if (i < resX - 1) addConstraint(p, p + 1, 1.0);
+            if (j < resY - 1) addConstraint(p, p + resX, 1.0);
+
+            // 2. Shear constraints (diagonals)
+            if (i < resX - 1 && j < resY - 1) {
+              addConstraint(p, p + resX + 1, 0.75);
+              addConstraint(p + 1, p + resX, 0.75);
+            }
+
+            // 3. Bending constraints (skip 1 vertex for natural cloth stiffness)
+            if (i < resX - 2) addConstraint(p, p + 2, 0.45);
+            if (j < resY - 2) addConstraint(p, p + 2 * resX, 0.45);
+          }
+        }
+      }
+
+      step(dt, iterations, cubes) {
+        const subDt = dt / iterations;
+        const damping = 0.991;
+        const gravity = -9.81;
+        const time = performance.now() * 0.001;
+
+        // Precalculate cube transformation matrices
+        const boxData = cubes.map(c => {
+          const invRot = c.quat.clone().invert();
+          return {
+            pos: c.pos,
+            quat: c.quat,
+            invRot: invRot,
+            half: c.half
+          };
+        });
+
+        const tempPt = new THREE.Vector3();
+
+        for (let iter = 0; iter < iterations; iter++) {
+          // 1. Verlet Integration & External Forces
+          for (let i = 0; i < this.count; i++) {
+            const idx = i * 3;
+
+            let vx = (this.pos[idx] - this.prev[idx]) * damping;
+            let vy = (this.pos[idx + 1] - this.prev[idx + 1]) * damping;
+            let vz = (this.pos[idx + 2] - this.prev[idx + 2]) * damping;
+
+            // Wind force simulation
+            if (windActive) {
+              const turbulence = Math.sin(time * 2.5 + this.pos[idx + 1] * 3.0) * windStrength * 0.12;
+              vx += turbulence * subDt;
+              vz += (Math.cos(time * 1.8 + this.pos[idx] * 2.0) * windStrength * 0.1) * subDt;
+            }
+
+            vy += gravity * subDt * subDt;
+
+            this.prev[idx] = this.pos[idx];
+            this.prev[idx + 1] = this.pos[idx + 1];
+            this.prev[idx + 2] = this.pos[idx + 2];
+
+            this.pos[idx] += vx;
+            this.pos[idx + 1] += vy;
+            this.pos[idx + 2] += vz;
+          }
+
+          // 2. Solve Distance Constraints
+          const numConstraints = this.constraints.length;
+          for (let c = 0; c < numConstraints; c++) {
+            const con = this.constraints[c];
+            const i1 = con.p1 * 3;
+            const i2 = con.p2 * 3;
+
+            const dx = this.pos[i2] - this.pos[i1];
+            const dy = this.pos[i2 + 1] - this.pos[i1 + 1];
+            const dz = this.pos[i2 + 2] - this.pos[i1 + 2];
+
+            const current = Math.hypot(dx, dy, dz) + 1e-7;
+            const factor = ((current - con.rest) / current) * 0.5 * con.stiff;
+
+            const ox = dx * factor;
+            const oy = dy * factor;
+            const oz = dz * factor;
+
+            this.pos[i1] += ox;
+            this.pos[i1 + 1] += oy;
+            this.pos[i1 + 2] += oz;
+
+            this.pos[i2] -= ox;
+            this.pos[i2 + 1] -= oy;
+            this.pos[i2 + 2] -= oz;
+          }
+
+          // 3. Collisions with Ground & the 2 Cubes
+          for (let i = 0; i < this.count; i++) {
+            const idx = i * 3;
+
+            // Ground floor boundary with cloth thickness
+            const groundFloor = 0.015 + clothMargin * 0.3;
+            if (this.pos[idx + 1] < groundFloor) {
+              this.pos[idx + 1] = groundFloor;
+              // Ground friction
+              this.pos[idx] = this.prev[idx] + (this.pos[idx] - this.prev[idx]) * 0.75;
+              this.pos[idx + 2] = this.prev[idx + 2] + (this.pos[idx + 2] - this.prev[idx + 2]) * 0.75;
+            }
+
+            // Robust Rounded-Box SDF Collision against Cube Edges & Corners
+            tempPt.set(this.pos[idx], this.pos[idx + 1], this.pos[idx + 2]);
+
+            for (let b = 0; b < boxData.length; b++) {
+              const box = boxData[b];
+              
+              // Project into local coordinate space of the cube
+              const localPt = tempPt.clone().sub(box.pos).applyQuaternion(box.invRot);
+              const h = box.half;
+
+              // Find closest point 'c' on the inner sharp box
+              const cx = Math.max(-h.x, Math.min(h.x, localPt.x));
+              const cy = Math.max(-h.y, Math.min(h.y, localPt.y));
+              const cz = Math.max(-h.z, Math.min(h.z, localPt.z));
+
+              const dx = localPt.x - cx;
+              const dy = localPt.y - cy;
+              const dz = localPt.z - cz;
+              const distSq = dx * dx + dy * dy + dz * dz;
+
+              let hasCollision = false;
+
+              if (distSq > 1e-8) {
+                // Point is outside or near edges/corners of the inner box
+                const dist = Math.sqrt(distSq);
+                if (dist < clothMargin) {
+                  // Push out to the rounded edge/corner envelope
+                  const factor = clothMargin / dist;
+                  localPt.x = cx + dx * factor;
+                  localPt.y = cy + dy * factor;
+                  localPt.z = cz + dz * factor;
+                  hasCollision = true;
+                }
+              } else {
+                // Point is completely INSIDE the inner box: find closest face
+                const penX = h.x - Math.abs(localPt.x);
+                const penY = h.y - Math.abs(localPt.y);
+                const penZ = h.z - Math.abs(localPt.z);
+                const minPen = Math.min(penX, Math.min(penY, penZ));
+
+                if (minPen === penY) {
+                  localPt.y = Math.sign(localPt.y || 1) * (h.y + clothMargin);
+                } else if (minPen === penX) {
+                  localPt.x = Math.sign(localPt.x || 1) * (h.x + clothMargin);
+                } else {
+                  localPt.z = Math.sign(localPt.z || 1) * (h.z + clothMargin);
+                }
+                hasCollision = true;
+              }
+
+              if (hasCollision) {
+                // Project back into world space
+                const resolved = localPt.applyQuaternion(box.quat).add(box.pos);
+                this.pos[idx] = resolved.x;
+                this.pos[idx + 1] = resolved.y;
+                this.pos[idx + 2] = resolved.z;
+
+                // Apply surface friction so cloth drapes naturally around corners
+                this.prev[idx] += (this.pos[idx] - this.prev[idx]) * 0.35;
+                this.prev[idx + 1] += (this.pos[idx + 1] - this.prev[idx + 1]) * 0.2;
+                this.prev[idx + 2] += (this.pos[idx + 2] - this.prev[idx + 2]) * 0.35;
+              }
+            }
+          }
+        }
+      }
+
+      updateGeometry(geom) {
+        const posAttr = geom.attributes.position;
+        posAttr.array.set(this.pos);
+        posAttr.needsUpdate = true;
+        geom.computeVertexNormals();
+      }
+    }
+
+    function rebuildCloth(resolution) {
+      clothRes = resolution;
+
+      if (clothMesh) {
+        scene.remove(clothMesh);
+        clothGeometry.dispose();
+      }
+
+      clothGeometry = new THREE.PlaneGeometry(clothSize, clothSize, clothRes - 1, clothRes - 1);
+      clothGeometry.rotateX(-Math.PI / 2); // Lay horizontal
+
+      clothPhysics = new PBDClothSolver(clothSize, clothSize, clothRes, clothRes);
+      const clothMat = createClothMaterial(currentPreset);
+
+      clothMesh = new THREE.Mesh(clothGeometry, clothMat);
+      clothMesh.castShadow = true;
+      clothMesh.receiveShadow = true;
+      scene.add(clothMesh);
+
+      // Update UI numbers
+      document.getElementById('stat-particles').innerText = clothPhysics.count.toLocaleString();
+      document.getElementById('stat-constraints').innerText = clothPhysics.constraints.length.toLocaleString();
+      document.getElementById('res-indicator').innerText = `${clothRes}×${clothRes}`;
+    }
+
+    async function initScene() {
+      const container = document.getElementById('canvas-container');
+
+      // Initialize WebGPURenderer with automatic WebGL2 backend fallback
+      renderer = new THREE.WebGPURenderer({ antialias: true });
+      await renderer.init(); // MANDATORY in Three.js WebGPU pipeline!
+
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.15;
+      container.appendChild(renderer.domElement);
+
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x0e131f);
+      scene.fog = new THREE.FogExp2(0x0e131f, 0.05);
+
+      camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 50);
+      camera.position.set(3.8, 3.8, 5.2);
+
+      controls = new OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.05;
+      controls.maxPolarAngle = Math.PI / 2 - 0.03; // Keep above floor
+      controls.target.set(0, 0.7, 0);
+
+      // Lights
+      const hemiLight = new THREE.HemisphereLight(0xe0f2fe, 0x0f172a, 0.6);
+      scene.add(hemiLight);
+
+      const mainLight = new THREE.DirectionalLight(0xfff7ed, 2.2);
+      mainLight.position.set(4, 7, 3);
+      mainLight.castShadow = true;
+      mainLight.shadow.mapSize.width = 2048;
+      mainLight.shadow.mapSize.height = 2048;
+      mainLight.shadow.bias = -0.0003;
+      scene.add(mainLight);
+
+      const blueBackLight = new THREE.DirectionalLight(0x38bdf8, 1.2);
+      blueBackLight.position.set(-4, 3, -3);
+      scene.add(blueBackLight);
+
+      // Floor Geometry & Grid
+      const groundGeo = new THREE.PlaneGeometry(24, 24);
+      const groundMat = new THREE.MeshStandardMaterial({
+        color: 0x161c28,
+        roughness: 0.85,
+        metalness: 0.15
+      });
+      const ground = new THREE.Mesh(groundGeo, groundMat);
+      ground.rotation.x = -Math.PI / 2;
+      ground.receiveShadow = true;
+      scene.add(ground);
+
+      const grid = new THREE.GridHelper(24, 32, 0x334155, 0x1e293b);
+      grid.position.y = 0.002;
+      scene.add(grid);
+
+      // Cube 1 (Cyan)
+      const cube1Geo = new THREE.BoxGeometry(...cube1Config.size);
+      const cube1Mat = new THREE.MeshStandardMaterial({
+        color: 0x0ea5e9,
+        roughness: 0.25,
+        metalness: 0.4
+      });
+      cubeMesh1 = new THREE.Mesh(cube1Geo, cube1Mat);
+      cubeMesh1.castShadow = true;
+      cubeMesh1.receiveShadow = true;
+      cubeMesh1.position.set(...cube1Config.pos);
+      cubeMesh1.quaternion.set(...cube1Config.rot);
+      scene.add(cubeMesh1);
+
+      // Cube 2 (Rose)
+      const cube2Geo = new THREE.BoxGeometry(...cube2Config.size);
+      const cube2Mat = new THREE.MeshStandardMaterial({
+        color: 0xf43f5e,
+        roughness: 0.25,
+        metalness: 0.4
+      });
+      cubeMesh2 = new THREE.Mesh(cube2Geo, cube2Mat);
+      cubeMesh2.castShadow = true;
+      cubeMesh2.receiveShadow = true;
+      cubeMesh2.position.set(...cube2Config.pos);
+      cubeMesh2.quaternion.set(...cube2Config.rot);
+      scene.add(cubeMesh2);
+
+      // Initial cloth build
+      rebuildCloth(clothRes);
+
+      window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+    }
+
+    function setupInteractions() {
+      // Resolution buttons
+      document.querySelectorAll('.res-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          document.querySelectorAll('.res-btn').forEach(b => {
+            b.className = "res-btn py-1.5 px-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono transition text-center";
+          });
+          e.target.className = "res-btn py-1.5 px-1 rounded-lg bg-sky-600 text-white font-bold font-mono transition text-center border border-sky-400/50";
+          const res = parseInt(e.target.dataset.res);
+          rebuildCloth(res);
+        });
+      });
+
+      // Stiffness Slider
+      document.getElementById('input-stiffness').addEventListener('input', (e) => {
+        pbdIterations = parseInt(e.target.value);
+        document.getElementById('val-stiffness').innerText = `${pbdIterations}x`;
+      });
+
+      // Thickness / Edge Margin Slider
+      document.getElementById('input-thickness').addEventListener('input', (e) => {
+        clothMargin = parseFloat(e.target.value);
+        document.getElementById('val-thickness').innerText = clothMargin.toFixed(3);
+      });
+
+      // Wind Toggles
+      document.getElementById('input-wind').addEventListener('change', (e) => {
+        windActive = e.target.checked;
+      });
+      document.getElementById('input-wind-force').addEventListener('input', (e) => {
+        windStrength = parseFloat(e.target.value);
+        document.getElementById('val-wind').innerText = windStrength.toFixed(1);
+      });
+
+      // TSL Material Selection
+      document.getElementById('select-material').addEventListener('change', (e) => {
+        currentPreset = e.target.value;
+        if (clothMesh) {
+          clothMesh.material = createClothMaterial(currentPreset);
+        }
+      });
+
+      // Drop / Reset Button
+      document.getElementById('btn-drop').addEventListener('click', () => {
+        // Reset Rapier physics bodies
+        if (cubeBody1 && cubeBody2) {
+          cubeBody1.setTranslation({ x: cube1Config.pos[0], y: cube1Config.pos[1], z: cube1Config.pos[2] }, true);
+          cubeBody1.setRotation({ x: cube1Config.rot[0], y: cube1Config.rot[1], z: cube1Config.rot[2], w: cube1Config.rot[3] }, true);
+          cubeBody1.setLinvel({ x: 0, y: 0, z: 0 }, true);
+          cubeBody1.setAngvel({ x: 0, y: 0, z: 0 }, true);
+
+          cubeBody2.setTranslation({ x: cube2Config.pos[0], y: cube2Config.pos[1], z: cube2Config.pos[2] }, true);
+          cubeBody2.setRotation({ x: cube2Config.rot[0], y: cube2Config.rot[1], z: cube2Config.rot[2], w: cube2Config.rot[3] }, true);
+          cubeBody2.setLinvel({ x: 0, y: 0, z: 0 }, true);
+          cubeBody2.setAngvel({ x: 0, y: 0, z: 0 }, true);
+        }
+        rebuildCloth(clothRes);
+      });
+    }
+
+    let frameCounter = 0;
+    let lastFpsTime = performance.now();
+    const fpsBadge = document.getElementById('fps-badge');
+
+    function animate() {
+      // Step Rapier Physics World
+      if (rapierWorld) {
+        rapierWorld.step();
+
+        const t1 = cubeBody1.translation();
+        const r1 = cubeBody1.rotation();
+        cubeMesh1.position.set(t1.x, t1.y, t1.z);
+        cubeMesh1.quaternion.set(r1.x, r1.y, r1.z, r1.w);
+
+        const t2 = cubeBody2.translation();
+        const r2 = cubeBody2.rotation();
+        cubeMesh2.position.set(t2.x, t2.y, t2.z);
+        cubeMesh2.quaternion.set(r2.x, r2.y, r2.z, r2.w);
+      }
+
+      // Step Cloth Simulation
+      if (clothPhysics) {
+        // Collect current cube colliders (exact half extents)
+        const cubes = [
+          {
+            pos: cubeMesh1.position,
+            quat: cubeMesh1.quaternion,
+            half: new THREE.Vector3(cube1Config.size[0] / 2, cube1Config.size[1] / 2, cube1Config.size[2] / 2)
+          },
+          {
+            pos: cubeMesh2.position,
+            quat: cubeMesh2.quaternion,
+            half: new THREE.Vector3(cube2Config.size[0] / 2, cube2Config.size[1] / 2, cube2Config.size[2] / 2)
+          }
+        ];
+
+        clothPhysics.step(1 / 60, pbdIterations, cubes);
+        clothPhysics.updateGeometry(clothGeometry);
+      }
+
+      controls.update();
+      renderer.render(scene, camera);
+
+      // FPS Monitoring
+      frameCounter++;
+      const now = performance.now();
+      if (now - lastFpsTime >= 1000) {
+        fpsBadge.innerText = `${frameCounter} FPS`;
+        frameCounter = 0;
+        lastFpsTime = now;
+      }
+    }
+
+    async function start() {
+      try {
+        await initRapier();
+        await initScene();
+        setupInteractions();
+        // WebGPU render loop
+        renderer.setAnimationLoop(animate);
+      } catch (err) {
+        console.error('Fatal initialization error:', err);
+        const errBanner = document.createElement('div');
+        errBanner.className = 'fixed inset-0 z-50 flex items-center justify-center p-6 bg-slate-950/95 text-red-300';
+        errBanner.innerHTML = `
+          <div class="glass-card p-6 rounded-2xl max-w-md border border-red-500/30 text-center">
+            <h2 class="text-base font-bold text-red-400 mb-2">Initialisierungsfehler</h2>
+            <p class="text-xs text-slate-300 mb-4">${err.message || err}</p>
+          </div>
+        `;
+        document.body.appendChild(errBanner);
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', start);
+  </script>
+</body>
+</html>

@@ -7,6 +7,7 @@ import { setBlockParams } from '@/ui/store/app-store';
 import { useAppStore } from '@/ui/store/use-app-store';
 import { MaterialSelect } from '@/ui/panels/MaterialSelect';
 import { parseMmInput } from './field-input-helpers';
+import { RigidBodyPhysicsFields } from './RigidBodyPhysicsFields';
 import type { BlockFieldsProps } from './entity-fields-types';
 
 export function BlockFields({ entity }: BlockFieldsProps) {
@@ -27,7 +28,7 @@ export function BlockFields({ entity }: BlockFieldsProps) {
           format={(value) => formatLengthMeters(value, LENGTH_DECIMALS)}
           parse={parseLengthMetersInput}
           onChange={(value) => {
-            if (value > 0) setBlockParams(entity.id, { widthM: value });
+            if (value > 0) {setBlockParams(entity.id, { widthM: value });}
           }}
         />
         <PanelAxisField
@@ -37,7 +38,7 @@ export function BlockFields({ entity }: BlockFieldsProps) {
           format={(value) => formatLengthMeters(value, LENGTH_DECIMALS)}
           parse={parseLengthMetersInput}
           onChange={(value) => {
-            if (value > 0) setBlockParams(entity.id, { heightM: value });
+            if (value > 0) {setBlockParams(entity.id, { heightM: value });}
           }}
         />
         <PanelAxisField
@@ -47,7 +48,7 @@ export function BlockFields({ entity }: BlockFieldsProps) {
           format={(value) => formatLengthMeters(value, LENGTH_DECIMALS)}
           parse={parseLengthMetersInput}
           onChange={(value) => {
-            if (value > 0) setBlockParams(entity.id, { depthM: value });
+            if (value > 0) {setBlockParams(entity.id, { depthM: value });}
           }}
         />
         <PanelAxisField
@@ -57,18 +58,19 @@ export function BlockFields({ entity }: BlockFieldsProps) {
           format={formatMmAsMeters}
           parse={parseMmInput}
           onChange={(value) => {
-            if (value >= 0) setBlockParams(entity.id, { cornerRadiusMm: value });
+            if (value >= 0) {setBlockParams(entity.id, { cornerRadiusMm: value });}
           }}
         />
       </SubPanelSection>
+
+      <RigidBodyPhysicsFields entity={entity} />
 
       <SubPanelSection title="Material">
         <MaterialSelect
           entityId={entity.id}
           slot="blockMaterialId"
-          label="Block material"
-          value={slots?.blockMaterialId ?? MATERIAL_PAPER_ID}
           materials={materials}
+          value={slots?.blockMaterialId ?? MATERIAL_PAPER_ID}
         />
       </SubPanelSection>
     </>

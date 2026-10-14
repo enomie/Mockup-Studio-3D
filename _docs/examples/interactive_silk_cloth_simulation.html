@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Photorealistic Heavy Silk Cloth Simulation - Three.js WebGPU TSL</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #08090d;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: #e2e8f0;
+      user-select: none;
+    }
+    #canvas-container {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 1;
+    }
+    .glass-panel {
+      background: rgba(15, 18, 28, 0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+    }
+    input[type=range] {
+      -webkit-appearance: none;
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 4px;
+      height: 4px;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      height: 14px;
+      width: 14px;
+      border-radius: 50%;
+      background: #c084fc;
+      cursor: pointer;
+      box-shadow: 0 0 10px rgba(192, 132, 252, 0.6);
+      transition: transform 0.1s ease;
+    }
+    input[type=range]::-webkit-slider-thumb:hover {
+      transform: scale(1.25);
+    }
+    ::-webkit-scrollbar {
+      width: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.2);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 3px;
+    }
+  </style>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.170.0/build/three.webgpu.js",
+        "three/webgpu": "https://unpkg.com/three@0.170.0/build/three.webgpu.js",
+        "three/tsl": "https://unpkg.com/three@0.170.0/build/three.webgpu.js",
+        "three/addons/": "https://unpkg.com/three@0.170.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <div id="canvas-container"></div>
+
+  <div class="absolute top-6 left-6 z-10 flex flex-col pointer-events-none">
+    <div class="glass-panel p-5 rounded-2xl max-w-sm pointer-events-auto border-l-4 border-l-purple-500">
+      <div class="flex items-center space-x-2">
+        <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+        <h1 class="text-xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-purple-300 via-pink-200 to-amber-200">
+          Silk Tablecloth Drop
+        </h1>
+      </div>
+      <p class="text-xs text-slate-400 mt-1">
+        Horizontal silk cloth dropping & draping over a cube pedestal with 6-face box collisions & edge friction.
+      </p>
+    </div>
+  </div>
+
+  <div class="absolute bottom-6 left-6 z-10 glass-panel p-5 rounded-2xl w-80 max-h-[calc(100vh-140px)] overflow-y-auto space-y-5">
+    
+    <!-- Quick Presets -->
+    <div class="space-y-2">
+      <span class="text-xs font-semibold tracking-wide text-purple-300 uppercase block">Simulation Controls</span>
+      <div class="grid grid-cols-2 gap-2">
+        <button id="btn-drop" class="px-3 py-2 text-xs font-medium bg-purple-600/30 hover:bg-purple-600/50 text-purple-200 rounded-xl border border-purple-500/30 transition-all active:scale-95 text-center">
+          Drop Cloth
+        </button>
+        <button id="btn-reset" class="px-3 py-2 text-xs font-medium bg-white/5 hover:bg-white/10 text-slate-200 rounded-xl border border-white/10 transition-all active:scale-95 text-center">
+          Reset / Restart
+        </button>
+        <button id="btn-slowmo" class="px-3 py-2 text-xs font-medium bg-white/5 hover:bg-white/10 text-slate-200 rounded-xl border border-white/10 transition-all active:scale-95 text-center">
+          Slow-Mo (0.15x)
+        </button>
+        <button id="btn-wind-toggle" class="px-3 py-2 text-xs font-medium bg-white/5 text-slate-200 rounded-xl border border-white/10 transition-all active:scale-95 text-center">
+          Wind: Off
+        </button>
+      </div>
+    </div>
+
+    <!-- Aerodynamic Wind & Storm Controls -->
+    <div class="space-y-3 pt-2 border-t border-white/10">
+      <span class="text-xs font-semibold text-purple-300 uppercase tracking-wider block">Wind & Storm Dynamics</span>
+
+      <!-- Wind Presets -->
+      <div class="grid grid-cols-4 gap-1">
+        <button id="btn-preset-calm" class="px-1.5 py-1 text-[10px] bg-white/5 hover:bg-white/10 text-slate-300 rounded-md border border-white/10 transition-all">Calm</button>
+        <button id="btn-preset-breeze" class="px-1.5 py-1 text-[10px] bg-white/5 hover:bg-white/10 text-slate-300 rounded-md border border-white/10 transition-all">Breeze</button>
+        <button id="btn-preset-gale" class="px-1.5 py-1 text-[10px] bg-white/5 hover:bg-white/10 text-slate-300 rounded-md border border-white/10 transition-all">Gale</button>
+        <button id="btn-preset-storm" class="px-1.5 py-1 text-[10px] bg-red-500/30 hover:bg-red-500/50 text-red-200 rounded-md border border-red-500/40 transition-all font-semibold">STORM</button>
+      </div>
+
+      <div>
+        <div class="flex justify-between text-xs text-slate-300 mb-1">
+          <span>Wind Speed</span>
+          <span id="val-wind-speed" class="text-purple-400">12.0 m/s</span>
+        </div>
+        <input type="range" id="input-wind-speed" min="0" max="100" step="1" value="12" class="w-full">
+      </div>
+
+      <div>
+        <div class="flex justify-between text-xs text-slate-300 mb-1">
+          <span>Turbulence / Gustiness</span>
+          <span id="val-wind-turb" class="text-purple-400">1.8</span>
+        </div>
+        <input type="range" id="input-wind-turb" min="0" max="5.0" step="0.1" value="1.8" class="w-full">
+      </div>
+
+      <div>
+        <div class="flex justify-between text-xs text-slate-300 mb-1">
+          <span>Wind Direction Angle</span>
+          <span id="val-wind-angle" class="text-purple-400">45°</span>
+        </div>
+        <input type="range" id="input-wind-angle" min="0" max="360" step="5" value="45" class="w-full">
+      </div>
+
+      <!-- Live Dynamic Wind Force Readout -->
+      <div class="p-2.5 rounded-xl bg-purple-950/40 border border-purple-500/20 text-[11px] space-y-1">
+        <div class="flex justify-between text-slate-400">
+          <span>Aerodynamic Pressure:</span>
+          <span id="val-wind-pressure" class="font-mono text-purple-300 font-medium">108 Pa</span>
+        </div>
+        <div class="flex justify-between text-slate-400">
+          <span>Beaufort Scale:</span>
+          <span id="val-wind-beaufort" class="font-mono text-amber-300 font-semibold">Force 6 (Strong Breeze)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Time & Flow Controls -->
+    <div class="space-y-3 pt-2 border-t border-white/10">
+      <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider block">Physics & Time Flow</span>
+
+      <div>
+        <div class="flex justify-between text-xs text-slate-300 mb-1">
+          <span>Time Speed Scale</span>
+          <span id="val-speed" class="text-purple-400">0.40x</span>
+        </div>
+        <input type="range" id="input-speed" min="0.05" max="1.0" step="0.05" value="0.40" class="w-full">
+      </div>
+
+      <div>
+        <div class="flex justify-between text-xs text-slate-300 mb-1">
+          <span>Air Damping</span>
+          <span id="val-damping" class="text-purple-400">0.99</span>
+        </div>
+        <input type="range" id="input-damping" min="0.90" max="0.999" step="0.002" value="0.988" class="w-full">
+      </div>
+
+      <div>
+        <div class="flex justify-between text-xs text-slate-300 mb-1">
+          <span>Gravity Scale</span>
+          <span id="val-gravity" class="text-purple-400">4.50</span>
+        </div>
+        <input type="range" id="input-gravity" min="0.5" max="15.0" step="0.5" value="4.5" class="w-full">
+      </div>
+
+      <div>
+        <div class="flex justify-between text-xs text-slate-300 mb-1">
+          <span>Floor Friction / Stickiness</span>
+          <span id="val-friction" class="text-purple-400">0.85</span>
+        </div>
+        <input type="range" id="input-friction" min="0.10" max="0.99" step="0.02" value="0.85" class="w-full">
+      </div>
+
+      <div>
+        <div class="flex justify-between text-xs text-slate-300 mb-1">
+          <span>Constraint Stiffness</span>
+          <span id="val-stiffness" class="text-purple-400">0.70</span>
+        </div>
+        <input type="range" id="input-stiffness" min="0.2" max="0.95" step="0.05" value="0.70" class="w-full">
+      </div>
+    </div>
+
+    <!-- Silk Shading Controls -->
+    <div class="space-y-3 pt-2 border-t border-white/10">
+      <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider block">Silk Material Optics</span>
+
+      <div>
+        <div class="flex justify-between text-xs text-slate-300 mb-1">
+          <span>Silk Base Tint</span>
+        </div>
+        <div class="flex space-x-2">
+          <input type="color" id="input-color" value="#7e112d" class="h-8 w-12 rounded cursor-pointer border-0 bg-transparent">
+          <div class="flex-1 text-xs text-slate-400 flex items-center pl-2">Anisotropic Velvet/Silk</div>
+        </div>
+      </div>
+
+      <div>
+        <div class="flex justify-between text-xs text-slate-300 mb-1">
+          <span>Sheen Strength</span>
+          <span id="val-sheen" class="text-purple-400">1.20</span>
+        </div>
+        <input type="range" id="input-sheen" min="0" max="2.5" step="0.1" value="1.20" class="w-full">
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { 
+      MeshPhysicalNodeMaterial, 
+      color, 
+      vec3, 
+      sin, 
+      cos, 
+      Fn, 
+      uv 
+    } from 'three/tsl';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    let renderer, scene, camera, controls;
+    let clothMesh, clothGeometry, clothMaterial;
+    let groundMesh, groundGrid;
+    let cubeMesh, cubeEdges;
+
+    // High resolution grid for ultra-rich cloth folds and draping
+    const GRID_SIZE = 58; 
+    const NUM_VERTICES = GRID_SIZE * GRID_SIZE;
+    const CLOTH_SIZE = 4.4; // Cloth width & depth
+    const SPACING = CLOTH_SIZE / (GRID_SIZE - 1);
+    const DROP_HEIGHT = 1.35; // Starting horizontal drop height above cube
+
+    // Cube pedestal configuration (smaller than cloth: 2.4 vs 4.4)
+    const cubeConfig = {
+      sizeX: 2.4,
+      sizeY: 2.0,
+      sizeZ: 2.4,
+      posX: 0,
+      posY: -1.0, // Center Y; top face is at -1.0 + 1.0 = 0.0
+      posZ: 0,
+      friction: 0.88,
+      margin: 0.02
+    };
+
+    // Position & Previous Position arrays for Verlet Integration
+    let posBuffer, prevPosBuffer, pinnedBuffer;
+    let isHoldingInitial = false; // Controls starting drop
+    
+    // Physics Parameters tuned specifically for heavy, smooth, slow silk
+    const config = {
+      speedScale: 0.38,
+      subSteps: 10,
+      maxSubDt: 0.002,
+      gravity: 5.2,
+      damping: 0.989,
+      stiffness: 0.75,
+      constraintPasses: 8,
+      groundY: -2.0,
+      groundFriction: 0.85,
+      windActive: false,       // Default wind to OFF for a pure, symmetrical tablecloth drop
+      windSpeed: 0.0,
+      windTurbulence: 1.2,
+      windAngleDeg: 45,
+      pinTopCorners: false     // No pins: completely free falling cloth
+    };
+
+    // Dynamic multi-octave 3D turbulence model with frequency scaling based on wind velocity
+    function getTurbulentWind(x, y, z, time, speed) {
+      const speedFreq = 1.0 + speed * 0.06;
+      const t = time * speedFreq;
+
+      const g1 = Math.sin(t * 3.2 + x * 1.4 + z * 1.1);
+      const g2 = Math.cos(t * 5.4 - y * 1.8 + x * 0.7);
+      const g3 = Math.sin(t * 8.1 + z * 2.8);
+
+      return (g1 * 0.5 + g2 * 0.35 + g3 * 0.15) * config.windTurbulence * (1.0 + speed * 0.04);
+    }
+
+    async function init() {
+      const container = document.getElementById('canvas-container');
+
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x08090d);
+      scene.fog = new THREE.FogExp2(0x08090d, 0.04);
+
+      camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+      camera.position.set(3.4, 2.5, 4.8); // Angled view showing table top and falling tablecloth
+
+      try {
+        renderer = new THREE.WebGPURenderer({ antialias: true });
+        await renderer.init();
+      } catch (err) {
+        console.warn('WebGPU init failed, using WebGL backend fallback:', err);
+        renderer = new THREE.WebGPURenderer({ antialias: true, forceWebGL: true });
+        await renderer.init();
+      }
+
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.15;
+      container.appendChild(renderer.domElement);
+
+      controls = new OrbitControls(camera, renderer.domElement);
+      controls.target.set(0, -0.3, 0);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.04;
+      controls.maxPolarAngle = Math.PI / 2 + 0.01;
+      controls.minDistance = 2;
+      controls.maxDistance = 20;
+
+      setupLighting();
+      setupGround();
+      setupCubePedestal();
+      setupClothGeometry();
+      setupSilkMaterial();
+      setupUIListeners();
+
+      window.addEventListener('resize', onWindowResize);
+      animate();
+    }
+
+    function setupLighting() {
+      const mainLight = new THREE.DirectionalLight(0xfff0e6, 3.2);
+      mainLight.position.set(5, 10, 5);
+      mainLight.castShadow = true;
+      mainLight.shadow.mapSize.width = 2048;
+      mainLight.shadow.mapSize.height = 2048;
+      mainLight.shadow.bias = -0.0001;
+      scene.add(mainLight);
+
+      const softBlueFill = new THREE.DirectionalLight(0x6080ff, 1.0);
+      softBlueFill.position.set(-5, 4, -3);
+      scene.add(softBlueFill);
+
+      const magentaRim = new THREE.DirectionalLight(0xffb0e0, 1.8);
+      magentaRim.position.set(0, -1, -6);
+      scene.add(magentaRim);
+
+      const ambientLight = new THREE.AmbientLight(0x121420, 1.0);
+      scene.add(ambientLight);
+    }
+
+    function setupGround() {
+      const groundGeo = new THREE.PlaneGeometry(200, 200);
+      const groundMat = new THREE.MeshStandardMaterial({
+        color: 0x0d0e15,
+        roughness: 0.25,
+        metalness: 0.4,
+        side: THREE.DoubleSide
+      });
+
+      groundMesh = new THREE.Mesh(groundGeo, groundMat);
+      groundMesh.rotation.x = -Math.PI / 2;
+      groundMesh.position.y = config.groundY;
+      groundMesh.receiveShadow = true;
+      scene.add(groundMesh);
+
+      groundGrid = new THREE.GridHelper(60, 60, 0x8a5cf6, 0x1d2030);
+      groundGrid.position.y = config.groundY + 0.005;
+      scene.add(groundGrid);
+    }
+
+    function setupCubePedestal() {
+      // Cube representing a table or display pedestal
+      const cubeGeo = new THREE.BoxGeometry(cubeConfig.sizeX, cubeConfig.sizeY, cubeConfig.sizeZ);
+      const cubeMat = new THREE.MeshStandardMaterial({
+        color: 0x181a24,
+        roughness: 0.18,
+        metalness: 0.5,
+      });
+
+      cubeMesh = new THREE.Mesh(cubeGeo, cubeMat);
+      cubeMesh.position.set(cubeConfig.posX, cubeConfig.posY, cubeConfig.posZ);
+      cubeMesh.castShadow = true;
+      cubeMesh.receiveShadow = true;
+      scene.add(cubeMesh);
+
+      // Subtle edge highlight outline on the cube
+      const edgeGeo = new THREE.EdgesGeometry(cubeGeo);
+      const edgeMat = new THREE.LineBasicMaterial({ color: 0x8b5cf6, transparent: true, opacity: 0.35 });
+      cubeEdges = new THREE.LineSegments(edgeGeo, edgeMat);
+      cubeEdges.position.copy(cubeMesh.position);
+      scene.add(cubeEdges);
+    }
+
+    function setupClothGeometry() {
+      // Horizontal plane geometry oriented parallel to the table top
+      clothGeometry = new THREE.PlaneGeometry(CLOTH_SIZE, CLOTH_SIZE, GRID_SIZE - 1, GRID_SIZE - 1);
+      // Rotate geometry so it lies horizontally (XZ plane)
+      clothGeometry.rotateX(-Math.PI / 2);
+
+      posBuffer = new Float32Array(NUM_VERTICES * 3);
+      prevPosBuffer = new Float32Array(NUM_VERTICES * 3);
+      pinnedBuffer = new Uint8Array(NUM_VERTICES);
+
+      const posAttribute = clothGeometry.attributes.position;
+
+      for (let i = 0; i < NUM_VERTICES; i++) {
+        const x = posAttribute.getX(i);
+        const y = DROP_HEIGHT; // Placed evenly above the cube's top surface (y = 0.0)
+        const z = posAttribute.getZ(i);
+
+        posAttribute.setY(i, y);
+
+        posBuffer[i * 3] = x;
+        posBuffer[i * 3 + 1] = y;
+        posBuffer[i * 3 + 2] = z;
+
+        prevPosBuffer[i * 3] = x;
+        prevPosBuffer[i * 3 + 1] = y;
+        prevPosBuffer[i * 3 + 2] = z;
+
+        // No pinned vertices: free-falling tablecloth
+        pinnedBuffer[i] = 0;
+      }
+      posAttribute.needsUpdate = true;
+    }
+
+    // Procedural TSL Micro-Weave Pattern
+    const silkWeavePattern = Fn(() => {
+      const uvCoord = uv().mul(140.0);
+      const weaveSignal = sin(uvCoord.x).mul(cos(uvCoord.y)).mul(0.08);
+      return vec3(weaveSignal);
+    });
+
+    function setupSilkMaterial() {
+      const silkColorNode = color(new THREE.Color(0x7e112d)).add(silkWeavePattern());
+      clothMaterial = new MeshPhysicalNodeMaterial({
+        colorNode: silkColorNode,
+        roughness: 0.28,
+        metalness: 0.05,
+        sheen: 1.2,
+        sheenRoughness: 0.25,
+        sheenColor: new THREE.Color(0xff99bb),
+        side: THREE.DoubleSide
+      });
+
+      clothMesh = new THREE.Mesh(clothGeometry, clothMaterial);
+      clothMesh.castShadow = true;
+      clothMesh.receiveShadow = true;
+      scene.add(clothMesh);
+    }
+
+    function collideCube(pos, prevPos, idx, isVerlet = false) {
+      const x = pos[idx];
+      const y = pos[idx + 1];
+      const z = pos[idx + 2];
+
+      const hx = cubeConfig.sizeX * 0.5 + cubeConfig.margin;
+      const hy = cubeConfig.sizeY * 0.5 + cubeConfig.margin;
+      const hz = cubeConfig.sizeZ * 0.5 + cubeConfig.margin;
+
+      const minX = cubeConfig.posX - hx;
+      const maxX = cubeConfig.posX + hx;
+      const minY = cubeConfig.posY - hy;
+      const maxY = cubeConfig.posY + hy;
+      const minZ = cubeConfig.posZ - hz;
+      const maxZ = cubeConfig.posZ + hz;
+
+      // Inside cube AABB?
+      if (x >= minX && x <= maxX && y >= minY && y <= maxY && z >= minZ && z <= maxZ) {
+        // Distance to 6 bounding faces
+        const dTop    = maxY - y;
+        const dBottom = y - minY;
+        const dLeft   = x - minX;
+        const dRight  = maxX - x;
+        const dFront  = maxZ - z;
+        const dBack   = z - minZ;
+
+        let minD = dTop;
+        let face = 0; // 0: Top, 1: Bottom, 2: Left, 3: Right, 4: Front, 5: Back
+
+        if (dBottom < minD) { minD = dBottom; face = 1; }
+        if (dLeft   < minD) { minD = dLeft;   face = 2; }
+        if (dRight  < minD) { minD = dRight;  face = 3; }
+        if (dFront  < minD) { minD = dFront;  face = 4; }
+        if (dBack   < minD) { minD = dBack;   face = 5; }
+
+        const frictionFactor = 1.0 - cubeConfig.friction;
+
+        if (face === 0) {
+          // Resting on top of table/cube
+          pos[idx + 1] = maxY;
+          if (isVerlet) {
+            let vx = (x - prevPos[idx]) * frictionFactor;
+            let vz = (z - prevPos[idx + 2]) * frictionFactor;
+            prevPos[idx] = pos[idx] - vx;
+            prevPos[idx + 1] = maxY;
+            prevPos[idx + 2] = pos[idx + 2] - vz;
+          }
+        } else if (face === 1) {
+          pos[idx + 1] = minY;
+          if (isVerlet) prevPos[idx + 1] = minY;
+        } else if (face === 2) {
+          // Left side face
+          pos[idx] = minX;
+          if (isVerlet) {
+            let vy = (y - prevPos[idx + 1]) * frictionFactor;
+            let vz = (z - prevPos[idx + 2]) * frictionFactor;
+            prevPos[idx] = minX;
+            prevPos[idx + 1] = pos[idx + 1] - vy;
+            prevPos[idx + 2] = pos[idx + 2] - vz;
+          }
+        } else if (face === 3) {
+          // Right side face
+          pos[idx] = maxX;
+          if (isVerlet) {
+            let vy = (y - prevPos[idx + 1]) * frictionFactor;
+            let vz = (z - prevPos[idx + 2]) * frictionFactor;
+            prevPos[idx] = maxX;
+            prevPos[idx + 1] = pos[idx + 1] - vy;
+            prevPos[idx + 2] = pos[idx + 2] - vz;
+          }
+        } else if (face === 4) {
+          // Front face
+          pos[idx + 2] = maxZ;
+          if (isVerlet) {
+            let vx = (x - prevPos[idx]) * frictionFactor;
+            let vy = (y - prevPos[idx + 1]) * frictionFactor;
+            prevPos[idx] = pos[idx] - vx;
+            prevPos[idx + 1] = pos[idx + 1] - vy;
+            prevPos[idx + 2] = maxZ;
+          }
+        } else if (face === 5) {
+          // Back face
+          pos[idx + 2] = minZ;
+          if (isVerlet) {
+            let vx = (x - prevPos[idx]) * frictionFactor;
+            let vy = (y - prevPos[idx + 1]) * frictionFactor;
+            prevPos[idx] = pos[idx] - vx;
+            prevPos[idx + 1] = pos[idx + 1] - vy;
+            prevPos[idx + 2] = minZ;
+          }
+        }
+      }
+    }
+
+    function updatePhysics(frameDt) {
+      if (isHoldingInitial) return;
+
+      const totalDt = Math.min(frameDt, 0.033) * config.speedScale;
+      const subSteps = config.subSteps;
+      const subDt = Math.min(totalDt / subSteps, config.maxSubDt);
+
+      const posAttr = clothGeometry.attributes.position;
+      const pos = posAttr.array;
+
+      const subDtSq = subDt * subDt;
+      const dampingFactor = Math.pow(config.damping, subDt * 600.0);
+      const groundY = config.groundY + 0.015;
+      const timeSec = performance.now() * 0.001;
+
+      // Directional base wind vector
+      const angleRad = (config.windAngleDeg * Math.PI) / 180.0;
+      const baseWindX = Math.cos(angleRad) * config.windSpeed;
+      const baseWindZ = Math.sin(angleRad) * config.windSpeed;
+
+      for (let sub = 0; sub < subSteps; sub++) {
+        // 1. Verlet Integration with Aerodynamics & Collisions
+        for (let i = 0; i < NUM_VERTICES; i++) {
+          if (pinnedBuffer[i] === 1) continue;
+
+          const idx = i * 3;
+          let x = pos[idx];
+          let y = pos[idx + 1];
+          let z = pos[idx + 2];
+
+          let px = prevPosBuffer[idx];
+          let py = prevPosBuffer[idx + 1];
+          let pz = prevPosBuffer[idx + 2];
+
+          // Compute velocities with smooth damping
+          let vx = (x - px) * dampingFactor;
+          let vy = (y - py) * dampingFactor;
+          let vz = (z - pz) * dampingFactor;
+
+          // Natural downward gravity
+          vy -= config.gravity * subDtSq;
+
+          // Optional Aerodynamic Forces
+          if (config.windActive && config.windSpeed > 0) {
+            const row = Math.floor(i / GRID_SIZE);
+            const col = i % GRID_SIZE;
+
+            const iRight = col < GRID_SIZE - 1 ? idx + 3 : idx - 3;
+            const iDown = row < GRID_SIZE - 1 ? idx + GRID_SIZE * 3 : idx - GRID_SIZE * 3;
+            const sX = col < GRID_SIZE - 1 ? 1 : -1;
+            const sY = row < GRID_SIZE - 1 ? 1 : -1;
+
+            const dx1 = (pos[iRight] - x) * sX, dy1 = (pos[iRight + 1] - y) * sX, dz1 = (pos[iRight + 2] - z) * sX;
+            const dx2 = (pos[iDown] - x) * sY, dy2 = (pos[iDown + 1] - y) * sY, dz2 = (pos[iDown + 2] - z) * sY;
+
+            let nx = dy1 * dz2 - dz1 * dy2;
+            let ny = dz1 * dx2 - dx1 * dz2;
+            let nz = dx1 * dy2 - dy1 * dx2;
+            const len = Math.sqrt(nx * nx + ny * ny + nz * nz) || 1.0;
+            nx /= len; ny /= len; nz /= len;
+
+            const proj = x * Math.cos(angleRad) + z * Math.sin(angleRad);
+            const flutterFreq = 7.0 + config.windSpeed * 0.28;
+            const flutter = Math.sin(timeSec * flutterFreq - proj * 3.8 + y * 2.2) * (config.windSpeed * 0.18) * config.windTurbulence;
+
+            const gust = getTurbulentWind(x, y, z, timeSec, config.windSpeed);
+            const wx = baseWindX + gust * 0.7 * (-Math.sin(angleRad)) + flutter * 0.35 * Math.cos(angleRad);
+            const wy = gust * 0.6 + flutter * 0.9;
+            const wz = baseWindZ + gust * 0.7 * Math.cos(angleRad) + flutter * 0.35 * Math.sin(angleRad);
+
+            const rvx = wx - (vx / subDt);
+            const rvy = wy - (vy / subDt);
+            const rvz = wz - (vz / subDt);
+            const relSpeed = Math.hypot(rvx, rvy, rvz);
+
+            const dragCoeff = 0.042;
+            const fDragX = dragCoeff * relSpeed * rvx;
+            const fDragY = dragCoeff * relSpeed * rvy;
+            const fDragZ = dragCoeff * relSpeed * rvz;
+
+            const normalDot = nx * rvx + ny * rvy + nz * rvz;
+            const liftCoeff = 0.095;
+            const fLiftMag = liftCoeff * Math.abs(normalDot) * normalDot;
+            const fLiftX = nx * fLiftMag;
+            const fLiftY = ny * fLiftMag;
+            const fLiftZ = nz * fLiftMag;
+
+            let ax = fDragX + fLiftX;
+            let ay = fDragY + fLiftY;
+            let az = fDragZ + fLiftZ;
+            const aMag = Math.hypot(ax, ay, az);
+            const maxA = 650.0;
+            if (aMag > maxA) {
+              const s = maxA / aMag;
+              ax *= s; ay *= s; az *= s;
+            }
+
+            vx += ax * subDtSq;
+            vy += ay * subDtSq;
+            vz += az * subDtSq;
+          }
+
+          let nxPos = x + vx;
+          let nyPos = y + vy;
+          let nzPos = z + vz;
+
+          // Inelastic Ground Collision
+          if (nyPos <= groundY) {
+            nyPos = groundY;
+            const fric = Math.max(0, 1.0 - config.groundFriction);
+            vx *= fric;
+            vz *= fric;
+            px = nxPos - vx;
+            py = groundY;
+            pz = nzPos - vz;
+          } else {
+            px = x;
+            py = y;
+            pz = z;
+          }
+
+          prevPosBuffer[idx] = px;
+          prevPosBuffer[idx + 1] = py;
+          prevPosBuffer[idx + 2] = pz;
+
+          pos[idx] = nxPos;
+          pos[idx + 1] = nyPos;
+          pos[idx + 2] = nzPos;
+
+          // Cube Tabletop & Side Face Collision
+          collideCube(pos, prevPosBuffer, idx, true);
+        }
+
+        // 2. Constraint Relaxation Iterations
+        for (let pass = 0; pass < config.constraintPasses; pass++) {
+          for (let row = 0; row < GRID_SIZE; row++) {
+            for (let col = 0; col < GRID_SIZE; col++) {
+              const i1 = row * GRID_SIZE + col;
+
+              if (col < GRID_SIZE - 1) {
+                solveConstraint(pos, i1, row * GRID_SIZE + (col + 1), SPACING, groundY);
+              }
+              if (row < GRID_SIZE - 1) {
+                solveConstraint(pos, i1, (row + 1) * GRID_SIZE + col, SPACING, groundY);
+              }
+              if (row < GRID_SIZE - 1 && col < GRID_SIZE - 1) {
+                solveConstraint(pos, i1, (row + 1) * GRID_SIZE + (col + 1), SPACING * 1.4142, groundY);
+              }
+              if (row < GRID_SIZE - 1 && col > 0) {
+                solveConstraint(pos, i1, (row + 1) * GRID_SIZE + (col - 1), SPACING * 1.4142, groundY);
+              }
+
+              // Enforce cube collision constraint to prevent corners cutting through fabric
+              collideCube(pos, prevPosBuffer, i1 * 3, false);
+            }
+          }
+        }
+      }
+
+      posAttr.needsUpdate = true;
+      clothGeometry.computeVertexNormals();
+    }
+
+    function solveConstraint(pos, i1, i2, restLength, groundY) {
+      const p1 = i1 * 3;
+      const p2 = i2 * 3;
+
+      const dx = pos[p2] - pos[p1];
+      const dy = pos[p2 + 1] - pos[p1 + 1];
+      const dz = pos[p2 + 2] - pos[p1 + 2];
+
+      const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+      if (dist === 0) return;
+
+      const diff = (dist - restLength) / dist;
+      const correctionX = dx * 0.5 * diff * config.stiffness;
+      const correctionY = dy * 0.5 * diff * config.stiffness;
+      const correctionZ = dz * 0.5 * diff * config.stiffness;
+
+      const pin1 = pinnedBuffer[i1] === 1;
+      const pin2 = pinnedBuffer[i2] === 1;
+
+      if (!pin1 && !pin2) {
+        pos[p1] += correctionX;
+        pos[p1 + 1] += correctionY;
+        pos[p1 + 2] += correctionZ;
+
+        pos[p2] -= correctionX;
+        pos[p2 + 1] -= correctionY;
+        pos[p2 + 2] -= correctionZ;
+      } else if (!pin1 && pin2) {
+        pos[p1] += correctionX * 2.0;
+        pos[p1 + 1] += correctionY * 2.0;
+        pos[p1 + 2] += correctionZ * 2.0;
+      } else if (pin1 && !pin2) {
+        pos[p2] -= correctionX * 2.0;
+        pos[p2 + 1] -= correctionY * 2.0;
+        pos[p2 + 2] -= correctionZ * 2.0;
+      }
+
+      if (!pin1 && pos[p1 + 1] < groundY) pos[p1 + 1] = groundY;
+      if (!pin2 && pos[p2 + 1] < groundY) pos[p2 + 1] = groundY;
+    }
+
+    function resetClothPosition() {
+      const posAttr = clothGeometry.attributes.position;
+      const posArray = posAttr.array;
+      for (let i = 0; i < NUM_VERTICES * 3; i++) {
+        posArray[i] = posBuffer[i];
+        prevPosBuffer[i] = posBuffer[i];
+      }
+      posAttr.needsUpdate = true;
+      clothGeometry.computeVertexNormals();
+    }
+
+    function setupUIListeners() {
+      // Drop Button (releases or restarts drop)
+      document.getElementById('btn-drop').addEventListener('click', () => {
+        isHoldingInitial = false;
+        resetClothPosition();
+      });
+
+      // Reset Button: resets cloth horizontally above cube
+      document.getElementById('btn-reset').addEventListener('click', () => {
+        resetClothPosition();
+      });
+
+      // Slow-mo Toggle Button
+      let isSlowMo = false;
+      const slowmoBtn = document.getElementById('btn-slowmo');
+      slowmoBtn.addEventListener('click', () => {
+        isSlowMo = !isSlowMo;
+        config.speedScale = isSlowMo ? 0.15 : 0.38;
+        document.getElementById('input-speed').value = config.speedScale;
+        document.getElementById('val-speed').textContent = config.speedScale.toFixed(2) + 'x';
+        slowmoBtn.classList.toggle('bg-purple-600/40', isSlowMo);
+        slowmoBtn.textContent = isSlowMo ? 'Slow-Mo: On' : 'Slow-Mo (0.15x)';
+      });
+
+      // Wind Toggle Button
+      const windBtn = document.getElementById('btn-wind-toggle');
+      windBtn.addEventListener('click', () => {
+        config.windActive = !config.windActive;
+        windBtn.textContent = config.windActive ? 'Wind: On' : 'Wind: Off';
+        windBtn.classList.toggle('bg-purple-600/40', config.windActive);
+        windBtn.classList.toggle('bg-white/5', !config.windActive);
+        updateWindReadout();
+      });
+
+      // Wind Presets
+      const setWindUI = (speed, turb, angle) => {
+        config.windSpeed = speed;
+        config.windTurbulence = turb;
+        config.windAngleDeg = angle;
+        config.windActive = speed > 0;
+
+        document.getElementById('input-wind-speed').value = speed;
+        document.getElementById('val-wind-speed').textContent = speed.toFixed(1) + ' m/s';
+        document.getElementById('input-wind-turb').value = turb;
+        document.getElementById('val-wind-turb').textContent = turb.toFixed(1);
+        document.getElementById('input-wind-angle').value = angle;
+        document.getElementById('val-wind-angle').textContent = angle + '°';
+
+        windBtn.textContent = config.windActive ? 'Wind: On' : 'Wind: Off';
+        windBtn.classList.toggle('bg-purple-600/40', config.windActive);
+        windBtn.classList.toggle('bg-white/5', !config.windActive);
+        updateWindReadout();
+      };
+
+      function updateWindReadout() {
+        const speed = config.windActive ? config.windSpeed : 0;
+        const pressure = Math.round(0.5 * 1.225 * speed * speed);
+        document.getElementById('val-wind-pressure').textContent = pressure + ' Pa';
+
+        const bEl = document.getElementById('val-wind-beaufort');
+        if (speed === 0) {
+          bEl.textContent = 'Force 0 (Calm)';
+          bEl.className = 'font-mono text-slate-300 font-semibold';
+        } else if (speed < 6) {
+          bEl.textContent = 'Force 3 (Gentle Breeze)';
+          bEl.className = 'font-mono text-emerald-300 font-semibold';
+        } else if (speed < 18) {
+          bEl.textContent = 'Force 6 (Strong Breeze)';
+          bEl.className = 'font-mono text-cyan-300 font-semibold';
+        } else if (speed < 32) {
+          bEl.textContent = 'Force 9 (Severe Gale)';
+          bEl.className = 'font-mono text-amber-300 font-semibold';
+        } else {
+          bEl.textContent = 'Force 12 (Hurricane / STORM)';
+          bEl.className = 'font-mono text-rose-400 font-bold animate-pulse';
+        }
+      }
+
+      document.getElementById('btn-preset-calm').addEventListener('click', () => setWindUI(0, 0, 45));
+      document.getElementById('btn-preset-breeze').addEventListener('click', () => setWindUI(12, 1.8, 45));
+      document.getElementById('btn-preset-gale').addEventListener('click', () => setWindUI(45, 2.8, 60));
+      document.getElementById('btn-preset-storm').addEventListener('click', () => setWindUI(95, 4.2, 75));
+
+      function bindSlider(id, labelId, suffixOrFormatter, callback) {
+        const el = document.getElementById(id);
+        const label = document.getElementById(labelId);
+        if (!el) return;
+        el.addEventListener('input', (e) => {
+          const val = parseFloat(e.target.value);
+          if (label) {
+            if (typeof suffixOrFormatter === 'function') {
+              label.textContent = suffixOrFormatter(val);
+            } else {
+              label.textContent = val.toString() + (suffixOrFormatter || '');
+            }
+          }
+          if (callback) callback(val);
+        });
+      }
+
+      // Wind Sliders
+      bindSlider('input-wind-speed', 'val-wind-speed', (v) => v.toFixed(1) + ' m/s', (v) => {
+        config.windSpeed = v;
+        config.windActive = v > 0;
+        updateWindReadout();
+      });
+      bindSlider('input-wind-turb', 'val-wind-turb', (v) => v.toFixed(1), (v) => {
+        config.windTurbulence = v;
+      });
+      bindSlider('input-wind-angle', 'val-wind-angle', (v) => v + '°', (v) => {
+        config.windAngleDeg = v;
+      });
+
+      // Physics & Time Sliders
+      bindSlider('input-speed', 'val-speed', (v) => v.toFixed(2) + 'x', (v) => {
+        config.speedScale = v;
+      });
+      bindSlider('input-damping', 'val-damping', (v) => v.toFixed(3), (v) => {
+        config.damping = v;
+      });
+      bindSlider('input-gravity', 'val-gravity', (v) => v.toFixed(2), (v) => {
+        config.gravity = v;
+      });
+      bindSlider('input-friction', 'val-friction', (v) => v.toFixed(2), (v) => {
+        config.groundFriction = v;
+      });
+      bindSlider('input-stiffness', 'val-stiffness', (v) => v.toFixed(2), (v) => {
+        config.stiffness = v;
+      });
+
+      // Material Controls
+      bindSlider('input-sheen', 'val-sheen', (v) => v.toFixed(2), (v) => {
+        if (clothMaterial) {
+          clothMaterial.sheen = v;
+          clothMaterial.needsUpdate = true;
+        }
+      });
+
+      const colorInput = document.getElementById('input-color');
+      if (colorInput) {
+        colorInput.addEventListener('input', (e) => {
+          if (clothMaterial) {
+            clothMaterial.colorNode = color(new THREE.Color(e.target.value)).add(silkWeavePattern());
+            clothMaterial.needsUpdate = true;
+          }
+        });
+      }
+
+      updateWindReadout();
+    }
+
+    function onWindowResize() {
+      if (!camera || !renderer) return;
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    let lastTime = performance.now();
+    function animate() {
+      requestAnimationFrame(animate);
+
+      const now = performance.now();
+      const dt = (now - lastTime) / 1000;
+      lastTime = now;
+
+      updatePhysics(dt);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    window.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>

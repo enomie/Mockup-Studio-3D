@@ -211,9 +211,6 @@ export function buildTinCanBodyGeometry(
     [bottomRing, topRing, side, bottomOuter, bottomInner, topOuter, topInner],
     false,
   );
-  if (!merged) {
-    return side;
-  }
   merged.computeVertexNormals();
   applyTinCanFootPivot(merged, params);
   bottomRing.dispose();
@@ -257,19 +254,19 @@ export function tinCanLabelCoverPlaneM(
   };
 }
 
-export type TinCanMeshBuildInput = {
+export interface TinCanMeshBuildInput {
   params: TinCanParams;
   sizeScale: number;
   geometryVisibility?: AssetGeometryVisibility;
   labelPrintVisible: boolean;
   bodyMetalMaterial: Material;
   labelMaterial: Material;
-};
+}
 
-export type TinCanMeshBuildResult = {
+export interface TinCanMeshBuildResult {
   bodyMesh: Mesh;
   labelMesh: Mesh | null;
-};
+}
 
 export function buildTinCanMeshes(input: TinCanMeshBuildInput): TinCanMeshBuildResult {
   const scaled = scaledTinCanParams(input.params, input.sizeScale);

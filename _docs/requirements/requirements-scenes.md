@@ -30,7 +30,7 @@
 **Title:** Built-in Scenes (Werkseitig)  
 **Description:** Drei **nicht löschbare** Vorlagen beim App-Start verfügbar. Reihenfolge in der Liste **von oben nach unten**:
 
-1. **Default** — aktuelles Portfolio-Layout (oberster Eintrag). Entities: **Picture framed**, **Print (A5)**, **Smartphone**, **Tablet** — Positionen wie heute in `DEFAULT_SCENE_ASSETS` (`picture` x −0,45 · `print` x −0,05 · `smartphone` x 0,15 · `tablet` x 0,55; z = 0). Environment, Ground, Lighting, Kamera = `SCENE_DEFAULTS`. Entspricht dem heutigen Startzustand.
+1. **Default** — Staging für Physik/Stoff (oberster Eintrag). Entities in `DEFAULT_SCENE_ASSETS`: **Block** (Boden, x/z 0); **Fabric cloth** (Seide `material-silk`, Foot **`y = 0,5` m`, x/z 0). Environment, Ground, Lighting, Kamera = `SCENE_DEFAULTS`. Keine Wine-Bottle / Portfolio-Geräte mehr im Start-Layout.
 
 2. **Phone only** — nur **ein Smartphone** in der Szene, zentriert vor der Kamera (z. B. x 0, z 0). Keine weiteren Assets. Übrige Einstellungen = `SCENE_DEFAULTS` (Environment, Ground, Lighting, Kamera-Default-View).
 

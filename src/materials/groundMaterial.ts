@@ -75,7 +75,7 @@ export class GroundMaterial extends MeshPhysicalNodeMaterial {
 
   /** PNG export only — same lighting/shadows as live ground, no visible albedo/mirror. */
   setExportShadowCatcherActive(active: boolean): void {
-    if (this.exportShadowCatcherActive === active) return;
+    if (this.exportShadowCatcherActive === active) {return;}
     this.exportShadowCatcherActive = active;
     if (active) {
       this.savedTransparent = this.transparent;
@@ -171,7 +171,7 @@ export class GroundMaterial extends MeshPhysicalNodeMaterial {
   }
 
   private applyMirrorWiring(): void {
-    if (!this.groundMesh) return;
+    if (!this.groundMesh) {return;}
 
     if (this.mirrorEnabledDesired) {
       this.wireMirror();
@@ -181,7 +181,7 @@ export class GroundMaterial extends MeshPhysicalNodeMaterial {
   }
 
   private wireMirror(): void {
-    if (!this.groundMesh || this.mirrorWired) return;
+    if (!this.groundMesh || this.mirrorWired) {return;}
 
     this.groundMesh.add(this.planarReflection.target);
     this.mirrorWired = true;
@@ -189,7 +189,7 @@ export class GroundMaterial extends MeshPhysicalNodeMaterial {
   }
 
   private unwireMirror(): void {
-    if (!this.groundMesh || !this.mirrorWired) return;
+    if (!this.groundMesh || !this.mirrorWired) {return;}
 
     this.groundMesh.remove(this.planarReflection.target);
     this.mirrorWired = false;

@@ -171,11 +171,11 @@ function buildWineBottleGlassStirnGeometries(
   return caps;
 }
 
-export type WineBottleGlassBuildOptions = {
+export interface WineBottleGlassBuildOptions {
   wallThicknessM: number;
   /** When true, adds offset inner lathe mantle (defaults to `WINE_BOTTLE_GLASS_INNER_MANTLE`). */
   innerMantle?: boolean;
-};
+}
 
 function buildOuterMantleLatheGeometry(latheProfile: Vector2[]): LatheGeometry {
   const mantle = new LatheGeometry(
@@ -234,11 +234,6 @@ function buildWineBottleGlassBodyGeometry(
   for (const part of parts) {
     part.dispose();
   }
-  if (!merged) {
-    mantle.dispose();
-    throw new Error('Wine bottle glass geometry merge failed');
-  }
-
   applyLatheGeometryFootToY0(merged);
   merged.computeVertexNormals();
   return merged;

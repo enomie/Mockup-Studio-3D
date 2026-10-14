@@ -5,6 +5,7 @@ import type { ProceduralMaterialParams } from './procedural-types';
 /**
  * Build tiled sample coordinates for procedural profiles.
  * - planar-meters: positionLocal.xy in scene meters (print sides, ground plane, thin panels)
+ * - triplanar-meters: use procedural-triplanar-meters.ts (not this helper)
  * - uv: mesh UVs with grain along U or V (frame perimeter UVs in meters)
  */
 export function buildProceduralSampleUv(params: ProceduralMaterialParams) {

@@ -4,10 +4,10 @@ import { createGroundMaterial, type GroundMaterial } from '@/materials/groundMat
 import { PlanarReflectionPass } from './planar-reflection';
 import { applyReceiveShadowFlags } from './shadow-setup';
 
-export type GroundPlane = {
+export interface GroundPlane {
   mesh: Mesh;
   material: GroundMaterial;
-};
+}
 
 export function createGroundPlane(): GroundPlane {
   const planarReflection = new PlanarReflectionPass();

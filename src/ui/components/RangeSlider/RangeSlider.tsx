@@ -9,7 +9,7 @@ import {
 } from './dual-range-slider-utils';
 import { SliderValueField } from './SliderValueField';
 
-type RangeSliderProps = {
+interface RangeSliderProps {
   label?: string;
   min: number;
   max: number;
@@ -25,7 +25,7 @@ type RangeSliderProps = {
   valueUnit?: string;
   /** Display/input scale — e.g. 100 shows 0.35 as 35 when unit is "%". */
   valueDisplayScale?: number;
-};
+}
 
 function formatValue(value: number, decimals?: number, displayScale = 1): string {
   const scaled = value * displayScale;
@@ -38,7 +38,7 @@ function formatValue(value: number, decimals?: number, displayScale = 1): string
 function parseInputValue(raw: string, displayScale = 1): number | null {
   const trimmed = raw.trim().replace(',', '.');
   const parsed = Number.parseFloat(trimmed);
-  if (Number.isNaN(parsed)) return null;
+  if (Number.isNaN(parsed)) {return null;}
   return parsed / displayScale;
 }
 
@@ -80,10 +80,10 @@ export function RangeSlider({
   const emitFromPointer = useCallback(
     (clientX: number): void => {
       const track = trackRef.current;
-      if (!track) return;
+      if (!track) {return;}
 
       const rect = track.getBoundingClientRect();
-      if (rect.width <= 0) return;
+      if (rect.width <= 0) {return;}
 
       emitValue(ratioToValue(pointerToRatio(clientX, rect), min, max, step));
     },
@@ -101,18 +101,18 @@ export function RangeSlider({
   const handleInputChange = (raw: string): void => {
     setDraftValue(raw);
     const parsed = parseInputValue(raw, valueDisplayScale);
-    if (parsed === null) return;
+    if (parsed === null) {return;}
     emitValue(parsed);
   };
 
   const handleInputBlur = (): void => {
     const parsed = parseInputValue(draftValue ?? displayValue, valueDisplayScale);
-    if (parsed !== null) emitValue(parsed);
+    if (parsed !== null) {emitValue(parsed);}
     clearDraft();
   };
 
   const handleThumbPointerDown = (event: React.PointerEvent<HTMLButtonElement>): void => {
-    if (disabled) return;
+    if (disabled) {return;}
     clearDraft();
     event.preventDefault();
     event.currentTarget.setPointerCapture(event.pointerId);
@@ -121,8 +121,8 @@ export function RangeSlider({
   };
 
   const handleThumbPointerMove = (event: React.PointerEvent<HTMLButtonElement>): void => {
-    if (disabled || !dragging) return;
-    if (!event.currentTarget.hasPointerCapture(event.pointerId)) return;
+    if (disabled || !dragging) {return;}
+    if (!event.currentTarget.hasPointerCapture(event.pointerId)) {return;}
     emitFromPointer(event.clientX);
   };
 
@@ -134,9 +134,9 @@ export function RangeSlider({
   };
 
   const handleTrackPointerDown = (event: React.PointerEvent<HTMLDivElement>): void => {
-    if (disabled) return;
+    if (disabled) {return;}
     const target = event.target as HTMLElement;
-    if (target.classList.contains('panel-slider__thumb')) return;
+    if (target.classList.contains('panel-slider__thumb')) {return;}
 
     clearDraft();
     event.currentTarget.setPointerCapture(event.pointerId);
@@ -145,8 +145,8 @@ export function RangeSlider({
   };
 
   const handleTrackPointerMove = (event: React.PointerEvent<HTMLDivElement>): void => {
-    if (disabled || !dragging) return;
-    if (!event.currentTarget.hasPointerCapture(event.pointerId)) return;
+    if (disabled || !dragging) {return;}
+    if (!event.currentTarget.hasPointerCapture(event.pointerId)) {return;}
     emitFromPointer(event.clientX);
   };
 

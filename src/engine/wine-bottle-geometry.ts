@@ -53,7 +53,7 @@ function applyMeshPolygonOffset(mesh: Mesh): void {
   }
 }
 
-export type WineBottleMeshBuildInput = {
+export interface WineBottleMeshBuildInput {
   params: WineBottleParams;
   sizeScale: number;
   geometryVisibility?: AssetGeometryVisibility;
@@ -67,15 +67,15 @@ export type WineBottleMeshBuildInput = {
   labelMaterial: Material;
   /** Override spike flag `WINE_BOTTLE_GLASS_INNER_MANTLE` for A/B. */
   innerMantle?: boolean;
-};
+}
 
-export type WineBottleMeshBuildResult = {
+export interface WineBottleMeshBuildResult {
   bodyMesh: Mesh;
   labelMesh: Mesh | null;
   corkMesh: Mesh | null;
   foilMesh: Mesh | null;
   discMesh: Mesh | null;
-};
+}
 
 function buildCorkCylinderGeometry(radiusM: number, heightM: number): BufferGeometry {
   const geometry = new CylinderGeometry(radiusM, radiusM, heightM, 32);

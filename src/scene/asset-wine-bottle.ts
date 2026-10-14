@@ -1,3 +1,4 @@
+import { builtinLatheProfileUrl } from '@/constants/builtin-profile-paths';
 import type { AssetKind } from './asset-kind';
 import { clamp } from '@/units/math';
 
@@ -6,7 +7,7 @@ export type WineBottleBodyProfile = 'bordeaux' | 'alsace' | 'sparkling';
 export type WineBottleLabelSizeMode = 'height' | 'width';
 export type WineBottleLabelWrap = 'full' | 'partial';
 
-export type WineBottleParams = {
+export interface WineBottleParams {
   wineBottleBodyProfile: WineBottleBodyProfile;
   heightM: number;
   wallThicknessM: number;
@@ -16,7 +17,7 @@ export type WineBottleParams = {
   labelSizeMode: WineBottleLabelSizeMode;
   labelSizeM: number;
   labelWrap: WineBottleLabelWrap;
-};
+}
 
 export const CAPSULE_FOIL_STANDOFF_M = 0.0004;
 
@@ -36,6 +37,26 @@ const CORK_RADIUS_M: Record<WineBottleBodyProfile, number> = {
   sparkling: 0.01,
 };
 
+/** Max belly outer diameter at reference height — see requirements-assets-wine-bottle.md */
+const BELLY_OUTER_DIAMETER_M: Record<WineBottleBodyProfile, number> = {
+  bordeaux: 0.076,
+  alsace: 0.076,
+  sparkling: 0.088,
+};
+
+export function wineBottleMaxOuterDiameterM(profile: WineBottleBodyProfile): number {
+  return BELLY_OUTER_DIAMETER_M[profile];
+}
+
+/** Footprint width / body height for transform readouts (belly diameter, not label). */
+export function wineBottleFootprintAspect(
+  profile: WineBottleBodyProfile,
+  heightM: number,
+): number {
+  if (heightM <= 0) {return 1;}
+  return wineBottleMaxOuterDiameterM(profile) / heightM;
+}
+
 const HEIGHT_MIN = 0.15;
 const HEIGHT_MAX = 0.4;
 const LABEL_SIZE_MIN = 0.02;
@@ -48,11 +69,11 @@ const CAPSULE_DISC_HEIGHT_MAX = 0.03;
 export function wineBottleSvgUrl(profile: WineBottleBodyProfile): string {
   switch (profile) {
     case 'bordeaux':
-      return '/bottle-bordeaux-open.svg';
+      return builtinLatheProfileUrl('bottle-bordeaux-open.svg');
     case 'alsace':
-      return '/bottle-alsace-open.svg';
+      return builtinLatheProfileUrl('bottle-alsace-open.svg');
     case 'sparkling':
-      return '/bottle-sparkling-open.svg';
+      return builtinLatheProfileUrl('bottle-sparkling-open.svg');
   }
 }
 

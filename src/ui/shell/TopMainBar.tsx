@@ -4,8 +4,8 @@ import { Icon } from '@/ui/components/Icon';
 import { exportViewportImage } from '@/ui/store/app-store';
 import { CameraQuickBar } from '@/ui/panels/CameraQuickBar';
 
-function handleDummyAction(action: string): void {
-  console.log(`[demo] ${action}`);
+function handleDummyAction(_action: string): void {
+  // Placeholder until save/share flows ship.
 }
 
 export function TopMainBar() {
@@ -21,7 +21,7 @@ export function TopMainBar() {
           className="top-bar__btn top-bar__btn--icon"
           aria-label="Save"
           title="Save"
-          onClick={() => handleDummyAction('save')}
+          onClick={() => { handleDummyAction('save'); }}
         >
           <Icon icon={Save} />
         </button>
@@ -43,7 +43,7 @@ export function TopMainBar() {
           className="top-bar__btn top-bar__btn--icon"
           aria-label="Share"
           title="Share"
-          onClick={() => handleDummyAction('share')}
+          onClick={() => { handleDummyAction('share'); }}
         >
           <Icon icon={Share2} />
         </button>

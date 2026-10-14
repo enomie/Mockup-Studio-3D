@@ -8,7 +8,7 @@ import {
   formatLengthMeters,
   parseLengthMetersInput,
 } from '@/units/length';
-import { Icon } from '@/ui/components/Icon';
+import { ToolbarIconButton } from '@/ui/components/ToolbarIconButton';
 import { PanelAxisField } from '@/ui/components/PanelAxisField/PanelAxisField';
 import { SubPanelSection } from '@/ui/components/SubPanelSection';
 import { useCameraReadout } from '@/ui/hooks/useCameraReadout';
@@ -32,27 +32,6 @@ function parseNavMeters(raw: string): number | null {
   return parseLengthMetersInput(raw, CAMERA_NAV_LENGTH_DECIMALS);
 }
 
-type AngleResetButtonProps = {
-  ariaLabel: string;
-  disabled: boolean;
-  onClick: () => void;
-};
-
-function AngleResetButton({ ariaLabel, disabled, onClick }: AngleResetButtonProps) {
-  return (
-    <button
-      type="button"
-      className="panel-field-icon-btn"
-      aria-label={ariaLabel}
-      title={ariaLabel}
-      disabled={disabled}
-      onClick={onClick}
-    >
-      <Icon icon={X} size={14} strokeWidth={1.75} />
-    </button>
-  );
-}
-
 export function CameraReadoutSection() {
   const readout = useCameraReadout();
 
@@ -65,7 +44,7 @@ export function CameraReadoutSection() {
           value={readout.position.x}
           format={formatNavMeters}
           parse={parseNavMeters}
-          onChange={(value) => setCameraPosition({ x: value })}
+          onChange={(value) => { setCameraPosition({ x: value }); }}
         />
         <PanelAxisField
           label="Pos Y"
@@ -73,7 +52,7 @@ export function CameraReadoutSection() {
           value={readout.position.y}
           format={formatNavMeters}
           parse={parseNavMeters}
-          onChange={(value) => setCameraPosition({ y: value })}
+          onChange={(value) => { setCameraPosition({ y: value }); }}
         />
         <PanelAxisField
           label="Pos Z"
@@ -81,7 +60,7 @@ export function CameraReadoutSection() {
           value={readout.position.z}
           format={formatNavMeters}
           parse={parseNavMeters}
-          onChange={(value) => setCameraPosition({ z: value })}
+          onChange={(value) => { setCameraPosition({ z: value }); }}
         />
         <PanelAxisField
           label="Tgt X"
@@ -89,7 +68,7 @@ export function CameraReadoutSection() {
           value={readout.target.x}
           format={formatNavMeters}
           parse={parseNavMeters}
-          onChange={(value) => setCameraTarget({ x: value })}
+          onChange={(value) => { setCameraTarget({ x: value }); }}
         />
         <PanelAxisField
           label="Tgt Y"
@@ -97,7 +76,7 @@ export function CameraReadoutSection() {
           value={readout.target.y}
           format={formatNavMeters}
           parse={parseNavMeters}
-          onChange={(value) => setCameraTarget({ y: value })}
+          onChange={(value) => { setCameraTarget({ y: value }); }}
         />
         <PanelAxisField
           label="Tgt Z"
@@ -105,7 +84,7 @@ export function CameraReadoutSection() {
           value={readout.target.z}
           format={formatNavMeters}
           parse={parseNavMeters}
-          onChange={(value) => setCameraTarget({ z: value })}
+          onChange={(value) => { setCameraTarget({ z: value }); }}
         />
         <PanelAxisField
           label="Distance"
@@ -123,8 +102,9 @@ export function CameraReadoutSection() {
           parse={parseDegreesDisplayInput}
           onChange={setCameraAzimuthDeg}
           trailing={
-            <AngleResetButton
-              ariaLabel="Azimuth auf 0° setzen"
+            <ToolbarIconButton
+              icon={X}
+              ariaLabel="Reset azimuth to 0°"
               disabled={Math.abs(readout.azimuthDeg) < ANGLE_RESET_EPSILON}
               onClick={resetCameraAzimuth}
             />
@@ -138,8 +118,9 @@ export function CameraReadoutSection() {
           parse={parseDegreesDisplayInput}
           onChange={setCameraElevationDeg}
           trailing={
-            <AngleResetButton
-              ariaLabel="Elevation auf 0° setzen"
+            <ToolbarIconButton
+              icon={X}
+              ariaLabel="Reset elevation to 0°"
               disabled={Math.abs(readout.elevationDeg) < ANGLE_RESET_EPSILON}
               onClick={resetCameraElevation}
             />

@@ -57,7 +57,7 @@ describe('tin-can-geometry', () => {
     let maxR = 0;
     for (let i = 0; i < positions.length; i += 3) {
       const r = Math.hypot(positions[i], positions[i + 2]);
-      if (r > maxR) maxR = r;
+      if (r > maxR) {maxR = r;}
     }
     expect(maxR).toBeGreaterThan(params.bodyRadiusM + params.endRingThicknessM * 0.9);
     geometry.dispose();

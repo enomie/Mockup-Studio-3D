@@ -7,7 +7,7 @@ const SIZE_SCALE_DECIMALS = 3;
 
 export function parseMmInput(raw: string): number | null {
   const mm = parseMmFromMetersInput(raw);
-  if (mm === null || mm <= 0) return null;
+  if (mm === null || mm <= 0) {return null;}
   return mm;
 }
 
@@ -17,10 +17,10 @@ export function formatSizeScale(value: number): string {
 
 export function parseSizeScaleInput(raw: string): number | null {
   const trimmed = raw.trim().replace(',', '.');
-  if (!/^-?\d+(\.\d+)?$/.test(trimmed)) return null;
+  if (!/^-?\d+(\.\d+)?$/.test(trimmed)) {return null;}
   const value = Number.parseFloat(trimmed);
-  if (Number.isNaN(value)) return null;
-  if (value < SIZE_SCALE_MIN || value > SIZE_SCALE_MAX) return null;
+  if (Number.isNaN(value)) {return null;}
+  if (value < SIZE_SCALE_MIN || value > SIZE_SCALE_MAX) {return null;}
   return value;
 }
 
@@ -32,8 +32,8 @@ export function formatDegrees(radians: number): string {
 
 export function parseDegreesInput(raw: string): number | null {
   const trimmed = raw.trim().replace(',', '.');
-  if (!/^-?\d+(\.\d+)?$/.test(trimmed)) return null;
+  if (!/^-?\d+(\.\d+)?$/.test(trimmed)) {return null;}
   const value = Number.parseFloat(trimmed);
-  if (Number.isNaN(value)) return null;
+  if (Number.isNaN(value)) {return null;}
   return degToRad(value);
 }

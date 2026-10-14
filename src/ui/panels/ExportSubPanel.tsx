@@ -4,7 +4,6 @@ import { SubPanel } from '@/ui/components/SubPanel';
 import { SubPanelSection } from '@/ui/components/SubPanelSection';
 import {
   setExportGroundSurface,
-  setExportHideLightFixtures,
   setExportImageFormat,
   type ExportImageFormat,
 } from '@/ui/store/app-store';
@@ -18,7 +17,6 @@ const EXPORT_FORMAT_OPTIONS: readonly { value: ExportImageFormat; label: string 
 export function ExportSubPanel() {
   const exportImageFormat = useAppStore((s) => s.exportImageFormat);
   const exportGroundSurface = useAppStore((s) => s.exportGroundSurface);
-  const exportHideLightFixtures = useAppStore((s) => s.exportHideLightFixtures);
   const ground = useAppStore((s) => s.ground);
 
   const isPngTransparent = exportImageFormat === 'png-transparent';
@@ -45,20 +43,6 @@ export function ExportSubPanel() {
             Sky and empty areas export transparent; scene and ground stay as in the viewport.
           </p>
         ) : null}
-      </SubPanelSection>
-
-      <SubPanelSection title="Lighting">
-        <PanelCheckbox
-          label="Hide light fixtures"
-          checked={exportHideLightFixtures}
-          onChange={(checked) => {
-            setExportHideLightFixtures(checked);
-          }}
-        />
-        <p className="panel-hint">
-          Softbox discs and light wireframes are hidden only in the exported image; the viewport
-          stays unchanged.
-        </p>
       </SubPanelSection>
 
       {isPngTransparent ? (

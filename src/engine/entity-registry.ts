@@ -12,6 +12,22 @@ import {
   isBeverageCanAssetKind,
 } from '@/scene/asset-beverage-can';
 import { cloneBlockParams, isBlockAssetKind } from '@/scene/asset-block';
+import { isRigidPrimitiveAssetKind } from '@/scene/rigid-primitive-asset';
+import { buildRigidPrimitiveUniformScalePartial } from '@/scene/rigid-primitive-uniform-scale';
+import type { CylinderParams } from '@/scene/asset-cylinder';
+import type { SphereParams } from '@/scene/asset-sphere';
+import type { WheelCarParams } from '@/scene/asset-wheel-car';
+import {
+  clampPhysicsDensityKgPerM3,
+  normalizePhysicsBodyMode,
+  type PhysicsBodyMode,
+} from '@/scene/physics-rigid-body';
+import {
+  isFabricClothAssetKind,
+  type FabricClothParams,
+} from '@/scene/asset-fabric-cloth';
+import { isBookAssetKind, type BookParams } from '@/scene/asset-book';
+import type { BookMaterialTintPart } from '@/scene/book-material-tints';
 import {
   cloneHandheldParams,
   isHandheldAssetKind,
@@ -37,6 +53,7 @@ import {
   cloneWineBottleParams,
   isWineBottleAssetKind,
 } from '@/scene/asset-wine-bottle';
+import { clonePenParams, isPenAssetKind } from '@/scene/asset-pen';
 import {
   cloneTransform,
   DEFAULT_SIZE_SCALE,
@@ -52,6 +69,7 @@ import {
   type BeverageCanParams,
   type TinCanParams,
   type WineBottleParams,
+  type PenParams,
   type BlockParams,
   type WallParams,
   type WallpaperPattern,
@@ -79,10 +97,10 @@ import {
 import type { Rgb } from '@/colors/rgb';
 import { assetKindLabel } from '@/data/asset-catalog';
 
-export type EntityRuntime = {
+export interface EntityRuntime {
   entity: AssetEntity;
   object: Object3D;
-};
+}
 
 type EntityChangeListener = () => void;
 type SelectionChangeListener = (entityId: string | null) => void;
@@ -90,6 +108,8 @@ type SelectionChangeListener = (entityId: string | null) => void;
 const SPAWN_X_STEP = 0.25;
 
 export class EntityRegistry {
+  // --- Subscriptions ---
+
   private readonly entities = new Map<string, EntityRuntime>();
   private readonly kindCounters = new Map<AssetKind, number>();
   private selectedEntityId: string | null = null;
@@ -128,7 +148,7 @@ export class EntityRegistry {
       params: entry.entity.params
         ? isMonitorAssetKind(entry.entity.assetKind)
           ? cloneMonitorParams(entry.entity.params as MonitorDeviceParams)
-          : cloneHandheldParams(entry.entity.params as HandheldDeviceParams)
+          : cloneHandheldParams(entry.entity.params)
         : undefined,
       printParams: entry.entity.printParams
         ? clonePrintParams(entry.entity.printParams)
@@ -144,6 +164,8 @@ export class EntityRegistry {
       blockParams: entry.entity.blockParams
         ? cloneBlockParams(entry.entity.blockParams)
         : undefined,
+      physicsBodyMode: entry.entity.physicsBodyMode,
+      physicsDensityKgPerM3: entry.entity.physicsDensityKgPerM3,
       beverageCanParams: entry.entity.beverageCanParams
         ? cloneBeverageCanParams(entry.entity.beverageCanParams)
         : undefined,
@@ -153,6 +175,9 @@ export class EntityRegistry {
       wineBottleParams: entry.entity.wineBottleParams
         ? cloneWineBottleParams(entry.entity.wineBottleParams)
         : undefined,
+      penParams: entry.entity.penParams
+        ? clonePenParams(entry.entity.penParams)
+        : undefined,
       visible: entry.entity.visible,
     }));
   }
@@ -161,12 +186,14 @@ export class EntityRegistry {
     return this.selectedEntityId;
   }
 
+  // --- Queries ---
+
   getRuntime(entityId: string): EntityRuntime | undefined {
     return this.entities.get(entityId);
   }
 
   getSelectedRuntime(): EntityRuntime | undefined {
-    if (!this.selectedEntityId) return undefined;
+    if (!this.selectedEntityId) {return undefined;}
     return this.entities.get(this.selectedEntityId);
   }
 
@@ -191,6 +218,8 @@ export class EntityRegistry {
     };
     return transform;
   }
+
+  // --- Spawn helpers ---
 
   reserveSpawnSlots(count: number): void {
     this.spawnIndex += count;
@@ -242,7 +271,7 @@ export class EntityRegistry {
         ? {
             params: isMonitorAssetKind(assetKind)
               ? cloneMonitorParams(params as MonitorDeviceParams)
-              : cloneHandheldParams(params as HandheldDeviceParams),
+              : cloneHandheldParams(params),
           }
         : {}),
       ...(printParams ? { printParams: clonePrintParams(printParams) } : {}),
@@ -259,7 +288,7 @@ export class EntityRegistry {
   }
 
   removeEntity(entityId: string): void {
-    if (!this.entities.has(entityId)) return;
+    if (!this.entities.has(entityId)) {return;}
     this.entities.delete(entityId);
     if (this.selectedEntityId === entityId) {
       this.setSelectedEntityId(null);
@@ -267,16 +296,18 @@ export class EntityRegistry {
     this.emitEntities();
   }
 
+  // --- Selection & transform ---
+
   setSelectedEntityId(entityId: string | null): void {
-    if (this.selectedEntityId === entityId) return;
+    if (this.selectedEntityId === entityId) {return;}
     this.selectedEntityId = entityId;
-    this.selectionListeners.forEach((listener) => listener(entityId));
+    this.selectionListeners.forEach((listener) => { listener(entityId); });
     this.emitEntities();
   }
 
   updateTransform(entityId: string, partial: Partial<EntityTransform>): void {
     const runtime = this.entities.get(entityId);
-    if (!runtime) return;
+    if (!runtime) {return;}
 
     const next = cloneTransform(runtime.entity.transform);
     if (partial.position) {
@@ -293,7 +324,7 @@ export class EntityRegistry {
 
   syncTransformFromObject(entityId: string): void {
     const runtime = this.entities.get(entityId);
-    if (!runtime) return;
+    if (!runtime) {return;}
 
     runtime.entity.transform = readTransformFromObject(runtime.object);
     this.emitEntities();
@@ -301,28 +332,28 @@ export class EntityRegistry {
 
   setScreenImageId(entityId: string, imageId: string | null): void {
     const runtime = this.entities.get(entityId);
-    if (!runtime) return;
+    if (!runtime) {return;}
     runtime.entity.screenImageId = imageId;
     this.emitEntities();
   }
 
   setAssetDepth(entityId: string, depth: number): void {
     const runtime = this.entities.get(entityId);
-    if (!runtime) return;
+    if (!runtime) {return;}
     runtime.entity.depth = depth;
     this.emitEntities();
   }
 
   setSizeScale(entityId: string, sizeScale: number): void {
     const runtime = this.entities.get(entityId);
-    if (!runtime) return;
+    if (!runtime) {return;}
     runtime.entity.sizeScale = sizeScale;
     this.emitEntities();
   }
 
   setEntityVisible(entityId: string, visible: boolean): void {
     const runtime = this.entities.get(entityId);
-    if (!runtime) return;
+    if (!runtime) {return;}
     runtime.entity.visible = visible;
     runtime.object.visible = visible;
     this.emitEntities();
@@ -334,7 +365,7 @@ export class EntityRegistry {
     materialId: string,
   ): void {
     const runtime = this.entities.get(entityId);
-    if (!runtime) return;
+    if (!runtime) {return;}
 
     const materials = cloneAssetMaterials(
       runtime.entity.materials ?? defaultMaterialsForKind(runtime.entity.assetKind),
@@ -344,12 +375,14 @@ export class EntityRegistry {
     this.emitEntities();
   }
 
+  // --- Kind param patches ---
+
   setPrintParams(
     entityId: string,
     partial: Partial<PrintDeviceParams>,
   ): void {
     const runtime = this.entities.get(entityId);
-    if (!runtime || !isPrintAssetKind(runtime.entity.assetKind)) return;
+    if (!runtime || !isPrintAssetKind(runtime.entity.assetKind)) {return;}
 
     Object.assign(
       runtime.entity,
@@ -360,7 +393,7 @@ export class EntityRegistry {
 
   setWallParams(entityId: string, partial: Partial<WallParams>): void {
     const runtime = this.entities.get(entityId);
-    if (!runtime || !isWallAssetKind(runtime.entity.assetKind)) return;
+    if (!runtime || !isWallAssetKind(runtime.entity.assetKind)) {return;}
 
     Object.assign(
       runtime.entity,
@@ -371,7 +404,7 @@ export class EntityRegistry {
 
   setBlockParams(entityId: string, partial: Partial<BlockParams>): void {
     const runtime = this.entities.get(entityId);
-    if (!runtime || !isBlockAssetKind(runtime.entity.assetKind)) return;
+    if (!runtime || !isBlockAssetKind(runtime.entity.assetKind)) {return;}
 
     Object.assign(
       runtime.entity,
@@ -380,9 +413,131 @@ export class EntityRegistry {
     this.emitEntities();
   }
 
+  setCylinderParams(entityId: string, partial: Partial<CylinderParams>): void {
+    const runtime = this.entities.get(entityId);
+    if (runtime?.entity.assetKind !== 'cylinder') {return;}
+
+    Object.assign(
+      runtime.entity,
+      mergeKindParamPatch(runtime.entity.assetKind, runtime.entity, partial),
+    );
+    this.emitEntities();
+  }
+
+  setSphereParams(entityId: string, partial: Partial<SphereParams>): void {
+    const runtime = this.entities.get(entityId);
+    if (runtime?.entity.assetKind !== 'sphere') {return;}
+
+    Object.assign(
+      runtime.entity,
+      mergeKindParamPatch(runtime.entity.assetKind, runtime.entity, partial),
+    );
+    this.emitEntities();
+  }
+
+  applyRigidPrimitiveUniformScale(entityId: string, factor: number): boolean {
+    const runtime = this.entities.get(entityId);
+    if (!runtime || !isRigidPrimitiveAssetKind(runtime.entity.assetKind)) {
+      return false;
+    }
+
+    const partial = buildRigidPrimitiveUniformScalePartial(runtime.entity, factor);
+    if (!partial) {
+      return false;
+    }
+
+    Object.assign(
+      runtime.entity,
+      mergeKindParamPatch(runtime.entity.assetKind, runtime.entity, partial),
+    );
+    this.emitEntities();
+    return true;
+  }
+
+  setWheelCarParams(entityId: string, partial: Partial<WheelCarParams>): void {
+    const runtime = this.entities.get(entityId);
+    if (runtime?.entity.assetKind !== 'wheel-car') {return;}
+
+    Object.assign(
+      runtime.entity,
+      mergeKindParamPatch(runtime.entity.assetKind, runtime.entity, partial),
+    );
+    this.emitEntities();
+  }
+
+  setPhysicsBodyMode(entityId: string, mode: PhysicsBodyMode): void {
+    const runtime = this.entities.get(entityId);
+    if (!runtime) {return;}
+    runtime.entity.physicsBodyMode = normalizePhysicsBodyMode(mode);
+    this.emitEntities();
+  }
+
+  setPhysicsDensityKgPerM3(entityId: string, densityKgPerM3: number): void {
+    const runtime = this.entities.get(entityId);
+    if (!runtime) {return;}
+    runtime.entity.physicsDensityKgPerM3 = clampPhysicsDensityKgPerM3(densityKgPerM3);
+    this.emitEntities();
+  }
+
+  setFabricClothParams(entityId: string, partial: Partial<FabricClothParams>): void {
+    const runtime = this.entities.get(entityId);
+    if (!runtime || !isFabricClothAssetKind(runtime.entity.assetKind)) {return;}
+
+    Object.assign(
+      runtime.entity,
+      mergeKindParamPatch(runtime.entity.assetKind, runtime.entity, partial),
+    );
+    this.emitEntities();
+  }
+
+  setBookParams(entityId: string, partial: Partial<BookParams>): void {
+    const runtime = this.entities.get(entityId);
+    if (!runtime || !isBookAssetKind(runtime.entity.assetKind)) {return;}
+
+    Object.assign(
+      runtime.entity,
+      mergeKindParamPatch(runtime.entity.assetKind, runtime.entity, partial),
+    );
+    this.emitEntities();
+  }
+
+  setBookBackCoverImageId(entityId: string, imageId: string | null): void {
+    const runtime = this.entities.get(entityId);
+    if (!runtime || !isBookAssetKind(runtime.entity.assetKind)) {return;}
+    runtime.entity.bookBackCoverImageId = imageId;
+    this.emitEntities();
+  }
+
+  setBookSpineImageId(entityId: string, imageId: string | null): void {
+    const runtime = this.entities.get(entityId);
+    if (!runtime || !isBookAssetKind(runtime.entity.assetKind)) {return;}
+    runtime.entity.bookSpineImageId = imageId;
+    this.emitEntities();
+  }
+
+  setBookMaterialTint(
+    entityId: string,
+    part: BookMaterialTintPart,
+    tint: Rgb,
+  ): void {
+    const runtime = this.entities.get(entityId);
+    if (!runtime || !isBookAssetKind(runtime.entity.assetKind)) {return;}
+
+    const materials = cloneAssetMaterials(
+      runtime.entity.materials ?? defaultMaterialsForKind(runtime.entity.assetKind),
+    );
+    if (part === 'pages') {
+      materials.bookPagesTint = { ...tint };
+    } else {
+      materials.bookCoverTint = { ...tint };
+    }
+    runtime.entity.materials = materials;
+    this.emitEntities();
+  }
+
   setBeverageCanParams(entityId: string, partial: Partial<BeverageCanParams>): void {
     const runtime = this.entities.get(entityId);
-    if (!runtime || !isBeverageCanAssetKind(runtime.entity.assetKind)) return;
+    if (!runtime || !isBeverageCanAssetKind(runtime.entity.assetKind)) {return;}
 
     Object.assign(
       runtime.entity,
@@ -393,7 +548,7 @@ export class EntityRegistry {
 
   setTinCanParams(entityId: string, partial: Partial<TinCanParams>): void {
     const runtime = this.entities.get(entityId);
-    if (!runtime || !isTinCanAssetKind(runtime.entity.assetKind)) return;
+    if (!runtime || !isTinCanAssetKind(runtime.entity.assetKind)) {return;}
 
     Object.assign(
       runtime.entity,
@@ -404,7 +559,18 @@ export class EntityRegistry {
 
   setWineBottleParams(entityId: string, partial: Partial<WineBottleParams>): void {
     const runtime = this.entities.get(entityId);
-    if (!runtime || !isWineBottleAssetKind(runtime.entity.assetKind)) return;
+    if (!runtime || !isWineBottleAssetKind(runtime.entity.assetKind)) {return;}
+
+    Object.assign(
+      runtime.entity,
+      mergeKindParamPatch(runtime.entity.assetKind, runtime.entity, partial),
+    );
+    this.emitEntities();
+  }
+
+  setPenParams(entityId: string, partial: Partial<PenParams>): void {
+    const runtime = this.entities.get(entityId);
+    if (!runtime || !isPenAssetKind(runtime.entity.assetKind)) {return;}
 
     Object.assign(
       runtime.entity,
@@ -418,7 +584,7 @@ export class EntityRegistry {
     partial: Partial<WallpaperPattern>,
   ): void {
     const runtime = this.entities.get(entityId);
-    if (!runtime || !isWallAssetKind(runtime.entity.assetKind)) return;
+    if (!runtime || !isWallAssetKind(runtime.entity.assetKind)) {return;}
 
     Object.assign(
       runtime.entity,
@@ -432,7 +598,7 @@ export class EntityRegistry {
     partial: Partial<HandheldDeviceParams>,
   ): void {
     const runtime = this.entities.get(entityId);
-    if (!runtime || !isHandheldAssetKind(runtime.entity.assetKind)) return;
+    if (!runtime || !isHandheldAssetKind(runtime.entity.assetKind)) {return;}
 
     Object.assign(
       runtime.entity,
@@ -446,7 +612,7 @@ export class EntityRegistry {
     partial: Partial<MonitorDeviceParams>,
   ): void {
     const runtime = this.entities.get(entityId);
-    if (!runtime || !isMonitorAssetKind(runtime.entity.assetKind)) return;
+    if (!runtime || !isMonitorAssetKind(runtime.entity.assetKind)) {return;}
 
     Object.assign(
       runtime.entity,
@@ -461,7 +627,7 @@ export class EntityRegistry {
     visible: boolean,
   ): void {
     const runtime = this.entities.get(entityId);
-    if (!runtime) return;
+    if (!runtime) {return;}
 
     const visibility = migrateGeometryVisibility(
       runtime.entity.assetKind,
@@ -481,7 +647,7 @@ export class EntityRegistry {
     partial: Partial<ImageSurfaceSettings>,
   ): void {
     const runtime = this.entities.get(entityId);
-    if (!runtime) return;
+    if (!runtime) {return;}
 
     const current = resolveImageSurfaceSettings(
       runtime.entity.imageSurfaces,
@@ -497,7 +663,7 @@ export class EntityRegistry {
 
   setFaceTint(entityId: string, faceId: AssetFaceId, tint: Rgb): void {
     const runtime = this.entities.get(entityId);
-    if (!runtime) return;
+    if (!runtime) {return;}
 
     const materials = cloneAssetMaterials(
       runtime.entity.materials ?? defaultMaterialsForKind(runtime.entity.assetKind),
@@ -516,7 +682,7 @@ export class EntityRegistry {
     content: AssetFaceContent,
   ): void {
     const runtime = this.entities.get(entityId);
-    if (!runtime?.entity.faces) return;
+    if (!runtime?.entity.faces) {return;}
 
     runtime.entity.faces = {
       ...runtime.entity.faces,
@@ -545,7 +711,7 @@ export class EntityRegistry {
   }
 
   private emitEntities(): void {
-    this.entityListeners.forEach((listener) => listener());
+    this.entityListeners.forEach((listener) => { listener(); });
   }
 }
 

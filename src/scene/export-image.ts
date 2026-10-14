@@ -4,14 +4,12 @@ export type ExportImageFormat = 'png-transparent' | 'jpeg';
 /** How the ground plane appears in a PNG export capture. */
 export type ExportGroundSurface = 'viewport' | 'contact-shadows-only';
 
-export type CaptureViewportImageOptions = {
+export interface CaptureViewportImageOptions {
   format: ExportImageFormat;
   jpegQuality?: number;
   /** Default `viewport`. `contact-shadows-only` applies only with `png-transparent`. */
   groundSurface?: ExportGroundSurface;
-  /** Default false — hide fixture discs and light wireframes for this capture only. */
-  hideLightFixtures?: boolean;
-};
+}
 
 const pad2 = (n: number): string => String(n).padStart(2, '0');
 
@@ -19,11 +17,11 @@ const pad2 = (n: number): string => String(n).padStart(2, '0');
 export function formatExportDateTimeSuffix(date: Date = new Date()): string {
   return (
     `${date.getFullYear()}` +
-    `${pad2(date.getMonth() + 1)}` +
-    `${pad2(date.getDate())}` +
-    `${pad2(date.getHours())}` +
-    `${pad2(date.getMinutes())}` +
-    `${pad2(date.getSeconds())}`
+    pad2(date.getMonth() + 1) +
+    pad2(date.getDate()) +
+    pad2(date.getHours()) +
+    pad2(date.getMinutes()) +
+    pad2(date.getSeconds())
   );
 }
 

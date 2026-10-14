@@ -1,5 +1,5 @@
 /**
- * Regenerate public/bottle-*-open.svg as closed glass-wall loops (outer + inner + lip/foot).
+ * Regenerate public/profiles/lathe/bottle-*-open.svg as closed glass-wall loops (outer + inner + lip/foot).
  * Optional authoring helper — writes closed wall loops to disk (review before commit).
  * Run: npx vite-node scripts/generate-wine-bottle-wall-svgs.ts
  */
@@ -23,7 +23,7 @@ import {
 } from '../src/engine/wine-bottle-svg-profile';
 
 const HEIGHT_M = 0.29;
-const PUBLIC = join(process.cwd(), 'public');
+const PUBLIC_LATHE = join(process.cwd(), 'public', 'profiles', 'lathe');
 
 const FILES: { profile: WineBottleBodyProfile; file: string }[] = [
   { profile: 'bordeaux', file: 'bottle-bordeaux-open.svg' },
@@ -81,7 +81,7 @@ function buildSvg(pathD: string, viewBox: string): string {
 }
 
 for (const { file } of FILES) {
-  const path = join(PUBLIC, file);
+  const path = join(PUBLIC_LATHE, file);
   const svgText = readFileSync(path, 'utf8');
   const raw = extractOpenPathPointsFromSvgText(svgText, 48);
   const openWall = normalizeOpenWallSvgToLathePoints(raw, HEIGHT_M);

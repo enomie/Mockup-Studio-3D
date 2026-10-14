@@ -4,10 +4,10 @@ import { DEG_TO_RAD } from '@/units/angle';
 
 const STUDIO_BASE_DISTANCE = 8;
 
-export type StudioPose = {
+export interface StudioPose {
   position: Vec3;
   rotation: Vec3;
-};
+}
 
 export function computeSceneCenter(
   positions: readonly Vec3[],

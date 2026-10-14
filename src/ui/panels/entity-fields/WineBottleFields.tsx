@@ -37,7 +37,7 @@ export function WineBottleFields({
           images={images}
           imageLabel="Label"
           imageFieldId={screenImageFieldId}
-          onImageChange={(imageId) => setAssetScreenImage(entity.id, imageId)}
+          onImageChange={(imageId) => { setAssetScreenImage(entity.id, imageId); }}
         />
       </SubPanelSection>
 
@@ -58,10 +58,9 @@ export function WineBottleFields({
             { value: 'alsace', label: 'Alsace' },
             { value: 'sparkling', label: 'Sparkling' },
           ]}
-          onChange={(value) =>
-            setWineBottleParams(entity.id, {
+          onChange={(value) => { setWineBottleParams(entity.id, {
               wineBottleBodyProfile: value as WineBottleBodyProfile,
-            })
+            }); }
           }
         />
       </SubPanelSection>
@@ -73,8 +72,7 @@ export function WineBottleFields({
           value={params.capsuleFoilHeightM}
           format={(value) => formatLengthMeters(value, LENGTH_DECIMALS)}
           parse={parseLengthMetersInput}
-          onChange={(value) =>
-            setWineBottleParams(entity.id, { capsuleFoilHeightM: value })
+          onChange={(value) => { setWineBottleParams(entity.id, { capsuleFoilHeightM: value }); }
           }
         />
         <PanelAxisField
@@ -83,8 +81,7 @@ export function WineBottleFields({
           value={params.capsuleDiscHeightM}
           format={(value) => formatLengthMeters(value, LENGTH_DECIMALS)}
           parse={parseLengthMetersInput}
-          onChange={(value) =>
-            setWineBottleParams(entity.id, { capsuleDiscHeightM: value })
+          onChange={(value) => { setWineBottleParams(entity.id, { capsuleDiscHeightM: value }); }
           }
         />
       </SubPanelSection>
@@ -97,10 +94,9 @@ export function WineBottleFields({
             { value: 'partial', label: 'Partial (front)' },
             { value: 'full', label: 'Full (360°)' },
           ]}
-          onChange={(value) =>
-            setWineBottleParams(entity.id, {
+          onChange={(value) => { setWineBottleParams(entity.id, {
               labelWrap: value as WineBottleLabelWrap,
-            })
+            }); }
           }
         />
         <PanelSelect
@@ -110,10 +106,9 @@ export function WineBottleFields({
             { value: 'height', label: 'Height' },
             { value: 'width', label: 'Width' },
           ]}
-          onChange={(value) =>
-            setWineBottleParams(entity.id, {
+          onChange={(value) => { setWineBottleParams(entity.id, {
               labelSizeMode: value as WineBottleLabelSizeMode,
-            })
+            }); }
           }
           disabled={!hasLabelImage}
         />
@@ -123,7 +118,7 @@ export function WineBottleFields({
           value={params.labelSizeM}
           format={(value) => formatLengthMeters(value, LENGTH_DECIMALS)}
           parse={parseLengthMetersInput}
-          onChange={(value) => setWineBottleParams(entity.id, { labelSizeM: value })}
+          onChange={(value) => { setWineBottleParams(entity.id, { labelSizeM: value }); }}
           disabled={!hasLabelImage}
         />
         <PanelAxisField
@@ -132,8 +127,7 @@ export function WineBottleFields({
           value={params.labelBottomOffsetM}
           format={(value) => formatLengthMeters(value, LENGTH_DECIMALS)}
           parse={parseLengthMetersInput}
-          onChange={(value) =>
-            setWineBottleParams(entity.id, { labelBottomOffsetM: value })
+          onChange={(value) => { setWineBottleParams(entity.id, { labelBottomOffsetM: value }); }
           }
           disabled={!hasLabelImage}
         />

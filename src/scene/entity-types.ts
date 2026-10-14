@@ -6,14 +6,21 @@ import type { PrintDeviceParams } from './asset-print';
 import type { BeverageCanParams } from './asset-beverage-can';
 import type { TinCanParams } from './asset-tin-can';
 import type { WineBottleParams } from './asset-wine-bottle';
+import type { PenParams } from './asset-pen';
 import type { BlockParams } from './asset-block';
+import type { CylinderParams } from './asset-cylinder';
+import type { SphereParams } from './asset-sphere';
+import type { WheelCarParams } from './asset-wheel-car';
+import type { FabricClothParams } from './asset-fabric-cloth';
+import type { BookParams } from './asset-book';
+import type { PhysicsBodyMode } from './physics-rigid-body';
 import type { WallParams, WallpaperPattern } from './asset-wall';
 import type { AssetKind } from './asset-kind';
 import type { AssetGeometryVisibility } from './geometry-visibility';
 import type { AssetImageSurfaceId, ImageSurfaceSettings } from './image-surface';
 import type { AssetMaterialSlots } from './material-types';
 
-export type Vec3 = { x: number; y: number; z: number };
+export interface Vec3 { x: number; y: number; z: number }
 
 export type { AssetKind } from './asset-kind';
 export type { AssetFaceId, AssetFaceContent, AssetFaces } from './asset-faces';
@@ -28,16 +35,23 @@ export type { PrintDeviceParams } from './asset-print';
 export type { BeverageCanParams } from './asset-beverage-can';
 export type { TinCanParams } from './asset-tin-can';
 export type { WineBottleParams } from './asset-wine-bottle';
+export type { PenParams } from './asset-pen';
 export type { BlockParams } from './asset-block';
+export type { CylinderParams } from './asset-cylinder';
+export type { SphereParams } from './asset-sphere';
+export type { WheelCarParams } from './asset-wheel-car';
+export type { FabricClothParams } from './asset-fabric-cloth';
+export type { BookParams } from './asset-book';
+export type { PhysicsBodyMode } from './physics-rigid-body';
 export type { WallParams, WallpaperPattern } from './asset-wall';
 
-export type EntityTransform = {
+export interface EntityTransform {
   position: Vec3;
   /** Euler angles in radians (XYZ order). */
   rotation: Vec3;
-};
+}
 
-export type AssetEntity = {
+export interface AssetEntity {
   id: string;
   type: 'asset';
   name: string;
@@ -66,25 +80,37 @@ export type AssetEntity = {
   wallpaperPattern?: WallpaperPattern;
   /** Block dimensions (block). */
   blockParams?: BlockParams;
+  cylinderParams?: CylinderParams;
+  sphereParams?: SphereParams;
+  wheelCarParams?: WheelCarParams;
   beverageCanParams?: BeverageCanParams;
   tinCanParams?: TinCanParams;
   wineBottleParams?: WineBottleParams;
+  penParams?: PenParams;
+  fabricClothParams?: FabricClothParams;
+  bookParams?: BookParams;
+  bookBackCoverImageId?: string | null;
+  bookSpineImageId?: string | null;
+  /** Rapier fixed vs dynamic (rigid props). Default dynamic when omitted. */
+  physicsBodyMode?: PhysicsBodyMode;
+  /** kg/m³ for rigid mass from volume. Default 1000 when omitted. */
+  physicsDensityKgPerM3?: number;
   /** Render visibility — false hides the object in the viewport. */
   visible: boolean;
   transform: EntityTransform;
-};
+}
 
 export { DEFAULT_SIZE_SCALE };
 
 export type { AssetGeometryPart, AssetGeometryVisibility } from './geometry-visibility';
 export type { AssetMaterialSlots, MaterialEntitySlot, MaterialPreset } from './material-types';
 
-export type ImageMeta = {
+export interface ImageMeta {
   url: string;
   width: number;
   height: number;
   name?: string;
-};
+}
 
 export type ImageResolver = (imageId: string) => ImageMeta | null;
 

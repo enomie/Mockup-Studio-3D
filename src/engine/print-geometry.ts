@@ -6,12 +6,12 @@ import {
 import type { AssetFaceId } from '@/scene/asset-faces';
 import { createRoundedScreenGeometry } from './handheld-geometry';
 
-export type PrintFacePlacement = {
+export interface PrintFacePlacement {
   faceId: AssetFaceId;
   geometry: BufferGeometry;
   position: [number, number, number];
   rotation: [number, number, number];
-};
+}
 
 function buildSharpPrintFacePlacements(
   faceWidth: number,
@@ -81,12 +81,12 @@ function createQuarterCylinderWall(
   return geometry;
 }
 
-type CornerSpec = {
+interface CornerSpec {
   faceId: AssetFaceId;
   x: number;
   y: number;
   thetaStart: number;
-};
+}
 
 function buildRoundedPrintFacePlacements(
   faceWidth: number,

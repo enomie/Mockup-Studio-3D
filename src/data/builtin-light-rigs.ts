@@ -17,6 +17,8 @@ export function lightingFromSceneDefaults(): LightingSettings {
   const { lighting } = SCENE_DEFAULTS;
   return cloneLightingSettings({
     referenceMode: lighting.referenceMode,
+    showFixtures: lighting.showFixtures,
+    fixturesReflectInMirror: lighting.fixturesReflectInMirror,
     ambient: {
       enabled: lighting.ambient.enabled,
       color: { ...lighting.ambient.color },

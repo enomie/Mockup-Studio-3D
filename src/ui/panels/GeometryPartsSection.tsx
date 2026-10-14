@@ -14,11 +14,11 @@ import { PanelCheckbox } from '@/ui/components/PanelCheckbox';
 import { setGeometryVisible } from '@/ui/store/app-store';
 import { GeometryPartField } from '@/ui/panels/GeometryPartField';
 
-type GeometryPartsSectionProps = {
+interface GeometryPartsSectionProps {
   entity: AssetEntity;
   materials: MaterialPreset[];
   parts: readonly AssetGeometryPartDescriptor[];
-};
+}
 
 function resolveMaterialIdForSlot(
   assetKind: AssetEntity['assetKind'],
@@ -54,8 +54,7 @@ export function GeometryPartsSection({
               key={descriptor.part}
               label={descriptor.label}
               checked={isGeometryVisible(visibility, descriptor.part)}
-              onChange={(checked) =>
-                setGeometryVisible(entity.id, descriptor.part, checked)
+              onChange={(checked) => { setGeometryVisible(entity.id, descriptor.part, checked); }
               }
             />
           );

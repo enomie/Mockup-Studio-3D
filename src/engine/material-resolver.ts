@@ -30,14 +30,17 @@ import { labelImageUSpan } from './beverage-can-label-unfold';
 import { finishToMaterialId, type ImageSurfaceSettings } from '@/scene/image-surface';
 import { multiplyRgb, type Rgb } from '@/colors/rgb';
 import { createTexturedMaterial } from '@/materials/procedural';
+import { applyGlassSurfaceToPhysicalMaterial } from '@/materials/procedural/glass-surface';
 import {
   MATERIAL_ALUMINUM_BRUSHED_ID,
   MATERIAL_GLASS_WINE_BOTTLE_ID,
+  MATERIAL_PLASTIC_MATTE_ID,
   migrateMaterialId,
 } from '@/scene/material-ids';
-import type {
-  MaterialPreset,
-  MaterialPresetResolver,
+import {
+  TINT_NEUTRAL,
+  type MaterialPreset,
+  type MaterialPresetResolver,
 } from '@/scene/material-types';
 
 const GLAZING_THICKNESS_M = 0.002;
@@ -54,7 +57,7 @@ const WINE_BOTTLE_SPECULAR_COLOR = (() => {
   return c;
 })();
 
-export type MaterialResolveOptions = {
+export interface MaterialResolveOptions {
   tint?: Rgb;
   meshDepthM?: number;
   /** Procedural grain along UV.u (horizontal frame bars) vs UV.v (vertical bars). */
@@ -67,7 +70,7 @@ export type MaterialResolveOptions = {
     | 'displayGlass'
     | 'handheldGlazing'
     | 'wallpaper';
-};
+}
 
 function rgbToColor(rgb: Rgb): Color {
   return new Color(rgb.r, rgb.g, rgb.b);
@@ -118,7 +121,7 @@ function createDisplayGlazingMaterial(
 ): MeshPhysicalNodeMaterial {
   const glassTint = options.tint ?? preset.tint ?? { r: 1, g: 1, b: 1 };
 
-  return new MeshPhysicalNodeMaterial({
+  const material = new MeshPhysicalNodeMaterial({
     color: rgbToColor(glassTint),
     roughness: 0.02,
     metalness: 0,
@@ -132,6 +135,8 @@ function createDisplayGlazingMaterial(
     side: DoubleSide,
     depthWrite: true,
   });
+  applyGlassSurfaceToPhysicalMaterial(material, preset);
+  return material;
 }
 
 export function createTransmissionMaterial(
@@ -174,6 +179,7 @@ export function createTransmissionMaterial(
     material.depthWrite = true;
   }
 
+  applyGlassSurfaceToPhysicalMaterial(material, preset);
   return material;
 }
 
@@ -253,12 +259,11 @@ function solidColorPbrMaterial(
 }
 
 type ShaderColorNode = NonNullable<MeshStandardNodeMaterial['colorNode']>;
-type ShaderOpacityNode = NonNullable<MeshStandardNodeMaterial['opacityNode']>;
 
-type ImagePlaneTextureNodes = {
+interface ImagePlaneTextureNodes {
   sample: ReturnType<typeof texture>;
   useAlphaChannel: boolean;
-};
+}
 
 function asTextureRgba(sample: ReturnType<typeof texture>): Node<'vec4'> {
   return sample as unknown as Node<'vec4'>;
@@ -292,8 +297,8 @@ function bindImagePlaneTexture(
 
   if (useAlphaChannel) {
     const rgba = asTextureRgba(sample);
-    material.colorNode = rgba.rgb as ShaderColorNode;
-    applyImagePlaneAlpha(material, rgba.a as ShaderOpacityNode);
+    material.colorNode = rgba.rgb;
+    applyImagePlaneAlpha(material, rgba.a);
     if (surface.emissiveEnabled) {
       material.emissiveNode = (rgba.rgb as ShaderColorNode)
         .mul(float(surface.emissiveIntensity))
@@ -390,15 +395,15 @@ export function createWallpaperImageMaterial(
   };
 
   if (useAlphaChannel) {
-    material.colorNode = rgba.rgb as ShaderColorNode;
-    applyImagePlaneAlpha(material, rgba.a as ShaderOpacityNode);
+    material.colorNode = rgba.rgb;
+    applyImagePlaneAlpha(material, rgba.a);
     if (surfaceSettings.emissiveEnabled) {
       material.emissiveNode = (rgba.rgb as ShaderColorNode)
         .mul(float(surfaceSettings.emissiveIntensity))
         .mul(rgba.a);
     }
   } else {
-    material.colorNode = sample as unknown as ShaderColorNode;
+    material.colorNode = sample;
     if (surfaceSettings.emissiveEnabled) {
       material.emissiveNode = (sample as unknown as ShaderColorNode).mul(
         float(surfaceSettings.emissiveIntensity),
@@ -443,7 +448,95 @@ function fitHeightLabelColorNode(
   const underlay = rgbColorNode(underlayRgb);
   const blend = showTexture.mul(texColor.a);
 
-  return mix(underlay, texColor.rgb, blend) as ShaderColorNode;
+  return mix(underlay, texColor.rgb, blend);
+}
+
+function spanMappedBandCoord(band: ReturnType<typeof uv>['x'], span: number) {
+  const half = float(0.5);
+  const spanNode = float(span);
+  const narrow = band.sub(half).div(spanNode).add(half);
+  const wide = band.sub(half).mul(spanNode).add(half);
+  const useWide = step(float(1), spanNode);
+  return mix(narrow, wide, useWide);
+}
+
+/** Pen body wrap: image height → circumference (U), image width → shaft length (V). */
+export function fitPenBodyWrapColorNode(
+  tex: Texture,
+  planeW: number,
+  planeH: number,
+  imageW: number,
+  imageH: number,
+  underlayRgb: Rgb,
+): ShaderColorNode {
+  const tSpan = labelImageUSpan(planeW, planeH, imageH, imageW);
+  const sSpan = labelImageUSpan(planeH, planeW, imageW, imageH);
+  const bandU = uv().x;
+  const bandV = uv().y;
+  const bandUCirc = float(1).sub(bandU);
+
+  const tMapped = spanMappedBandCoord(bandUCirc, tSpan);
+  const sMapped = spanMappedBandCoord(bandV, sSpan);
+  const s = float(1).sub(sMapped);
+  const t = float(1).sub(tMapped);
+
+  const sClamped = clamp(s, float(0), float(1));
+  const tClamped = clamp(t, float(0), float(1));
+  const texColor = asTextureRgba(texture(tex, vec2(sClamped, tClamped)));
+
+  const inTextureS = step(float(0), s).mul(step(s, float(1)));
+  const inTextureT = step(float(0), t).mul(step(t, float(1)));
+  const showFromCirc = mix(inTextureT, float(1), step(float(1), float(tSpan)));
+  const showFromLength = mix(inTextureS, float(1), step(float(1), float(sSpan)));
+  const showTexture = showFromCirc.mul(showFromLength);
+
+  const underlay = rgbColorNode(underlayRgb);
+  const blend = showTexture.mul(texColor.a);
+
+  return mix(underlay, texColor.rgb, blend);
+}
+
+/**
+ * Pen body image on lathe: opaque blend with plastic underlay (PNG holes show body color).
+ */
+export function createPenBodyWrapMaterial(
+  resolvePreset: MaterialPresetResolver,
+  surface: ImageSurfaceSettings,
+  tex: Texture,
+  planeW: number,
+  planeH: number,
+  imageW?: number,
+  imageH?: number,
+  underlayRgb?: Rgb,
+): MeshStandardNodeMaterial | MeshPhysicalNodeMaterial {
+  const imagePreset = resolvePreset(finishToMaterialId(surface.finish));
+  const roughness = imagePreset?.roughness ?? 0.35;
+  const plasticPreset = resolvePreset(MATERIAL_PLASTIC_MATTE_ID);
+  const underlay =
+    underlayRgb ?? plasticPreset?.color ?? { r: 0.72, g: 0.72, b: 0.72 };
+
+  const material = new MeshStandardNodeMaterial({ metalness: 0 });
+  material.roughnessNode = float(roughness);
+  material.metalnessNode = float(0);
+
+  const hasImageSize =
+    imageW !== undefined &&
+    imageH !== undefined &&
+    planeW > 0 &&
+    planeH > 0 &&
+    imageW > 0 &&
+    imageH > 0;
+
+  const colorNode: ShaderColorNode = hasImageSize
+    ? fitPenBodyWrapColorNode(tex, planeW, planeH, imageW, imageH, underlay)
+    : (texture(tex));
+  material.colorNode = colorNode;
+
+  if (surface.emissiveEnabled) {
+    material.emissiveNode = colorNode.mul(float(surface.emissiveIntensity));
+  }
+
+  return material;
 }
 
 /**
@@ -480,7 +573,7 @@ export function createCanLabelMaterial(
 
   const colorNode: ShaderColorNode = hasImageSize
     ? fitHeightLabelColorNode(tex, planeW, planeH, imageW, imageH, underlay)
-    : (texture(tex) as ShaderColorNode);
+    : (texture(tex));
   material.colorNode = colorNode;
 
   if (surface.emissiveEnabled) {
@@ -546,6 +639,196 @@ export function createImagePbrMaterial(
   return material;
 }
 
+const FABRIC_PLACEHOLDER_SURFACE: ImageSurfaceSettings = {
+  finish: 'matt',
+  emissiveEnabled: false,
+  emissiveIntensity: 0,
+  passepartoutColor: { r: 0.85, g: 0.85, b: 0.85 },
+  passepartoutOffsetM: 0,
+  passepartoutFinish: 'matt',
+};
+
+function createStructureBaseMaterial(
+  preset: MaterialPreset,
+): MeshStandardNodeMaterial | MeshPhysicalNodeMaterial {
+  if (preset.kind === 'textured') {
+    return createTexturedMaterial(preset, TINT_NEUTRAL, { surfaceRole: 'ground' });
+  }
+
+  if ((preset.clearcoat ?? 0) > 0) {
+    return new MeshPhysicalNodeMaterial({
+      color: new Color(1, 1, 1),
+      roughness: preset.roughness ?? 0.5,
+      metalness: preset.metalness ?? 0,
+      clearcoat: preset.clearcoat,
+      clearcoatRoughness: preset.clearcoatRoughness ?? 0.1,
+    });
+  }
+
+  return new MeshStandardNodeMaterial({
+    color: new Color(1, 1, 1),
+    roughness: preset.roughness ?? 0.5,
+    metalness: preset.metalness ?? 0,
+  });
+}
+
+/** Image albedo × material preset structure (no preset product color). */
+export function createImageOnPresetMaterial(
+  resolvePreset: MaterialPresetResolver,
+  materialId: string,
+  tex: Texture | null,
+  planeW: number,
+  planeH: number,
+  imageW?: number,
+  imageH?: number,
+  imageName?: string,
+): MeshStandardNodeMaterial | MeshPhysicalNodeMaterial {
+  const resolvedId = migrateMaterialId(materialId);
+  const preset = resolvePreset(resolvedId);
+
+  if (!preset || preset.kind === 'transmission') {
+    return createPassepartoutPbrMaterial(resolvePreset, FABRIC_PLACEHOLDER_SURFACE);
+  }
+
+  if (!tex) {
+    return createPassepartoutPbrMaterial(resolvePreset, FABRIC_PLACEHOLDER_SURFACE);
+  }
+
+  const material = createStructureBaseMaterial(preset);
+  material.side = DoubleSide;
+
+  const hasImageSize =
+    imageW !== undefined &&
+    imageH !== undefined &&
+    planeW > 0 &&
+    planeH > 0 &&
+    imageW > 0 &&
+    imageH > 0;
+
+  const nodes = hasImageSize
+    ? buildImagePlaneTextureNodes(tex, planeW, planeH, imageW, imageH, imageName)
+    : {
+        sample: texture(tex),
+        useAlphaChannel: imageFormatMayHaveAlpha(
+          resolveImageFileName(tex, imageName),
+        ),
+      };
+
+  bindImagePlaneTexture(material, FABRIC_PLACEHOLDER_SURFACE, nodes);
+
+  return material;
+}
+
+function bindBookImageOverCoverTint(
+  material: MeshStandardNodeMaterial | MeshPhysicalNodeMaterial,
+  tintedBase: MeshStandardNodeMaterial | MeshPhysicalNodeMaterial,
+  nodes: ImagePlaneTextureNodes,
+): void {
+  const { sample, useAlphaChannel } = nodes;
+  const baseColor = (tintedBase.colorNode ??
+    vec3(float(1), float(1), float(1))) as Node<'vec3'>;
+
+  if (useAlphaChannel) {
+    const rgba = asTextureRgba(sample);
+    material.colorNode = mix(
+      baseColor,
+      rgba.rgb,
+      rgba.a,
+    );
+  } else {
+    material.colorNode = sample as unknown as ShaderColorNode;
+  }
+
+  material.transparent = false;
+  material.opacityNode = null;
+  if (tintedBase.roughnessNode) {
+    material.roughnessNode = tintedBase.roughnessNode;
+  }
+  if (tintedBase.metalnessNode) {
+    material.metalnessNode = tintedBase.metalnessNode;
+  }
+}
+
+export function createBookImageOnPresetMaterialFromNodes(
+  resolver: MaterialResolver,
+  resolvePreset: MaterialPresetResolver,
+  materialId: string,
+  coverTint: Rgb,
+  nodes: ImagePlaneTextureNodes,
+): MeshStandardNodeMaterial | MeshPhysicalNodeMaterial {
+  const resolvedId = migrateMaterialId(materialId);
+  const preset = resolvePreset(resolvedId);
+
+  if (!preset || preset.kind === 'transmission') {
+    return (resolver.create(MATERIAL_PLASTIC_MATTE_ID, {
+      tint: coverTint,
+    }) ?? createSolidPbrMaterial({
+      id: 'fallback',
+      name: 'Fallback',
+      source: 'builtin',
+      kind: 'solid-pbr',
+      color: coverTint,
+      roughness: 0.5,
+      metalness: 0,
+    }));
+  }
+
+  const tintedBase = (resolver.create(materialId, { tint: coverTint }) ??
+    resolver.create(MATERIAL_PLASTIC_MATTE_ID, { tint: coverTint }) ??
+    createSolidPbrMaterial({
+      id: 'fallback',
+      name: 'Fallback',
+      source: 'builtin',
+      kind: 'solid-pbr',
+      color: coverTint,
+      roughness: 0.5,
+      metalness: 0,
+    }));
+
+  const material = createStructureBaseMaterial(preset);
+  bindBookImageOverCoverTint(material, tintedBase, nodes);
+  return material;
+}
+
+/** Cover image on preset structure; PNG alpha composites over tinted cover (opaque). */
+export function createBookImageOnPresetMaterial(
+  resolver: MaterialResolver,
+  resolvePreset: MaterialPresetResolver,
+  materialId: string,
+  coverTint: Rgb,
+  tex: Texture,
+  planeW: number,
+  planeH: number,
+  imageW?: number,
+  imageH?: number,
+  imageName?: string,
+): MeshStandardNodeMaterial | MeshPhysicalNodeMaterial {
+  const hasImageSize =
+    imageW !== undefined &&
+    imageH !== undefined &&
+    planeW > 0 &&
+    planeH > 0 &&
+    imageW > 0 &&
+    imageH > 0;
+
+  const nodes = hasImageSize
+    ? buildImagePlaneTextureNodes(tex, planeW, planeH, imageW, imageH, imageName)
+    : {
+        sample: texture(tex),
+        useAlphaChannel: imageFormatMayHaveAlpha(
+          resolveImageFileName(tex, imageName),
+        ),
+      };
+
+  return createBookImageOnPresetMaterialFromNodes(
+    resolver,
+    resolvePreset,
+    materialId,
+    coverTint,
+    nodes,
+  );
+}
+
 function isDisposableMaterial(
   material: Material,
 ): material is MeshStandardNodeMaterial | MeshPhysicalNodeMaterial {
@@ -599,7 +882,7 @@ export class MaterialResolver {
   ): MeshStandardNodeMaterial | MeshPhysicalNodeMaterial | null {
     const resolvedId = migrateMaterialId(materialId);
     const preset = this.resolvePreset(resolvedId);
-    if (!preset) return null;
+    if (!preset) {return null;}
 
     const hasTint = options.tint !== undefined;
     const hasDepth = options.meshDepthM !== undefined;
@@ -608,7 +891,7 @@ export class MaterialResolver {
 
     if (!hasTint && !hasDepth && !hasGrainAxis && !hasSurfaceRole) {
       const cached = this.baseCache.get(resolvedId);
-      if (cached) return cached;
+      if (cached) {return cached;}
 
       const created = createMaterialFromPreset(preset);
       this.baseCache.set(resolvedId, created);

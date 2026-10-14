@@ -16,11 +16,13 @@ Vor jeder größeren Entscheidung kurz diese Datei lesen, dann die passende Kate
 | Datei | Wann lesen |
 |---|---|
 | `requirements-and-project-description.md` | Projektkontext, Scope, Plattform |
-| `requirements-app-layout.md` | Shell: Top/Left/Right/Status, Main + Sub Panels |
+| `requirements-app-layout.md` | Shell: Top/Left/Right/Status, Main + Sub; Sub-Collapse; List\|Detail-Split |
 | `requirements-lighting.md` | Multi-Light, Typen, Right Lighting Panel |
 | `requirements-lighting-presets.md` | Left Light rigs: lighting presets, user save |
 | `requirements-shadows.md` | Szene-Schatten: Qualität, mm-Kontakt, Cast/Receive, Engine |
 | `requirements-scene-placement.md` | Entities, Select, Transform, Gizmo |
+| `requirements-physics.md` | Rapier: World Start/Freeze; Fixed/Dynamic per asset; cloth; mass |
+| `requirements-physics-test.md` | Physics panel rigid fall test (Start/Stop, 0.1 m cube) |
 | `requirements-gimbals.md` | Transform-Gizmo, Translate/Rotate, Toolbar |
 | `requirements-camera.md` | Camera: Quick Bar, Sub-Panel, Presets, Navigation |
 | `requirements-export.md` | Bild-Export (normativ): PNG/JPG, Pipeline, Contact shadows, UI, Store |
@@ -32,20 +34,25 @@ Vor jeder größeren Entscheidung kurz diese Datei lesen, dann die passende Kate
 | `requirements-colors.md` | Colors library, named RGB swatches, ColorPicker integration |
 | `requirements-materials.md` | Materials library, PBR presets, built-ins, assignment |
 | `requirements-assets.md` | Asset catalog, drop/placement, screen image, sizing |
+| `requirements-assets-book.md` | Book: softcover & hardcover, pages block, covers, spine image |
 | `requirements-assets-picture-framed.md` | Picture framed: frame geometry, glazing, panel |
 | `requirements-assets-wall.md` | Wall, wall with door, wallpaper pattern |
-| `requirements-assets-block.md` | Block: box dimensions, single material, corner radius |
-| `requirements-assets-fabric-cloth.md` | Fabric cloth: image both sides, border, stiff / wavy / physical |
+| `requirements-assets-block.md` | Block: box dimensions, single material, corner radius, physics mode |
+| `requirements-assets-cylinder.md` | Cylinder: radius/height, 2-edge corner radius, like block |
+| `requirements-assets-sphere.md` | Sphere: radius, rigid physics like block |
+| `requirements-assets-fabric-cloth.md` | Fabric cloth: image both sides, border, Rapier simulation |
 | `requirements-assets-beverage-can.md` | Beverage can (330 ml): SVG lathe alu body, label UV on mantle band, top ring |
 | `requirements-assets-tin-can.md` | Tin can (food can): parametric radius + height, beads on middle 80% of mantle, label follows corrugation |
 | `requirements-assets-wine-bottle.md` | Wine bottle: bordeaux / alsace / sparkling profiles, glass wall, label (TBD) |
+| `requirements-assets-pen.md` | Pen (v1): marker & fountain pen, SVG lathe cap/ring/body, body wrap + PNG underlay |
+| `requirements-assets-wheel-car.md` | Wheel Car (`wheel-car`): tire ring (lathe fillet), rim barrel + 5 spokes + hub, tire/rim materials |
 | `requirements-color-picker.md` | Shared ColorPicker component |
 | `requirements-ground.md` | Ground panel UI + texture mapping |
 | `requirements-look-and-feel.md` | UI, UX, Lucide Icons, Panel Scrollbars |
-| `requirements-demo.md` | UI Dummy Demo — Shell-Platzhalter |
 | `requirements-development-workflow.md` | Docs first, Phasen, Inventur, sauberer Code |
+| `requirements-builtin-and-user-content.md` | Shipped vs user content: user-created entries deletable; domain matrix |
 | `requirements-architecture.md` | Querschnitt, gemeinsame Nenner, Scene-API, Entity |
-| `requirements-code.md` | React UI-Chrome, Three WebGPU, Rapier, Strict TS |
+| `requirements-code.md` | React UI-Chrome, Three WebGPU, Rapier, Strict TS; **no deprecated APIs**; TSL procedural reference (TSL Textures), triplanar sampling |
 | `requirements-tips-and-tricks.md` | Tips & Tricks — Sammelbecken, kein Feature-Scope; später promoten |
 
 Neue Kategorie → `requirements-{kebab-case}.md` + Eintrag in der Projekt-Datei. Praxis-Tipps (Workarounds) → `requirements-tips-and-tricks.md`.
@@ -73,5 +80,6 @@ Mehrere Requirements pro Datei — durch `---` getrennt.
 - Neue Requirements nur auf User-Anfrage — nicht proaktiv erfinden.
 - Bestehende Requirements nicht überschreiben; neue Blöcke ans Dateiende.
 - Typische Fehler in `requirements-code.md` — nicht dagegen implementieren.
+- **ESLint:** strikte type-checked Regeln — [`eslint.mdc`](./eslint.mdc), Abschnitt *Strict ESLint* in `requirements-code.md`.
 - **Code & Kommentare immer Englisch** (`src/**`); Docs/Requirements dürfen Deutsch sein.
 - **Entscheidungen:** kurzes Diary in [`diary-code-decisions.md`](../../_docs/diaries/diary-code-decisions.md) — siehe [`diary.mdc`](./diary.mdc).

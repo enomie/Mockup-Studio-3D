@@ -57,12 +57,12 @@ export class GizmoController {
   }
 
   getTransformMode(): GizmoTransformMode {
-    return this.controls.mode as GizmoTransformMode;
+    return this.controls.mode;
   }
 
   enforceUniformScale(): void {
     const object = this.controls.object;
-    if (!object || this.controls.mode !== 'scale') return;
+    if (this.controls.mode !== 'scale') {return;}
     const uniform =
       (object.scale.x + object.scale.y + object.scale.z) / 3;
     object.scale.set(uniform, uniform, uniform);

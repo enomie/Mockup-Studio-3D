@@ -23,7 +23,7 @@ describe('buildHandheldFrameGeometryCsg', () => {
     index: { count: number } | null;
   }): number {
     const index = geometry.index;
-    if (index) return index.count / 3;
+    if (index) {return index.count / 3;}
     return geometry.getAttribute('position').count / 3;
   }
 

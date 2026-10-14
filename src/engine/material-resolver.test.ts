@@ -1,15 +1,22 @@
 import { describe, expect, it } from 'vitest';
-import { DoubleSide, MeshPhysicalNodeMaterial, Texture } from 'three/webgpu';
+import { DoubleSide, MeshPhysicalNodeMaterial, MeshStandardNodeMaterial, Texture } from 'three/webgpu';
 import {
   MATERIAL_GLASS_FROSTED_PANE_ID,
   MATERIAL_GLASS_PANE_ID,
   MATERIAL_GLASS_SOLID_ID,
   MATERIAL_GLASS_WINE_BOTTLE_ID,
+  MATERIAL_GRID_LINES_ID,
+  MATERIAL_GRID_PAPER_ID,
+  MATERIAL_CHROME_ID,
+  MATERIAL_GLOSSY_PRINT_ID,
+  MATERIAL_GOLD_ID,
+  MATERIAL_PLASTIC_MATTE_ID,
 } from '@/scene/material-ids';
 import { MATERIAL_PRESETS } from '@/data/material-presets';
 import {
   createImagePbrMaterial,
   createMaterialFromPreset,
+  createPenBodyWrapMaterial,
   createPassepartoutPbrMaterial,
   createTransmissionMaterial,
   isClearTransmissionPreset,
@@ -39,6 +46,7 @@ describe('createMaterialFromPreset — display glazing', () => {
     expect(material.clearcoat).toBe(1);
     expect(material.opacity).toBe(0.04);
     expect(material.depthWrite).toBe(true);
+    expect(material.normalNode).toBeDefined();
   });
 
   it('keeps frosted pane on displayGlass as transmission', () => {
@@ -118,6 +126,60 @@ describe('createMaterialFromPreset — display glazing', () => {
   });
 });
 
+describe('createMaterialFromPreset — textured built-ins', () => {
+  it('builds concrete, fabric, and glossy print presets', () => {
+    for (const id of [
+      'material-concrete',
+      'material-concrete-porous',
+      'material-fabric',
+      'material-silk',
+      MATERIAL_GLOSSY_PRINT_ID,
+      MATERIAL_PLASTIC_MATTE_ID,
+    ]) {
+      const material = createMaterialFromPreset(presetById(id));
+      expect(material).toBeDefined();
+      expect(material.colorNode).toBeDefined();
+    }
+  });
+
+  it('applies preset clearcoat on Print Glossy', () => {
+    const material = createMaterialFromPreset(
+      presetById(MATERIAL_GLOSSY_PRINT_ID),
+    ) as MeshPhysicalNodeMaterial;
+
+    expect(material).toBeInstanceOf(MeshPhysicalNodeMaterial);
+    expect(material.clearcoat).toBeCloseTo(0.35, 5);
+    expect(material.clearcoatRoughness).toBeCloseTo(0.12, 5);
+  });
+
+  it('applies preset clearcoat on polished metals', () => {
+    for (const id of [MATERIAL_GOLD_ID, MATERIAL_CHROME_ID]) {
+      const material = createMaterialFromPreset(presetById(id)) as MeshPhysicalNodeMaterial;
+      expect(material).toBeInstanceOf(MeshPhysicalNodeMaterial);
+      expect(material.clearcoat).toBeCloseTo(0.35, 5);
+      expect(material.clearcoatRoughness).toBeCloseTo(0.12, 5);
+    }
+  });
+});
+
+describe('createMaterialFromPreset — grid paper', () => {
+  it('builds opaque grid paper as standard textured material', () => {
+    const material = createMaterialFromPreset(presetById(MATERIAL_GRID_PAPER_ID));
+    expect(material).toBeInstanceOf(MeshStandardNodeMaterial);
+    expect(material.transparent).toBe(false);
+    expect(material.colorNode).toBeDefined();
+    expect(material.roughnessNode).toBeDefined();
+  });
+
+  it('builds transparent grid lines with opacity node and no depth write', () => {
+    const material = createMaterialFromPreset(presetById(MATERIAL_GRID_LINES_ID));
+    expect(material).toBeInstanceOf(MeshStandardNodeMaterial);
+    expect(material.transparent).toBe(true);
+    expect(material.opacityNode).toBeDefined();
+    expect(material.depthWrite).toBe(false);
+  });
+});
+
 describe('isClearTransmissionPreset', () => {
   it('treats pane and solid clear presets as clear', () => {
     expect(isClearTransmissionPreset(presetById(MATERIAL_GLASS_PANE_ID))).toBe(true);
@@ -178,7 +240,7 @@ describe('createImagePbrMaterial — alpha', () => {
       100,
       100,
       undefined,
-      'label-F-blue-transparent-square.png',
+      'label-F--blue-transparent--square.png',
     );
 
     expect(material.transparent).toBe(true);
@@ -220,6 +282,30 @@ describe('createPassepartoutPbrMaterial', () => {
   });
 });
 
+describe('createPenBodyWrapMaterial', () => {
+  it('uses opaque standard material with shader color (no PNG hole pass)', () => {
+    const tex = new Texture();
+    const surface = resolveImageSurfaceSettings(undefined, 'label', {
+      assetKind: 'pen',
+    });
+    const material = createPenBodyWrapMaterial(
+      resolvePreset,
+      surface,
+      tex,
+      0.04,
+      0.12,
+      800,
+      2000,
+      { r: 0.2, g: 0.3, b: 0.4 },
+    );
+
+    expect(material).toBeInstanceOf(MeshStandardNodeMaterial);
+    expect(material.transparent).toBe(false);
+    expect(material.depthWrite).toBe(true);
+    expect(material.colorNode).toBeDefined();
+  });
+});
+
 describe('createTransmissionMaterial — glazing cap', () => {
   it('enables depthWrite on frosted glazing caps', () => {
     const material = createTransmissionMaterial(
@@ -229,5 +315,21 @@ describe('createTransmissionMaterial — glazing cap', () => {
 
     expect(material.depthWrite).toBe(true);
     expect(material.transmission).toBe(1);
+  });
+});
+
+describe('transmission — glass surface normal', () => {
+  it('applies procedural normalNode on transmission glass', () => {
+    const material = createTransmissionMaterial(presetById(MATERIAL_GLASS_PANE_ID));
+    expect(material.normalNode).toBeDefined();
+  });
+
+  it('omits normalNode when surfaceNormalScale is zero', () => {
+    const preset = {
+      ...presetById(MATERIAL_GLASS_PANE_ID),
+      surfaceNormalScale: 0,
+    };
+    const material = createTransmissionMaterial(preset);
+    expect(material.normalNode).toBeFalsy();
   });
 });

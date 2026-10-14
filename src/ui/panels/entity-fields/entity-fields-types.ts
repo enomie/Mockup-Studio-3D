@@ -1,25 +1,37 @@
 import type { ImageAsset } from '@/data/image-assets';
 import type { AssetEntity } from '@/scene/entity-types';
 
-export type EntityImageFieldsProps = {
+export interface EntityImageFieldsProps {
   entity: AssetEntity;
   images: ImageAsset[];
   screenImageFieldId?: string;
-};
+}
 
-export type PrintFieldsProps = {
+export interface PrintFieldsProps {
   entity: AssetEntity;
   images: ImageAsset[];
   fieldIdPrefix?: string;
-};
+}
 
 export type PictureFieldsProps = EntityImageFieldsProps;
 
 export type WallFieldsProps = EntityImageFieldsProps;
 
-export type BlockFieldsProps = {
+export interface BlockFieldsProps {
   entity: AssetEntity;
-};
+}
+
+export interface CylinderFieldsProps {
+  entity: AssetEntity;
+}
+
+export interface SphereFieldsProps {
+  entity: AssetEntity;
+}
+
+export interface WheelCarFieldsProps {
+  entity: AssetEntity;
+}
 
 export type HandheldFieldsProps = EntityImageFieldsProps;
 

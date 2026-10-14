@@ -36,9 +36,16 @@ const ALL_ASSET_KINDS: Record<AssetKind, true> = {
   wall: true,
   'wall-door': true,
   block: true,
+  cylinder: true,
+  sphere: true,
+  'wheel-car': true,
   'beverage-can': true,
   'tin-can': true,
   'wine-bottle': true,
+  pen: true,
+  'fabric-cloth': true,
+  'book-softcover': true,
+  'book-hardcover': true,
 };
 
 const EXPECTED_METADATA: Record<
@@ -89,6 +96,21 @@ const EXPECTED_METADATA: Record<
     rebuildStrategy: 'sync-populateAssetGroup',
     screenImageRole: 'front',
   },
+  cylinder: {
+    family: 'block',
+    rebuildStrategy: 'sync-populateAssetGroup',
+    screenImageRole: 'front',
+  },
+  sphere: {
+    family: 'block',
+    rebuildStrategy: 'sync-populateAssetGroup',
+    screenImageRole: 'front',
+  },
+  'wheel-car': {
+    family: 'block',
+    rebuildStrategy: 'sync-populateAssetGroup',
+    screenImageRole: 'front',
+  },
   'beverage-can': {
     family: 'packaging',
     rebuildStrategy: 'async-packaging-group',
@@ -104,6 +126,26 @@ const EXPECTED_METADATA: Record<
     rebuildStrategy: 'async-packaging-group',
     screenImageRole: 'label',
   },
+  pen: {
+    family: 'packaging',
+    rebuildStrategy: 'async-packaging-group',
+    screenImageRole: 'label',
+  },
+  'fabric-cloth': {
+    family: 'fabric',
+    rebuildStrategy: 'sync-populateAssetGroup',
+    screenImageRole: 'front',
+  },
+  'book-softcover': {
+    family: 'book',
+    rebuildStrategy: 'sync-populateAssetGroup',
+    screenImageRole: 'front',
+  },
+  'book-hardcover': {
+    family: 'book',
+    rebuildStrategy: 'sync-populateAssetGroup',
+    screenImageRole: 'front',
+  },
 };
 
 const EXPECTED_DEFAULT_SLICE_KEYS: Record<AssetKind, string[]> = {
@@ -114,10 +156,17 @@ const EXPECTED_DEFAULT_SLICE_KEYS: Record<AssetKind, string[]> = {
   monitor: [],
   wall: ['wallParams', 'wallpaperPattern'],
   'wall-door': ['wallParams', 'wallpaperPattern'],
-  block: ['blockParams'],
+  block: ['blockParams', 'physicsBodyMode', 'physicsDensityKgPerM3'],
+  cylinder: ['cylinderParams', 'physicsBodyMode', 'physicsDensityKgPerM3'],
+  sphere: ['sphereParams', 'physicsBodyMode', 'physicsDensityKgPerM3'],
+  'wheel-car': ['wheelCarParams', 'physicsBodyMode', 'physicsDensityKgPerM3'],
   'beverage-can': ['beverageCanParams'],
   'tin-can': ['tinCanParams'],
   'wine-bottle': ['wineBottleParams'],
+  pen: ['penParams'],
+  'fabric-cloth': ['fabricClothParams'],
+  'book-softcover': ['bookParams', 'bookBackCoverImageId', 'bookSpineImageId'],
+  'book-hardcover': ['bookParams', 'bookBackCoverImageId', 'bookSpineImageId'],
 };
 
 function minimalEntity(kind: AssetKind): AssetEntity {
@@ -173,7 +222,7 @@ describe('asset-kind-registry', () => {
       const definition = getAssetKindDefinition(kind);
       const defaults = definition.getDefaultMaterials();
       for (const part of definition.geometryParts) {
-        if (part.ui !== 'visibility-and-material') continue;
+        if (part.ui !== 'visibility-and-material') {continue;}
         expect(part.materialSlot).toBeDefined();
         expect(defaults[part.materialSlot!]).toBeDefined();
       }
@@ -225,8 +274,21 @@ describe('asset-kind-registry', () => {
     );
   });
 
+  it('cloneKindParamsFromEntity copies block params and physics fields', () => {
+    const entity = {
+      ...minimalEntity('block'),
+      blockParams: defaultBlockParams(),
+      physicsBodyMode: 'fixed' as const,
+      physicsDensityKgPerM3: 2500,
+    };
+    const cloned = cloneKindParamsFromEntity('block', entity);
+    expect(cloned.blockParams).toEqual(defaultBlockParams());
+    expect(cloned.physicsBodyMode).toBe('fixed');
+    expect(cloned.physicsDensityKgPerM3).toBe(2500);
+  });
+
   it('usesAsyncPackagingRebuild only for packaging kinds with async strategy', () => {
-    const asyncKinds: AssetKind[] = ['beverage-can', 'tin-can', 'wine-bottle'];
+    const asyncKinds: AssetKind[] = ['beverage-can', 'tin-can', 'wine-bottle', 'pen'];
     for (const kind of Object.keys(ALL_ASSET_KINDS) as AssetKind[]) {
       expect(usesAsyncPackagingRebuild(kind)).toBe(asyncKinds.includes(kind));
     }

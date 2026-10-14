@@ -19,9 +19,11 @@ Kern in Kürze:
 - **WebGPU required** — kein WebGL-Fallback
 - **React** nur für UI-Chrome; Canvas/Engine = Vanilla TS (Three, Rapier)
 - **Code & comments: English only** — Docs dürfen Deutsch sein
+- **Kein deprecated Code** — keine `@deprecated`, keine Alias-Exports; Load-Migration ok → `no-deprecated.mdc`, `requirements-code.md`
+- **Strict ESLint** — type-checked Pflichtregeln (`no-unnecessary-condition`, `prefer-nullish-coalescing`, `no-floating-promises`, …) → `eslint.mdc`, `eslint.config.js`
 - Kameras: Quick Bar (Top Main) + Sub-Panel + Presets → `requirements-camera.md`
 - Multi-Light + Placement → `requirements-lighting.md`, `requirements-scene-placement.md`
 - App-Shell: Top/Left/Right/Status (Main + Sub) → `requirements-app-layout.md`
-- UI: Figma-like, responsive, touch-ready
+- UI: Figma-like, responsive, touch-ready; Shell-Icons **16px** (`Icon`); Panel-Minimizer **24px** hoch → `requirements-look-and-feel.md`
 - User: **min. 10 Bilder** hochladen & verwenden
 - **Bilder nie verzerren** — Ratio immer; Override nur per Checkbox → `image-aspect-ratio.mdc`

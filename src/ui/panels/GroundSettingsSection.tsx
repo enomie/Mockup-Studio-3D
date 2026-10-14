@@ -11,9 +11,9 @@ import {
 } from '@/ui/store/app-store';
 import { useAppStore } from '@/ui/store/use-app-store';
 
-type GroundSettingsSectionProps = {
+interface GroundSettingsSectionProps {
   disabled?: boolean;
-};
+}
 
 export function GroundSettingsSection({ disabled = false }: GroundSettingsSectionProps) {
   const ground = useAppStore((s) => s.ground);
@@ -33,7 +33,7 @@ export function GroundSettingsSection({ disabled = false }: GroundSettingsSectio
         disabled={disabled}
         options={materialOptions}
         onChange={(next) => {
-          if (next) setGroundMaterialId(next);
+          if (next) {setGroundMaterialId(next);}
         }}
       />
 

@@ -14,14 +14,14 @@ import {
   VIEWPORT_SMAA_ENABLED,
 } from '@/constants';
 
-export type ViewportFrameParams = {
+export interface ViewportFrameParams {
   skyScene: Scene;
   mainScene: Scene;
   camera: Camera;
   skyEnabled: boolean;
   /** When sky is skipped: clear color alpha 0 before the main pass (export capture only). */
   transparentBackground?: boolean;
-};
+}
 
 /** Renders sky then main into a single MSAA target (sky pixels kept, depth cleared). */
 export function compositeSceneToTarget(
@@ -72,7 +72,7 @@ export class ViewportRenderPipeline {
     this.compositeTarget.texture.name = 'viewport.composite';
 
     const sceneColor = texture(this.compositeTarget.texture);
-    const outputNode = VIEWPORT_SMAA_ENABLED ? smaa(sceneColor) : sceneColor;
+    const outputNode = smaa(sceneColor);
     this.pipelineSmaa = new RenderPipeline(renderer, outputNode);
     this.pipelineDirect = new RenderPipeline(renderer, sceneColor);
   }

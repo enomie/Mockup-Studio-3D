@@ -54,16 +54,16 @@ function applyDoubleSidedShadowCast(material: Material): void {
  */
 export function applyAssetShadowFlags(group: Object3D): void {
   group.traverse((child) => {
-    if (!(child instanceof Mesh)) return;
+    if (!(child instanceof Mesh)) {return;}
     child.receiveShadow = true;
-    const role = child.userData.assetMeshRole;
+    const role = (child.userData as { assetMeshRole?: string }).assetMeshRole;
     const casts = role !== 'glazing';
     child.castShadow = casts;
-    if (!casts) return;
+    if (!casts) {return;}
 
     const materials = Array.isArray(child.material) ? child.material : [child.material];
-    for (const material of materials) {
-      applyDoubleSidedShadowCast(material);
+    for (const rawMaterial of materials) {
+      applyDoubleSidedShadowCast(rawMaterial as Material);
     }
   });
 }

@@ -1,4 +1,6 @@
+import { Cuboid, Square, type LucideIcon } from 'lucide-react';
 import type { CameraProjection } from '@/scene/scene-api';
+import { Icon } from '@/ui/components/Icon';
 import { setCameraProjection } from '@/ui/store/app-store';
 import { useAppStore } from '@/ui/store/use-app-store';
 
@@ -6,15 +8,16 @@ const CAMERA_PROJECTION_OPTIONS: {
   id: CameraProjection;
   label: string;
   title: string;
+  icon: LucideIcon;
 }[] = [
-  { id: 'perspective', label: 'Persp', title: 'Perspective' },
-  { id: 'orthographic', label: 'Ortho', title: 'Orthographic' },
+  { id: 'perspective', label: 'Persp', title: 'Perspective', icon: Cuboid },
+  { id: 'orthographic', label: 'Ortho', title: 'Orthographic', icon: Square },
 ];
 
-type CameraProjectionToggleProps = {
+interface CameraProjectionToggleProps {
   className?: string;
   chipClassName?: string;
-};
+}
 
 export function CameraProjectionToggle({
   className = 'camera-quick-bar__group camera-quick-bar__group--projection',
@@ -30,13 +33,14 @@ export function CameraProjectionToggle({
           <button
             key={option.id}
             type="button"
-            className={`${chipClassName}${active ? ' camera-quick-bar__chip--active' : ''}`}
+            className={`${chipClassName} camera-projection-chip${active ? ' toolbar-chip-btn--active' : ''}`}
             aria-label={option.title}
             aria-pressed={active}
             title={option.title}
-            onClick={() => setCameraProjection(option.id)}
+            onClick={() => { setCameraProjection(option.id); }}
           >
-            {option.label}
+            <Icon icon={option.icon} size={16} strokeWidth={1.75} />
+            <span className="camera-projection-chip__label">{option.label}</span>
           </button>
         );
       })}

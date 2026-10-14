@@ -1,4 +1,4 @@
-import { Group, type Scene, type Texture } from 'three/webgpu';
+import { Group, type Scene } from 'three/webgpu';
 import {
   defaultHandheldParams,
   isHandheldAssetKind,
@@ -13,7 +13,6 @@ import {
   isPrintAssetKind,
   type AssetFaceContent,
   type AssetFaceId,
-  type AssetFaces,
 } from '@/scene/asset-faces';
 import type {
   AssetEntity,
@@ -21,6 +20,8 @@ import type {
   AssetImageSurfaceId,
   AssetKind,
   BlockParams,
+  FabricClothParams,
+  BookParams,
   BeverageCanParams,
   TinCanParams,
   HandheldDeviceParams,
@@ -33,31 +34,49 @@ import {
   getDefaultEntitySliceForKind,
   usesAsyncPackagingRebuild,
 } from '@/scene/asset-kind-registry';
-import { migrateGeometryVisibility } from '@/scene/geometry-visibility';
 import { defaultPrintParams } from '@/scene/asset-print';
+import { isBeverageCanAssetKind } from '@/scene/asset-beverage-can';
+import { isTinCanAssetKind } from '@/scene/asset-tin-can';
 import {
-  defaultBeverageCanParams,
-  isBeverageCanAssetKind,
-} from '@/scene/asset-beverage-can';
-import {
-  defaultTinCanParams,
-  isTinCanAssetKind,
-} from '@/scene/asset-tin-can';
-import {
-  defaultWineBottleParams,
   isWineBottleAssetKind,
   type WineBottleParams,
 } from '@/scene/asset-wine-bottle';
+import { isPenAssetKind, type PenParams } from '@/scene/asset-pen';
 import {
   defaultBlockParams,
   isBlockAssetKind,
 } from '@/scene/asset-block';
 import {
+  defaultCylinderParams,
+  isCylinderAssetKind,
+  type CylinderParams,
+} from '@/scene/asset-cylinder';
+import {
+  defaultSphereParams,
+  isSphereAssetKind,
+  type SphereParams,
+} from '@/scene/asset-sphere';
+import { isWheelCarAssetKind, type WheelCarParams } from '@/scene/asset-wheel-car';
+import { isRigidPrimitiveAssetKind } from '@/scene/rigid-primitive-asset';
+import {
+  resolvePhysicsBodyMode,
+  type PhysicsBodyMode,
+} from '@/scene/physics-rigid-body';
+import {
+  defaultFabricClothParams,
+  isFabricClothAssetKind,
+} from '@/scene/asset-fabric-cloth';
+import {
+  defaultBookParams,
+  isBookAssetKind,
+} from '@/scene/asset-book';
+import type { BookMaterialTintPart } from '@/scene/book-material-tints';
+import type { Rgb } from '@/colors/rgb';
+import {
   defaultWallParams,
   defaultWallpaperPattern,
   isWallAssetKind,
   migrateWallpaperPattern,
-  resolveWallpaperPattern,
   wallpaperStripHeightM,
   type WallParams,
   type WallpaperPattern,
@@ -66,26 +85,27 @@ import type { ImageSurfaceSettings } from '@/scene/image-surface';
 import {
   assetGroundCenterY,
   clampSizeScale,
-  computeEntityFaceSize,
   computeFaceSize,
   defaultDepth,
   footWorldY,
-  transformYForFootWorldY,
 } from '@/scene/asset-sizing';
-import {
-  disposeAssetGroup,
-  populateAssetGroup,
-  populateBeverageCanGroup,
-  populateTinCanGroup,
-  populateWineBottleGroup,
-  type ImageSize,
-} from './asset-meshes';
+import { disposeAssetGroup, populateAssetGroup } from './asset-meshes/index';
 import type { EntityRegistry } from './entity-registry';
 import type { ImageTextureLoader } from './image-texture-loader';
 import { MaterialResolver } from './material-resolver';
-import type { Rgb } from '@/colors/rgb';
-import { DEFAULT_SCENE_ASSETS } from '@/config/default-scene-assets';
+import {
+  DEFAULT_SCENE_ASSETS,
+  type DefaultSceneAsset,
+} from '@/config/default-scene-assets';
 import type { ViewportInvalidation } from './viewport-invalidation';
+import {
+  type AssetRebuildContext,
+  rebuildEntity,
+  rebuildFacetedAsset,
+  syncEntityYForFoot,
+} from './asset-system-rebuild';
+import type { RigidPrimitivePhysicsColliders } from './rigid-primitive-physics-colliders';
+import type { FabricClothPhysicsColliders } from './fabric-cloth-physics-colliders';
 
 export class AssetSystem {
   private readonly scene: Scene;
@@ -94,6 +114,8 @@ export class AssetSystem {
   private readonly materialResolver = new MaterialResolver();
   private imageResolver: ImageResolver | null = null;
   private viewportInvalidation: ViewportInvalidation | null = null;
+  private rigidPrimitivePhysics: RigidPrimitivePhysicsColliders | null = null;
+  private fabricClothPhysics: FabricClothPhysicsColliders | null = null;
 
   constructor(scene: Scene, registry: EntityRegistry, textureLoader: ImageTextureLoader) {
     this.scene = scene;
@@ -109,9 +131,33 @@ export class AssetSystem {
     this.viewportInvalidation = invalidation;
   }
 
+  setRigidPrimitivePhysicsColliders(colliders: RigidPrimitivePhysicsColliders | null): void {
+    this.rigidPrimitivePhysics = colliders;
+  }
+
+  setFabricClothPhysicsColliders(colliders: FabricClothPhysicsColliders | null): void {
+    this.fabricClothPhysics = colliders;
+  }
+
+  getImageResolver(): ImageResolver | null {
+    return this.imageResolver;
+  }
+
   setImageResolver(resolver: ImageResolver | null): void {
     this.imageResolver = resolver;
     this.textureLoader.setResolver(resolver);
+  }
+
+  private get rebuildCtx(): AssetRebuildContext {
+    return {
+      registry: this.registry,
+      textureLoader: this.textureLoader,
+      materialResolver: this.materialResolver,
+      imageResolver: this.imageResolver,
+      viewportInvalidation: this.viewportInvalidation,
+      rigidPrimitivePhysics: this.rigidPrimitivePhysics,
+      fabricClothPhysics: this.fabricClothPhysics,
+    };
   }
 
   addAsset(
@@ -222,6 +268,41 @@ export class AssetSystem {
         materialResolver: this.materialResolver,
         blockParams: defaultBlockParams(),
       });
+    } else if (isCylinderAssetKind(assetKind)) {
+      populateAssetGroup(root, assetKind, {
+        sizeScale: 1,
+        materials,
+        materialResolver: this.materialResolver,
+        cylinderParams: defaultCylinderParams(),
+      });
+    } else if (isSphereAssetKind(assetKind)) {
+      populateAssetGroup(root, assetKind, {
+        sizeScale: 1,
+        materials,
+        materialResolver: this.materialResolver,
+        sphereParams: defaultSphereParams(),
+      });
+    } else if (isWheelCarAssetKind(assetKind)) {
+      // Meshes built asynchronously in rebuildEntity (SVG lathe).
+    } else if (isFabricClothAssetKind(assetKind)) {
+      populateAssetGroup(root, assetKind, {
+        faceWidth: face.width,
+        faceHeight: face.height,
+        sizeScale: 1,
+        materials,
+        materialResolver: this.materialResolver,
+        fabricClothParams:
+          kindDefaults.fabricClothParams ?? defaultFabricClothParams(),
+      });
+    } else if (isBookAssetKind(assetKind)) {
+      populateAssetGroup(root, assetKind, {
+        faceWidth: face.width,
+        faceHeight: face.height,
+        sizeScale: 1,
+        materials,
+        materialResolver: this.materialResolver,
+        bookParams: kindDefaults.bookParams ?? defaultBookParams(assetKind),
+      });
     } else if (usesAsyncPackagingRebuild(assetKind)) {
       // Meshes built asynchronously in rebuildEntity.
     } else {
@@ -251,21 +332,62 @@ export class AssetSystem {
       printParams,
     );
     if (usesAsyncPackagingRebuild(assetKind)) {
-      void this.rebuildEntity(id);
+      void rebuildEntity(this.rebuildCtx, id);
+    } else if (isBookAssetKind(assetKind)) {
+      void rebuildEntity(this.rebuildCtx, id);
+    } else if (isWheelCarAssetKind(assetKind)) {
+      void rebuildEntity(this.rebuildCtx, id);
+    } else if (isRigidPrimitiveAssetKind(assetKind)) {
+      this.rigidPrimitivePhysics?.reconcileEntity(id);
     }
     return id;
   }
 
   seedDefaultScene(): void {
     for (const entry of DEFAULT_SCENE_ASSETS) {
-      this.addAsset(entry.assetKind, entry.position);
+      const id = this.addAsset(entry.assetKind, entry.position);
+      this.applyDefaultSceneAssetOverrides(id, entry);
     }
     this.registry.reserveSpawnSlots(DEFAULT_SCENE_ASSETS.length);
   }
 
+  private applyDefaultSceneAssetOverrides(
+    entityId: string,
+    entry: DefaultSceneAsset,
+  ): void {
+    const runtime = this.registry.getRuntime(entityId);
+    if (!runtime) {return;}
+
+    if (entry.positionY !== undefined) {
+      const { x, z } = runtime.entity.transform.position;
+      this.registry.updateTransform(entityId, {
+        position: { x, y: entry.positionY, z },
+      });
+      if (
+        isRigidPrimitiveAssetKind(runtime.entity.assetKind) &&
+        resolvePhysicsBodyMode(runtime.entity) === 'fixed'
+      ) {
+        this.rigidPrimitivePhysics?.syncPoseFromRuntime(entityId);
+      }
+    }
+
+    if (entry.materialSlot && entry.materialId) {
+      this.registry.setEntityMaterialSlot(
+        entityId,
+        entry.materialSlot,
+        entry.materialId,
+      );
+      void rebuildEntity(this.rebuildCtx, entityId);
+    }
+
+    if (entry.screenImageId) {
+      void this.setAssetImage(entityId, entry.screenImageId);
+    }
+  }
+
   async setAssetImage(entityId: string, imageId: string | null): Promise<void> {
     const runtime = this.registry.getRuntime(entityId);
-    if (!runtime) return;
+    if (!runtime) {return;}
 
     const { assetKind } = runtime.entity;
     const root = runtime.object as Group;
@@ -278,10 +400,10 @@ export class AssetSystem {
       });
 
       const updated = this.registry.getRuntime(entityId);
-      if (!updated?.entity.faces || updated.entity.depth === undefined) return;
+      if (!updated?.entity.faces || updated.entity.depth === undefined) {return;}
 
-      await this.rebuildFacetedAsset(root, updated.entity);
-      this.syncEntityYForFoot(entityId, footY);
+      await rebuildFacetedAsset(this.rebuildCtx, root, updated.entity);
+      syncEntityYForFoot(this.rebuildCtx, entityId, footY);
       return;
     }
 
@@ -301,7 +423,7 @@ export class AssetSystem {
       }
     }
 
-    await this.rebuildEntity(entityId);
+    await rebuildEntity(this.rebuildCtx, entityId);
   }
 
   async setAssetFace(
@@ -322,13 +444,14 @@ export class AssetSystem {
     const footY = footWorldY(runtime.entity, this.imageResolver);
     this.registry.setAssetFaceContent(entityId, faceId, content);
     const updated = this.registry.getRuntime(entityId);
-    if (!updated?.entity.faces || updated.entity.depth === undefined) return;
+    if (!updated?.entity.faces || updated.entity.depth === undefined) {return;}
 
-    await this.rebuildFacetedAsset(
+    await rebuildFacetedAsset(
+      this.rebuildCtx,
       runtime.object as Group,
       updated.entity,
     );
-    this.syncEntityYForFoot(entityId, footY);
+    syncEntityYForFoot(this.rebuildCtx, entityId, footY);
   }
 
   async setAssetDepth(entityId: string, depth: number): Promise<void> {
@@ -345,13 +468,14 @@ export class AssetSystem {
     const footY = footWorldY(runtime.entity, this.imageResolver);
     this.registry.setAssetDepth(entityId, depth);
     const updated = this.registry.getRuntime(entityId);
-    if (!updated?.entity.faces || updated.entity.depth === undefined) return;
+    if (!updated?.entity.faces || updated.entity.depth === undefined) {return;}
 
-    await this.rebuildFacetedAsset(
+    await rebuildFacetedAsset(
+      this.rebuildCtx,
       runtime.object as Group,
       updated.entity,
     );
-    this.syncEntityYForFoot(entityId, footY);
+    syncEntityYForFoot(this.rebuildCtx, entityId, footY);
   }
 
   async setAssetSizeScale(entityId: string, sizeScale: number): Promise<void> {
@@ -359,13 +483,23 @@ export class AssetSystem {
     if (
       !runtime ||
       isWallAssetKind(runtime.entity.assetKind) ||
-      isBlockAssetKind(runtime.entity.assetKind)
+      isRigidPrimitiveAssetKind(runtime.entity.assetKind)
     ) {
       return;
     }
 
     this.registry.setSizeScale(entityId, clampSizeScale(sizeScale));
-    await this.rebuildEntity(entityId);
+    await rebuildEntity(this.rebuildCtx, entityId);
+  }
+
+  async applyRigidPrimitiveUniformScale(
+    entityId: string,
+    factor: number,
+  ): Promise<void> {
+    if (!this.registry.applyRigidPrimitiveUniformScale(entityId, factor)) {
+      return;
+    }
+    await rebuildEntity(this.rebuildCtx, entityId);
   }
 
   async setHandheldParams(
@@ -373,10 +507,10 @@ export class AssetSystem {
     partial: Partial<HandheldDeviceParams>,
   ): Promise<void> {
     const runtime = this.registry.getRuntime(entityId);
-    if (!runtime || !isHandheldAssetKind(runtime.entity.assetKind)) return;
+    if (!runtime || !isHandheldAssetKind(runtime.entity.assetKind)) {return;}
 
     this.registry.setHandheldParams(entityId, partial);
-    await this.rebuildEntity(entityId);
+    await rebuildEntity(this.rebuildCtx, entityId);
   }
 
   async setMonitorParams(
@@ -384,10 +518,10 @@ export class AssetSystem {
     partial: Partial<MonitorDeviceParams>,
   ): Promise<void> {
     const runtime = this.registry.getRuntime(entityId);
-    if (!runtime || !isMonitorAssetKind(runtime.entity.assetKind)) return;
+    if (!runtime || !isMonitorAssetKind(runtime.entity.assetKind)) {return;}
 
     this.registry.setMonitorParams(entityId, partial);
-    await this.rebuildEntity(entityId);
+    await rebuildEntity(this.rebuildCtx, entityId);
   }
 
   async setPrintParams(
@@ -407,21 +541,22 @@ export class AssetSystem {
     const footY = footWorldY(runtime.entity, this.imageResolver);
     this.registry.setPrintParams(entityId, partial);
     const updated = this.registry.getRuntime(entityId);
-    if (!updated?.entity.faces || updated.entity.depth === undefined) return;
+    if (!updated?.entity.faces || updated.entity.depth === undefined) {return;}
 
-    await this.rebuildFacetedAsset(
+    await rebuildFacetedAsset(
+      this.rebuildCtx,
       runtime.object as Group,
       updated.entity,
     );
-    this.syncEntityYForFoot(entityId, footY);
+    syncEntityYForFoot(this.rebuildCtx, entityId, footY);
   }
 
   async setWallParams(entityId: string, partial: Partial<WallParams>): Promise<void> {
     const runtime = this.registry.getRuntime(entityId);
-    if (!runtime || !isWallAssetKind(runtime.entity.assetKind)) return;
+    if (!runtime || !isWallAssetKind(runtime.entity.assetKind)) {return;}
 
     this.registry.setWallParams(entityId, partial);
-    await this.rebuildEntity(entityId);
+    await rebuildEntity(this.rebuildCtx, entityId);
   }
 
   async setWallpaperPattern(
@@ -429,18 +564,109 @@ export class AssetSystem {
     partial: Partial<WallpaperPattern>,
   ): Promise<void> {
     const runtime = this.registry.getRuntime(entityId);
-    if (!runtime || !isWallAssetKind(runtime.entity.assetKind)) return;
+    if (!runtime || !isWallAssetKind(runtime.entity.assetKind)) {return;}
 
     this.registry.setWallpaperPattern(entityId, partial);
-    await this.rebuildEntity(entityId);
+    await rebuildEntity(this.rebuildCtx, entityId);
   }
 
   async setBlockParams(entityId: string, partial: Partial<BlockParams>): Promise<void> {
     const runtime = this.registry.getRuntime(entityId);
-    if (!runtime || !isBlockAssetKind(runtime.entity.assetKind)) return;
+    if (!runtime || !isBlockAssetKind(runtime.entity.assetKind)) {return;}
 
     this.registry.setBlockParams(entityId, partial);
-    await this.rebuildEntity(entityId);
+    await rebuildEntity(this.rebuildCtx, entityId);
+  }
+
+  setPhysicsBodyMode(entityId: string, mode: PhysicsBodyMode): void {
+    const runtime = this.registry.getRuntime(entityId);
+    if (!runtime) {return;}
+
+    this.registry.setPhysicsBodyMode(entityId, mode);
+    if (isRigidPrimitiveAssetKind(runtime.entity.assetKind)) {
+      this.rigidPrimitivePhysics?.reconcileEntity(entityId);
+    }
+  }
+
+  setPhysicsDensityKgPerM3(entityId: string, densityKgPerM3: number): void {
+    const runtime = this.registry.getRuntime(entityId);
+    if (!runtime) {return;}
+
+    this.registry.setPhysicsDensityKgPerM3(entityId, densityKgPerM3);
+    if (isRigidPrimitiveAssetKind(runtime.entity.assetKind)) {
+      this.rigidPrimitivePhysics?.reconcileEntity(entityId);
+    }
+  }
+
+  async setCylinderParams(entityId: string, partial: Partial<CylinderParams>): Promise<void> {
+    const runtime = this.registry.getRuntime(entityId);
+    if (!runtime || !isCylinderAssetKind(runtime.entity.assetKind)) {return;}
+
+    this.registry.setCylinderParams(entityId, partial);
+    await rebuildEntity(this.rebuildCtx, entityId);
+  }
+
+  async setSphereParams(entityId: string, partial: Partial<SphereParams>): Promise<void> {
+    const runtime = this.registry.getRuntime(entityId);
+    if (!runtime || !isSphereAssetKind(runtime.entity.assetKind)) {return;}
+
+    this.registry.setSphereParams(entityId, partial);
+    await rebuildEntity(this.rebuildCtx, entityId);
+  }
+
+  async setWheelCarParams(entityId: string, partial: Partial<WheelCarParams>): Promise<void> {
+    const runtime = this.registry.getRuntime(entityId);
+    if (!runtime || !isWheelCarAssetKind(runtime.entity.assetKind)) {return;}
+
+    this.registry.setWheelCarParams(entityId, partial);
+    await rebuildEntity(this.rebuildCtx, entityId);
+  }
+
+  async setFabricClothParams(
+    entityId: string,
+    partial: Partial<FabricClothParams>,
+  ): Promise<void> {
+    const runtime = this.registry.getRuntime(entityId);
+    if (!runtime || !isFabricClothAssetKind(runtime.entity.assetKind)) {return;}
+
+    this.registry.setFabricClothParams(entityId, partial);
+    await rebuildEntity(this.rebuildCtx, entityId);
+  }
+
+  async setBookParams(entityId: string, partial: Partial<BookParams>): Promise<void> {
+    const runtime = this.registry.getRuntime(entityId);
+    if (!runtime || !isBookAssetKind(runtime.entity.assetKind)) {return;}
+
+    this.registry.setBookParams(entityId, partial);
+    await rebuildEntity(this.rebuildCtx, entityId);
+  }
+
+  async setBookBackCoverImageId(entityId: string, imageId: string | null): Promise<void> {
+    const runtime = this.registry.getRuntime(entityId);
+    if (!runtime || !isBookAssetKind(runtime.entity.assetKind)) {return;}
+
+    this.registry.setBookBackCoverImageId(entityId, imageId);
+    await rebuildEntity(this.rebuildCtx, entityId);
+  }
+
+  async setBookSpineImageId(entityId: string, imageId: string | null): Promise<void> {
+    const runtime = this.registry.getRuntime(entityId);
+    if (!runtime || !isBookAssetKind(runtime.entity.assetKind)) {return;}
+
+    this.registry.setBookSpineImageId(entityId, imageId);
+    await rebuildEntity(this.rebuildCtx, entityId);
+  }
+
+  async setBookMaterialTint(
+    entityId: string,
+    part: BookMaterialTintPart,
+    tint: Rgb,
+  ): Promise<void> {
+    const runtime = this.registry.getRuntime(entityId);
+    if (!runtime || !isBookAssetKind(runtime.entity.assetKind)) {return;}
+
+    this.registry.setBookMaterialTint(entityId, part, tint);
+    await rebuildEntity(this.rebuildCtx, entityId);
   }
 
   async setBeverageCanParams(
@@ -448,10 +674,10 @@ export class AssetSystem {
     partial: Partial<BeverageCanParams>,
   ): Promise<void> {
     const runtime = this.registry.getRuntime(entityId);
-    if (!runtime || !isBeverageCanAssetKind(runtime.entity.assetKind)) return;
+    if (!runtime || !isBeverageCanAssetKind(runtime.entity.assetKind)) {return;}
 
     this.registry.setBeverageCanParams(entityId, partial);
-    await this.rebuildEntity(entityId);
+    await rebuildEntity(this.rebuildCtx, entityId);
   }
 
   async setTinCanParams(
@@ -459,10 +685,10 @@ export class AssetSystem {
     partial: Partial<TinCanParams>,
   ): Promise<void> {
     const runtime = this.registry.getRuntime(entityId);
-    if (!runtime || !isTinCanAssetKind(runtime.entity.assetKind)) return;
+    if (!runtime || !isTinCanAssetKind(runtime.entity.assetKind)) {return;}
 
     this.registry.setTinCanParams(entityId, partial);
-    await this.rebuildEntity(entityId);
+    await rebuildEntity(this.rebuildCtx, entityId);
   }
 
   async setWineBottleParams(
@@ -470,10 +696,21 @@ export class AssetSystem {
     partial: Partial<WineBottleParams>,
   ): Promise<void> {
     const runtime = this.registry.getRuntime(entityId);
-    if (!runtime || !isWineBottleAssetKind(runtime.entity.assetKind)) return;
+    if (!runtime || !isWineBottleAssetKind(runtime.entity.assetKind)) {return;}
 
     this.registry.setWineBottleParams(entityId, partial);
-    await this.rebuildEntity(entityId);
+    await rebuildEntity(this.rebuildCtx, entityId);
+  }
+
+  async setPenParams(
+    entityId: string,
+    partial: Partial<PenParams>,
+  ): Promise<void> {
+    const runtime = this.registry.getRuntime(entityId);
+    if (!runtime || !isPenAssetKind(runtime.entity.assetKind)) {return;}
+
+    this.registry.setPenParams(entityId, partial);
+    await rebuildEntity(this.rebuildCtx, entityId);
   }
 
   async setEntityMaterial(
@@ -482,10 +719,10 @@ export class AssetSystem {
     materialId: string,
   ): Promise<void> {
     const runtime = this.registry.getRuntime(entityId);
-    if (!runtime) return;
+    if (!runtime) {return;}
 
     this.registry.setEntityMaterialSlot(entityId, slot, materialId);
-    await this.rebuildEntity(entityId);
+    await rebuildEntity(this.rebuildCtx, entityId);
   }
 
   async setFaceTint(
@@ -494,10 +731,10 @@ export class AssetSystem {
     tint: Rgb,
   ): Promise<void> {
     const runtime = this.registry.getRuntime(entityId);
-    if (!runtime || !isPrintAssetKind(runtime.entity.assetKind)) return;
+    if (!runtime || !isPrintAssetKind(runtime.entity.assetKind)) {return;}
 
     this.registry.setFaceTint(entityId, faceId, tint);
-    await this.rebuildEntity(entityId);
+    await rebuildEntity(this.rebuildCtx, entityId);
   }
 
   async setGeometryVisible(
@@ -517,7 +754,7 @@ export class AssetSystem {
     }
 
     this.registry.setGeometryVisible(entityId, part, visible);
-    await this.rebuildEntity(entityId);
+    await rebuildEntity(this.rebuildCtx, entityId);
   }
 
   invalidateMaterial(materialId: string): void {
@@ -525,21 +762,23 @@ export class AssetSystem {
 
     for (const entity of this.registry.getEntities()) {
       if (entityUsesMaterial(entity, materialId)) {
-        void this.rebuildEntity(entity.id);
+        void rebuildEntity(this.rebuildCtx, entity.id);
       }
     }
   }
 
   rebuildAllEntities(): void {
     for (const entity of this.registry.getEntities()) {
-      void this.rebuildEntity(entity.id);
+      void rebuildEntity(this.rebuildCtx, entity.id);
     }
   }
 
   removeAsset(entityId: string): void {
     const runtime = this.registry.getRuntime(entityId);
-    if (!runtime) return;
+    if (!runtime) {return;}
 
+    this.rigidPrimitivePhysics?.remove(entityId);
+    this.fabricClothPhysics?.removeOne(entityId);
     disposeAssetGroup(runtime.object as Group);
     this.scene.remove(runtime.object);
     this.registry.removeEntity(entityId);
@@ -547,410 +786,16 @@ export class AssetSystem {
 
   dispose(): void {
     this.viewportInvalidation = null;
+    this.rigidPrimitivePhysics?.dispose();
+    this.fabricClothPhysics?.dispose();
     for (const runtime of this.registry.getEntities()) {
       const objectRuntime = this.registry.getRuntime(runtime.id);
-      if (!objectRuntime) continue;
+      if (!objectRuntime) {continue;}
       disposeAssetGroup(objectRuntime.object as Group);
       this.scene.remove(objectRuntime.object);
     }
     this.textureLoader.dispose();
     this.materialResolver.invalidate();
-  }
-
-  private async rebuildEntity(entityId: string): Promise<void> {
-    const runtime = this.registry.getRuntime(entityId);
-    if (!runtime) return;
-
-    const footY = footWorldY(runtime.entity, this.imageResolver);
-
-    try {
-    if (isPrintAssetKind(runtime.entity.assetKind)) {
-      const faces = runtime.entity.faces;
-      const depth = runtime.entity.depth;
-      if (!faces || depth === undefined) return;
-
-      await this.rebuildFacetedAsset(
-        runtime.object as Group,
-        runtime.entity,
-      );
-      this.syncEntityYForFoot(entityId, footY);
-      return;
-    }
-
-    if (runtime.entity.assetKind === 'picture') {
-      await this.rebuildPicture(runtime.object as Group, runtime.entity);
-      this.syncEntityYForFoot(entityId, footY);
-      return;
-    }
-
-    if (isHandheldAssetKind(runtime.entity.assetKind)) {
-      await this.rebuildHandheld(runtime.object as Group, runtime.entity);
-      this.syncEntityYForFoot(entityId, footY);
-      return;
-    }
-
-    if (isMonitorAssetKind(runtime.entity.assetKind)) {
-      await this.rebuildMonitor(runtime.object as Group, runtime.entity);
-      this.syncEntityYForFoot(entityId, footY);
-      return;
-    }
-
-    if (isWallAssetKind(runtime.entity.assetKind)) {
-      await this.rebuildWall(runtime.object as Group, runtime.entity);
-      this.syncEntityYForFoot(entityId, footY);
-      return;
-    }
-
-    if (isBlockAssetKind(runtime.entity.assetKind)) {
-      await this.rebuildBlock(runtime.object as Group, runtime.entity);
-      this.syncEntityYForFoot(entityId, footY);
-      return;
-    }
-
-    if (usesAsyncPackagingRebuild(runtime.entity.assetKind)) {
-      await this.rebuildPackagingAsset(runtime.object as Group, runtime.entity);
-      this.syncEntityYForFoot(entityId, footY);
-    }
-    } finally {
-      this.viewportInvalidation?.invalidate();
-    }
-  }
-
-  private syncEntityYForFoot(entityId: string, footY: number): void {
-    const runtime = this.registry.getRuntime(entityId);
-    if (!runtime) return;
-
-    const nextY = transformYForFootWorldY(
-      runtime.entity,
-      footY,
-      this.imageResolver,
-    );
-    const currentY = runtime.entity.transform.position.y;
-    if (Math.abs(nextY - currentY) <= 1e-6) return;
-
-    this.registry.updateTransform(entityId, {
-      position: {
-        ...runtime.entity.transform.position,
-        y: nextY,
-      },
-    });
-  }
-
-  private async rebuildPackagingAsset(root: Group, entity: AssetEntity): Promise<void> {
-    switch (entity.assetKind) {
-      case 'beverage-can':
-        await this.rebuildBeverageCan(root, entity);
-        return;
-      case 'tin-can':
-        await this.rebuildTinCan(root, entity);
-        return;
-      case 'wine-bottle':
-        await this.rebuildWineBottle(root, entity);
-        return;
-    }
-  }
-
-  private async rebuildBeverageCan(root: Group, entity: AssetEntity): Promise<void> {
-    let imageTexture = null;
-    let imageWidth: number | undefined;
-    let imageHeight: number | undefined;
-
-    if (entity.screenImageId) {
-      const meta = this.imageResolver?.(entity.screenImageId);
-      if (meta) {
-        imageWidth = meta.width;
-        imageHeight = meta.height;
-        imageTexture = await this.textureLoader.load(entity.screenImageId);
-      }
-    }
-
-    const definition = getAssetKindDefinition(entity.assetKind);
-    const materials = entity.materials ?? definition.getDefaultMaterials();
-
-    await populateBeverageCanGroup(root, {
-      beverageCanParams:
-        entity.beverageCanParams ?? defaultBeverageCanParams('standard'),
-      imageTexture,
-      imageWidth,
-      imageHeight,
-      sizeScale: entity.sizeScale,
-      materials,
-      geometryVisibility: migrateGeometryVisibility(
-        entity.assetKind,
-        entity.geometryVisibility ?? definition.getGeometryVisibilityDefaults(),
-        materials,
-      ),
-      materialResolver: this.materialResolver,
-      imageSurfaces: entity.imageSurfaces,
-      assetKind: 'beverage-can',
-    });
-  }
-
-  private async rebuildTinCan(root: Group, entity: AssetEntity): Promise<void> {
-    let imageTexture = null;
-    let imageWidth: number | undefined;
-    let imageHeight: number | undefined;
-
-    if (entity.screenImageId) {
-      const meta = this.imageResolver?.(entity.screenImageId);
-      if (meta) {
-        imageWidth = meta.width;
-        imageHeight = meta.height;
-        imageTexture = await this.textureLoader.load(entity.screenImageId);
-      }
-    }
-
-    const definition = getAssetKindDefinition(entity.assetKind);
-    const materials = entity.materials ?? definition.getDefaultMaterials();
-
-    await populateTinCanGroup(root, {
-      tinCanParams: entity.tinCanParams ?? defaultTinCanParams(),
-      imageTexture,
-      imageWidth,
-      imageHeight,
-      sizeScale: entity.sizeScale,
-      materials,
-      geometryVisibility: migrateGeometryVisibility(
-        entity.assetKind,
-        entity.geometryVisibility ?? definition.getGeometryVisibilityDefaults(),
-        materials,
-      ),
-      materialResolver: this.materialResolver,
-      imageSurfaces: entity.imageSurfaces,
-      assetKind: 'tin-can',
-    });
-  }
-
-  private async rebuildWineBottle(root: Group, entity: AssetEntity): Promise<void> {
-    let imageTexture = null;
-    let imageWidth: number | undefined;
-    let imageHeight: number | undefined;
-
-    if (entity.screenImageId) {
-      const meta = this.imageResolver?.(entity.screenImageId);
-      if (meta) {
-        imageWidth = meta.width;
-        imageHeight = meta.height;
-        imageTexture = await this.textureLoader.load(entity.screenImageId);
-      }
-    }
-
-    const definition = getAssetKindDefinition(entity.assetKind);
-    const materials = entity.materials ?? definition.getDefaultMaterials();
-
-    await populateWineBottleGroup(root, {
-      wineBottleParams:
-        entity.wineBottleParams ?? defaultWineBottleParams('bordeaux'),
-      imageTexture,
-      imageWidth,
-      imageHeight,
-      sizeScale: entity.sizeScale,
-      materials,
-      geometryVisibility: migrateGeometryVisibility(
-        entity.assetKind,
-        entity.geometryVisibility ?? definition.getGeometryVisibilityDefaults(),
-        materials,
-      ),
-      materialResolver: this.materialResolver,
-      imageSurfaces: entity.imageSurfaces,
-      assetKind: 'wine-bottle',
-    });
-  }
-
-  private async rebuildFacetedAsset(
-    root: Group,
-    entity: AssetEntity,
-  ): Promise<void> {
-    const faces = entity.faces;
-    const depth = entity.depth;
-    if (!faces || depth === undefined) return;
-
-    const face = computeEntityFaceSize(entity, this.imageResolver);
-    const { faceTextures, faceImageSizes } = await this.loadFaceTextures(faces);
-    const frontImageId = faces.front.mode === 'image' ? faces.front.imageId : null;
-    const frontMeta = frontImageId ? this.imageResolver?.(frontImageId) : null;
-    const definition = getAssetKindDefinition(entity.assetKind);
-    const materials = entity.materials ?? definition.getDefaultMaterials();
-
-    populateAssetGroup(root, entity.assetKind, {
-      faces,
-      depth,
-      faceWidth: face.width,
-      faceHeight: face.height,
-      faceTextures,
-      faceImageSizes,
-      imageWidth: frontMeta?.width,
-      imageHeight: frontMeta?.height,
-      sizeScale: entity.sizeScale,
-      materials,
-      printParams: entity.printParams ?? defaultPrintParams(),
-      materialResolver: this.materialResolver,
-      imageSurfaces: entity.imageSurfaces,
-    });
-  }
-
-  private async rebuildPicture(root: Group, entity: AssetEntity): Promise<void> {
-    let imageTexture = null;
-    let imageWidth: number | undefined;
-    let imageHeight: number | undefined;
-
-    if (entity.screenImageId) {
-      const meta = this.imageResolver?.(entity.screenImageId);
-      if (meta) {
-        imageWidth = meta.width;
-        imageHeight = meta.height;
-        imageTexture = await this.textureLoader.load(entity.screenImageId);
-      }
-    }
-
-    const face = computeEntityFaceSize(entity, this.imageResolver);
-    const definition = getAssetKindDefinition(entity.assetKind);
-    const materials = entity.materials ?? definition.getDefaultMaterials();
-
-    populateAssetGroup(root, 'picture', {
-      faceWidth: face.width,
-      faceHeight: face.height,
-      imageWidth,
-      imageHeight,
-      imageTexture,
-      sizeScale: entity.sizeScale,
-      materials,
-      geometryVisibility: migrateGeometryVisibility(
-        entity.assetKind,
-        entity.geometryVisibility ?? definition.getGeometryVisibilityDefaults(),
-        materials,
-      ),
-      materialResolver: this.materialResolver,
-      imageSurfaces: entity.imageSurfaces,
-    });
-  }
-
-  private async rebuildWall(root: Group, entity: AssetEntity): Promise<void> {
-    let imageTexture = null;
-    let imageWidth: number | undefined;
-    let imageHeight: number | undefined;
-
-    if (entity.screenImageId) {
-      const meta = this.imageResolver?.(entity.screenImageId);
-      if (meta) {
-        imageWidth = meta.width;
-        imageHeight = meta.height;
-      }
-      imageTexture = await this.textureLoader.load(entity.screenImageId);
-    }
-
-    const definition = getAssetKindDefinition(entity.assetKind);
-    const materials = entity.materials ?? definition.getDefaultMaterials();
-    const wallParams = entity.wallParams ?? defaultWallParams();
-    const wallpaperPattern = resolveWallpaperPattern(
-      entity.wallpaperPattern ?? defaultWallpaperPattern(),
-      imageWidth,
-      imageHeight,
-    );
-
-    populateAssetGroup(root, entity.assetKind, {
-      imageTexture,
-      imageWidth,
-      imageHeight,
-      materials,
-      materialResolver: this.materialResolver,
-      wallParams,
-      wallpaperPattern,
-      assetKind: entity.assetKind,
-      imageSurfaces: entity.imageSurfaces,
-    });
-  }
-
-  private async rebuildBlock(root: Group, entity: AssetEntity): Promise<void> {
-    const definition = getAssetKindDefinition(entity.assetKind);
-    const materials = entity.materials ?? definition.getDefaultMaterials();
-    const blockParams = entity.blockParams ?? defaultBlockParams();
-
-    populateAssetGroup(root, 'block', {
-      materials,
-      materialResolver: this.materialResolver,
-      blockParams,
-    });
-  }
-
-  private async rebuildHandheld(root: Group, entity: AssetEntity): Promise<void> {
-    let imageTexture = null;
-    let imageWidth: number | undefined;
-    let imageHeight: number | undefined;
-
-    if (entity.screenImageId) {
-      const meta = this.imageResolver?.(entity.screenImageId);
-      if (meta) {
-        imageWidth = meta.width;
-        imageHeight = meta.height;
-        imageTexture = await this.textureLoader.load(entity.screenImageId);
-      }
-    }
-
-    const face = computeEntityFaceSize(entity, this.imageResolver);
-    const definition = getAssetKindDefinition(entity.assetKind);
-    const materials = entity.materials ?? definition.getDefaultMaterials();
-    const handheldParams =
-      entity.params ?? defaultHandheldParams(entity.assetKind);
-
-    populateAssetGroup(root, entity.assetKind, {
-      faceWidth: face.width,
-      faceHeight: face.height,
-      imageWidth,
-      imageHeight,
-      imageTexture,
-      sizeScale: entity.sizeScale,
-      materials,
-      geometryVisibility: migrateGeometryVisibility(
-        entity.assetKind,
-        entity.geometryVisibility ?? definition.getGeometryVisibilityDefaults(),
-        materials,
-      ),
-      materialResolver: this.materialResolver,
-      handheldParams,
-      assetKind: entity.assetKind,
-      imageSurfaces: entity.imageSurfaces,
-    });
-  }
-
-  private async rebuildMonitor(root: Group, entity: AssetEntity): Promise<void> {
-    let imageTexture = null;
-    let imageWidth: number | undefined;
-    let imageHeight: number | undefined;
-
-    if (entity.screenImageId) {
-      const meta = this.imageResolver?.(entity.screenImageId);
-      if (meta) {
-        imageWidth = meta.width;
-        imageHeight = meta.height;
-        imageTexture = await this.textureLoader.load(entity.screenImageId);
-      }
-    }
-
-    const face = computeEntityFaceSize(entity, this.imageResolver);
-    const definition = getAssetKindDefinition(entity.assetKind);
-    const materials = entity.materials ?? definition.getDefaultMaterials();
-    const monitorParams =
-      (entity.params as MonitorDeviceParams | undefined) ??
-      defaultMonitorParams();
-
-    populateAssetGroup(root, 'monitor', {
-      faceWidth: face.width,
-      faceHeight: face.height,
-      imageWidth,
-      imageHeight,
-      imageTexture,
-      sizeScale: entity.sizeScale,
-      materials,
-      geometryVisibility: migrateGeometryVisibility(
-        entity.assetKind,
-        entity.geometryVisibility ?? definition.getGeometryVisibilityDefaults(),
-        materials,
-      ),
-      materialResolver: this.materialResolver,
-      monitorParams,
-      imageSurfaces: entity.imageSurfaces,
-    });
   }
 
   async setImageSurface(
@@ -959,38 +804,16 @@ export class AssetSystem {
     partial: Partial<ImageSurfaceSettings>,
   ): Promise<void> {
     const runtime = this.registry.getRuntime(entityId);
-    if (!runtime) return;
+    if (!runtime) {return;}
 
     this.registry.setImageSurface(entityId, faceId, partial);
-    await this.rebuildEntity(entityId);
-  }
-
-  private async loadFaceTextures(
-    faces: AssetFaces,
-  ): Promise<{
-    faceTextures: Partial<Record<AssetFaceId, Texture | null>>;
-    faceImageSizes: Partial<Record<AssetFaceId, ImageSize | null>>;
-  }> {
-    const faceTextures: Partial<Record<AssetFaceId, Texture | null>> = {};
-    const faceImageSizes: Partial<Record<AssetFaceId, ImageSize | null>> = {};
-
-    for (const [faceId, content] of Object.entries(faces) as [AssetFaceId, AssetFaceContent][]) {
-      if (content.mode === 'image' && content.imageId) {
-        const meta = this.imageResolver?.(content.imageId);
-        if (meta) {
-          faceImageSizes[faceId] = { width: meta.width, height: meta.height };
-        }
-        faceTextures[faceId] = await this.textureLoader.load(content.imageId);
-      }
-    }
-
-    return { faceTextures, faceImageSizes };
+    await rebuildEntity(this.rebuildCtx, entityId);
   }
 }
 
 function entityUsesMaterial(entity: AssetEntity, materialId: string): boolean {
   const slots = entity.materials;
-  if (!slots) return false;
+  if (!slots) {return false;}
 
   return (
     slots.frameMaterialId === materialId ||
@@ -1005,6 +828,11 @@ function entityUsesMaterial(entity: AssetEntity, materialId: string): boolean {
     slots.sideMaterialId === materialId ||
     slots.wallMaterialId === materialId ||
     slots.blockMaterialId === materialId ||
+    slots.cylinderMaterialId === materialId ||
+    slots.sphereMaterialId === materialId ||
+    slots.fabricClothMaterialId === materialId ||
+    slots.bookPagesMaterialId === materialId ||
+    slots.bookCoverMaterialId === materialId ||
     slots.metalMaterialId === materialId ||
     slots.glassMaterialId === materialId ||
     slots.corkMaterialId === materialId ||

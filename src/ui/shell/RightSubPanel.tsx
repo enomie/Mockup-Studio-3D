@@ -2,32 +2,39 @@ import { CameraSubPanel } from '@/ui/panels/CameraSubPanel';
 import { EnvironmentSubPanel } from '@/ui/panels/EnvironmentSubPanel';
 import { ExportSubPanel } from '@/ui/panels/ExportSubPanel';
 import { LightingSubPanel } from '@/ui/panels/LightingSubPanel';
+import { PhysicsSubPanel } from '@/ui/panels/PhysicsSubPanel';
 import { SceneSubPanel } from '@/ui/panels/SceneSubPanel';
+import { ShellSubPanelProvider } from '@/ui/components/shell-sub-panel-context';
 
-type RightSubPanelProps = {
+interface RightSubPanelProps {
   selectedId: string;
-};
+  onToggleShellCollapse: () => void;
+}
 
-export function RightSubPanel({ selectedId }: RightSubPanelProps) {
+export function RightSubPanel({ selectedId, onToggleShellCollapse }: RightSubPanelProps) {
+  let content = null;
+
   if (selectedId === 'scene') {
-    return <SceneSubPanel />;
+    content = <SceneSubPanel />;
+  } else if (selectedId === 'environment') {
+    content = <EnvironmentSubPanel />;
+  } else if (selectedId === 'lighting') {
+    content = <LightingSubPanel />;
+  } else if (selectedId === 'camera') {
+    content = <CameraSubPanel />;
+  } else if (selectedId === 'physics') {
+    content = <PhysicsSubPanel />;
+  } else if (selectedId === 'export') {
+    content = <ExportSubPanel />;
   }
 
-  if (selectedId === 'environment') {
-    return <EnvironmentSubPanel />;
+  if (!content) {
+    return null;
   }
 
-  if (selectedId === 'lighting') {
-    return <LightingSubPanel />;
-  }
-
-  if (selectedId === 'camera') {
-    return <CameraSubPanel />;
-  }
-
-  if (selectedId === 'export') {
-    return <ExportSubPanel />;
-  }
-
-  return null;
+  return (
+    <ShellSubPanelProvider side="right" onToggleShellCollapse={onToggleShellCollapse}>
+      {content}
+    </ShellSubPanelProvider>
+  );
 }

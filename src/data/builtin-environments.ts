@@ -1,4 +1,4 @@
-import { parseHexColor } from '@/colors/color-format';
+import { parseHexColorRequired } from '@/colors/color-format';
 import { SCENE_DEFAULTS } from '@/config/scene-defaults';
 import { SHADOW_SOFTNESS_DEFAULT } from '@/constants';
 import {
@@ -12,6 +12,7 @@ import {
   type AtmosphereSnapshot,
   type EnvironmentPreset,
 } from '@/scene/environment-preset-types';
+import { cloneLightingSettings } from '@/scene/lighting-preset-types';
 
 export const BUILTIN_ENV_DEFAULT_ID = 'builtin-env-default';
 export const BUILTIN_ENV_SOFTBOX_ID = 'builtin-env-softbox';
@@ -40,43 +41,12 @@ export function atmosphereFromSceneDefaults(): AtmosphereSnapshot {
       mirrorEnabled: ground.mirrorEnabled,
       mirrorOpacity: ground.mirrorOpacity,
     },
-    lighting: {
-      referenceMode: lighting.referenceMode,
-      ambient: {
-        enabled: lighting.ambient.enabled,
-        color: { ...lighting.ambient.color },
-        intensity: lighting.ambient.intensity,
-      },
-      key: {
-        enabled: lighting.key.enabled,
-        side: lighting.key.side,
-        color: { ...lighting.key.color },
-        intensity: lighting.key.intensity,
-        castShadow: lighting.key.castShadow,
-        shadowSoftness: lighting.key.shadowSoftness,
-        transformOffset: {
-          position: { ...lighting.key.transformOffset.position },
-          rotation: { ...lighting.key.transformOffset.rotation },
-        },
-      },
-      fill: {
-        enabled: lighting.fill.enabled,
-        color: { ...lighting.fill.color },
-        intensityRatio: lighting.fill.intensityRatio,
-        distance: lighting.fill.distance,
-        castShadow: lighting.fill.castShadow,
-        shadowSoftness: lighting.fill.shadowSoftness,
-        transformOffset: {
-          position: { ...lighting.fill.transformOffset.position },
-          rotation: { ...lighting.fill.transformOffset.rotation },
-        },
-      },
-    },
+    lighting: cloneLightingSettings(lighting),
   });
 }
 
-const SKY_HORIZON_NEUTRAL = parseHexColor('#D8DCE0')!;
-const SKY_ZENITH_NEUTRAL = parseHexColor('#A8B0B8')!;
+const SKY_HORIZON_NEUTRAL = parseHexColorRequired('#D8DCE0');
+const SKY_ZENITH_NEUTRAL = parseHexColorRequired('#A8B0B8');
 
 /** Soft shadows on light gray — lower IBL so contact shadows read on devices. */
 function buildSoftboxSnapshot(): AtmosphereSnapshot {
@@ -115,8 +85,8 @@ function buildSoftboxSnapshot(): AtmosphereSnapshot {
   });
 }
 
-const SKY_HORIZON_DARK = parseHexColor('#2A3038')!;
-const SKY_ZENITH_DARK = parseHexColor('#0A0E14')!;
+const SKY_HORIZON_DARK = parseHexColorRequired('#2A3038');
+const SKY_ZENITH_DARK = parseHexColorRequired('#0A0E14');
 
 /** Dramatic product shot — dark floor, subdued IBL, harder key. */
 function buildDarkStageSnapshot(): AtmosphereSnapshot {

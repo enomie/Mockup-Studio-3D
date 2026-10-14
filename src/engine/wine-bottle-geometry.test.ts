@@ -10,7 +10,7 @@ import {
   setRawWineBottleSvgPointsCache,
 } from './wine-bottle-svg-profile';
 
-const PUBLIC = join(process.cwd(), 'public');
+const PUBLIC_LATHE = join(process.cwd(), 'public', 'profiles', 'lathe');
 const stubMaterial = new MeshBasicMaterial();
 
 function syntheticOpenWallRaw() {
@@ -78,7 +78,7 @@ describe('wine-bottle-geometry', () => {
   });
 
   it('builds glass from real bordeaux-open SVG', async () => {
-    const svgText = readFileSync(join(PUBLIC, 'bottle-bordeaux-open.svg'), 'utf8');
+    const svgText = readFileSync(join(PUBLIC_LATHE, 'bottle-bordeaux-open.svg'), 'utf8');
     const raw = extractOpenPathPointsFromSvgText(svgText, 48);
     setRawWineBottleSvgPointsCache('bordeaux', raw);
     const result = await buildWineBottleMeshes({

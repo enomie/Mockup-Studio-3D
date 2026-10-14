@@ -9,22 +9,22 @@ import type { AssetMaterialSlots } from './material-types';
 
 export type ImageSurfaceFinish = 'matt' | 'glossy';
 
-export type ImageSurfaceSettings = {
+export interface ImageSurfaceSettings {
   finish: ImageSurfaceFinish;
   emissiveEnabled: boolean;
   emissiveIntensity: number;
   passepartoutColor: Rgb;
   passepartoutOffsetM: number;
   passepartoutFinish: ImageSurfaceFinish;
-};
+}
 
-type ImageSurfaceMigrationInput = {
+interface ImageSurfaceMigrationInput {
   assetKind: AssetKind;
   faces?: AssetFaces;
   materials?: AssetMaterialSlots;
   imageSurfaces?: Partial<Record<AssetFaceId, ImageSurfaceSettings>>;
   screenImageId: string | null;
-};
+}
 
 export const PASSEPARTOUT_COLOR_WHITE: Rgb = { r: 1, g: 1, b: 1 };
 export const PASSEPARTOUT_COLOR_BLACK: Rgb = { r: 0, g: 0, b: 0 };
@@ -32,12 +32,12 @@ export const PASSEPARTOUT_COLOR_BLACK: Rgb = { r: 0, g: 0, b: 0 };
 const MIN_INNER_PLANE_M = 0.001;
 
 /** Gap between passepartout and image meshes (toward camera). Scaled by asset `sizeScale` at use site. */
-export type PassepartoutInnerBounds = {
+export interface PassepartoutInnerBounds {
   innerW: number;
   innerH: number;
   innerRadiusM: number;
   effectiveOffsetM: number;
-};
+}
 
 export function computePassepartoutInnerBounds(
   outerW: number,
@@ -81,7 +81,8 @@ export function imageSurfaceFaceForAsset(
 ): AssetImageSurfaceId {
   return assetKind === 'beverage-can' ||
     assetKind === 'tin-can' ||
-    assetKind === 'wine-bottle'
+    assetKind === 'wine-bottle' ||
+    assetKind === 'pen'
     ? 'label'
     : 'front';
 }
@@ -107,7 +108,7 @@ export function clampPassepartoutOffsetM(
   planeH: number,
 ): number {
   const safe = Math.max(0, offsetM);
-  if (planeW <= 0 || planeH <= 0) return 0;
+  if (planeW <= 0 || planeH <= 0) {return 0;}
 
   const maxOffsetX = (planeW - MIN_INNER_PLANE_M) * 0.5;
   const maxOffsetY = (planeH - MIN_INNER_PLANE_M) * 0.5;
@@ -117,9 +118,9 @@ export function clampPassepartoutOffsetM(
 
 export type AssetImageSurfaceId = AssetFaceId | 'label';
 
-export type ResolveImageSurfaceContext = {
+export interface ResolveImageSurfaceContext {
   assetKind: AssetKind;
-};
+}
 
 export function resolveImageSurfaceSettings(
   imageSurfaces?: Partial<Record<AssetImageSurfaceId, ImageSurfaceSettings>>,
@@ -139,37 +140,28 @@ export function resolveImageSurfaceSettings(
   }
 
   return {
-    finish: stored.finish ?? DEFAULT_IMAGE_SURFACE.finish,
-    emissiveEnabled:
-      stored.emissiveEnabled ?? DEFAULT_IMAGE_SURFACE.emissiveEnabled,
-    emissiveIntensity:
-      stored.emissiveIntensity ?? DEFAULT_IMAGE_SURFACE.emissiveIntensity,
-    passepartoutColor: stored.passepartoutColor
-      ? { ...stored.passepartoutColor }
-      : { ...defaultColor },
-    passepartoutOffsetM:
-      stored.passepartoutOffsetM ?? DEFAULT_IMAGE_SURFACE.passepartoutOffsetM,
-    passepartoutFinish:
-      stored.passepartoutFinish ?? DEFAULT_IMAGE_SURFACE.passepartoutFinish,
+    ...DEFAULT_IMAGE_SURFACE,
+    ...stored,
+    passepartoutColor: { ...stored.passepartoutColor },
   };
 }
 
 function cloneImageSurfaces(
   imageSurfaces?: Partial<Record<AssetImageSurfaceId, ImageSurfaceSettings>>,
 ): Partial<Record<AssetImageSurfaceId, ImageSurfaceSettings>> | undefined {
-  if (!imageSurfaces) return undefined;
+  if (!imageSurfaces) {return undefined;}
 
   return Object.fromEntries(
     Object.entries(imageSurfaces).map(([faceId, settings]) => [
       faceId,
       { ...settings },
     ]),
-  ) as Partial<Record<AssetImageSurfaceId, ImageSurfaceSettings>>;
+  );
 }
 
 function finishFromMaterialId(materialId: string): ImageSurfaceFinish | null {
-  if (materialId === MATERIAL_PAPER_ID) return 'matt';
-  if (materialId === MATERIAL_GLOSSY_PRINT_ID) return 'glossy';
+  if (materialId === MATERIAL_PAPER_ID) {return 'matt';}
+  if (materialId === MATERIAL_GLOSSY_PRINT_ID) {return 'glossy';}
   return null;
 }
 
@@ -210,9 +202,9 @@ export function migrateImageSurfaces(
     faceId: AssetFaceId,
     slotId: string | undefined,
   ) => {
-    if (migrated[faceId] || !faceHasImage(entity, faceId) || !slotId) return;
+    if (migrated[faceId] || !faceHasImage(entity, faceId) || !slotId) {return;}
     const finish = finishFromMaterialId(slotId);
-    if (!finish) return;
+    if (!finish) {return;}
     migrated[faceId] = {
       ...resolveImageSurfaceSettings(undefined, faceId, {
         assetKind: entity.assetKind,

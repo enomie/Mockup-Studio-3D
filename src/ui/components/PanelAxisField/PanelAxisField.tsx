@@ -1,6 +1,6 @@
 import { useId, useState, type ReactNode } from 'react';
 
-export type PanelAxisFieldProps = {
+export interface PanelAxisFieldProps {
   label: string;
   value: number;
   format: (value: number) => string;
@@ -9,7 +9,7 @@ export type PanelAxisFieldProps = {
   disabled?: boolean;
   onChange: (value: number) => void;
   trailing?: ReactNode;
-};
+}
 
 export function PanelAxisField({
   label,
@@ -29,21 +29,21 @@ export function PanelAxisField({
   const isInvalid = isEditing && parse(draft) === null && draft.trim() !== '';
 
   const handleFocus = (): void => {
-    if (disabled) return;
+    if (disabled) {return;}
     setIsEditing(true);
     setDraft(format(value));
   };
 
   const handleChange = (raw: string): void => {
-    if (disabled) return;
+    if (disabled) {return;}
     setDraft(raw);
     const parsed = parse(raw);
-    if (parsed !== null) onChange(parsed);
+    if (parsed !== null) {onChange(parsed);}
   };
 
   const handleBlur = (): void => {
     const parsed = parse(draft);
-    if (parsed !== null) onChange(parsed);
+    if (parsed !== null) {onChange(parsed);}
     setIsEditing(false);
     setDraft('');
   };
@@ -63,7 +63,7 @@ export function PanelAxisField({
           aria-label={label}
           aria-invalid={isInvalid}
           onFocus={handleFocus}
-          onChange={(event) => handleChange(event.target.value)}
+          onChange={(event) => { handleChange(event.target.value); }}
           onBlur={handleBlur}
         />
         {unit ? <span className="panel-field-unit">{unit}</span> : null}

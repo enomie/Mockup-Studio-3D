@@ -2,20 +2,22 @@ import type { LightingSettings } from './scene-api';
 
 export type LightingPresetSource = 'builtin' | 'user';
 
-export type LightingPreset = {
+export interface LightingPreset {
   id: string;
   name: string;
   source: LightingPresetSource;
   description?: string;
   createdAt?: string;
   snapshot: LightingSettings;
-};
+}
 
 export function cloneLightingSettings(
   settings: LightingSettings,
 ): LightingSettings {
   return {
     referenceMode: settings.referenceMode,
+    showFixtures: settings.showFixtures,
+    fixturesReflectInMirror: settings.fixturesReflectInMirror,
     ambient: {
       enabled: settings.ambient.enabled,
       color: { ...settings.ambient.color },

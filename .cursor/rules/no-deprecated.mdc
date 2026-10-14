@@ -1,0 +1,30 @@
+---
+description: No deprecated code, comments, or exported symbols in src
+alwaysApply: true
+---
+
+# No deprecated code
+
+Aligns with diary **2026-10-10 — Datenmodell — kein deprecated** and [`requirements-code.md`](../../_docs/requirements/requirements-code.md) (*No deprecated APIs*). ESLint also enforces **`@typescript-eslint/no-deprecated`** on *consuming* deprecated third-party/TS APIs — see [`eslint.mdc`](./eslint.mdc).
+
+## Forbidden in `src/**`
+
+- **`@deprecated` JSDoc** (or comments that mark APIs/constants as deprecated).
+- **Exported compatibility aliases** — old name re-exported beside the new name (`rebuildBlock` → `rebuildRigidPrimitive`, type aliases, renamed constants).
+- **Symbols or files whose sole purpose is “use X instead”** — update imports/call sites, then delete the old surface.
+
+## Allowed
+
+- **One-shot load migration** — private constants + `migrate*` / `normalize*` (e.g. old preset IDs in saved JSON). No `@deprecated` tag; document allowed legacy keys in Requirements, not in source as deprecated APIs.
+- **Tests** may use old **serialized payloads** to assert migration; prefer fixture names like `savedSceneWithRootShadowSoftness`, not “deprecated API”.
+
+## When renaming or splitting APIs
+
+1. Find all references (`grep` old symbol).
+2. Switch call sites to the canonical name.
+3. Remove the old export/alias in the same change set — do not leave a deprecated shim.
+
+## Agent checklist
+
+- Before adding a “temporary” alias: **don’t** — migrate callers instead.
+- After refactors: `rg -i '@deprecated|deprecated' src/` must be **empty** (except if explicitly exempted in Requirements).

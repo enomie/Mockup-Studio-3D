@@ -40,7 +40,7 @@ export function TinCanFields({
           images={images}
           imageLabel="Label"
           imageFieldId={screenImageFieldId}
-          onImageChange={(imageId) => setAssetScreenImage(entity.id, imageId)}
+          onImageChange={(imageId) => { setAssetScreenImage(entity.id, imageId); }}
         />
       </SubPanelSection>
 
@@ -75,9 +75,9 @@ export function TinCanFields({
           format={(value) => String(Math.round(value))}
           parse={(raw) => {
             const trimmed = raw.trim();
-            if (trimmed === '') return null;
+            if (trimmed === '') {return null;}
             const n = Number.parseInt(trimmed, 10);
-            if (!Number.isFinite(n)) return null;
+            if (!Number.isFinite(n)) {return null;}
             return n;
           }}
           onChange={(value) => {

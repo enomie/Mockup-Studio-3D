@@ -160,7 +160,10 @@ describe('weldLathePhiSeamNormals', () => {
   });
 
   it('index weld stops using duplicate phi column on alsace glass', () => {
-    const svg = readFileSync(join(process.cwd(), 'public', 'bottle-alsace-open.svg'), 'utf8');
+    const svg = readFileSync(
+      join(process.cwd(), 'public', 'profiles', 'lathe', 'bottle-alsace-open.svg'),
+      'utf8',
+    );
     const wall = prepareWineBottleGlassLatheProfile(
       normalizeOpenWallSvgToLathePoints(extractOpenPathPointsFromSvgText(svg, 48), 0.29),
     );
@@ -180,7 +183,10 @@ describe('weldLathePhiSeamNormals', () => {
   });
 
   it('welds alsace closed wall lathe seam after computeVertexNormals', () => {
-    const svg = readFileSync(join(process.cwd(), 'public', 'bottle-alsace-open.svg'), 'utf8');
+    const svg = readFileSync(
+      join(process.cwd(), 'public', 'profiles', 'lathe', 'bottle-alsace-open.svg'),
+      'utf8',
+    );
     const wall = prepareWineBottleGlassLatheProfile(
       normalizeOpenWallSvgToLathePoints(extractOpenPathPointsFromSvgText(svg, 48), 0.29),
     );

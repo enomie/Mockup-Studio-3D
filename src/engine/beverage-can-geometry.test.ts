@@ -16,7 +16,7 @@ import {
   setRawSvgProfilePointsCache,
 } from './beverage-can-svg-profile';
 
-const PUBLIC = join(process.cwd(), 'public');
+const PUBLIC_LATHE = join(process.cwd(), 'public', 'profiles', 'lathe');
 
 /** Right-half silhouette stub (radius × height in arbitrary SVG units). */
 function syntheticCanSilhouette(): { x: number; y: number }[] {
@@ -55,7 +55,7 @@ describe('beverage-can-svg-profile', () => {
   });
 
   it('loads cached raw points for integration (file present)', () => {
-    const svgText = readFileSync(join(PUBLIC, '330ml-classic.svg'), 'utf8');
+    const svgText = readFileSync(join(PUBLIC_LATHE, '330ml-classic.svg'), 'utf8');
     expect(svgText.includes('<path')).toBe(true);
     setRawSvgProfilePointsCache('standard', syntheticCanSilhouette());
     expect(syntheticCanSilhouette().length).toBeGreaterThan(2);

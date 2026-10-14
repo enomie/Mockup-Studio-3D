@@ -1,0 +1,1478 @@
+<!DOCTYPE html>
+<html lang="de" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minimal CAD – Dreiecks-Studio mit Rotation & Illustrator-Werkzeugen</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/TransformControls.js"></script>
+    <style>
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #060911; font-family: ui-sans-serif, system-ui, sans-serif; }
+        #canvas-container { width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
+        .glass { background: rgba(13, 19, 33, 0.92); backdrop-filter: blur(14px); border: 1px solid rgba(255, 255, 255, 0.09); }
+        .btn { transition: all 0.15s ease-out; }
+    </style>
+</head>
+<body class="text-slate-100 select-none">
+
+    <div id="canvas-container"></div>
+
+    <!-- Kopfzeile mit Aktionen, Werkzeugen & Symmetrie -->
+    <header class="absolute top-3 left-3 right-3 h-12 glass rounded-xl flex items-center justify-between px-4 z-20 shadow-2xl">
+        <div class="flex items-center space-x-3">
+            <span class="text-xs font-black uppercase tracking-wider text-sky-400 flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-sky-400 animate-pulse"></span>
+                Multi-Patch Studio
+            </span>
+            <div class="h-4 w-px bg-slate-700"></div>
+
+            <!-- Button: Neues Bauteil anlegen -->
+            <button id="btn-add-part" class="btn flex items-center gap-1.5 px-3 py-1 rounded-lg border border-sky-500/50 bg-sky-500/20 text-sky-300 font-bold hover:bg-sky-500/30 hover:text-white text-xs shadow-lg">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+                + Neues Bauteil
+            </button>
+
+            <!-- Illustrator-Werkzeug: Pfadpunkt hinzufügen -->
+            <button id="btn-add-point-tool" class="btn flex items-center gap-1.5 px-3 py-1 rounded-lg border border-purple-500/50 bg-purple-950/60 text-purple-300 font-bold hover:bg-purple-900/80 hover:text-white text-xs shadow-lg">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <span>+ Pfadpunkt hinzufügen</span>
+            </button>
+
+            <!-- Bauteil-Zähler -->
+            <span id="lbl-part-count" class="text-[11px] text-slate-400">1 Bauteil</span>
+        </div>
+
+        <div class="flex items-center space-x-2 text-xs">
+            <!-- Symmetrie Toggle Button -->
+            <button id="btn-symmetry" class="btn px-3 py-1 rounded-lg border border-sky-500/40 font-semibold bg-sky-950/60 text-sky-300 hover:text-white">
+                Symmetrie: An
+            </button>
+
+            <!-- Räder / Fahrwerk Toggle Button -->
+            <button id="btn-wheels" class="btn px-3 py-1 rounded-lg border border-emerald-500/40 font-semibold bg-emerald-950/60 text-emerald-300 hover:text-white flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                <span>Räder: An</span>
+            </button>
+
+            <!-- Shading-Modi -->
+            <div class="flex items-center bg-slate-950/80 p-0.5 rounded-lg border border-slate-800">
+                <button id="shade-studio" class="btn px-3 py-1 rounded font-semibold bg-slate-800 text-sky-300">Lack</button>
+                <button id="shade-zebra" class="btn px-3 py-1 rounded font-semibold text-slate-400 hover:text-white">Zebra</button>
+                <button id="shade-wire" class="btn px-3 py-1 rounded font-semibold text-slate-400 hover:text-white">Dreiecksnetz</button>
+            </div>
+            
+            <button id="btn-clean" class="btn px-3 py-1 rounded-lg border border-slate-700 font-semibold bg-slate-900 text-slate-300 hover:text-white">
+                Reines Blech
+            </button>
+        </div>
+    </header>
+
+    <!-- Info-Inspektor -->
+    <div id="inspector" class="absolute bottom-4 left-4 glass rounded-xl p-3.5 shadow-2xl text-xs z-20 w-80">
+        <div class="flex items-center justify-between mb-2 pb-1.5 border-b border-slate-800">
+            <div class="flex items-center gap-2">
+                <span id="dot-type" class="w-3 h-3 rounded-full bg-slate-600"></span>
+                <span id="lbl-title" class="font-bold text-slate-200">Reine Modellansicht</span>
+            </div>
+            <span id="lbl-badge" class="px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-mono text-[10px]">Keine Auswahl</span>
+        </div>
+
+        <!-- NEU: Transform-Modus Umschalter (Verschieben / Drehen) -->
+        <div class="mb-2 p-1 bg-slate-950/90 rounded-lg border border-slate-800 flex items-center gap-1">
+            <button id="btn-mode-translate" class="btn flex-1 py-1 rounded text-center font-bold text-[11px] bg-sky-600 text-white shadow">
+                ✥ Verschieben <span class="text-[9px] opacity-75 font-mono">(W)</span>
+            </button>
+            <button id="btn-mode-rotate" class="btn flex-1 py-1 rounded text-center font-bold text-[11px] text-slate-400 hover:text-white hover:bg-slate-800">
+                ↻ Drehen <span class="text-[9px] opacity-75 font-mono">(E)</span>
+            </button>
+        </div>
+
+        <div class="grid grid-cols-3 gap-1.5 font-mono text-center text-[11px] mb-2.5">
+            <div class="bg-slate-950/80 p-1.5 rounded border border-slate-800">X: <span id="val-x" class="text-rose-400 font-bold">--</span></div>
+            <div class="bg-slate-950/80 p-1.5 rounded border border-slate-800">Y: <span id="val-y" class="text-emerald-400 font-bold">--</span></div>
+            <div class="bg-slate-950/80 p-1.5 rounded border border-slate-800">Z: <span id="val-z" class="text-sky-400 font-bold">--</span></div>
+        </div>
+
+        <!-- Punkt-Parameter Zwischenablage (Copy / Paste / Snap) -->
+        <div class="mb-2.5 p-2 bg-slate-950/80 rounded-lg border border-slate-800 space-y-1.5">
+            <div class="flex items-center justify-between">
+                <span class="font-bold text-slate-300 text-[10px] uppercase tracking-wider">Punkt-Speicher:</span>
+                <span id="clipboard-status" class="text-[10px] text-slate-400 font-mono truncate max-w-[140px]">Speicher leer</span>
+            </div>
+            <div class="grid grid-cols-2 gap-1.5">
+                <button id="btn-copy-params" disabled class="btn px-2 py-1.5 rounded bg-slate-800 text-slate-400 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed font-semibold text-[10px] flex items-center justify-center gap-1 border border-slate-700">
+                    📋 Kopieren
+                </button>
+                <button id="btn-paste-params" disabled class="btn px-2 py-1.5 rounded bg-slate-800 text-slate-400 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed font-semibold text-[10px] flex items-center justify-center gap-1 border border-slate-700">
+                    📥 Einfügen
+                </button>
+            </div>
+            <button id="btn-paste-snap" disabled class="btn w-full px-2 py-1 rounded bg-indigo-950/50 hover:bg-indigo-900/70 text-indigo-300 border border-indigo-800/50 disabled:opacity-40 disabled:cursor-not-allowed font-semibold text-[10px] flex items-center justify-center gap-1">
+                🧲 Auf Position andocken (Snap)
+            </button>
+        </div>
+
+        <!-- Farblegende der 4 Hebel -->
+        <div class="bg-slate-950/70 p-2.5 rounded-lg border border-slate-800 space-y-1 text-[10px]">
+            <div class="font-bold text-slate-300 text-[11px] mb-1">Steuerung & Hilfen:</div>
+            <div class="flex items-center gap-1.5 text-pink-300">
+                <span class="w-2.5 h-2.5 rounded-full bg-pink-500 shadow-sm shadow-pink-500/50"></span>
+                <span><b>Kantenhebel:</b> Tangenten entlang der Kanten</span>
+            </div>
+            <div class="flex items-center gap-1.5 text-amber-300">
+                <span class="w-2.5 h-2.5 rounded-full bg-amber-400 shadow-sm shadow-amber-400/50"></span>
+                <span><b>Quertangente Innen:</b> Wölbung / Bauch der Fläche</span>
+            </div>
+            <div class="flex items-center gap-1.5 text-yellow-300">
+                <span class="w-2.5 h-2.5 rounded-full bg-yellow-400 shadow-sm shadow-yellow-400/50"></span>
+                <span><b>Quertangente Außen:</b> Kantenradius & Ausrundung</span>
+            </div>
+        </div>
+
+        <!-- Navigations-Leitfaden -->
+        <div class="mt-2.5 p-2 bg-sky-950/30 rounded border border-sky-900/40 text-[10px] text-sky-300 space-y-0.5">
+            <div>🖱️ <b>Linksklick im Leeren:</b> Kamera drehen (Orbit)</div>
+            <div>🖱️ <b>Rechtsklick & Ziehen:</b> Kamera bewegen (Pan)</div>
+            <div>⌨️ <kbd class="px-1 py-0.5 bg-sky-900/80 rounded font-mono">W</kbd> = Verschieben | <kbd class="px-1 py-0.5 bg-sky-900/80 rounded font-mono">E</kbd> = Drehen</div>
+        </div>
+    </div>
+
+    <script>
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x060911);
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.05, 50);
+        camera.position.set(1.8, 1.8, 2.4);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        container.appendChild(renderer.domElement);
+
+        // OrbitControls: Linksklick = Drehen, Rechtsklick = Bewegen (Pan)
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.06;
+        controls.target.set(0, 0.25, 0);
+        controls.mouseButtons = {
+            LEFT: THREE.MOUSE.ROTATE,
+            MIDDLE: THREE.MOUSE.DOLLY,
+            RIGHT: THREE.MOUSE.PAN
+        };
+
+        // TransformControls für Verschieben und Rotieren der Punkte und Hebel
+        const transformControl = new THREE.TransformControls(camera, renderer.domElement);
+        transformControl.size = 0.75;
+        scene.add(transformControl);
+
+        let isDraggingGizmo = false;
+        let wasDragging = false;
+        let currentGizmoMode = 'translate'; // 'translate' | 'rotate'
+
+        transformControl.addEventListener('dragging-changed', (e) => {
+            isDraggingGizmo = e.value;
+            if (e.value) wasDragging = true;
+            controls.enabled = !e.value;
+        });
+
+        // Beleuchtung
+        scene.add(new THREE.HemisphereLight(0xffffff, 0x1e293b, 1.2));
+        const keyLight = new THREE.DirectionalLight(0xffffff, 1.6);
+        keyLight.position.set(-2, 4, 3);
+        scene.add(keyLight);
+        const fillLight = new THREE.DirectionalLight(0x38bdf8, 0.8);
+        fillLight.position.set(3, 2, -2);
+        scene.add(fillLight);
+
+        // Boden & Mittelachse
+        const grid = new THREE.GridHelper(5, 20, 0x38bdf8, 0x1e293b);
+        grid.position.y = -0.4;
+        scene.add(grid);
+
+        const centerLineGeom = new THREE.BufferGeometry().setFromPoints([
+            new THREE.Vector3(0, -0.39, -2.5),
+            new THREE.Vector3(0, -0.39, 2.5)
+        ]);
+        const centerLine = new THREE.Line(centerLineGeom, new THREE.LineBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.8 }));
+        scene.add(centerLine);
+
+        // Boden-Pfeil: Fahrtrichtung nach VORNE (+Z)
+        const groundOrientationGroup = new THREE.Group();
+        groundOrientationGroup.position.set(0, -0.392, 0);
+
+        const arrowShape = new THREE.Shape();
+        arrowShape.moveTo(0, 1.4);
+        arrowShape.lineTo(0.28, 0.95);
+        arrowShape.lineTo(0.12, 0.95);
+        arrowShape.lineTo(0.12, 0.35);
+        arrowShape.lineTo(-0.12, 0.35);
+        arrowShape.lineTo(-0.12, 0.95);
+        arrowShape.lineTo(-0.28, 0.95);
+        arrowShape.closePath();
+
+        const arrowGeom = new THREE.ShapeGeometry(arrowShape);
+        const arrowMesh = new THREE.Mesh(arrowGeom, new THREE.MeshBasicMaterial({
+            color: 0x38bdf8,
+            transparent: true,
+            opacity: 0.55,
+            side: THREE.DoubleSide
+        }));
+        arrowMesh.rotation.x = Math.PI / 2;
+        groundOrientationGroup.add(arrowMesh);
+
+        const arrowEdges = new THREE.LineSegments(
+            new THREE.EdgesGeometry(arrowGeom),
+            new THREE.LineBasicMaterial({ color: 0x7dd3fc, transparent: true, opacity: 0.9 })
+        );
+        arrowEdges.rotation.x = Math.PI / 2;
+        groundOrientationGroup.add(arrowEdges);
+
+        const floorCanvas = document.createElement('canvas');
+        floorCanvas.width = 512;
+        floorCanvas.height = 128;
+        const ctx = floorCanvas.getContext('2d');
+        ctx.fillStyle = 'rgba(6, 9, 17, 0.85)';
+        ctx.roundRect ? ctx.roundRect(16, 16, 480, 96, 24) : ctx.rect(16, 16, 480, 96);
+        ctx.fill();
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = '#38bdf8';
+        ctx.stroke();
+
+        ctx.font = 'bold 44px ui-sans-serif, system-ui, sans-serif';
+        ctx.fillStyle = '#38bdf8';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('▲  VORNE (FRONT)', 256, 64);
+
+        const floorTexture = new THREE.CanvasTexture(floorCanvas);
+        floorTexture.anisotropy = 4;
+        const floorBadge = new THREE.Mesh(
+            new THREE.PlaneGeometry(0.72, 0.18),
+            new THREE.MeshBasicMaterial({ map: floorTexture, transparent: true, opacity: 0.9, depthWrite: false })
+        );
+        floorBadge.rotation.x = -Math.PI / 2;
+        floorBadge.position.set(0, 0.002, 1.58);
+        groundOrientationGroup.add(floorBadge);
+
+        scene.add(groundOrientationGroup);
+
+        // Fahrwerk & 4 Räder
+        const wheelsGroup = new THREE.Group();
+        let wheelsVisible = true;
+
+        const CHASSIS_CONFIG = {
+            wheelRadius: 0.317,
+            tireWidth: 0.225,
+            trackWidth: 1.54,
+            wheelbase: 2.65,
+            frontAxleZ: 0.15,
+            rearAxleZ: -2.50,
+            groundY: -0.40
+        };
+
+        const wheelCenterY = CHASSIS_CONFIG.groundY + CHASSIS_CONFIG.wheelRadius;
+
+        function createPrettyWheel(isLeftSide) {
+            const wheel = new THREE.Group();
+
+            const tireMat = new THREE.MeshStandardMaterial({ color: 0x18181b, roughness: 0.88, metalness: 0.06 });
+            const rimMat = new THREE.MeshStandardMaterial({ color: 0xd4d4d8, roughness: 0.22, metalness: 0.88 });
+            const brakeDiscMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.32, metalness: 0.95 });
+            const caliperMat = new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.35, metalness: 0.25 });
+
+            const tireGeom = new THREE.CylinderGeometry(
+                CHASSIS_CONFIG.wheelRadius, CHASSIS_CONFIG.wheelRadius, CHASSIS_CONFIG.tireWidth, 32
+            );
+            const tireMesh = new THREE.Mesh(tireGeom, tireMat);
+            tireMesh.rotation.z = Math.PI / 2;
+            wheel.add(tireMesh);
+
+            const innerBevel = new THREE.Mesh(
+                new THREE.TorusGeometry(CHASSIS_CONFIG.wheelRadius - 0.035, 0.035, 12, 32), tireMat
+            );
+            innerBevel.rotation.y = Math.PI / 2;
+            innerBevel.position.x = CHASSIS_CONFIG.tireWidth / 2 - 0.01;
+            wheel.add(innerBevel);
+
+            const outerBevel = innerBevel.clone();
+            outerBevel.position.x = -CHASSIS_CONFIG.tireWidth / 2 + 0.01;
+            wheel.add(outerBevel);
+
+            const rimRadius = 0.216;
+            const rimGeom = new THREE.CylinderGeometry(rimRadius, rimRadius, CHASSIS_CONFIG.tireWidth - 0.02, 28);
+            const rimMesh = new THREE.Mesh(rimGeom, rimMat);
+            rimMesh.rotation.z = Math.PI / 2;
+            wheel.add(rimMesh);
+
+            const spokeGeom = new THREE.BoxGeometry(0.018, rimRadius * 1.85, 0.024);
+            const spokesGroup = new THREE.Group();
+            for (let i = 0; i < 5; i++) {
+                const angle = (i * Math.PI) / 5;
+                const spoke = new THREE.Mesh(spokeGeom, rimMat);
+                spoke.rotation.x = angle;
+                spokesGroup.add(spoke);
+            }
+            spokesGroup.position.x = isLeftSide ? (CHASSIS_CONFIG.tireWidth / 2 - 0.025) : (-CHASSIS_CONFIG.tireWidth / 2 + 0.025);
+            wheel.add(spokesGroup);
+
+            const cap = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.045, 0.045, 0.03, 16),
+                new THREE.MeshStandardMaterial({ color: 0x09090b, roughness: 0.2, metalness: 0.9 })
+            );
+            cap.rotation.z = Math.PI / 2;
+            cap.position.x = spokesGroup.position.x + (isLeftSide ? 0.01 : -0.01);
+            wheel.add(cap);
+
+            const rotor = new THREE.Mesh(new THREE.CylinderGeometry(0.165, 0.165, 0.018, 24), brakeDiscMat);
+            rotor.rotation.z = Math.PI / 2;
+            rotor.position.x = isLeftSide ? -0.02 : 0.02;
+            wheel.add(rotor);
+
+            const caliper = new THREE.Mesh(new THREE.BoxGeometry(0.042, 0.09, 0.05), caliperMat);
+            caliper.position.set(rotor.position.x, 0.12, 0.05);
+            wheel.add(caliper);
+
+            return wheel;
+        }
+
+        const halfTrack = CHASSIS_CONFIG.trackWidth / 2;
+        const wheelFL = createPrettyWheel(true);
+        wheelFL.position.set(halfTrack, wheelCenterY, CHASSIS_CONFIG.frontAxleZ);
+        wheelsGroup.add(wheelFL);
+
+        const wheelFR = createPrettyWheel(false);
+        wheelFR.position.set(-halfTrack, wheelCenterY, CHASSIS_CONFIG.frontAxleZ);
+        wheelsGroup.add(wheelFR);
+
+        const wheelRL = createPrettyWheel(true);
+        wheelRL.position.set(halfTrack, wheelCenterY, CHASSIS_CONFIG.rearAxleZ);
+        wheelsGroup.add(wheelRL);
+
+        const wheelRR = createPrettyWheel(false);
+        wheelRR.position.set(-halfTrack, wheelCenterY, CHASSIS_CONFIG.rearAxleZ);
+        wheelsGroup.add(wheelRR);
+
+        const axleMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.6, metalness: 0.6 });
+        const frontAxle = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, CHASSIS_CONFIG.trackWidth - 0.2, 16), axleMat);
+        frontAxle.rotation.z = Math.PI / 2;
+        frontAxle.position.set(0, wheelCenterY, CHASSIS_CONFIG.frontAxleZ);
+        wheelsGroup.add(frontAxle);
+
+        const rearAxle = frontAxle.clone();
+        rearAxle.position.set(0, wheelCenterY, CHASSIS_CONFIG.rearAxleZ);
+        wheelsGroup.add(rearAxle);
+
+        scene.add(wheelsGroup);
+
+        const studioMat = new THREE.MeshStandardMaterial({
+            color: 0x0284c7,
+            roughness: 0.18,
+            metalness: 0.75,
+            side: THREE.DoubleSide
+        });
+
+        const zebraMat = new THREE.ShaderMaterial({
+            side: THREE.DoubleSide,
+            uniforms: { scale: { value: 16.0 } },
+            vertexShader: `
+                varying vec3 vNormal, vView;
+                void main() {
+                    vNormal = normalize(normalMatrix * normal);
+                    vec4 mv = modelViewMatrix * vec4(position, 1.0);
+                    vView = normalize(-mv.xyz);
+                    gl_Position = projectionMatrix * mv;
+                }
+            `,
+            fragmentShader: `
+                uniform float scale;
+                varying vec3 vNormal, vView;
+                void main() {
+                    vec3 r = reflect(-vView, normalize(vNormal));
+                    float s = step(0.0, sin(r.y * scale));
+                    gl_FragColor = vec4(mix(vec3(0.05), vec3(0.95), s), 1.0);
+                }
+            `
+        });
+
+        const wireMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, wireframe: true, side: THREE.DoubleSide });
+        let currentMaterial = studioMat;
+        let symmetryEnabled = true;
+
+        let isAddPointToolActive = false;
+        let hoverEdgeCandidate = null;
+
+        const addPreviewMesh = new THREE.Mesh(
+            new THREE.SphereGeometry(0.048, 16, 16),
+            new THREE.MeshStandardMaterial({ color: 0xc084fc, emissive: 0xa855f7, emissiveIntensity: 0.85 })
+        );
+        addPreviewMesh.visible = false;
+        scene.add(addPreviewMesh);
+
+        // Ein Knotenpunkt mit allen 4 Hebeln
+        class CADNode {
+            constructor(name, x, y, z, hNextOff, hPrevOff, hCrossInOff, hCrossOutOff) {
+                this.name = name;
+                this.pos = new THREE.Vector3(x, y, z);
+                this.handleNext = this.pos.clone().add(hNextOff);
+                this.handlePrev = this.pos.clone().add(hPrevOff);
+                this.handleCrossIn = this.pos.clone().add(hCrossInOff);
+                this.handleCrossOut = this.pos.clone().add(hCrossOutOff);
+
+                this.meshAnchor = null;
+                this.meshHandleNext = null;
+                this.meshHandlePrev = null;
+                this.meshCrossIn = null;
+                this.meshCrossOut = null;
+                this.lineNext = null;
+                this.linePrev = null;
+                this.lineCross = null;
+            }
+        }
+
+        const _pEdgeAB = new THREE.Vector3(), _pEdgeBC = new THREE.Vector3(), _pEdgeCA = new THREE.Vector3();
+        const _bVecA = new THREE.Vector3(), _bVecB = new THREE.Vector3(), _bVecC = new THREE.Vector3();
+
+        function evalPatchSurface(part, u, v, w, out) {
+            const A = part.corners[0].pos, B = part.corners[1].pos, C = part.corners[2].pos;
+
+            const lx = u * A.x + v * B.x + w * C.x;
+            const ly = u * A.y + v * B.y + w * C.y;
+            const lz = u * A.z + v * B.z + w * C.z;
+
+            let dx = 0, dy = 0, dz = 0;
+
+            if (u + v > 0.0001) {
+                const tAB = v / (u + v);
+                part.evalEdge(0, tAB, _pEdgeAB);
+                dx += (u + v) * (_pEdgeAB.x - ((1 - tAB) * A.x + tAB * B.x));
+                dy += (u + v) * (_pEdgeAB.y - ((1 - tAB) * A.y + tAB * B.y));
+                dz += (u + v) * (_pEdgeAB.z - ((1 - tAB) * A.z + tAB * B.z));
+            }
+
+            if (v + w > 0.0001) {
+                const tBC = w / (v + w);
+                part.evalEdge(1, tBC, _pEdgeBC);
+                dx += (v + w) * (_pEdgeBC.x - ((1 - tBC) * B.x + tBC * C.x));
+                dy += (v + w) * (_pEdgeBC.y - ((1 - tBC) * B.y + tBC * C.y));
+                dz += (v + w) * (_pEdgeBC.z - ((1 - tBC) * B.z + tBC * C.z));
+            }
+
+            if (w + u > 0.0001) {
+                const tCA = u / (w + u);
+                part.evalEdge(2, tCA, _pEdgeCA);
+                dx += (w + u) * (_pEdgeCA.x - ((1 - tCA) * C.x + tCA * A.x));
+                dy += (w + u) * (_pEdgeCA.y - ((1 - tCA) * C.y + tCA * A.y));
+                dz += (w + u) * (_pEdgeCA.z - ((1 - tCA) * C.z + tCA * A.z));
+            }
+
+            const centerBulgeWeight = 27.0 * u * v * w * 0.65;
+            _bVecA.subVectors(part.corners[0].handleCrossIn, A).multiplyScalar(u);
+            _bVecB.subVectors(part.corners[1].handleCrossIn, B).multiplyScalar(v);
+            _bVecC.subVectors(part.corners[2].handleCrossIn, C).multiplyScalar(w);
+
+            const bx = (_bVecA.x + _bVecB.x + _bVecC.x) * centerBulgeWeight;
+            const by = (_bVecA.y + _bVecB.y + _bVecC.y) * centerBulgeWeight;
+            const bz = (_bVecA.z + _bVecB.z + _bVecC.z) * centerBulgeWeight;
+
+            out.x = lx + dx + bx;
+            out.y = ly + dy + by;
+            out.z = lz + dz + bz;
+        }
+
+        const divisions = 24;
+        const totalVerts = ((divisions + 1) * (divisions + 2)) / 2;
+        const lineSamples = 50;
+
+        let parts = [];
+        let activePart = null;
+
+        class CADPart {
+            constructor(name, cornerConfigs) {
+                this.name = name;
+                this.corners = cornerConfigs.map(c => new CADNode(
+                    c.name, c.x, c.y, c.z, c.hNext, c.hPrev, c.hCrossIn, c.hCrossOut
+                ));
+
+                this.edges = [
+                    { nodes: [this.corners[0], this.corners[1]] },
+                    { nodes: [this.corners[1], this.corners[2]] },
+                    { nodes: [this.corners[2], this.corners[0]] }
+                ];
+
+                this.posArray = new Float32Array(totalVerts * 3);
+                this.mirPosArray = new Float32Array(totalVerts * 3);
+
+                this.patchGeom = new THREE.BufferGeometry();
+                this.posAttr = new THREE.BufferAttribute(this.posArray, 3);
+                this.patchGeom.setAttribute('position', this.posAttr);
+
+                this.mirroredGeom = new THREE.BufferGeometry();
+                this.mirPosAttr = new THREE.BufferAttribute(this.mirPosArray, 3);
+                this.mirroredGeom.setAttribute('position', this.mirPosAttr);
+
+                const indices = [];
+                const mirroredIndices = [];
+                const gridIndex = [];
+                let vCounter = 0;
+                for (let i = 0; i <= divisions; i++) {
+                    gridIndex[i] = [];
+                    for (let j = 0; j <= divisions - i; j++) {
+                        gridIndex[i][j] = vCounter++;
+                    }
+                }
+                for (let i = 0; i < divisions; i++) {
+                    for (let j = 0; j < divisions - i; j++) {
+                        const p1 = gridIndex[i][j];
+                        const p2 = gridIndex[i + 1][j];
+                        const p3 = gridIndex[i][j + 1];
+                        indices.push(p1, p2, p3);
+                        mirroredIndices.push(p1, p3, p2);
+
+                        if (j < divisions - i - 1) {
+                            const p4 = gridIndex[i + 1][j + 1];
+                            indices.push(p2, p4, p3);
+                            mirroredIndices.push(p2, p3, p4);
+                        }
+                    }
+                }
+                this.patchGeom.setIndex(indices);
+                this.mirroredGeom.setIndex(mirroredIndices);
+
+                this.patchMesh = new THREE.Mesh(this.patchGeom, currentMaterial);
+                this.patchMesh.userData = { part: this, isMirror: false };
+                scene.add(this.patchMesh);
+
+                this.mirroredPatchMesh = new THREE.Mesh(this.mirroredGeom, currentMaterial);
+                this.mirroredPatchMesh.userData = { part: this, isMirror: true };
+                scene.add(this.mirroredPatchMesh);
+
+                this.edgeLines = [];
+                this.mirroredEdgeLines = [];
+                for (let e = 0; e < 3; e++) {
+                    const geom = new THREE.BufferGeometry();
+                    geom.setAttribute('position', new THREE.BufferAttribute(new Float32Array((lineSamples + 1) * 3), 3));
+                    const line = new THREE.Line(geom, new THREE.LineBasicMaterial({ color: 0x38bdf8, linewidth: 2 }));
+                    line.userData = { part: this, edgeIdx: e };
+                    this.edgeLines.push(line);
+                    scene.add(line);
+
+                    const mGeom = new THREE.BufferGeometry();
+                    mGeom.setAttribute('position', new THREE.BufferAttribute(new Float32Array((lineSamples + 1) * 3), 3));
+                    const mLine = new THREE.Line(mGeom, new THREE.LineBasicMaterial({ color: 0x38bdf8, linewidth: 1.5, transparent: true, opacity: 0.5 }));
+                    this.mirroredEdgeLines.push(mLine);
+                    scene.add(mLine);
+                }
+
+                this.visualGroup = new THREE.Group();
+                scene.add(this.visualGroup);
+
+                this.corners.forEach((corner) => this.initVisualNode(corner));
+            }
+
+            initVisualNode(node) {
+                const isCorner = this.corners.includes(node);
+                const anchorColor = isCorner ? 0x38bdf8 : 0xc084fc;
+                const anchor = new THREE.Mesh(
+                    new THREE.SphereGeometry(isCorner ? 0.046 : 0.042, 24, 24),
+                    new THREE.MeshStandardMaterial({ color: anchorColor, emissive: anchorColor, emissiveIntensity: 0.6 })
+                );
+                anchor.position.copy(node.pos);
+                anchor.userData = { part: this, node, target: 'pos', isAnchor: true };
+                this.visualGroup.add(anchor);
+                node.meshAnchor = anchor;
+
+                const hNext = new THREE.Mesh(
+                    new THREE.OctahedronGeometry(0.034),
+                    new THREE.MeshStandardMaterial({ color: 0xec4899, emissive: 0xec4899, emissiveIntensity: 0.5 })
+                );
+                hNext.position.copy(node.handleNext);
+                hNext.userData = { part: this, node, target: 'handleNext', isAnchor: false };
+                this.visualGroup.add(hNext);
+                node.meshHandleNext = hNext;
+
+                const hPrev = new THREE.Mesh(
+                    new THREE.OctahedronGeometry(0.034),
+                    new THREE.MeshStandardMaterial({ color: 0xec4899, emissive: 0xec4899, emissiveIntensity: 0.5 })
+                );
+                hPrev.position.copy(node.handlePrev);
+                hPrev.userData = { part: this, node, target: 'handlePrev', isAnchor: false };
+                this.visualGroup.add(hPrev);
+                node.meshHandlePrev = hPrev;
+
+                const hCrossIn = new THREE.Mesh(
+                    new THREE.OctahedronGeometry(0.034),
+                    new THREE.MeshStandardMaterial({ color: 0xf59e0b, emissive: 0xf59e0b, emissiveIntensity: 0.6 })
+                );
+                hCrossIn.position.copy(node.handleCrossIn);
+                hCrossIn.userData = { part: this, node, target: 'handleCrossIn', isAnchor: false };
+                this.visualGroup.add(hCrossIn);
+                node.meshCrossIn = hCrossIn;
+
+                const hCrossOut = new THREE.Mesh(
+                    new THREE.OctahedronGeometry(0.034),
+                    new THREE.MeshStandardMaterial({ color: 0xeab308, emissive: 0xeab308, emissiveIntensity: 0.6 })
+                );
+                hCrossOut.position.copy(node.handleCrossOut);
+                hCrossOut.userData = { part: this, node, target: 'handleCrossOut', isAnchor: false };
+                this.visualGroup.add(hCrossOut);
+                node.meshCrossOut = hCrossOut;
+
+                const lNext = new THREE.Line(
+                    new THREE.BufferGeometry().setFromPoints([node.pos, node.handleNext]),
+                    new THREE.LineBasicMaterial({ color: 0xec4899, transparent: true, opacity: 0.85 })
+                );
+                this.visualGroup.add(lNext);
+                node.lineNext = lNext;
+
+                const lPrev = new THREE.Line(
+                    new THREE.BufferGeometry().setFromPoints([node.pos, node.handlePrev]),
+                    new THREE.LineBasicMaterial({ color: 0xec4899, transparent: true, opacity: 0.85 })
+                );
+                this.visualGroup.add(lPrev);
+                node.linePrev = lPrev;
+
+                const lCross = new THREE.Line(
+                    new THREE.BufferGeometry().setFromPoints([node.handleCrossIn, node.pos, node.handleCrossOut]),
+                    new THREE.LineBasicMaterial({ color: 0xf59e0b, linewidth: 2, transparent: true, opacity: 0.9 })
+                );
+                this.visualGroup.add(lCross);
+                node.lineCross = lCross;
+            }
+
+            getAllNodes() {
+                const set = new Set();
+                this.edges.forEach(e => e.nodes.forEach(n => set.add(n)));
+                return Array.from(set);
+            }
+
+            updateVisualLines() {
+                this.getAllNodes().forEach(n => {
+                    if (n.lineNext) n.lineNext.geometry.setFromPoints([n.pos, n.handleNext]);
+                    if (n.linePrev) n.linePrev.geometry.setFromPoints([n.pos, n.handlePrev]);
+                    if (n.lineCross) n.lineCross.geometry.setFromPoints([n.handleCrossIn, n.pos, n.handleCrossOut]);
+                });
+            }
+
+            evalEdge(edgeIdx, t, out = new THREE.Vector3()) {
+                const nodes = this.edges[edgeIdx].nodes;
+                const numSegs = nodes.length - 1;
+                if (numSegs <= 0) return out.copy(nodes[0].pos);
+
+                const clampedT = Math.max(0, Math.min(0.999999, t));
+                const s = clampedT * numSegs;
+                const segIdx = Math.floor(s);
+                const u = s - segIdx;
+
+                const nA = nodes[segIdx];
+                const nB = nodes[segIdx + 1];
+
+                const p0 = nA.pos;
+                const p1 = nA.handleNext;
+                const p2 = nB.handlePrev;
+                const p3 = nB.pos;
+
+                const mt = 1 - u;
+                out.x = mt*mt*mt*p0.x + 3*mt*mt*u*p1.x + 3*mt*u*u*p2.x + u*u*u*p3.x;
+                out.y = mt*mt*mt*p0.y + 3*mt*mt*u*p1.y + 3*mt*u*u*p2.y + u*u*u*p3.y;
+                out.z = mt*mt*mt*p0.z + 3*mt*mt*u*p1.z + 3*mt*u*u*p2.z + u*u*u*p3.z;
+                return out;
+            }
+
+            addPointOnEdge(edgeIdx, t) {
+                const edge = this.edges[edgeIdx];
+                const numSegs = edge.nodes.length - 1;
+                const clampedT = Math.max(0.02, Math.min(0.98, t));
+                const s = clampedT * numSegs;
+                const segIdx = Math.floor(s);
+                const u = s - segIdx;
+
+                const nA = edge.nodes[segIdx];
+                const nB = edge.nodes[segIdx + 1];
+
+                const p0 = nA.pos.clone();
+                const p1 = nA.handleNext.clone();
+                const p2 = nB.handlePrev.clone();
+                const p3 = nB.pos.clone();
+
+                const p01 = new THREE.Vector3().lerpVectors(p0, p1, u);
+                const p12 = new THREE.Vector3().lerpVectors(p1, p2, u);
+                const p23 = new THREE.Vector3().lerpVectors(p2, p3, u);
+
+                const p012 = new THREE.Vector3().lerpVectors(p01, p12, u);
+                const p123 = new THREE.Vector3().lerpVectors(p12, p23, u);
+
+                const pSplit = new THREE.Vector3().lerpVectors(p012, p123, u);
+
+                nA.handleNext.copy(p01);
+                nA.meshHandleNext.position.copy(nA.handleNext);
+
+                nB.handlePrev.copy(p23);
+                nB.meshHandlePrev.position.copy(nB.handlePrev);
+
+                const crossInRelA = nA.handleCrossIn.clone().sub(nA.pos);
+                const crossInRelB = nB.handleCrossIn.clone().sub(nB.pos);
+                const newCrossInRel = new THREE.Vector3().lerpVectors(crossInRelA, crossInRelB, u);
+
+                const crossOutRelA = nA.handleCrossOut.clone().sub(nA.pos);
+                const crossOutRelB = nB.handleCrossOut.clone().sub(nB.pos);
+                const newCrossOutRel = new THREE.Vector3().lerpVectors(crossOutRelA, crossOutRelB, u);
+
+                const ptName = `Pfadpunkt (${edgeIdx + 1}.${segIdx + 1})`;
+                const newNode = new CADNode(
+                    ptName,
+                    pSplit.x, pSplit.y, pSplit.z,
+                    p123.clone().sub(pSplit),
+                    p012.clone().sub(pSplit),
+                    newCrossInRel,
+                    newCrossOutRel
+                );
+
+                this.initVisualNode(newNode);
+                edge.nodes.splice(segIdx + 1, 0, newNode);
+
+                this.updateVisualLines();
+                this.rebuild();
+                return newNode;
+            }
+
+            setHelpersVisible(visible) {
+                this.visualGroup.visible = visible;
+                this.edgeLines.forEach(l => l.visible = visible);
+                this.mirroredEdgeLines.forEach(l => l.visible = visible && symmetryEnabled);
+            }
+
+            setMaterial(mat) {
+                this.patchMesh.material = mat;
+                this.mirroredPatchMesh.material = mat;
+            }
+
+            rebuild() {
+                const _tempPt = new THREE.Vector3();
+                let pIdx = 0;
+                for (let i = 0; i <= divisions; i++) {
+                    for (let j = 0; j <= divisions - i; j++) {
+                        const k = divisions - i - j;
+                        const u = i / divisions;
+                        const v = j / divisions;
+                        const w = k / divisions;
+
+                        evalPatchSurface(this, u, v, w, _tempPt);
+
+                        this.posArray[pIdx]     = _tempPt.x;
+                        this.posArray[pIdx + 1] = _tempPt.y;
+                        this.posArray[pIdx + 2] = _tempPt.z;
+
+                        this.mirPosArray[pIdx]     = -_tempPt.x;
+                        this.mirPosArray[pIdx + 1] = _tempPt.y;
+                        this.mirPosArray[pIdx + 2] = _tempPt.z;
+
+                        pIdx += 3;
+                    }
+                }
+
+                this.posAttr.needsUpdate = true;
+                this.patchGeom.computeVertexNormals();
+                this.patchGeom.computeBoundingSphere();
+                this.patchGeom.computeBoundingBox();
+
+                for (let e = 0; e < 3; e++) {
+                    const linePos = this.edgeLines[e].geometry.attributes.position.array;
+                    const mLinePos = this.mirroredEdgeLines[e].geometry.attributes.position.array;
+
+                    let lIdx = 0;
+                    for (let s = 0; s <= lineSamples; s++) {
+                        this.evalEdge(e, s / lineSamples, _tempPt);
+                        linePos[lIdx]     = _tempPt.x;
+                        linePos[lIdx + 1] = _tempPt.y;
+                        linePos[lIdx + 2] = _tempPt.z;
+
+                        mLinePos[lIdx]     = -_tempPt.x;
+                        mLinePos[lIdx + 1] = _tempPt.y;
+                        mLinePos[lIdx + 2] = _tempPt.z;
+                        lIdx += 3;
+                    }
+                    this.edgeLines[e].geometry.attributes.position.needsUpdate = true;
+                    this.mirroredEdgeLines[e].geometry.attributes.position.needsUpdate = true;
+                }
+
+                if (symmetryEnabled) {
+                    this.mirroredPatchMesh.visible = true;
+                    this.mirPosAttr.needsUpdate = true;
+                    this.mirroredGeom.computeVertexNormals();
+                    this.mirroredGeom.computeBoundingSphere();
+                    this.mirroredGeom.computeBoundingBox();
+                    this.mirroredEdgeLines.forEach(l => l.visible = this.visualGroup.visible);
+                } else {
+                    this.mirroredPatchMesh.visible = false;
+                    this.mirroredEdgeLines.forEach(l => l.visible = false);
+                }
+            }
+        }
+
+        function createDefaultPart(name, offsetZ = 0, offsetX = 0) {
+            const cornerConfigs = [
+                {
+                    name: "Punkt A (Mitte Vorne)",
+                    x: 0.0 + offsetX, y: 0.22, z: 0.65 + offsetZ,
+                    hNext: new THREE.Vector3(0.0, 0.12, -0.45),
+                    hPrev: new THREE.Vector3(0.35, 0.08, -0.2),
+                    hCrossIn: new THREE.Vector3(0.25, 0.18, -0.15),
+                    hCrossOut: new THREE.Vector3(-0.25, -0.18, 0.15)
+                },
+                {
+                    name: "Punkt B (Mitte Hinten)",
+                    x: 0.0 + offsetX, y: 0.48, z: -0.55 + offsetZ,
+                    hNext: new THREE.Vector3(0.32, -0.06, 0.25),
+                    hPrev: new THREE.Vector3(0.0, -0.1, 0.45),
+                    hCrossIn: new THREE.Vector3(0.2, 0.15, 0.12),
+                    hCrossOut: new THREE.Vector3(-0.2, -0.15, -0.12)
+                },
+                {
+                    name: "Punkt C (Außenschulter)",
+                    x: 0.75 + offsetX, y: 0.28, z: 0.05 + offsetZ,
+                    hNext: new THREE.Vector3(-0.32, -0.04, 0.25),
+                    hPrev: new THREE.Vector3(-0.35, 0.06, -0.25),
+                    hCrossIn: new THREE.Vector3(-0.25, 0.22, 0.0),
+                    hCrossOut: new THREE.Vector3(0.25, -0.22, 0.0)
+                }
+            ];
+            const part = new CADPart(name, cornerConfigs);
+            part.rebuild();
+            parts.push(part);
+            const lblCount = document.getElementById('lbl-part-count');
+            if (lblCount) lblCount.textContent = `${parts.length} Bauteil${parts.length > 1 ? 'e' : ''}`;
+            return part;
+        }
+
+        let activeSelection = null;
+        let pointClipboard = null;
+
+        // Gizmo-Modus umschalten (Verschieben vs. Drehen)
+        function setGizmoMode(mode) {
+            currentGizmoMode = mode;
+            const btnT = document.getElementById('btn-mode-translate');
+            const btnR = document.getElementById('btn-mode-rotate');
+
+            if (mode === 'translate') {
+                transformControl.setMode('translate');
+                if (btnT) btnT.className = 'btn flex-1 py-1 rounded text-center font-bold text-[11px] bg-sky-600 text-white shadow';
+                if (btnR) btnR.className = 'btn flex-1 py-1 rounded text-center font-bold text-[11px] text-slate-400 hover:text-white hover:bg-slate-800';
+            } else if (mode === 'rotate') {
+                // Drehen ist nur für Ankerpunkte sinnvoll (dreht alle 4 Hebel als Block)
+                if (activeSelection && !activeSelection.isAnchor) {
+                    // Falls Hebel aktiv war, auf dessen Anker wechseln
+                    selectItem(activeSelection.node.meshAnchor);
+                }
+                transformControl.setMode('rotate');
+                if (btnR) btnR.className = 'btn flex-1 py-1 rounded text-center font-bold text-[11px] bg-indigo-600 text-white shadow';
+                if (btnT) btnT.className = 'btn flex-1 py-1 rounded text-center font-bold text-[11px] text-slate-400 hover:text-white hover:bg-slate-800';
+            }
+        }
+
+        const btnModeTranslate = document.getElementById('btn-mode-translate');
+        const btnModeRotate = document.getElementById('btn-mode-rotate');
+        if (btnModeTranslate) btnModeTranslate.addEventListener('click', () => setGizmoMode('translate'));
+        if (btnModeRotate) btnModeRotate.addEventListener('click', () => setGizmoMode('rotate'));
+
+        function updateClipboardUI() {
+            const btnCopy = document.getElementById('btn-copy-params');
+            const btnPaste = document.getElementById('btn-paste-params');
+            const btnSnap = document.getElementById('btn-paste-snap');
+            const lblStatus = document.getElementById('clipboard-status');
+
+            if (!btnCopy || !btnPaste || !btnSnap || !lblStatus) return;
+
+            const hasSelection = activeSelection !== null && activeSelection.node !== null;
+            btnCopy.disabled = !hasSelection;
+
+            if (pointClipboard) {
+                lblStatus.textContent = `${pointClipboard.sourceName}`;
+                lblStatus.className = 'text-[10px] text-sky-400 font-mono truncate max-w-[140px] font-semibold';
+                btnPaste.disabled = !hasSelection;
+                btnPaste.className = hasSelection
+                    ? 'btn px-2 py-1.5 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-[10px] flex items-center justify-center gap-1 shadow cursor-pointer'
+                    : 'btn px-2 py-1.5 rounded bg-slate-800 text-slate-500 font-semibold text-[10px] flex items-center justify-center gap-1 border border-slate-700 disabled:opacity-40 disabled:cursor-not-allowed';
+
+                btnSnap.disabled = !hasSelection;
+                btnSnap.className = hasSelection
+                    ? 'btn w-full px-2 py-1 rounded bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-[10px] flex items-center justify-center gap-1 shadow cursor-pointer'
+                    : 'btn w-full px-2 py-1 rounded bg-indigo-950/40 text-slate-600 border border-indigo-900/30 text-[10px] flex items-center justify-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed';
+            } else {
+                lblStatus.textContent = 'Speicher leer';
+                lblStatus.className = 'text-[10px] text-slate-400 font-mono truncate max-w-[140px]';
+                btnPaste.disabled = true;
+                btnPaste.className = 'btn px-2 py-1.5 rounded bg-slate-800 text-slate-400 font-semibold text-[10px] flex items-center justify-center gap-1 border border-slate-700 disabled:opacity-40 disabled:cursor-not-allowed';
+                btnSnap.disabled = true;
+                btnSnap.className = 'btn w-full px-2 py-1 rounded bg-indigo-950/50 text-slate-500 font-semibold text-[10px] flex items-center justify-center gap-1 border border-indigo-900/40 disabled:opacity-40 disabled:cursor-not-allowed';
+            }
+        }
+
+        function copyCurrentPointParameters() {
+            if (!activeSelection || !activeSelection.node) return;
+            const n = activeSelection.node;
+            const p = activeSelection.part;
+
+            // Speichert die komplette 3D-Ausrichtung (Rotation aller Hebel) relativ zum Punkt
+            pointClipboard = {
+                sourceName: `${p.name} - ${n.name}`,
+                pos: n.pos.clone(),
+                hNextRel: n.handleNext.clone().sub(n.pos),
+                hPrevRel: n.handlePrev.clone().sub(n.pos),
+                hCrossInRel: n.handleCrossIn.clone().sub(n.pos),
+                hCrossOutRel: n.handleCrossOut.clone().sub(n.pos)
+            };
+            updateClipboardUI();
+        }
+
+        function pasteParametersToCurrentPoint(includePosition = false) {
+            if (!pointClipboard || !activeSelection || !activeSelection.node) return;
+            const n = activeSelection.node;
+            const p = activeSelection.part;
+
+            if (includePosition) {
+                const targetPos = pointClipboard.pos.clone();
+                if (p === parts[0] && (n === p.corners[0] || n === p.corners[1])) {
+                    targetPos.x = 0;
+                }
+                n.pos.copy(targetPos);
+                n.meshAnchor.position.copy(n.pos);
+            }
+
+            // Überträgt die exakte räumliche Rotation und Ausrichtung aller 4 Hebel
+            n.handleNext.copy(n.pos).add(pointClipboard.hNextRel);
+            n.meshHandleNext.position.copy(n.handleNext);
+
+            n.handlePrev.copy(n.pos).add(pointClipboard.hPrevRel);
+            n.meshHandlePrev.position.copy(n.handlePrev);
+
+            n.handleCrossIn.copy(n.pos).add(pointClipboard.hCrossInRel);
+            n.meshCrossIn.position.copy(n.handleCrossIn);
+
+            n.handleCrossOut.copy(n.pos).add(pointClipboard.hCrossOutRel);
+            n.meshCrossOut.position.copy(n.handleCrossOut);
+
+            if (p === parts[0] && ((n === p.corners[0]) || (n === p.corners[1]))) {
+                if (n === p.corners[0]) { n.handleNext.x = 0; n.meshHandleNext.position.x = 0; }
+                if (n === p.corners[1]) { n.handlePrev.x = 0; n.meshHandlePrev.position.x = 0; }
+            }
+
+            p.updateVisualLines();
+            p.rebuild();
+
+            if (activeSelection.mesh) {
+                activeSelection.mesh.position.copy(n[activeSelection.target] || n.pos);
+                const elX = document.getElementById('val-x');
+                const elY = document.getElementById('val-y');
+                const elZ = document.getElementById('val-z');
+                if (elX) elX.textContent = activeSelection.mesh.position.x.toFixed(2);
+                if (elY) elY.textContent = activeSelection.mesh.position.y.toFixed(2);
+                if (elZ) elZ.textContent = activeSelection.mesh.position.z.toFixed(2);
+            }
+        }
+
+        function deselectAll() {
+            activeSelection = null;
+            activePart = null;
+            transformControl.detach();
+
+            parts.forEach(p => p.setHelpersVisible(false));
+            setAddPointTool(false);
+
+            const lblTitle = document.getElementById('lbl-title');
+            const lblBadge = document.getElementById('lbl-badge');
+            const elX = document.getElementById('val-x');
+            const elY = document.getElementById('val-y');
+            const elZ = document.getElementById('val-z');
+            const dotType = document.getElementById('dot-type');
+
+            if (lblTitle) lblTitle.textContent = "Reine Modellansicht";
+            if (lblBadge) lblBadge.textContent = "Keine Auswahl";
+            if (elX) elX.textContent = "--";
+            if (elY) elY.textContent = "--";
+            if (elZ) elZ.textContent = "--";
+            if (dotType) dotType.className = "w-3 h-3 rounded-full bg-slate-600";
+            updateClipboardUI();
+        }
+
+        function setActivePart(part, targetMeshToSelect = null) {
+            activePart = part;
+            parts.forEach(p => p.setHelpersVisible(p === activePart));
+
+            if (targetMeshToSelect) {
+                selectItem(targetMeshToSelect);
+            } else {
+                selectItem(part.corners[0].meshAnchor);
+            }
+        }
+
+        function selectItem(mesh) {
+            if (!mesh) {
+                deselectAll();
+                return;
+            }
+
+            activeSelection = {
+                mesh,
+                part: mesh.userData.part,
+                node: mesh.userData.node,
+                target: mesh.userData.target,
+                isAnchor: mesh.userData.isAnchor
+            };
+
+            // Wenn ein Hebel gewählt wird und der Modus auf Rotation stand, schalten wir auf Translate zurück
+            if (!activeSelection.isAnchor && currentGizmoMode === 'rotate') {
+                setGizmoMode('translate');
+            }
+
+            transformControl.attach(mesh);
+            transformControl.setMode(currentGizmoMode);
+
+            const pos = mesh.position;
+            const lblTitle = document.getElementById('lbl-title');
+            if (lblTitle) lblTitle.textContent = `${activeSelection.part.name} – ${activeSelection.node.name}`;
+
+            const badgeMap = {
+                pos: 'Pfadpunkt (Anker)',
+                handleNext: 'Kantenhebel Vor (Pink)',
+                handlePrev: 'Kantenhebel Rück (Pink)',
+                handleCrossIn: 'Quertangente Innen (Amber)',
+                handleCrossOut: 'Quertangente Außen (Gelb)'
+            };
+            const dotColorMap = {
+                pos: 'w-3 h-3 rounded-full bg-sky-400',
+                handleNext: 'w-3 h-3 rounded-full bg-pink-500',
+                handlePrev: 'w-3 h-3 rounded-full bg-pink-500',
+                handleCrossIn: 'w-3 h-3 rounded-full bg-amber-400',
+                handleCrossOut: 'w-3 h-3 rounded-full bg-yellow-400'
+            };
+            const lblBadge = document.getElementById('lbl-badge');
+            const dotType = document.getElementById('dot-type');
+            if (lblBadge) lblBadge.textContent = badgeMap[activeSelection.target] || 'Handle';
+            if (dotType) dotType.className = dotColorMap[activeSelection.target] || 'w-3 h-3 rounded-full bg-sky-400';
+
+            const elX = document.getElementById('val-x');
+            const elY = document.getElementById('val-y');
+            const elZ = document.getElementById('val-z');
+            if (elX) elX.textContent = pos.x.toFixed(2);
+            if (elY) elY.textContent = pos.y.toFixed(2);
+            if (elZ) elZ.textContent = pos.z.toFixed(2);
+
+            updateClipboardUI();
+        }
+
+        // Ereignis bei Manipulation des Transform-Gizmos (Verschieben & Drehen)
+        transformControl.addEventListener('objectChange', () => {
+            if (!activeSelection) return;
+            const p = activeSelection.part;
+            const node = activeSelection.node;
+            const target = activeSelection.target;
+
+            // 1. DREHEN DES ANKERPUNKTS (Gizmo im Rotate-Modus)
+            if (currentGizmoMode === 'rotate' && activeSelection.isAnchor) {
+                const deltaQ = node.meshAnchor.quaternion.clone();
+                // Quaternion des Anker-Meshes zurücksetzen, um Delta-Rotation zu erfassen
+                node.meshAnchor.quaternion.identity();
+
+                // Rotiert alle 4 Hebel als starre Einheit um den Ankerpunkt
+                const relNext = node.handleNext.clone().sub(node.pos).applyQuaternion(deltaQ);
+                const relPrev = node.handlePrev.clone().sub(node.pos).applyQuaternion(deltaQ);
+                const relCrossIn = node.handleCrossIn.clone().sub(node.pos).applyQuaternion(deltaQ);
+                const relCrossOut = node.handleCrossOut.clone().sub(node.pos).applyQuaternion(deltaQ);
+
+                node.handleNext.copy(node.pos).add(relNext);
+                node.meshHandleNext.position.copy(node.handleNext);
+
+                node.handlePrev.copy(node.pos).add(relPrev);
+                node.meshHandlePrev.position.copy(node.handlePrev);
+
+                node.handleCrossIn.copy(node.pos).add(relCrossIn);
+                node.meshCrossIn.position.copy(node.handleCrossIn);
+
+                node.handleCrossOut.copy(node.pos).add(relCrossOut);
+                node.meshCrossOut.position.copy(node.handleCrossOut);
+
+                // Mittenachsen-Fixierung für Bauteil 1
+                if (p === parts[0] && ((node === p.corners[0]) || (node === p.corners[1]))) {
+                    if (node === p.corners[0]) { node.handleNext.x = 0; node.meshHandleNext.position.x = 0; }
+                    if (node === p.corners[1]) { node.handlePrev.x = 0; node.meshHandlePrev.position.x = 0; }
+                }
+
+                p.updateVisualLines();
+                p.rebuild();
+                return;
+            }
+
+            // 2. VERSCHIEBEN (Translate-Modus)
+            const newPos = activeSelection.mesh.position.clone();
+
+            if (p === parts[0] && (node === p.corners[0] || node === p.corners[1]) && target === 'pos') {
+                newPos.x = 0;
+                activeSelection.mesh.position.x = 0;
+            }
+            if (p === parts[0] && ((node === p.corners[0] && target === 'handleNext') || (node === p.corners[1] && target === 'handlePrev'))) {
+                newPos.x = 0;
+                activeSelection.mesh.position.x = 0;
+            }
+
+            if (target !== 'pos') {
+                node[target].copy(newPos);
+
+                // Quertangenten koppeln (Wippe / gemeinsamer Winkel)
+                if (target === 'handleCrossIn' || target === 'handleCrossOut') {
+                    const isCrossIn = (target === 'handleCrossIn');
+                    const activeHandle = isCrossIn ? node.handleCrossIn : node.handleCrossOut;
+                    const partnerHandle = isCrossIn ? node.handleCrossOut : node.handleCrossIn;
+                    const partnerMesh = isCrossIn ? node.meshCrossOut : node.meshCrossIn;
+
+                    const vOffset = new THREE.Vector3().subVectors(activeHandle, node.pos);
+                    const dist = vOffset.length();
+                    if (dist > 0.0001) {
+                        const dir = vOffset.clone().normalize();
+                        const lenOpposite = partnerHandle.distanceTo(node.pos);
+                        partnerHandle.copy(node.pos).addScaledVector(dir, -lenOpposite);
+                        partnerMesh.position.copy(partnerHandle);
+                    }
+                }
+            } else {
+                const delta = newPos.clone().sub(node.pos);
+                node.pos.copy(newPos);
+
+                node.handleNext.add(delta); node.meshHandleNext.position.copy(node.handleNext);
+                node.handlePrev.add(delta); node.meshHandlePrev.position.copy(node.handlePrev);
+                node.handleCrossIn.add(delta); node.meshCrossIn.position.copy(node.handleCrossIn);
+                node.handleCrossOut.add(delta); node.meshCrossOut.position.copy(node.handleCrossOut);
+            }
+
+            const elX = document.getElementById('val-x');
+            const elY = document.getElementById('val-y');
+            const elZ = document.getElementById('val-z');
+            if (elX) elX.textContent = newPos.x.toFixed(2);
+            if (elY) elY.textContent = newPos.y.toFixed(2);
+            if (elZ) elZ.textContent = newPos.z.toFixed(2);
+
+            p.updateVisualLines();
+            p.rebuild();
+        });
+
+        // Werkzeug-Umschaltung "+ Pfadpunkt"
+        const btnAddPointTool = document.getElementById('btn-add-point-tool');
+        function setAddPointTool(active) {
+            isAddPointToolActive = active;
+            if (!btnAddPointTool) return;
+            if (isAddPointToolActive) {
+                btnAddPointTool.className = 'btn flex items-center gap-1.5 px-3 py-1 rounded-lg border border-purple-400 bg-purple-600 text-white font-bold text-xs shadow-lg animate-pulse';
+                btnAddPointTool.querySelector('span').textContent = 'Klicke auf Kante...';
+                transformControl.detach();
+            } else {
+                btnAddPointTool.className = 'btn flex items-center gap-1.5 px-3 py-1 rounded-lg border border-purple-500/50 bg-purple-950/60 text-purple-300 font-bold hover:bg-purple-900/80 hover:text-white text-xs shadow-lg';
+                btnAddPointTool.querySelector('span').textContent = '+ Pfadpunkt hinzufügen';
+                addPreviewMesh.visible = false;
+                hoverEdgeCandidate = null;
+            }
+        }
+        if (btnAddPointTool) {
+            btnAddPointTool.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (!activePart && parts.length > 0) setActivePart(parts[0]);
+                setAddPointTool(!isAddPointToolActive);
+            });
+        }
+
+        // Raycasting & Klick-Interaktion
+        const raycaster = new THREE.Raycaster();
+        raycaster.params.Line = { threshold: 0.08 };
+        const pointer = new THREE.Vector2();
+        let pointerDownCoord = new THREE.Vector2();
+
+        function findNearestPointOnActiveEdges(ray) {
+            if (!activePart) return null;
+            let bestCandidate = null;
+            let minRayDist = Infinity;
+            const samplePt = new THREE.Vector3();
+
+            for (let e = 0; e < 3; e++) {
+                const samples = 60;
+                for (let i = 0; i <= samples; i++) {
+                    const t = i / samples;
+                    activePart.evalEdge(e, t, samplePt);
+                    const distToRay = ray.distanceToPoint(samplePt);
+
+                    if (distToRay < 0.12 && distToRay < minRayDist) {
+                        minRayDist = distToRay;
+                        bestCandidate = {
+                            edgeIdx: e,
+                            t: t,
+                            point: samplePt.clone()
+                        };
+                    }
+                }
+            }
+            return bestCandidate;
+        }
+
+        window.addEventListener('pointerdown', (e) => {
+            pointerDownCoord.set(e.clientX, e.clientY);
+        });
+
+        window.addEventListener('pointermove', (e) => {
+            if (isDraggingGizmo) return;
+            pointer.x = (e.clientX / window.innerWidth) * 2 - 1;
+            pointer.y = -(e.clientY / window.innerHeight) * 2 + 1;
+            raycaster.setFromCamera(pointer, camera);
+
+            if (isAddPointToolActive && activePart) {
+                const candidate = findNearestPointOnActiveEdges(raycaster.ray);
+                if (candidate) {
+                    hoverEdgeCandidate = candidate;
+                    addPreviewMesh.position.copy(candidate.point);
+                    addPreviewMesh.visible = true;
+                    renderer.domElement.style.cursor = 'crosshair';
+                    return;
+                } else {
+                    hoverEdgeCandidate = null;
+                    addPreviewMesh.visible = false;
+                    renderer.domElement.style.cursor = 'default';
+                }
+            }
+
+            if (activePart && activePart.visualGroup.visible) {
+                const activeHandles = [];
+                activePart.getAllNodes().forEach(n => {
+                    activeHandles.push(n.meshAnchor, n.meshHandleNext, n.meshHandlePrev, n.meshCrossIn, n.meshCrossOut);
+                });
+                if (raycaster.intersectObjects(activeHandles, false).length > 0) {
+                    renderer.domElement.style.cursor = 'pointer';
+                    return;
+                }
+            }
+
+            const allMeshes = [];
+            parts.forEach(p => {
+                allMeshes.push(p.patchMesh);
+                if (symmetryEnabled && p.mirroredPatchMesh.visible) allMeshes.push(p.mirroredPatchMesh);
+            });
+            if (raycaster.intersectObjects(allMeshes, false).length > 0) {
+                renderer.domElement.style.cursor = 'pointer';
+                return;
+            }
+
+            renderer.domElement.style.cursor = 'default';
+        });
+
+        window.addEventListener('pointerup', (e) => {
+            if (isDraggingGizmo || wasDragging) {
+                wasDragging = false;
+                return;
+            }
+            if (Math.hypot(e.clientX - pointerDownCoord.x, e.clientY - pointerDownCoord.y) > 5) return;
+            if (e.target !== renderer.domElement) return;
+            if (e.button !== 0) return;
+
+            pointer.x = (e.clientX / window.innerWidth) * 2 - 1;
+            pointer.y = -(e.clientY / window.innerHeight) * 2 + 1;
+            raycaster.setFromCamera(pointer, camera);
+
+            if (isAddPointToolActive && activePart && hoverEdgeCandidate) {
+                const newNode = activePart.addPointOnEdge(hoverEdgeCandidate.edgeIdx, hoverEdgeCandidate.t);
+                setAddPointTool(false);
+                selectItem(newNode.meshAnchor);
+                return;
+            }
+
+            // PRIORITÄT 1: Griffe des aktiven Bauteils
+            if (activePart && activePart.visualGroup.visible) {
+                const activeHandles = [];
+                activePart.getAllNodes().forEach(n => {
+                    activeHandles.push(n.meshAnchor, n.meshHandleNext, n.meshHandlePrev, n.meshCrossIn, n.meshCrossOut);
+                });
+                const handleHits = raycaster.intersectObjects(activeHandles, false);
+                if (handleHits.length > 0) {
+                    selectItem(handleHits[0].object);
+                    return;
+                }
+            }
+
+            // PRIORITÄT 2: Gizmo selbst
+            if (transformControl.visible && transformControl.axis !== null) {
+                return;
+            }
+
+            // PRIORITÄT 3: Klick auf Blech
+            const allMeshes = [];
+            parts.forEach(p => {
+                allMeshes.push(p.patchMesh);
+                if (symmetryEnabled && p.mirroredPatchMesh.visible) allMeshes.push(p.mirroredPatchMesh);
+            });
+
+            const meshHits = raycaster.intersectObjects(allMeshes, false);
+            if (meshHits.length > 0) {
+                const hitObj = meshHits[0].object;
+                const clickedPart = hitObj.userData.part;
+                const isMirror = hitObj.userData.isMirror;
+
+                const hitPt = meshHits[0].point.clone();
+                if (isMirror) hitPt.x = -hitPt.x;
+
+                const allNodes = clickedPart.getAllNodes();
+                let nearestAnchor = allNodes[0].meshAnchor;
+                let minDist = Infinity;
+                allNodes.forEach(n => {
+                    const d = n.pos.distanceTo(hitPt);
+                    if (d < minDist) { minDist = d; nearestAnchor = n.meshAnchor; }
+                });
+
+                setActivePart(clickedPart, nearestAnchor);
+                return;
+            }
+
+            // PRIORITÄT 4: Freier Raum -> Deselect All
+            deselectAll();
+        });
+
+        // Button: Neues Bauteil anlegen
+        const btnAddPart = document.getElementById('btn-add-part');
+        if (btnAddPart) {
+            btnAddPart.addEventListener('click', () => {
+                const count = parts.length + 1;
+                const offsetZ = -(count - 1) * 0.9;
+                const newPart = createDefaultPart(`Bauteil ${count}`, offsetZ, 0.15);
+                setActivePart(newPart);
+            });
+        }
+
+        // Button: Symmetrie Toggle
+        const btnSymmetry = document.getElementById('btn-symmetry');
+        if (btnSymmetry) {
+            btnSymmetry.addEventListener('click', () => {
+                symmetryEnabled = !symmetryEnabled;
+                btnSymmetry.textContent = symmetryEnabled ? 'Symmetrie: An' : 'Symmetrie: Aus';
+                btnSymmetry.className = symmetryEnabled 
+                    ? 'btn px-3 py-1 rounded-lg border border-sky-500/40 font-semibold bg-sky-950/60 text-sky-300 hover:text-white'
+                    : 'btn px-3 py-1 rounded-lg border border-slate-700 font-semibold bg-slate-900 text-slate-400 hover:text-white';
+                parts.forEach(p => p.rebuild());
+            });
+        }
+
+        // Button: Räder / Fahrwerk Sichtbarkeit Toggle
+        const btnWheels = document.getElementById('btn-wheels');
+        if (btnWheels) {
+            btnWheels.addEventListener('click', () => {
+                wheelsVisible = !wheelsVisible;
+                wheelsGroup.visible = wheelsVisible;
+                const dot = btnWheels.querySelector('span');
+                const lbl = btnWheels.querySelectorAll('span')[1];
+
+                if (wheelsVisible) {
+                    btnWheels.className = 'btn px-3 py-1 rounded-lg border border-emerald-500/40 font-semibold bg-emerald-950/60 text-emerald-300 hover:text-white flex items-center gap-1.5';
+                    if (dot) dot.className = 'w-2 h-2 rounded-full bg-emerald-400';
+                    if (lbl) lbl.textContent = 'Räder: An';
+                } else {
+                    btnWheels.className = 'btn px-3 py-1 rounded-lg border border-slate-700 font-semibold bg-slate-900 text-slate-400 hover:text-white flex items-center gap-1.5';
+                    if (dot) dot.className = 'w-2 h-2 rounded-full bg-slate-600';
+                    if (lbl) lbl.textContent = 'Räder: Aus';
+                }
+            });
+        }
+
+        // Button: Reines Blech
+        const btnClean = document.getElementById('btn-clean');
+        if (btnClean) {
+            btnClean.addEventListener('click', () => {
+                deselectAll();
+            });
+        }
+
+        // Event-Listener für Copy & Paste Buttons
+        const btnCopy = document.getElementById('btn-copy-params');
+        if (btnCopy) {
+            btnCopy.addEventListener('click', () => {
+                copyCurrentPointParameters();
+            });
+        }
+
+        const btnPaste = document.getElementById('btn-paste-params');
+        if (btnPaste) {
+            btnPaste.addEventListener('click', () => {
+                pasteParametersToCurrentPoint(false);
+            });
+        }
+
+        const btnPasteSnap = document.getElementById('btn-paste-snap');
+        if (btnPasteSnap) {
+            btnPasteSnap.addEventListener('click', () => {
+                pasteParametersToCurrentPoint(true);
+            });
+        }
+
+        // Tastaturkürzel
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') deselectAll();
+
+            // W = Verschieben, E = Drehen
+            if (e.key.toLowerCase() === 'w') {
+                setGizmoMode('translate');
+            }
+            if (e.key.toLowerCase() === 'e') {
+                setGizmoMode('rotate');
+            }
+
+            if (e.key.toLowerCase() === 'p') {
+                if (!activePart && parts.length > 0) setActivePart(parts[0]);
+                setAddPointTool(!isAddPointToolActive);
+            }
+
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') {
+                copyCurrentPointParameters();
+            }
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v') {
+                pasteParametersToCurrentPoint(false);
+            }
+        });
+
+        // Shading Buttons
+        const btnStudio = document.getElementById('shade-studio');
+        const btnZebra  = document.getElementById('shade-zebra');
+        const btnWire   = document.getElementById('shade-wire');
+
+        function setShading(mode) {
+            [btnStudio, btnZebra, btnWire].forEach(b => {
+                if (b) b.className = 'btn px-3 py-1 rounded font-semibold text-slate-400 hover:text-white';
+            });
+            if (mode === 'studio') {
+                if (btnStudio) btnStudio.className = 'btn px-3 py-1 rounded font-semibold bg-slate-800 text-sky-300';
+                currentMaterial = studioMat;
+            } else if (mode === 'zebra') {
+                if (btnZebra) btnZebra.className = 'btn px-3 py-1 rounded font-semibold bg-slate-800 text-sky-300';
+                currentMaterial = zebraMat;
+            } else if (mode === 'wire') {
+                if (btnWire) btnWire.className = 'btn px-3 py-1 rounded font-semibold bg-slate-800 text-sky-300';
+                currentMaterial = wireMat;
+            }
+            parts.forEach(p => p.setMaterial(currentMaterial));
+        }
+        if (btnStudio) btnStudio.addEventListener('click', () => setShading('studio'));
+        if (btnZebra)  btnZebra.addEventListener('click',  () => setShading('zebra'));
+        if (btnWire)   btnWire.addEventListener('click',   () => setShading('wire'));
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        const initialPart = createDefaultPart("Bauteil 1");
+        setActivePart(initialPart);
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        animate();
+    </script>
+</body>
+</html>

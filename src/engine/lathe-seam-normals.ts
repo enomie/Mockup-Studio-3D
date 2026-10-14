@@ -3,11 +3,11 @@ import type { BufferAttribute, BufferGeometry } from 'three/webgpu';
 /** LatheGeometry: vertex index = phiIndex * profileCount + profileIndex */
 type LatheVertexLayout = 'phiMajor' | 'profileMajor';
 
-type LatheSeamContext = {
+interface LatheSeamContext {
   radialSegments: number;
   profileCount: number;
   layout: LatheVertexLayout;
-};
+}
 
 function latheVertexIndex(
   phiIndex: number,
@@ -142,7 +142,7 @@ export function weldLathePhiSeamNormals(
   if (!normal || !ctx) {
     return;
   }
-  if (normal.count !== geometry.getAttribute('position')?.count) {
+  if (normal.count !== geometry.getAttribute('position').count) {
     return;
   }
 

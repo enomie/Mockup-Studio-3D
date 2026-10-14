@@ -3,12 +3,18 @@ import { defaultBlockParams } from '@/scene/asset-block';
 import {
   isBeverageCanAssetKind,
   isBlockAssetKind,
+  isCylinderAssetKind,
+  isSphereAssetKind,
+  isWheelCarAssetKind,
+  isFabricClothAssetKind,
+  isBookAssetKind,
   isHandheldAssetKind,
   isMonitorAssetKind,
   isPrintAssetKind,
   isTinCanAssetKind,
   isWallAssetKind,
   isWineBottleAssetKind,
+  isPenAssetKind,
 } from '@/scene/asset-kind-predicates';
 import { defaultWallParams } from '@/scene/asset-wall';
 import {
@@ -20,6 +26,11 @@ import type { AssetEntity } from '@/scene/entity-types';
 import {
   BeverageCanFields,
   BlockFields,
+  CylinderFields,
+  SphereFields,
+  WheelCarFields,
+  FabricClothFields,
+  BookFields,
   HandheldFields,
   MonitorFields,
   PictureFields,
@@ -27,14 +38,15 @@ import {
   TinCanFields,
   WallFields,
   WineBottleFields,
+  PenFields,
 } from './entity-fields';
 import { EntityTransformSection } from './entity-fields/EntityTransformSection';
 
-type EntityPropertyFieldsProps = {
+interface EntityPropertyFieldsProps {
   entity: AssetEntity;
   images: ImageAsset[];
   screenImageFieldId?: string;
-};
+}
 
 export function EntityPropertyFields({
   entity,
@@ -86,6 +98,24 @@ export function EntityPropertyFields({
         />
       ) : isBlockAssetKind(entity.assetKind) ? (
         <BlockFields entity={entity} />
+      ) : isCylinderAssetKind(entity.assetKind) ? (
+        <CylinderFields entity={entity} />
+      ) : isSphereAssetKind(entity.assetKind) ? (
+        <SphereFields entity={entity} />
+      ) : isWheelCarAssetKind(entity.assetKind) ? (
+        <WheelCarFields entity={entity} />
+      ) : isFabricClothAssetKind(entity.assetKind) ? (
+        <FabricClothFields
+          entity={entity}
+          images={images}
+          screenImageFieldId={screenImageFieldId}
+        />
+      ) : isBookAssetKind(entity.assetKind) ? (
+        <BookFields
+          entity={entity}
+          images={images}
+          screenImageFieldId={screenImageFieldId}
+        />
       ) : isBeverageCanAssetKind(entity.assetKind) ? (
         <BeverageCanFields
           entity={entity}
@@ -100,6 +130,12 @@ export function EntityPropertyFields({
         />
       ) : isWineBottleAssetKind(entity.assetKind) ? (
         <WineBottleFields
+          entity={entity}
+          images={images}
+          screenImageFieldId={screenImageFieldId}
+        />
+      ) : isPenAssetKind(entity.assetKind) ? (
+        <PenFields
           entity={entity}
           images={images}
           screenImageFieldId={screenImageFieldId}

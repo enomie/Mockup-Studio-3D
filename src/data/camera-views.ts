@@ -8,19 +8,19 @@ import { DEG_TO_RAD } from '@/units/angle';
 import type { BuiltinCameraViewId, CameraSlotIndex } from '@/scene/scene-api';
 import type { Vec3 } from '@/scene/entity-types';
 
-export type BuiltinCameraViewDefinition = {
+export interface BuiltinCameraViewDefinition {
   id: BuiltinCameraViewId;
   label: string;
   shortcut: string;
   spherical: { radius: number; phi: number; theta: number };
   target: Vec3;
-};
+}
 
-export type CameraUserSlotDefinition = {
+export interface CameraUserSlotDefinition {
   index: CameraSlotIndex;
   label: string;
   shortcut: string;
-};
+}
 
 export type CameraKeyAction =
   | { type: 'builtin'; id: BuiltinCameraViewId }

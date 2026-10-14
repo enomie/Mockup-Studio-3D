@@ -7,20 +7,20 @@ import type {
 
 export type EnvironmentSource = 'builtin' | 'user';
 
-export type AtmosphereSnapshot = {
+export interface AtmosphereSnapshot {
   environment: EnvironmentState;
   ground: GroundSettings;
   lighting: LightingSettings;
-};
+}
 
-export type EnvironmentPreset = {
+export interface EnvironmentPreset {
   id: string;
   name: string;
   source: EnvironmentSource;
   description?: string;
   createdAt?: string;
   snapshot: AtmosphereSnapshot;
-};
+}
 
 function cloneRgb(rgb: { r: number; g: number; b: number }): {
   r: number;
@@ -33,6 +33,8 @@ function cloneRgb(rgb: { r: number; g: number; b: number }): {
 function cloneLighting(settings: LightingSettings): LightingSettings {
   return {
     referenceMode: settings.referenceMode,
+    showFixtures: settings.showFixtures,
+    fixturesReflectInMirror: settings.fixturesReflectInMirror,
     ambient: {
       enabled: settings.ambient.enabled,
       color: cloneRgb(settings.ambient.color),

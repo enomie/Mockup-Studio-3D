@@ -4,7 +4,7 @@ import { PanelCheckbox } from '@/ui/components/PanelCheckbox';
 import { setGeometryVisible } from '@/ui/store/app-store';
 import { MaterialSelect } from './MaterialSelect';
 
-type GeometryPartFieldProps = {
+interface GeometryPartFieldProps {
   entityId: string;
   part: AssetGeometryPart;
   label: string;
@@ -13,7 +13,7 @@ type GeometryPartFieldProps = {
   materialId: string;
   materials: MaterialPreset[];
   id?: string;
-};
+}
 
 export function GeometryPartField({
   entityId,
@@ -32,7 +32,7 @@ export function GeometryPartField({
       <PanelCheckbox
         label={label}
         checked={visible}
-        onChange={(checked) => setGeometryVisible(entityId, part, checked)}
+        onChange={(checked) => { setGeometryVisible(entityId, part, checked); }}
       />
       <MaterialSelect
         entityId={entityId}

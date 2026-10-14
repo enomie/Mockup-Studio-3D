@@ -1,6 +1,8 @@
+import { BUILTIN_IMAGES } from './builtin-images.generated';
+
 export type ImageOrientation = 'landscape' | 'portrait' | 'square';
 
-export type ImageAsset = {
+export interface ImageAsset {
   id: string;
   name: string;
   url: string;
@@ -9,56 +11,16 @@ export type ImageAsset = {
   orientation: ImageOrientation;
   source: 'starter' | 'user';
   objectUrl?: string;
-};
+  mimeType?: string;
+  createdAt?: string;
+  /** Parsed from builtin filename (`name--format--pixelsize`). */
+  logicalName?: string;
+  logicalFormat?: string;
+  sizeToken?: string;
+}
 
-/** Built-in sample images in /public — provided to every user. */
-export const STARTER_IMAGES: ImageAsset[] = [
-  {
-    id: 'sample-landscape-2560x1440',
-    name: 'sample-landscape-2560x1440.png',
-    url: '/sample-landscape-2560x1440.png',
-    width: 2560,
-    height: 1440,
-    orientation: 'landscape',
-    source: 'starter',
-  },
-  {
-    id: 'sample-landscape-1439x960',
-    name: 'sample-landscape-1439x960.png',
-    url: '/sample-landscape-1439x960.png',
-    width: 1439,
-    height: 960,
-    orientation: 'landscape',
-    source: 'starter',
-  },
-  {
-    id: 'sample-portrait-440x955',
-    name: 'sample-portrait-440x955.png',
-    url: '/sample-portrait-440x955.png',
-    width: 440,
-    height: 955,
-    orientation: 'portrait',
-    source: 'starter',
-  },
-  {
-    id: 'sample-portrait-772x1031',
-    name: 'sample-portrait-772x1031.png',
-    url: '/sample-portrait-772x1031.png',
-    width: 772,
-    height: 1031,
-    orientation: 'portrait',
-    source: 'starter',
-  },
-  {
-    id: 'label-F-blue-transparent-square',
-    name: 'label-F-blue-transparent-square.png',
-    url: '/label-F-blue-transparent-square.png',
-    width: 2048,
-    height: 2048,
-    orientation: 'square',
-    source: 'starter',
-  },
-];
+/** Built-in sample images from public/images — generated at build time. */
+export const STARTER_IMAGES: ImageAsset[] = BUILTIN_IMAGES;
 
 export function orientationLabel(orientation: ImageOrientation): string {
   switch (orientation) {
@@ -72,6 +34,6 @@ export function orientationLabel(orientation: ImageOrientation): string {
 }
 
 export function detectOrientation(width: number, height: number): ImageOrientation {
-  if (width === height) return 'square';
+  if (width === height) {return 'square';}
   return width > height ? 'landscape' : 'portrait';
 }

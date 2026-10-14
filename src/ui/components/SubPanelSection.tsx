@@ -1,10 +1,10 @@
 import type { ReactNode } from 'react';
 
-type SubPanelSectionProps = {
+interface SubPanelSectionProps {
   title: string;
   children: ReactNode;
   headerAction?: ReactNode;
-};
+}
 
 export function SubPanelSection({ title, children, headerAction }: SubPanelSectionProps) {
   return (

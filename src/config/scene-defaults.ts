@@ -1,4 +1,4 @@
-import { parseHexColor } from '@/colors/color-format';
+import { parseHexColorRequired } from '@/colors/color-format';
 import type { Rgb } from '@/colors/rgb';
 import {
   CAMERA_DEFAULT_AZIMUTH_DEG,
@@ -10,10 +10,15 @@ import {
 } from '@/constants';
 import { DEG_TO_RAD } from '@/units/angle';
 import { MATERIAL_PAPER_ID } from '@/scene/material-ids';
-import type { CameraSettings, GroundSettings, LightingSettings } from '@/scene/scene-api';
+import type {
+  CameraSettings,
+  GroundSettings,
+  LightingSettings,
+  ViewportHelpersState,
+} from '@/scene/scene-api';
 import { defaultTransform } from '@/scene/entity-types';
 
-export type EnvironmentDefaults = {
+export interface EnvironmentDefaults {
   skyEnabled: boolean;
   skyHorizonColor: Rgb;
   skyZenithColor: Rgb;
@@ -24,27 +29,29 @@ export type EnvironmentDefaults = {
   fogFar: number;
   reflectionEnabled: boolean;
   reflectionIntensity: number;
-};
+}
 
 export type GroundDefaults = GroundSettings;
 
 export type LightingDefaults = LightingSettings;
 
-export type CameraNormalViewDefaults = {
+export interface CameraNormalViewDefaults {
   target: { x: number; y: number; z: number };
   spherical: { radius: number; phi: number; theta: number };
   fov: number;
   orthoZoom: number;
-};
+}
 
-export type CameraDefaults = {
+export interface CameraDefaults {
   normalView: CameraNormalViewDefaults;
   settings: CameraSettings;
-};
+}
 
-const AMBIENT_COLOR = parseHexColor('#FFF9F5')!;
-const KEY_COLOR = parseHexColor('#FFF5EB')!;
-const FILL_COLOR = parseHexColor('#F0F4FA')!;
+export type ViewportHelpersDefaults = ViewportHelpersState;
+
+const AMBIENT_COLOR = parseHexColorRequired('#FFF9F5');
+const KEY_COLOR = parseHexColorRequired('#FFF5EB');
+const FILL_COLOR = parseHexColorRequired('#F0F4FA');
 
 /** Single source of truth for panel + engine initial scene values. */
 export const SCENE_DEFAULTS = {
@@ -71,8 +78,16 @@ export const SCENE_DEFAULTS = {
     mirrorEnabled: false,
     mirrorOpacity: 1,
   },
+  viewportHelpers: {
+    floorGrid: false,
+    worldOrigin: false,
+    forwardArrow: false,
+    lightHandles: false,
+  },
   lighting: {
     referenceMode: 'scene-center',
+    showFixtures: true,
+    fixturesReflectInMirror: true,
     ambient: {
       enabled: true,
       color: { ...AMBIENT_COLOR },
@@ -118,6 +133,7 @@ export const SCENE_DEFAULTS = {
 } as const satisfies {
   environment: EnvironmentDefaults;
   ground: GroundDefaults;
+  viewportHelpers: ViewportHelpersDefaults;
   lighting: LightingDefaults;
   camera: CameraDefaults;
 };

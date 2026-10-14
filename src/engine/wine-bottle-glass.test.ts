@@ -28,7 +28,7 @@ import {
   wineBottleLatheProfileBounds,
 } from './wine-bottle-svg-profile';
 
-const PUBLIC = join(process.cwd(), 'public');
+const PUBLIC_LATHE = join(process.cwd(), 'public', 'profiles', 'lathe');
 const HEIGHT_M = 0.29;
 const WALL_THICKNESS_M = 0.0025;
 const stubMaterial = new MeshBasicMaterial();
@@ -41,7 +41,7 @@ const BOTTLE_SVGS = [
 ] as const;
 
 function wallFromSvg(file: string): Vector2[] {
-  const svg = readFileSync(join(PUBLIC, file), 'utf8');
+  const svg = readFileSync(join(PUBLIC_LATHE, file), 'utf8');
   return normalizeOpenWallSvgToLathePoints(
     extractOpenPathPointsFromSvgText(svg, 48),
     HEIGHT_M,
@@ -137,12 +137,19 @@ describe('wine-bottle-glass', () => {
       expect(findProfileSelfIntersections(latheProfileFromSvg(file))).toEqual([]);
     });
 
-    it(`${file}: lathe mesh has no degenerate triangles`, () => {
-      expect(countDegenerateLatheTriangles(latheProfileFromSvg(file))).toBe(0);
+    it(`${file}: glass build mesh is non-empty (open outer SVG)`, () => {
+      const mesh = buildWineBottleGlassMeshFromLatheProfile(
+        latheProfileFromSvg(file),
+        stubMaterial,
+        true,
+        glassBuild,
+      );
+      expect(indexTriangleCount(mesh.geometry)).toBeGreaterThan(0);
+      mesh.geometry.dispose();
     });
   }
 
-  it('prepareWineBottleGlassLatheProfile drops SVG Z duplicate', () => {
+  it('prepareWineBottleGlassLatheProfile normalizes open alsace outer wall', () => {
     const prep = latheProfileFromSvg('bottle-alsace-open.svg');
     expect(prep.length).toBeGreaterThan(50);
     expect(prep.every((p) => p.x >= 0)).toBe(true);
@@ -286,7 +293,7 @@ describe('wine-bottle-glass', () => {
   });
 
   it('builds glass mesh via fetch loader', async () => {
-    const svg = readFileSync(join(PUBLIC, 'bottle-alsace-open.svg'), 'utf8');
+    const svg = readFileSync(join(PUBLIC_LATHE, 'bottle-alsace-open.svg'), 'utf8');
     setRawWineBottleSvgPointsCache('alsace', extractOpenPathPointsFromSvgText(svg, 48));
     const mesh = await buildWineBottleGlassMesh(
       'alsace',

@@ -1,22 +1,22 @@
-import {
-  Color,
-  type Mesh,
-  Scene,
-  type WebGPURenderer,
-} from 'three/webgpu';
+import { type Mesh, Scene, type WebGPURenderer } from 'three/webgpu';
 import type { Rgb } from '@/colors/rgb';
 import { SCENE_DEFAULTS } from '@/config/scene-defaults';
-import { DEBUG_PHYSICS_CUBE, EXPORT_JPEG_QUALITY, GROUND_PLANE_SIZE } from '@/constants';
+import { FIXTURE_DISC_LAYER, GROUND_PLANE_SIZE } from '@/constants';
 import { CameraController } from './camera-controller';
-import {
-  disposeDebugPhysicsCubeMesh,
-  setupDebugPhysicsCube,
-} from './debug-physics-cube';
+import { PhysicsRigidTestController } from './physics-rigid-test';
+import { WorldPhysicsSessionController } from './world-physics-session';
 import { EnvironmentSystem } from './environment-system';
 import { createWebGpuRenderer } from '@/render/renderer-setup';
 import { ViewportRenderPipeline } from '@/render/viewport-render-pipeline';
-import { syncPhysicsBindings, type PhysicsBinding } from './physics-sync';
+import { syncPhysicsBindings } from './physics-sync';
+import { RigidPrimitivePhysicsColliders } from './rigid-primitive-physics-colliders';
+import { FabricClothPhysicsColliders } from './fabric-cloth-physics-colliders';
 import { PhysicsWorld } from '@/physics/physics-world';
+import {
+  resolvePhysicsBodyMode,
+  type PhysicsBodyMode,
+} from '@/scene/physics-rigid-body';
+import { isRigidPrimitiveAssetKind } from '@/scene/rigid-primitive-asset';
 import { createGroundPlane } from '@/render/ground-plane';
 import type { GroundMaterial } from '@/materials/groundMaterial';
 import { Skybox } from '@/render/skybox';
@@ -38,6 +38,7 @@ import type {
   LightingSettings,
   SceneApi,
   SceneApiListener,
+  ViewportHelpersState,
 } from '@/scene/scene-api';
 import type {
   AssetEntity,
@@ -52,12 +53,19 @@ import type {
   BeverageCanParams,
   TinCanParams,
   WineBottleParams,
+  PenParams,
   BlockParams,
+  CylinderParams,
+  SphereParams,
+  WheelCarParams,
+  FabricClothParams,
+  BookParams,
   WallParams,
   WallpaperPattern,
   Vec3,
 } from '@/scene/entity-types';
 import { isWallAssetKind } from '@/scene/asset-wall';
+import type { BookMaterialTintPart } from '@/scene/book-material-tints';
 import type {
   AssetImageSurfaceId,
   ImageSurfaceSettings,
@@ -68,6 +76,12 @@ import { applyAtmosphereSnapshot as applyAtmosphereSnapshotToApi } from '@/scene
 import type { CaptureViewportImageOptions } from '@/scene/export-image';
 import type { AtmosphereSnapshot } from '@/scene/environment-preset-types';
 import { clampSizeScale } from '@/scene/asset-sizing';
+import {
+  clonePhysicsSettings,
+  defaultPhysicsSettings,
+  mergePhysicsSettings,
+  type PhysicsSettings,
+} from '@/scene/physics-settings';
 import { EntityRegistry } from './entity-registry';
 import { AssetSystem } from './asset-system';
 import { ImageTextureLoader } from './image-texture-loader';
@@ -78,6 +92,8 @@ import { ViewportInputController } from './viewport-input-controller';
 import { isStudioLightId } from '@/scene/light-ids';
 import { LightingSystem } from './lighting/lighting-system';
 import { ViewportInvalidation } from './viewport-invalidation';
+import { captureViewportImageFromEngine } from './mockup-engine-capture';
+import { ViewportHelpersSystem } from './viewport-helpers/viewport-helpers-system';
 
 const GROUND_PHYSICS_ID = 'ground';
 
@@ -90,7 +106,10 @@ export class MockupEngine implements SceneApi {
   private readonly environment: EnvironmentSystem;
   private readonly lighting: LightingSystem;
   private readonly physics: PhysicsWorld;
-  private readonly physicsBindings: PhysicsBinding[];
+  private readonly rigidPrimitivePhysics: RigidPrimitivePhysicsColliders;
+  private readonly fabricClothPhysics: FabricClothPhysicsColliders;
+  private readonly rigidTest: PhysicsRigidTestController;
+  private readonly worldPhysics: WorldPhysicsSessionController;
   private readonly ground: Mesh;
   private readonly groundMaterial: GroundMaterial;
   private readonly resizeObserver: ResizeObserver;
@@ -103,6 +122,7 @@ export class MockupEngine implements SceneApi {
   private readonly viewportInput: ViewportInputController;
   private readonly viewportPipeline: ViewportRenderPipeline;
   private readonly viewportInvalidation: ViewportInvalidation;
+  private readonly viewportHelpers: ViewportHelpersSystem;
   private readonly listeners = new Set<SceneApiListener>();
 
   private appMode: AppMode = 'select';
@@ -111,6 +131,7 @@ export class MockupEngine implements SceneApi {
   private lastTime = performance.now();
   private scaleDragBase = 1;
   private scaleCommitPending = false;
+  private physicsSettings: PhysicsSettings = defaultPhysicsSettings();
 
   private constructor(
     container: HTMLElement,
@@ -121,7 +142,10 @@ export class MockupEngine implements SceneApi {
     environment: EnvironmentSystem,
     lighting: LightingSystem,
     physics: PhysicsWorld,
-    physicsBindings: PhysicsBinding[],
+    rigidPrimitivePhysics: RigidPrimitivePhysicsColliders,
+    fabricClothPhysics: FabricClothPhysicsColliders,
+    rigidTest: PhysicsRigidTestController,
+    worldPhysics: WorldPhysicsSessionController,
     ground: Mesh,
     groundMaterial: GroundMaterial,
     registry: EntityRegistry,
@@ -132,6 +156,7 @@ export class MockupEngine implements SceneApi {
     selectionHighlight: SelectionHighlight,
     viewportInput: ViewportInputController,
     viewportPipeline: ViewportRenderPipeline,
+    viewportHelpers: ViewportHelpersSystem,
   ) {
     this.container = container;
     this.renderer = renderer;
@@ -141,7 +166,10 @@ export class MockupEngine implements SceneApi {
     this.environment = environment;
     this.lighting = lighting;
     this.physics = physics;
-    this.physicsBindings = physicsBindings;
+    this.rigidPrimitivePhysics = rigidPrimitivePhysics;
+    this.fabricClothPhysics = fabricClothPhysics;
+    this.rigidTest = rigidTest;
+    this.worldPhysics = worldPhysics;
     this.ground = ground;
     this.groundMaterial = groundMaterial;
     this.registry = registry;
@@ -152,10 +180,12 @@ export class MockupEngine implements SceneApi {
     this.selectionHighlight = selectionHighlight;
     this.viewportInput = viewportInput;
     this.viewportPipeline = viewportPipeline;
-    this.viewportInvalidation = new ViewportInvalidation(renderer, (time) =>
-      this.onFrame(time),
+    this.viewportHelpers = viewportHelpers;
+    this.viewportInvalidation = new ViewportInvalidation(renderer, (time) => { this.onFrame(time); },
     );
     this.assets.setViewportInvalidation(this.viewportInvalidation);
+    this.assets.setRigidPrimitivePhysicsColliders(this.rigidPrimitivePhysics);
+    this.assets.setFabricClothPhysicsColliders(this.fabricClothPhysics);
     this.environment.setViewportInvalidation(this.viewportInvalidation);
 
     this.gizmo.setCallbacks({
@@ -169,7 +199,7 @@ export class MockupEngine implements SceneApi {
         }
 
         const selected = this.registry.getSelectedRuntime();
-        if (!selected) return;
+        if (!selected) {return;}
 
         if (this.appMode === 'scale') {
           this.gizmo.enforceUniformScale();
@@ -178,6 +208,7 @@ export class MockupEngine implements SceneApi {
         }
 
         this.registry.syncTransformFromObject(selected.entity.id);
+        this.syncRigidPrimitivePoseFromRuntimeIfFixed(selected.entity.id);
         this.emit();
       },
       onDraggingChanged: (dragging) => {
@@ -186,10 +217,10 @@ export class MockupEngine implements SceneApi {
           dragging || this.cameras.isInteracting(),
         );
 
-        if (this.appMode !== 'scale') return;
+        if (this.appMode !== 'scale') {return;}
 
         const selected = this.registry.getSelectedRuntime();
-        if (!selected) return;
+        if (!selected) {return;}
 
         if (dragging) {
           this.scaleDragBase = selected.entity.sizeScale;
@@ -198,15 +229,23 @@ export class MockupEngine implements SceneApi {
           return;
         }
 
-        if (!this.scaleCommitPending) return;
+        if (!this.scaleCommitPending) {return;}
 
         const uniform =
           (selected.object.scale.x + selected.object.scale.y + selected.object.scale.z) / 3;
         selected.object.scale.set(1, 1, 1);
-        const nextScale = clampSizeScale(this.scaleDragBase * uniform);
-        this.applyAssetMutation(() =>
-          this.assets.setAssetSizeScale(selected.entity.id, nextScale),
-        );
+        const entityId = selected.entity.id;
+        if (isRigidPrimitiveAssetKind(selected.entity.assetKind)) {
+          this.applyAssetMutation(
+            () => this.assets.applyRigidPrimitiveUniformScale(entityId, uniform),
+            { refreshGizmo: true },
+          );
+        } else {
+          const nextScale = clampSizeScale(this.scaleDragBase * uniform);
+          this.applyAssetMutation(() =>
+            this.assets.setAssetSizeScale(entityId, nextScale),
+          );
+        }
         this.scaleCommitPending = false;
       },
     });
@@ -214,17 +253,17 @@ export class MockupEngine implements SceneApi {
     scene.add(gizmo.getHelper());
     this.applyGizmoMode(this.appMode);
 
-    registry.subscribeEntities(() => this.notifySceneApiListeners());
-    registry.subscribeSelection(() => this.notifySceneApiListeners());
-    lighting.subscribeSelection(() => this.notifySceneApiListeners());
-    this.cameras.setChangeListener(() => this.emit());
+    registry.subscribeEntities(() => { this.notifySceneApiListeners(); });
+    registry.subscribeSelection(() => { this.notifySceneApiListeners(); });
+    lighting.subscribeSelection(() => { this.notifySceneApiListeners(); });
+    this.cameras.setChangeListener(() => { this.emit(); });
     this.cameras.setViewportActivityListener(() => {
       this.invalidateViewport();
     });
 
     this.cameras.attach(renderer.domElement);
 
-    this.resizeObserver = new ResizeObserver(() => this.handleResize());
+    this.resizeObserver = new ResizeObserver(() => { this.handleResize(); });
     this.resizeObserver.observe(container);
     this.handleResize();
   }
@@ -254,16 +293,13 @@ export class MockupEngine implements SceneApi {
       groundMaterial.getPlanarReflection().updateResolution(renderer);
     }
 
-    const physicsBindings: PhysicsBinding[] = [];
-    if (DEBUG_PHYSICS_CUBE) {
-      physicsBindings.push(setupDebugPhysicsCube(physics, scene));
-    }
-
     const skybox = new Skybox();
     const registry = new EntityRegistry();
+    const rigidPrimitivePhysics = new RigidPrimitivePhysicsColliders(physics, registry);
     const textureLoader = new ImageTextureLoader();
     textureLoader.setMaxAnisotropy(renderer.getMaxAnisotropy());
     const assets = new AssetSystem(scene, registry, textureLoader);
+    const fabricClothPhysics = new FabricClothPhysicsColliders(physics, registry);
     assets
       .getMaterialResolver()
       .setPresetResolver((materialId) => resolveBuiltinMaterialPreset(materialId));
@@ -280,7 +316,27 @@ export class MockupEngine implements SceneApi {
     environmentSystem.setMaterialResolver(assets.getMaterialResolver());
     environmentSystem.applyGround(SCENE_DEFAULTS.ground);
 
+    const rigidTest = new PhysicsRigidTestController(
+      scene,
+      physics,
+      cameras,
+      assets.getMaterialResolver(),
+    );
+
+    const worldPhysics = new WorldPhysicsSessionController({
+      registry,
+      rigidPrimitivePhysics,
+      dynamicParticipants: [rigidPrimitivePhysics, fabricClothPhysics],
+    });
+
     const lightingSystem = new LightingSystem(scene, registry, SCENE_DEFAULTS.lighting);
+    lightingSystem.setPlanarReflection(groundMaterial.getPlanarReflection());
+    cameras.camera.layers.enable(FIXTURE_DISC_LAYER);
+
+    const viewportHelpersSystem = new ViewportHelpersSystem(scene);
+    viewportHelpersSystem.apply(SCENE_DEFAULTS.viewportHelpers);
+    lightingSystem.setLightHandlesVisible(SCENE_DEFAULTS.viewportHelpers.lightHandles);
+
     const gizmo = new GizmoController(cameras.camera, renderer.domElement);
     const selection = new SelectionController(renderer.domElement, registry);
     const selectionHighlight = new SelectionHighlight(registry, lightingSystem);
@@ -295,7 +351,10 @@ export class MockupEngine implements SceneApi {
       environmentSystem,
       lightingSystem,
       physics,
-      physicsBindings,
+      rigidPrimitivePhysics,
+      fabricClothPhysics,
+      rigidTest,
+      worldPhysics,
       ground,
       groundMaterial,
       registry,
@@ -311,14 +370,15 @@ export class MockupEngine implements SceneApi {
         gizmoForInput,
       ),
       viewportPipeline,
+      viewportHelpersSystem,
     );
 
     selection.setCameraProvider(() => cameras.camera);
     selection.setLightPickablesProvider(() => lightingSystem.getPickables());
-    selection.setSelectHandler((entityId) => engine.handleSelect(entityId));
+    selection.setSelectHandler((entityId) => { engine.handleSelect(entityId); });
     selection.setDeleteHandler(() => {
       const selectedAssetId = registry.getSelectedEntityId();
-      if (!selectedAssetId) return;
+      if (!selectedAssetId) {return;}
       engine.removeEntity(selectedAssetId);
     });
 
@@ -394,6 +454,7 @@ export class MockupEngine implements SceneApi {
 
   setEntityTransform(entityId: string, partial: Partial<EntityTransform>): void {
     this.registry.updateTransform(entityId, partial);
+    this.syncRigidPrimitivePoseFromRuntimeIfFixed(entityId);
     this.invalidateViewport();
     this.notifySceneApiListeners();
   }
@@ -403,6 +464,10 @@ export class MockupEngine implements SceneApi {
       () => this.assets.setAssetImage(entityId, imageId),
       { refreshGizmo: true },
     );
+  }
+
+  releaseImageTexture(imageId: string): void {
+    this.textureLoader.release(imageId);
   }
 
   setAssetFace(entityId: string, faceId: AssetFaceId, content: AssetFaceContent): void {
@@ -489,6 +554,63 @@ export class MockupEngine implements SceneApi {
     this.applyAssetMutation(() => this.assets.setBlockParams(entityId, partial));
   }
 
+  setCylinderParams(entityId: string, partial: Partial<CylinderParams>): void {
+    this.applyAssetMutation(() => this.assets.setCylinderParams(entityId, partial));
+  }
+
+  setSphereParams(entityId: string, partial: Partial<SphereParams>): void {
+    this.applyAssetMutation(() => this.assets.setSphereParams(entityId, partial));
+  }
+
+  setWheelCarParams(entityId: string, partial: Partial<WheelCarParams>): void {
+    this.applyAssetMutation(() => this.assets.setWheelCarParams(entityId, partial));
+  }
+
+  setPhysicsBodyMode(entityId: string, mode: PhysicsBodyMode): void {
+    this.applyAssetMutation(() => {
+      this.assets.setPhysicsBodyMode(entityId, mode);
+    });
+  }
+
+  setPhysicsDensityKgPerM3(entityId: string, densityKgPerM3: number): void {
+    this.applyAssetMutation(() => {
+      this.assets.setPhysicsDensityKgPerM3(entityId, densityKgPerM3);
+    });
+  }
+
+  setFabricClothParams(
+    entityId: string,
+    partial: Partial<FabricClothParams>,
+  ): void {
+    this.applyAssetMutation(() =>
+      this.assets.setFabricClothParams(entityId, partial),
+    );
+  }
+
+  setBookParams(entityId: string, partial: Partial<BookParams>): void {
+    this.applyAssetMutation(() => this.assets.setBookParams(entityId, partial));
+  }
+
+  setBookBackCoverImageId(entityId: string, imageId: string | null): void {
+    this.applyAssetMutation(() =>
+      this.assets.setBookBackCoverImageId(entityId, imageId),
+    );
+  }
+
+  setBookSpineImageId(entityId: string, imageId: string | null): void {
+    this.applyAssetMutation(() => this.assets.setBookSpineImageId(entityId, imageId));
+  }
+
+  setBookMaterialTint(
+    entityId: string,
+    part: BookMaterialTintPart,
+    tint: Rgb,
+  ): void {
+    this.applyAssetMutation(() =>
+      this.assets.setBookMaterialTint(entityId, part, tint),
+    );
+  }
+
   setBeverageCanParams(
     entityId: string,
     partial: Partial<BeverageCanParams>,
@@ -511,6 +633,10 @@ export class MockupEngine implements SceneApi {
     );
   }
 
+  setPenParams(entityId: string, partial: Partial<PenParams>): void {
+    this.applyAssetMutation(() => this.assets.setPenParams(entityId, partial));
+  }
+
   setWallpaperPattern(entityId: string, partial: Partial<WallpaperPattern>): void {
     this.applyAssetMutation(() =>
       this.assets.setWallpaperPattern(entityId, partial),
@@ -529,6 +655,50 @@ export class MockupEngine implements SceneApi {
 
   getLighting(): LightingSettings {
     return this.lighting.getLighting();
+  }
+
+  getPhysicsSettings(): PhysicsSettings {
+    return {
+      ...clonePhysicsSettings(this.physicsSettings),
+      rigidTestPhase: this.rigidTest.getPhase(),
+      worldPhysicsPhase: this.worldPhysics.getPhase(),
+      worldPhysicsHasSnapshot: this.worldPhysics.hasSnapshot(),
+    };
+  }
+
+  setPhysicsSettings(partial: Partial<PhysicsSettings>): void {
+    const rest = { ...partial };
+    delete rest.rigidTestPhase;
+    delete rest.worldPhysicsPhase;
+    delete rest.worldPhysicsHasSnapshot;
+    this.physicsSettings = mergePhysicsSettings(this.physicsSettings, rest);
+    this.physics.setGravityScale(this.physicsSettings.gravityScale);
+    this.notifySceneApiListeners();
+  }
+
+  startPhysicsRigidTest(): void {
+    this.rigidTest.start();
+    this.emit();
+  }
+
+  stopPhysicsRigidTest(): void {
+    this.rigidTest.stop();
+    this.emit();
+  }
+
+  startWorldPhysics(): void {
+    this.worldPhysics.start();
+    this.emit();
+  }
+
+  toggleWorldPhysicsPause(): void {
+    this.worldPhysics.togglePause();
+    this.emit();
+  }
+
+  resetWorldPhysics(): void {
+    this.worldPhysics.reset();
+    this.emit();
   }
 
   applyEnvironment(state: EnvironmentState): void {
@@ -572,7 +742,26 @@ export class MockupEngine implements SceneApi {
     if (partial.mirrorEnabled === true) {
       this.groundMaterial.getPlanarReflection().updateResolution(this.renderer);
     }
+    this.lighting.syncFixtureMirrorReflection();
     this.invalidateViewport();
+  }
+
+  applyViewportHelpers(state: ViewportHelpersState): void {
+    this.viewportHelpers.apply(state);
+    this.lighting.setLightHandlesVisible(state.lightHandles);
+    this.invalidateViewport();
+  }
+
+  setViewportHelpers(partial: Partial<ViewportHelpersState>): void {
+    this.viewportHelpers.setPartial(partial);
+    if (partial.lightHandles !== undefined) {
+      this.lighting.setLightHandlesVisible(partial.lightHandles);
+    }
+    this.invalidateViewport();
+  }
+
+  getViewportHelpers(): ViewportHelpersState {
+    return this.viewportHelpers.getState();
   }
 
   setFogEnabled(enabled: boolean): void {
@@ -608,7 +797,7 @@ export class MockupEngine implements SceneApi {
     }
 
     const definition = getBuiltinCameraView(id);
-    if (!definition) return;
+    if (!definition) {return;}
 
     this.cameras.loadBuiltinView(definition);
     this.emit();
@@ -621,14 +810,14 @@ export class MockupEngine implements SceneApi {
       ...viewState,
       position: { ...viewState.position },
       target: { ...viewState.target },
-      name: this.cameraSlots[slotIndex]?.name?.trim() || `Slot ${index}`,
+      name: this.cameraSlots[slotIndex]?.name?.trim() ?? `Slot ${index}`,
     };
     this.emit();
   }
 
   loadSlot(index: CameraSlotIndex): void {
     const slot = this.cameraSlots[index - 1];
-    if (!slot) return;
+    if (!slot) {return;}
 
     this.cameras.applyFramingState(slot);
     this.emit();
@@ -642,7 +831,7 @@ export class MockupEngine implements SceneApi {
   renameSlot(index: CameraSlotIndex, name: string): void {
     const slotIndex = index - 1;
     const slot = this.cameraSlots[slotIndex];
-    if (!slot) return;
+    if (!slot) {return;}
 
     this.cameraSlots[slotIndex] = { ...slot, name };
     this.emit();
@@ -730,71 +919,24 @@ export class MockupEngine implements SceneApi {
   }
 
   async captureViewportImage(options: CaptureViewportImageOptions): Promise<Blob> {
-    const includeSky = options.format === 'jpeg';
-    const transparentBackground = options.format === 'png-transparent';
-    const groundSurface = options.groundSurface ?? 'viewport';
-    const useShadowCatcher =
-      transparentBackground && groundSurface === 'contact-shadows-only';
-    const hideLightFixtures = options.hideLightFixtures === true;
-    const camera = this.cameras.camera;
-    this.gizmo.updateCamera(camera);
-    this.environment.updateFrame(camera);
-    this.lighting.updateFrame();
-
-    const prevClearColor = this.renderer.getClearColor(new Color());
-    const prevClearAlpha = this.renderer.getClearAlpha();
-    const prevAlpha = this.renderer.alpha;
-
-    if (transparentBackground) {
-      this.renderer.alpha = true;
-      this.renderer.setClearColor(0x000000, 0);
-    }
-
-    if (useShadowCatcher) {
-      this.environment.pushGroundExportCaptureMode('contact-shadows-only');
-    }
-    if (hideLightFixtures) {
-      this.lighting.pushExportHideFixtures();
-    }
-
-    try {
-      this.renderViewportFrame({ skyEnabled: includeSky, transparentBackground });
-
-      const canvas = this.renderer.domElement;
-      const mimeType = options.format === 'jpeg' ? 'image/jpeg' : 'image/png';
-      const quality =
-        options.format === 'jpeg'
-          ? (options.jpegQuality ?? EXPORT_JPEG_QUALITY)
-          : undefined;
-
-      return await new Promise<Blob>((resolve, reject) => {
-        canvas.toBlob(
-          (blob) => {
-            if (blob) {
-              resolve(blob);
-              return;
-            }
-            reject(new Error(`Failed to capture viewport as ${mimeType}.`));
-          },
-          mimeType,
-          quality,
-        );
-      });
-    } finally {
-      if (hideLightFixtures) {
-        this.lighting.popExportHideFixtures();
-      }
-      if (useShadowCatcher) {
-        this.environment.popGroundExportCaptureMode();
-      }
-      this.renderer.setClearColor(prevClearColor, prevClearAlpha);
-      this.renderer.alpha = prevAlpha;
-      this.renderViewportFrame();
-    }
+    return captureViewportImageFromEngine(
+      {
+        renderer: this.renderer,
+        cameras: this.cameras,
+        gizmo: this.gizmo,
+        environment: this.environment,
+        lighting: this.lighting,
+        updateViewportHelpersFrame: () => { this.viewportHelpers.updateFrame(this.lighting); },
+        pushExportHidePhysicsTest: () => { this.rigidTest.pushExportHide(); },
+        popExportHidePhysicsTest: () => { this.rigidTest.popExportHide(); },
+        renderViewportFrame: (overrides) => { this.renderViewportFrame(overrides); },
+      },
+      options,
+    );
   }
 
   dispose(): void {
-    if (this.disposed) return;
+    if (this.disposed) {return;}
     this.disposed = true;
 
     this.viewportInput.dispose();
@@ -810,11 +952,10 @@ export class MockupEngine implements SceneApi {
     this.resizeObserver.disconnect();
     this.viewportInvalidation.dispose();
     this.viewportPipeline.dispose();
-    this.renderer.dispose();
+    void this.renderer.dispose();
 
-    for (const binding of this.physicsBindings) {
-      disposeDebugPhysicsCubeMesh(binding);
-    }
+    this.rigidTest.dispose();
+    this.fabricClothPhysics.dispose();
     this.physics.dispose();
     this.environment.dispose();
 
@@ -884,8 +1025,15 @@ export class MockupEngine implements SceneApi {
     this.gizmo.setEnabled(false);
   }
 
+  private syncRigidPrimitivePoseFromRuntimeIfFixed(entityId: string): void {
+    const runtime = this.registry.getRuntime(entityId);
+    if (!runtime || !isRigidPrimitiveAssetKind(runtime.entity.assetKind)) {return;}
+    if (resolvePhysicsBodyMode(runtime.entity) !== 'fixed') {return;}
+    this.rigidPrimitivePhysics.syncPoseFromRuntime(entityId);
+  }
+
   private applyAssetMutation(
-    mutation: () => Promise<void>,
+    mutation: () => void | Promise<void>,
     options?: { refreshGizmo?: boolean },
   ): void {
     void (async () => {
@@ -898,7 +1046,7 @@ export class MockupEngine implements SceneApi {
   }
 
   private notifySceneApiListeners(): void {
-    this.listeners.forEach((listener) => listener());
+    this.listeners.forEach((listener) => { listener(); });
   }
 
   private invalidateViewport(): void {
@@ -917,14 +1065,15 @@ export class MockupEngine implements SceneApi {
   }
 
   private onFrame(time: number): void {
-    if (this.disposed) return;
+    if (this.disposed) {return;}
 
-    const needsPhysics =
-      DEBUG_PHYSICS_CUBE || this.physics.hasDynamicBodies();
+    const needsPhysics = this.physics.needsSimulationStep();
+    const worldSimulating = this.worldPhysics.getPhase() === 'simulating';
     const continuous =
       this.cameras.isInteracting() ||
       this.gizmo.isDragging() ||
-      needsPhysics;
+      needsPhysics ||
+      worldSimulating;
     this.viewportInvalidation.setContinuous(continuous);
 
     const deltaSeconds = Math.min((time - this.lastTime) / 1000, 0.1);
@@ -932,17 +1081,25 @@ export class MockupEngine implements SceneApi {
 
     if (needsPhysics) {
       this.physics.step(deltaSeconds);
-      syncPhysicsBindings(this.physicsBindings);
+      const rigidBindings = this.rigidTest.getActiveBindings();
+      if (rigidBindings.length > 0) {
+        syncPhysicsBindings(rigidBindings);
+      }
+    }
+
+    if (worldSimulating) {
+      this.worldPhysics.tick(deltaSeconds);
     }
 
     const camera = this.cameras.camera;
     this.gizmo.updateCamera(camera);
     this.environment.updateFrame(camera);
     this.lighting.updateFrame();
+    this.viewportHelpers.updateFrame(this.lighting);
 
     this.renderViewportFrame();
 
-    if (needsPhysics) {
+    if (needsPhysics && !continuous) {
       this.invalidateViewport();
     }
   }
@@ -964,7 +1121,7 @@ export class MockupEngine implements SceneApi {
   private handleResize(): void {
     const w = this.container.clientWidth;
     const h = this.container.clientHeight;
-    if (w === 0 || h === 0) return;
+    if (w === 0 || h === 0) {return;}
 
     this.cameras.handleResize(w, h);
     this.renderer.setSize(w, h);

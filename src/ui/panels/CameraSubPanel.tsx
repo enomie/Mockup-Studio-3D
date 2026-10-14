@@ -1,6 +1,9 @@
 import { CAMERA_FOV_MAX, CAMERA_FOV_MIN, CAMERA_ORTHO_MAX_ZOOM, CAMERA_ORTHO_MIN_ZOOM } from '@/constants';
 import { CAMERA_USER_SLOTS, cameraSlotLabel } from '@/data/camera-views';
+import { Camera, FolderOpen, X } from 'lucide-react';
+import { Icon } from '@/ui/components/Icon';
 import { RangeSlider } from '@/ui/components/RangeSlider';
+import { ToolbarIconButton } from '@/ui/components/ToolbarIconButton';
 import { SubPanel } from '@/ui/components/SubPanel';
 import { SubPanelSection } from '@/ui/components/SubPanelSection';
 import {
@@ -23,7 +26,7 @@ export function CameraSubPanel() {
       <SubPanelSection title="Projection">
         <CameraProjectionToggle
           className="camera-panel-projection"
-          chipClassName="preset-chip camera-panel-projection__btn"
+          chipClassName="toolbar-chip-btn camera-panel-projection__btn"
         />
 
         {camera.projection === 'perspective' ? (
@@ -59,6 +62,8 @@ export function CameraSubPanel() {
             const occupied = Boolean(slot);
             const label = cameraSlotLabel(slotDef, slot?.name);
             const loadLabel = occupied ? `Load ${label}` : `${slotDef.label} — empty`;
+            const clearLabel = `Clear ${label}`;
+            const captureLabel = `Capture to ${slotDef.label}`;
 
             return (
               <div key={slotDef.index} className="camera-slot-card">
@@ -71,7 +76,7 @@ export function CameraSubPanel() {
                       value={slot?.name ?? ''}
                       placeholder={slotDef.label}
                       aria-label={`${slotDef.label} name`}
-                      onChange={(event) => renameSlot(slotDef.index, event.target.value)}
+                      onChange={(event) => { renameSlot(slotDef.index, event.target.value); }}
                     />
                   ) : (
                     <span className="camera-slot-card__empty-label">
@@ -83,31 +88,33 @@ export function CameraSubPanel() {
                 <div className="camera-slot-card__actions">
                   <button
                     type="button"
-                    className="camera-slot-card__action"
+                    className="toolbar-chip-btn camera-slot-card__action"
                     aria-label={loadLabel}
                     title={loadLabel}
                     disabled={!occupied}
-                    onClick={() => loadSlot(slotDef.index)}
+                    onClick={() => { loadSlot(slotDef.index); }}
                   >
-                    Load
+                    <Icon icon={FolderOpen} size={16} strokeWidth={1.75} />
+                    <span className="camera-slot-card__action-label">Load</span>
                   </button>
 
                   <button
                     type="button"
-                    className="camera-slot-card__action"
-                    onClick={() => captureSlot(slotDef.index)}
+                    className="toolbar-chip-btn camera-slot-card__action"
+                    aria-label={captureLabel}
+                    title={captureLabel}
+                    onClick={() => { captureSlot(slotDef.index); }}
                   >
-                    Capture
+                    <Icon icon={Camera} size={16} strokeWidth={1.75} />
+                    <span className="camera-slot-card__action-label">Capture</span>
                   </button>
 
-                  <button
-                    type="button"
-                    className="camera-slot-card__action"
+                  <ToolbarIconButton
+                    icon={X}
+                    ariaLabel={clearLabel}
                     disabled={!occupied}
-                    onClick={() => clearSlot(slotDef.index)}
-                  >
-                    Clear
-                  </button>
+                    onClick={() => { clearSlot(slotDef.index); }}
+                  />
                 </div>
               </div>
             );

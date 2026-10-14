@@ -217,8 +217,8 @@ Gerundete Pixelmaße können vom exakten Ratio um **±1 px** abweichen — für 
 
 | Datei | URL | `canBodyProfile` | `viewBox` (Ist, Authoring) |
 |---|---|---|---|
-| [`330ml-classic.svg`](../../public/330ml-classic.svg) | `/330ml-classic.svg` | **`standard`** | `0 0 94.185 322.799` |
-| [`330ml-sleek.svg`](../../public/330ml-sleek.svg) | `/330ml-sleek.svg` | **`sleek`** | `0 0 81.854 410.248` |
+| [`330ml-classic.svg`](../../public/profiles/lathe/330ml-classic.svg) | `/profiles/lathe/330ml-classic.svg` | **`standard`** | `0 0 94.185 322.799` |
+| [`330ml-sleek.svg`](../../public/profiles/lathe/330ml-sleek.svg) | `/profiles/lathe/330ml-sleek.svg` | **`sleek`** | `0 0 81.854 410.248` |
 
 **Status:** Silhouetten **vom User geliefert** (2026-10-09). Referenz-Render: [`../images/330ml-standard.png`](../images/330ml-standard.png), [`../images/330ml-sleek.png`](../images/330ml-sleek.png).
 
@@ -231,7 +231,7 @@ Gerundete Pixelmaße können vom exakten Ratio um **±1 px** abweichen — für 
 
 **Import-Pipeline (Ziel, Engine):**
 
-1. `SVGLoader` laden von `/330ml-classic.svg` bzw. `/330ml-sleek.svg` (Profilwechsel).
+1. `SVGLoader` laden von `/profiles/lathe/330ml-classic.svg` bzw. `/profiles/lathe/330ml-sleek.svg` (Profilwechsel).
 2. Ersten Pfad → `createShapes` → `getPoints(n)` (n TBD, glatte Kurven).
 3. **Normalisieren** zu `Vector2(radiusM, yM)` mit **y = 0** am Bodenkontakt, **x = 0** an der Achse, Gesamthöhe ≈ `heightM` (115,2 / 146,05 m).
 4. `LatheGeometry(points, segments)`; danach Bounding-Check vs. Doc-Maße (`diameterM`, `bottomStandDiameterM`, Label-Zone 5 mm / 2,5 mm).
@@ -378,7 +378,7 @@ Dropdown: alle Material-Presets erlaubt; Metall-Slots typisch **Chrome**, **Alum
 |---|---|
 | Requirements / Maße / Bildformat | **doc** |
 | Label-Unfold-Rechner | **Code** (`beverage-can-label-unfold.ts`) |
-| SVG-Profile | **Dateien** `public/330ml-classic.svg`, `330ml-sleek.svg` — **Normalisierung** Engine TBD |
+| SVG-Profile | **Dateien** `public/profiles/lathe/330ml-classic.svg`, `330ml-sleek.svg` — Normalisierung Engine ✓ |
 | `beverage-can-geometry.ts` (SVG→Lathe, Gruppen body/label, zyl. UV + Cover, Ring) | **fehlt** |
 | Katalog `assetKind: beverage-can`, `addAsset`, Rebuild-Pfad in `asset-meshes` | **fehlt** |
 | `geometryVisibility` + Panel Geometries | **doc** — Pattern aus Picture kopieren |

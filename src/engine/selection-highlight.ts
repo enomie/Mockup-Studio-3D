@@ -1,6 +1,8 @@
 import {
   BackSide,
+  type BufferGeometry,
   type LineBasicNodeMaterial,
+  type Material,
   Mesh,
   MeshBasicNodeMaterial,
 } from 'three/webgpu';
@@ -10,7 +12,6 @@ import {
   SELECTION_OUTLINE_SCALE,
   LIGHT_WIREFRAME_IDLE_OPACITY,
   LIGHT_WIREFRAME_SELECTED_OPACITY,
-  LIGHT_WIREFRAME_SELECTED_SCALE,
 } from '@/constants';
 import type { EntityRegistry } from './entity-registry';
 import type { LightingSystem } from './lighting/lighting-system';
@@ -19,7 +20,7 @@ import { LIGHT_FILL_ID, LIGHT_KEY_ID, type StudioLightId } from '@/scene/light-i
 export class SelectionHighlight {
   private readonly registry: EntityRegistry;
   private readonly lighting: LightingSystem;
-  private outlineMeshes: Mesh[] = [];
+  private outlineMeshes: Mesh<BufferGeometry, Material>[] = [];
   private outlineMaterial: MeshBasicNodeMaterial | null = null;
 
   constructor(registry: EntityRegistry, lighting: LightingSystem) {
@@ -51,10 +52,10 @@ export class SelectionHighlight {
 
   private updateAssetOutline(entityId: string | null): void {
     this.clearAssetOutline();
-    if (!entityId) return;
+    if (!entityId) {return;}
 
     const runtime = this.registry.getRuntime(entityId);
-    if (!runtime) return;
+    if (!runtime) {return;}
 
     const outlineMaterial = new MeshBasicNodeMaterial({
       color: SELECTION_OUTLINE_COLOR,
@@ -66,8 +67,8 @@ export class SelectionHighlight {
     this.outlineMaterial = outlineMaterial;
 
     runtime.object.traverse((child) => {
-      if (!(child instanceof Mesh) || !child.geometry) return;
-      if (child.userData.selectionOutline) return;
+      if (!(child instanceof Mesh) || !child.geometry) {return;}
+      if (child.userData.selectionOutline) {return;}
 
       const outlineMesh = new Mesh(child.geometry, outlineMaterial);
       outlineMesh.userData.selectionOutline = true;
@@ -79,7 +80,7 @@ export class SelectionHighlight {
       outlineMesh.receiveShadow = false;
 
       runtime.object.add(outlineMesh);
-      this.outlineMeshes.push(outlineMesh);
+      this.outlineMeshes.push(outlineMesh as Mesh<BufferGeometry, Material>);
     });
   }
 
@@ -104,16 +105,14 @@ export class SelectionHighlight {
   }
 
   private applyLightWireframeState(lightId: StudioLightId, selected: boolean): void {
-    const wireframe = this.lighting.getWireframe(lightId);
-    if (!wireframe) return;
+    if (!this.lighting.isLightHandlesVisible()) {return;}
+    const spotBeam = this.lighting.getSpotBeamHelper(lightId);
+    if (!spotBeam?.visible) {return;}
 
-    const material = wireframe.material as LineBasicNodeMaterial;
+    const material = spotBeam.cone.material as LineBasicNodeMaterial;
     material.opacity = selected
       ? LIGHT_WIREFRAME_SELECTED_OPACITY
       : LIGHT_WIREFRAME_IDLE_OPACITY;
     material.transparent = true;
-
-    const scale = selected ? LIGHT_WIREFRAME_SELECTED_SCALE : 1;
-    wireframe.scale.setScalar(scale);
   }
 }

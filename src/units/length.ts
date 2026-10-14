@@ -24,10 +24,10 @@ export function parseLengthMetersInput(
 ): number | null {
   const trimmed = raw.trim().replace(',', '.');
   const pattern = new RegExp(`^-?\\d+(\\.\\d{0,${decimals}})?$`);
-  if (!pattern.test(trimmed)) return null;
+  if (!pattern.test(trimmed)) {return null;}
 
   const value = Number.parseFloat(trimmed);
-  if (Number.isNaN(value)) return null;
+  if (Number.isNaN(value)) {return null;}
   return value;
 }
 
@@ -40,6 +40,6 @@ export function parseMmFromMetersInput(
   decimals = LENGTH_DECIMALS,
 ): number | null {
   const meters = parseLengthMetersInput(raw, decimals);
-  if (meters === null) return null;
+  if (meters === null) {return null;}
   return mToMm(meters);
 }

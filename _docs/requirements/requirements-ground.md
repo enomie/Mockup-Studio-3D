@@ -34,7 +34,7 @@ Boden ist **immer opaque** (`opacity = 1`, `transparent = false`) — kein Groun
 
 PBR-Feintuning nur über die **Materials Library** (Preset bearbeiten oder anderes Preset wählen).
 
-**Procedural (Wood, Metall, Print Matt):** Mustergröße folgt dem Preset-**`tileScale`** (Wiederholungen pro Meter) — identisch zur Wirkung am Rahmen; technisch **`planar-meters`** auf der Ground-Plane, nicht Mesh-UV. Details → Abschnitt „Procedural tiling" unten; Querschnitt → [`requirements-materials.md`](./requirements-materials.md) (Procedural — tileScale & Sampling).
+**Procedural:** Preset-**`tileScale`** (Wiederholungen/m). Sampling profilabhängig (`planar-meters` vs. `meter-3d`) → Abschnitt *Procedural tiling* und [`requirements-materials.md`](./requirements-materials.md) (*Procedural — Sampling (normativ)*).
 
 ---
 
@@ -107,8 +107,16 @@ type GroundSettings = {
 
 **Category:** Ground  
 **Title:** Procedural tiling (Materials Library)  
-**Description:** Textured / procedural Presets am Boden nutzen **`planar-meters`**: Shader sampelt in **`positionLocal.xy`** (Meter auf der horizontalen Ground-Plane), **nicht** über Standard-Mesh-UV (0–1 über die gesamte ~5 km `PlaneGeometry` — dort würde Wood/Metall nur als große, unscharfe Bänder erscheinen).
+**Description:** Ground setzt **`surfaceRole: 'ground'`** beim Material-Resolve. **Nicht** die Standard-Mesh-UV der ~5 km `PlaneGeometry` (0–1 über die ganze Fläche → unscharfe Bänder). Stattdessen profilabhängiger Sampling-Raum — **normative Tabelle** → [`requirements-materials.md`](./requirements-materials.md) (*Procedural — Sampling (normativ)*).
 
-**`tileScale`** im Preset = **Wiederholungen pro Meter** — dieselbe Bedeutung wie am Picture-Frame (Perimeter-`UV.u` in Metern). Wood Soft/Porous, Gold/Aluminum Brushed, Chrome/Gold polished, Print Matt (`paper-grain`) am Boden = gleiche Feinstruktur-Dichte wie an Assets mit passendem `surfaceRole`.
+**Ground-Kurzregel:**
 
-**Engine:** `GroundMaterial.applyMaterialPreset` → `createGroundSurfaceMaterial` → `createMaterialFromPreset(..., { surfaceRole: 'ground' })` → `resolveProceduralSamplingSpace` / `buildProceduralSampleUv` in `src/materials/procedural/`. Rahmen bleibt `surfaceRole: 'frame'` + `uv` (Perimeter-UV).
+| Preset-Typ | `samplingSpace` am Boden |
+|---|---|
+| Grid Paper / Grid Lines | `planar-meters` (`positionLocal.xy` × `tileScale`) |
+| Wood Soft / Wood Porous | `planar-meters` |
+| Print Matt (`paper-grain`), Fabric, Silk, Concrete, Metals, Plastics, Print Glossy | `meter-3d` |
+
+**`tileScale`** = Wiederholungen pro Meter — gleiche Zahl wie am Rahmen/Asset → ähnliche sichtbare Strukturgröße.
+
+**Engine:** `GroundMaterial.applyMaterialPreset` → `createGroundSurfaceMaterial` → `createMaterialFromPreset(..., { surfaceRole: 'ground' })` → `resolveProfileSamplingSpace` in `src/materials/procedural/`.

@@ -2,7 +2,7 @@ import { ChevronDown, ChevronRight, Eye, EyeOff } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Icon } from '@/ui/components/Icon';
 
-type SceneEntityBlockProps = {
+interface SceneEntityBlockProps {
   title: string;
   enabled: boolean;
   collapsed: boolean;
@@ -12,7 +12,7 @@ type SceneEntityBlockProps = {
   onToggleEnabled: () => void;
   onTitleClick?: () => void;
   children: ReactNode;
-};
+}
 
 export function SceneEntityBlock({
   title,

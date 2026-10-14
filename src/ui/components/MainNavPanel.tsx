@@ -2,14 +2,14 @@ import { PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen } from '
 import type { ShellNavItem } from '@/ui/shell/shell-nav';
 import { Icon } from './Icon';
 
-type MainNavPanelProps = {
+interface MainNavPanelProps {
   side: 'left' | 'right';
   items: ShellNavItem[];
   selectedId: string;
   collapsed: boolean;
   onSelect: (id: string) => void;
   onToggleCollapse: () => void;
-};
+}
 
 export function MainNavPanel({
   side,
@@ -44,7 +44,7 @@ export function MainNavPanel({
                 aria-current={active ? 'page' : undefined}
                 aria-label={item.label}
                 title={item.label}
-                onClick={() => onSelect(item.id)}
+                onClick={() => { onSelect(item.id); }}
               >
                 <Icon icon={item.icon} />
                 {!collapsed ? (

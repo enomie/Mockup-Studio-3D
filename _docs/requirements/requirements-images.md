@@ -1,10 +1,10 @@
 # Images — Bibliothek & Panel
 
-Zentrale **Bildliste** im Projekt — Upload, Starter-Assets, Metadaten. Alles was ein Bild braucht (Ground, später Decals, Texturen, …) **referenziert hierher**. UI: **Left Main → Images** + **Left Sub** (Liste). Bezüge: [`requirements-ground.md`](./requirements-ground.md), [`requirements-demo.md`](./requirements-demo.md), [`requirements-and-project-description.md`](./requirements-and-project-description.md) (min. 10 Bilder).
+Zentrale **Bildliste** im Projekt — Upload, Starter-Assets, Metadaten. Alles was ein Bild braucht (Ground, später Decals, Texturen, …) **referenziert hierher**. UI: **Left Main → Images** + **Left Sub** (Liste). Bezüge: [`requirements-ground.md`](./requirements-ground.md), [`requirements-app-layout.md`](./requirements-app-layout.md), [`requirements-and-project-description.md`](./requirements-and-project-description.md) (min. 10 Bilder).
 
-**Bestand (Inventur):** Demo `ImagesPanel.tsx`, `image-assets.ts` (`STARTER_IMAGES`), 4 Dateien in `/public/sample-*` (png) + `label-F-blue-transparent-square.png` — erweitern, nicht parallel neu bauen.
+**Bestand (Inventur):** Demo `ImagesPanel.tsx`, `image-assets.ts` (`STARTER_IMAGES` ← `builtin-images.generated.ts`), **6** Builtin-PNGs in **`public/images/`** (Naming `name--format--pixelsize`) — Generator `scripts/generate-builtin-images.ts`; erweitern per Datei-Drop, nicht parallel neu bauen.
 
-**Status:** Requirements — Demo-UI vorhanden; Persistenz, Engine-Anbindung, Löschen TBD bei Implementierung.
+**Status:** Requirements — Demo-UI vorhanden; Persistenz, Engine-Anbindung, Löschen TBD bei Implementierung. **Löschen:** nur User-Uploads — Projektregel → [`requirements-builtin-and-user-content.md`](./requirements-builtin-and-user-content.md).
 
 ---
 
@@ -22,7 +22,7 @@ Zentrale **Bildliste** im Projekt — Upload, Starter-Assets, Metadaten. Alles w
 
 **Category:** Images  
 **Title:** Listeneintrag — Anzeige  
-**Description:** Pro Bild eine Zeile: **Thumbnail** (~32px), **Dateiname** (ellipsis), **Orientation** (Landscape / Portrait / Square — engl. Labels). Klick = **Selection** (highlight); Doppelklick optional später (Preview). Kontextmenü später: Rename, Delete, Duplicate TBD.
+**Description:** Pro Bild eine Zeile: **Thumbnail** (~32px), **Dateiname** (ellipsis), **Orientation** (Landscape / Portrait / Square — engl. Labels). **Starter:** optional dezente zweite Info **`logicalFormat` · `sizeToken`** (Tooltip oder Subline). Klick = **Selection** (highlight); Doppelklick optional später (Preview). Kontextmenü später: Rename, Delete, Duplicate TBD.
 
 ---
 
@@ -34,13 +34,13 @@ Zentrale **Bildliste** im Projekt — Upload, Starter-Assets, Metadaten. Alles w
 
 **Category:** Images  
 **Title:** Starter-Bilder (App)  
-**Description:** Werkseitige Samples in **`/public/`**, Naming: `sample-{orientation}-{width}x{height}.{ext}` (Extension = Originalformat; bei gleichen Maßen Suffix `-2`, `-3`, …). Start-Set (5): `sample-landscape-2560x1440.png`, `sample-landscape-1439x960.png`, `sample-portrait-440x955.png`, `sample-portrait-772x1031.png`, `label-F-blue-transparent-square.png` (2048², transparentes Label-„F“ für Dose/Label-QA). **Nicht löschbar**, immer in neuer Projekt-Liste. IDs stabil (Dateiname ohne Extension). Daten: `STARTER_IMAGES` in `src/data/image-assets.ts` — nicht hardcoded nur in UI.
+**Description:** Werkseitige Builtin-Bilder **nur** unter **`public/images/`** (Runtime-URL `/images/{basename}.{ext}`). **Naming:** `{name}--{format}--{pixelsize}.{ext}` — Feldtrenner **`--`** (doppelter Bindestrich); innerhalb von `name` und `format` sind einfache `-` erlaubt. **`pixelsize`:** `square` oder `{width}x{height}` (positive Ganzzahlen). **`format`:** z. B. `portrait`, `landscape`, `silk`, `blue-transparent` (freier Deskriptor). Start-Set (6): `sample--landscape--2560x1440`, `sample--landscape--1439x960`, `sample--portrait--440x955`, `sample--portrait--772x1031`, `label-F--blue-transparent--square`, `fabric--silk--square`. **Nicht löschbar**, immer in neuer Projekt-Liste. **id** = Basename ohne Extension. Liste kommt aus **Build-Zeit-Scan** → `src/data/builtin-images.generated.ts`; `STARTER_IMAGES` in `image-assets.ts` re-exportiert — keine manuelle Duplikat-Pflege in UI.
 
 ---
 
 **Category:** Images  
 **Title:** Datenmodell — ImageAsset  
-**Description:** `ImageAsset { id, name, source: 'starter' | 'user', url, width, height, orientation, mimeType?, createdAt? }`. **Starter:** `url` = Public-Pfad. **User:** `url` = Blob-URL oder persistierte URL (IndexedDB). **id** stabil über Save/Load. **orientation:** `landscape` | `portrait` | `square` (width vs height, square wenn gleich).
+**Description:** `ImageAsset { id, name, source: 'starter' | 'user', url, width, height, orientation, mimeType?, createdAt?, logicalName?, logicalFormat?, sizeToken? }`. **Starter:** `url` = Public-Pfad; `logicalName` / `logicalFormat` / `sizeToken` aus Dateiname (`--`-Grammar). **User:** `url` = Blob-URL oder persistierte URL (IndexedDB). **id** stabil über Save/Load. **orientation:** `landscape` | `portrait` | `square` (width vs height, square wenn gleich).
 
 ---
 
@@ -106,7 +106,7 @@ Zentrale **Bildliste** im Projekt — Upload, Starter-Assets, Metadaten. Alles w
 
 **Category:** Images  
 **Title:** Demo → Produkt  
-**Description:** Demo implementiert: Liste, 6 Starter (inkl. 3× Portrait-Smartphone), Add (+), Thumbnails, Orientation-Label, Session-Upload. **Fehlt noch:** Store zentral, IndexedDB, Delete, Ground-Kopplung, Scene-API, 10+ Stress-Test. Migration: `ImagesPanel` → Store-backed; `image-assets.ts` bleibt Datenquelle.
+**Description:** Demo implementiert: Liste, **6** Starter aus `public/images/` (Auto-Manifest), Add (+), Thumbnails, Orientation-Label / Starter-Subline (`logicalFormat` · `sizeToken`), Session-Upload. **Store:** `images[]`, `selectedImageId`, `selectImage`, `removeImage` (nur `user`), Scene-Detach + `releaseImageTexture`, UI Editor + Remove — v1 live. **Fehlt noch:** IndexedDB, Ground-Kopplung (`groundImageId`), 10+ Stress-Test. `STARTER_IMAGES` ← `builtin-images.generated.ts`.
 
 ---
 
@@ -131,7 +131,32 @@ Zentrale **Bildliste** im Projekt — Upload, Starter-Assets, Metadaten. Alles w
 | **Ebene Bild-Flächen** (Picture, Smartphone/Tablet/Monitor-Screen, Print Front/Back, Tapete) | `transparent`, `opacityNode` = Textur-Alpha, `depthWrite: false` — dahinter Passepartout, Device-Innenfläche, Wandkörper, … | `createImagePbrMaterial`, `createWallpaperImageMaterial` |
 | **Weinflasche — Etikett** | Wie ebene Fläche auf Mantel-Mesh: Alpha → **Glas** dahinter (kein weißes/deckendes Underlay) | `createImagePbrMaterial` (nicht Dosen-Label-Shader) |
 | **Getränkedose + Blechdose — Label** | Material **deckend** (kein Transparent-Pass); Alpha-Löcher → **Metall-Underlay** im Shader (`mix` mit gebürstetem Alu); **Körper-Geometrie** unverändert | `createCanLabelMaterial` + `fitHeightLabelColorNode` |
+| **Pen — Body-Wrap** | Wie Dosen-Label **deckend**; Alpha-Löcher → **`bodyMaterialId`-Farbe** (Plastik-Underlay); Bildachsen **90°** zur Dose (Höhe = Umfang) | `createPenBodyWrapMaterial` + `fitPenBodyWrapColorNode` → [`requirements-assets-pen.md`](./requirements-assets-pen.md) |
 
-Zentral: `src/engine/image-surface-alpha.ts`. Emissive (wenn Intensity > 0): mit gleicher Alpha-Maske multiplizieren.
+Zentral: `src/engine/image-surface-alpha.ts`. Emissive (wenn Intensity > 0): mit gleicher Alpha-Maske multiplizieren (Pen-Body: Emissive auf Shader-`colorNode`).
 
 ---
+
+**Category:** Images  
+**Title:** Builtin-Ordner & Auto-Discovery  
+**Description:** Alle werkseitigen Bilder der Images-Bibliothek liegen unter **`public/images/`** (rekursiv erlaubt). **SVG-Geometrie-Profile** (Lathe/Extrude) liegen unter **`public/profiles/`** — siehe unten; **nicht** in `images/` und **kein** Images-Manifest. Beim **dev** (`predev`) und **build** (`prebuild`) scannt `scripts/generate-builtin-images.ts` nur `public/images/` und schreibt **`src/data/builtin-images.generated.ts`**. Ungültige Dateinamen (nicht exakt zwei `--`-Feldtrenner) oder doppelte Basenames → **Build-Fehler**. Kein Runtime-Directory-Listing im Browser.
+
+---
+
+**Category:** Images  
+**Title:** Builtin-Dateiname — Grammar  
+**Description:** Pflichtschema: **`{name}--{format}--{pixelsize}.{ext}`**. `name` und `format` dürfen einfache Bindestriche enthalten; Trennung nur über **`--`**. `pixelsize` = `square` oder `{width}x{height}`. Wenn `pixelsize` numerisch ist, werden `width`/`height` aus dem Token; `orientation` daraus berechnet. Wenn `format` ∈ `{portrait, landscape, square}` muss es zur berechneten `orientation` passen (Build-Fehler bei Konflikt). Bei `pixelsize` = `square` lesen Build-Skript und Generator die echten Pixelmaße aus der Datei. Parser: `src/data/builtin-image-filename.ts`.
+
+---
+
+**Category:** Images  
+**Title:** Abgrenzung — `public/profiles/` (keine Images-Bibliothek)  
+**Description:** Werkseitige **SVG-Authoring** für 3D-Geometrie (nicht User-Upload, nicht löschbar über Images-UI).
+
+| Ordner | Zweck | URL-Präfix |
+|---|---|---|
+| **`profiles/lathe/`** | Halbprofil → Drehung um **Y** (Pen, Dose, Weinflasche, …) | `/profiles/lathe/{datei}.svg` |
+| **`profiles/extrude/`** | Reserviert für **Extrude**-Pfade (v1 leer) | `/profiles/extrude/…` |
+
+**Code:** URLs zentral über `builtinLatheProfileUrl()` in [`builtin-profile-paths.ts`](../../src/constants/builtin-profile-paths.ts); Asset-Helfer `penSvgUrl`, `beverageCanSvgUrl`, `wineBottleSvgUrl`. Kurzbeschreibung: [`public/profiles/README.md`](../../public/profiles/README.md).
+

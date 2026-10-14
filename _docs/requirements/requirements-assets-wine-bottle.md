@@ -4,7 +4,7 @@ Parametrischer **Weinflaschen**-Baustein (Glas + optional Etikett) — **Label**
 
 **Abgrenzung:** Eigenes Asset neben **Beverage can** → [`requirements-assets-beverage-can.md`](./requirements-assets-beverage-can.md). Kein `print`-Prisma. Marken-Etiketten = User-Bilder.
 
-**Status:** **implementiert (v1)** — Engine: [`asset-wine-bottle.ts`](../../src/scene/asset-wine-bottle.ts), [`wine-bottle-svg-profile.ts`](../../src/engine/wine-bottle-svg-profile.ts), [`wine-bottle-geometry.ts`](../../src/engine/wine-bottle-geometry.ts). SVGs: `public/bottle-*-open.svg`.
+**Status:** **implementiert (v1)** — Engine: [`asset-wine-bottle.ts`](../../src/scene/asset-wine-bottle.ts), [`wine-bottle-svg-profile.ts`](../../src/engine/wine-bottle-svg-profile.ts), [`wine-bottle-geometry.ts`](../../src/engine/wine-bottle-geometry.ts). SVGs: `public/profiles/lathe/bottle-*-open.svg`.
 
 **v1-Scope (Ziel):** Ein Built-in `wine-bottle`; **drei Körperprofile** (**Bordeaux**, **Alsace**, **Sparkling**); **real scale**; **Flaschenformat fix** — Bild bestimmt **nicht** Höhe/Profil (analog Dose → [`requirements-assets.md`](./requirements-assets.md)); **`sizeScale`** uniform auf **gesamte** Flasche **inkl. Korken + Kapsel**; **Etikett** auf **Außen-Mantel** (s. Etikett-Blöcke); **Korken**, **Kapsel-Folie** (Mantel), **Kapsel-Scheibe** (Disc oben) als separate Meshes (s. jeweilige Blöcke). **Alle drei Profile:** Folie + Disc Default **sichtbar**. **Kein** Muselet / Drahtkorb in v1.
 
@@ -59,7 +59,7 @@ Stabile Katalog-ID über `kind`. Mehrfach-Instanzen unbegrenzt. Default-Szene: *
 
 **Category:** Assets — Wine bottle  
 **Title:** Profil-Tabelle — aus SVG (Nennhöhe 290 mm)  
-**Description:** Silhouette aus **geschlossenen Wand-SVGs** (`public/bottle-*.svg`), **einheitlich skaliert**: SVG-**Höhenspanne → 290 mm**, **X mit demselben Faktor** (Achse = **min X** im Pfad). **Bauch-Außenradius** = User-Nennwert unten; Schulter/Hals/Punt folgen der Kurve im SVG.
+**Description:** Silhouette aus **offenen Außen-SVGs** (`public/profiles/lathe/bottle-*-open.svg`) — **ein** Stroke-Pfad, **ohne** Pflicht-`Z` (Illustrator-Umlauf nach dem Mund wird in der Engine **nicht** gelathe). **Einheitlich skaliert:** SVG-**Höhenspanne → 290 mm**, **X mit demselben Faktor** (Achse = **min X** im Pfad). **Bauch-Außenradius** aus normalisiertem Profil; Schulter/Hals/Punt folgen der Kurve im SVG.
 
 | | **bordeaux** | **alsace** | **sparkling** |
 |---|---|---|---|
@@ -72,7 +72,7 @@ Stabile Katalog-ID über `kind`. Mehrfach-Instanzen unbegrenzt. Default-Szene: *
 | **Silhouette (Mockup)** | hohe Schulter, kürzerer Hals | **längerer Hals**, Bauch tiefer | **breiter** Bauch, **tiefere Punt** |
 | **Etikett** | User-Parameter (nicht festes Band) | wie bordeaux | wie bordeaux |
 | **Korken — Radius** | **9,0 mm** | **9,0 mm** | **10,0 mm** |
-| **SVG-Außenprofil** | [`bottle-bordeaux-open.svg`](../../public/bottle-bordeaux-open.svg) | [`bottle-alsace-open.svg`](../../public/bottle-alsace-open.svg) | [`bottle-sparkling-open.svg`](../../public/bottle-sparkling-open.svg) |
+| **SVG-Außenprofil** | [`bottle-bordeaux-open.svg`](../../public/profiles/lathe/bottle-bordeaux-open.svg) | [`bottle-alsace-open.svg`](../../public/profiles/lathe/bottle-alsace-open.svg) | [`bottle-sparkling-open.svg`](../../public/profiles/lathe/bottle-sparkling-open.svg) |
 
 **Hinweis:** Bordeaux und Alsace: **gleicher** Bauch-Radius **38,0 mm**; Unterschied nur **Halslänge / Schulter** im SVG (Alsace längerer Hals). Sparkling: **44,0 mm** Radius (**+6 mm**) + tiefere Punt im SVG.
 
@@ -80,17 +80,17 @@ Stabile Katalog-ID über `kind`. Mehrfach-Instanzen unbegrenzt. Default-Szene: *
 
 **Category:** Assets — Wine bottle  
 **Title:** SVG — Außen-Silhouette (`bottle-*-open.svg`)  
-**Description:** Pro Profil **eine** Datei unter `public/` — **ein** Pfad, **geschlossen** (`Z`), **Außenkontur** (Stroke, kein Fill). **Keine** separate Innenkontur im SVG; Wandstärke an Mund/Boden über **Stirn-Ringe** + Entity-`wallThicknessM` (s. **Glas-Mesh**).
+**Description:** Pro Profil **eine** Datei unter **`public/profiles/lathe/`** — **ein** offener Pfad, **Außenkontur** (Stroke, kein Fill). **Keine** separate Innenkontur im SVG; Wandstärke optisch über Transmission + **`wallThicknessM`**; geometrisch **Stirn-Ringe** an Mund/Boden (s. **Glas-Mesh**).
 
 | Datei | URL (Dev) | `wineBottleBodyProfile` |
 |---|---|---|
-| [`bottle-bordeaux-open.svg`](../../public/bottle-bordeaux-open.svg) | `/bottle-bordeaux-open.svg` | **`bordeaux`** |
-| [`bottle-alsace-open.svg`](../../public/bottle-alsace-open.svg) | `/bottle-alsace-open.svg` | **`alsace`** |
-| [`bottle-sparkling-open.svg`](../../public/bottle-sparkling-open.svg) | `/bottle-sparkling-open.svg` | **`sparkling`** |
+| [`bottle-bordeaux-open.svg`](../../public/profiles/lathe/bottle-bordeaux-open.svg) | `/profiles/lathe/bottle-bordeaux-open.svg` | **`bordeaux`** |
+| [`bottle-alsace-open.svg`](../../public/profiles/lathe/bottle-alsace-open.svg) | `/profiles/lathe/bottle-alsace-open.svg` | **`alsace`** |
+| [`bottle-sparkling-open.svg`](../../public/profiles/lathe/bottle-sparkling-open.svg) | `/profiles/lathe/bottle-sparkling-open.svg` | **`sparkling`** |
 
 **Engine:** [`wine-bottle-svg-profile.ts`](../../src/engine/wine-bottle-svg-profile.ts) — `loadWineBottleOpenWallProfile` → `extractOpenPathPointsFromSvgText` (48 Kurven-Segmente) → **`normalizeOpenWallSvgToLathePoints`**: `scale = heightM / (maxY − minY)`, **`x_m = max(0, x) × scale`**, **`y_m = (maxY − y) × scale`** (Fuß bei `y ≈ 0`). Nicht `normalizeSvgProfileToLathePoints` (Dose).
 
-**Pfad-Hinweis:** Nach dem **Mund** (`maxY`) schließt Illustrator oft mit einem **Abwärts-**Umlauf zurück zum Fuß (`Z`). Dieser zweite Ast wird **nicht** gelathe (s. **Glas-Mesh**).
+**Authoring:** Pfad endet typisch am **Mund** (global `maxY`); kein geschlossener Wandring im SVG nötig. Enthält der Export doch einen Rückweg/`Z`, verwerfen **`trimLatheProfileToAscendingOuterMantle`** alles **nach** dem Mund.
 
 ---
 
@@ -102,7 +102,7 @@ Stabile Katalog-ID über `kind`. Mehrfach-Instanzen unbegrenzt. Default-Szene: *
 
 **Pipeline** ([`wine-bottle-glass.ts`](../../src/engine/wine-bottle-glass.ts), aufgerufen aus [`wine-bottle-geometry.ts`](../../src/engine/wine-bottle-geometry.ts)):
 
-1. **`prepareWineBottleGlassLatheProfile`** — Dedupe, `x ≥ 0`, schließendes **`Z`-Duplikat** am Ende **`pop()`** (kein `push(first)`).
+1. **`prepareWineBottleGlassLatheProfile`** — Dedupe, `x ≥ 0`; falls erster/letzter Punkt identisch (geschlossener Export): **`pop()`** (kein `push(first)`).
 2. **`trimLatheProfileToAscendingOuterMantle`** — nur **`profile[0 … lipIndex]`** mit **`lipIndex = argmax(y)`**; alles **nach** globalem Mund verwerfen (verhindert Scheibe durchs Volumen). **Nicht** nach „monoton steigendem Y“ filtern (Schulter→Hals→Mund braucht lokale Y-Dips).
 3. **`LatheGeometry`** — **64** Segmente, **`phiStart = π`** (`LATHE_SEAM_PHI_START` in [`lathe-asset-common.ts`](../../src/engine/lathe-asset-common.ts)), dann **`weldLathePhiSeam`** ([`lathe-seam-normals.ts`](../../src/engine/lathe-seam-normals.ts)).
 4. **Stirnseiten** — je **`RingGeometry`** bei **`y = min`** und **`y = max`** (nach Fuß-Pivot); Radien **`resolveWineBottleStirnRadiiAtY`**: bei zwei Schnittradien im Profil **`sampleWineBottleWallRadiiAtY`**, sonst **`rOuter = sampleWineBottleRadiusAtY`**, **`rInner = rOuter − wallThicknessM`**.
@@ -287,7 +287,7 @@ capsuleDiscHeightM: number;
 
 | # | Teil | Mesh | Material-Slot |
 |---|---|---|---|
-| 1 | **Glas** | Geschlossenes Wand-Lathe | `glassMaterialId` → Default `material-glass-wine-bottle` |
+| 1 | **Glas** | Außen-Mantel-Lathe + Stirnringe (ein Mesh) | `glassMaterialId` → Default `material-glass-wine-bottle` |
 | 2 | **Etikett** | Mantel-Subset / Gruppe `label` | `screenImageId` + `imageSurfaces.label` |
 | 3 | **Korken** | Zylinder + Kantenradius | `corkMaterialId` → Default `material-wood-porous` |
 | 4 | **Kapsel-Folie** | Profil-konformer Mantel | `capsuleFoilMaterialId` → Default `material-gold-brushed` |

@@ -1,7 +1,18 @@
 import type { ProceduralProfileId } from '@/scene/material-types';
+import { buildConcretePorousNodes } from './concrete-porous';
+import { buildConcreteStainedNodes } from './concrete-stained';
+import { buildFabricLinenNodes } from './fabric-linen';
 import { buildMetalBrushedNodes } from './metal-brushed';
 import { buildMetalPolishedNodes } from './metal-polished';
+import { buildGridPaperLinesNodes, buildGridPaperOpaqueNodes } from './grid-paper';
 import { buildPaperGrainNodes } from './paper-grain';
+import {
+  buildCoatedGlossNodes,
+  buildPlasticMatteNodes,
+  buildPlasticSmoothNodes,
+} from './plastic-surface';
+import { buildGlassSurfaceNodes } from './glass-surface';
+import { buildSilkFineNodes } from './silk-fine';
 import { normalizeProceduralProfile } from './procedural-profile';
 import type { ProceduralMaterialNodes, ProceduralMaterialParams } from './procedural-types';
 import { buildWoodPorousNodes } from './wood-porous';
@@ -42,6 +53,26 @@ export function getProceduralMaterialNodes(
       return buildMetalBrushedNodes(params);
     case 'paper-grain':
       return buildPaperGrainNodes(params);
+    case 'grid-paper-opaque':
+      return buildGridPaperOpaqueNodes(params);
+    case 'grid-paper-lines':
+      return buildGridPaperLinesNodes(params);
+    case 'concrete-stained':
+      return buildConcreteStainedNodes(params);
+    case 'concrete-porous':
+      return buildConcretePorousNodes(params);
+    case 'fabric-linen':
+      return buildFabricLinenNodes(params);
+    case 'silk-fine':
+      return buildSilkFineNodes(params);
+    case 'coated-gloss':
+      return buildCoatedGlossNodes(params);
+    case 'plastic-matte':
+      return buildPlasticMatteNodes(params);
+    case 'plastic-smooth':
+      return buildPlasticSmoothNodes(params);
+    case 'glass-surface':
+      return buildGlassSurfaceNodes(params);
     default:
       throw new Error(`Procedural profile not implemented: ${profile}`);
   }

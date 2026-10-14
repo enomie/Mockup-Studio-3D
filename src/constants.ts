@@ -25,12 +25,6 @@ export const FRUSTUM_SIZE = 8;
 
 export const GROUND_PLANE_SIZE = 5000;
 
-/** Debug only — falling Rapier box to verify physics. Not a product feature. */
-export const DEBUG_PHYSICS_CUBE = false;
-
-export const CUBE_SIZE = 2;
-export const CUBE_DROP_HEIGHT = 10;
-
 /** Shadow map resolution — 4096² for mm-scale contact shadows in studio mockups. */
 export const SHADOW_MAP_SIZE = 4096;
 
@@ -66,10 +60,11 @@ export const CAMERA_FOV_MIN = 15;
 export const CAMERA_FOV_MAX = 90;
 export const CAMERA_ORBIT_MIN_RADIUS = 0.35;
 export const CAMERA_ORBIT_MAX_RADIUS = 10;
-export const CAMERA_ORBIT_DEFAULT_RADIUS = 0.55;
+/** Default orbit distance — matches Default (1) preset for default-scene fabric cloth review. */
+export const CAMERA_ORBIT_DEFAULT_RADIUS = 2.237;
 /** Default navigation orbit at app start (degrees). */
-export const CAMERA_DEFAULT_AZIMUTH_DEG = 18.8;
-export const CAMERA_DEFAULT_ELEVATION_DEG = 14.1;
+export const CAMERA_DEFAULT_AZIMUTH_DEG = -18.4;
+export const CAMERA_DEFAULT_ELEVATION_DEG = 41.5;
 /** Camera sub-panel navigation fields (meters). */
 export const CAMERA_NAV_LENGTH_DECIMALS = 3;
 export const CAMERA_ORBIT_SENSITIVITY = 0.005;
@@ -95,6 +90,27 @@ export const LIGHT_FIXTURE_DISC_KEY_RADIUS = 0.35;
 export const LIGHT_FIXTURE_DISC_FILL_RADIUS = 0.28;
 export const LIGHT_FIXTURE_DISC_EMISSIVE_INTENSITY = 1;
 export const LIGHT_FIXTURE_DISC_ROUGHNESS = 0.1;
+
+/** Layer for Key/Fill fixture discs — optional exclusion from planar mirror reflector. */
+export const FIXTURE_DISC_LAYER = 1;
+
+export const VIEWPORT_HELPER_RENDER_ORDER = 900;
+export const VIEWPORT_HELPER_OPACITY = 0.42;
+export const VIEWPORT_HELPER_LINE_OPACITY = 0.45;
+
+export const VIEWPORT_GRID_HALF_EXTENT_M = 25;
+export const VIEWPORT_GRID_CELL_M = 1;
+export const VIEWPORT_GRID_MAJOR_EVERY = 5;
+
+export const VIEWPORT_ORIGIN_AXIS_LENGTH_M = 0.75;
+export const VIEWPORT_FORWARD_ARROW_LENGTH_M = 1;
+export const VIEWPORT_FORWARD_ARROW_HEAD_LENGTH_M = 0.28;
+export const VIEWPORT_FORWARD_ARROW_HEAD_WIDTH_M = 0.22;
+export const VIEWPORT_FORWARD_ARROW_SHAFT_WIDTH_M = 0.08;
+export const VIEWPORT_HELPER_GROUND_OFFSET_M = 0.002;
+
+/** Fixed length for SpotLightHelper display (Key/Fill studio distance). */
+export const VIEWPORT_SPOT_BEAM_DISPLAY_DISTANCE_M = 8;
 
 export const SIZE_SCALE_MIN = 0.05;
 export const SIZE_SCALE_MAX = 5;

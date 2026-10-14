@@ -3,12 +3,12 @@ import type { Rgb } from '@/colors/rgb';
 import { parseHexColor, rgbToCss, rgbToHex } from '@/colors/color-format';
 import { ColorPickerPopover } from './ColorPickerPopover';
 
-type ColorPickerProps = {
+interface ColorPickerProps {
   value: Rgb;
   onChange: (rgb: Rgb) => void;
   label?: string;
   disabled?: boolean;
-};
+}
 
 export function ColorPicker({ value, onChange, label, disabled = false }: ColorPickerProps) {
   const fieldId = useId();
@@ -25,7 +25,7 @@ export function ColorPicker({ value, onChange, label, disabled = false }: ColorP
   };
 
   const handleOpen = (): void => {
-    if (disabled) return;
+    if (disabled) {return;}
     setOpenSession((session) => session + 1);
     setOpen(true);
   };
@@ -33,13 +33,13 @@ export function ColorPicker({ value, onChange, label, disabled = false }: ColorP
   const handleHexChange = (raw: string): void => {
     setDraftHex(raw);
     const parsed = parseHexColor(raw);
-    if (!parsed) return;
+    if (!parsed) {return;}
     onChange(parsed);
   };
 
   const handleHexBlur = (): void => {
     const parsed = parseHexColor(hexInput);
-    if (parsed) onChange(parsed);
+    if (parsed) {onChange(parsed);}
     clearDraft();
   };
 
@@ -76,7 +76,7 @@ export function ColorPicker({ value, onChange, label, disabled = false }: ColorP
           disabled={disabled}
           spellCheck={false}
           onFocus={handleOpen}
-          onChange={(event) => handleHexChange(event.target.value)}
+          onChange={(event) => { handleHexChange(event.target.value); }}
           onBlur={handleHexBlur}
         />
       </div>
@@ -89,7 +89,7 @@ export function ColorPicker({ value, onChange, label, disabled = false }: ColorP
             onChange(rgb);
             clearDraft();
           }}
-          onClose={() => setOpen(false)}
+          onClose={() => { setOpen(false); }}
           anchorRef={rootRef}
         />
       ) : null}

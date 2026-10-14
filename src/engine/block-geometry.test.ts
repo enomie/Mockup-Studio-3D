@@ -30,8 +30,9 @@ describe('buildBlockGeometry', () => {
   });
 
   it('bounding height matches params', () => {
-    const geometry = buildBlockGeometry(defaultBlockParams());
-    expect(boundingHeight(geometry)).toBeCloseTo(1);
+    const params = defaultBlockParams();
+    const geometry = buildBlockGeometry(params);
+    expect(boundingHeight(geometry)).toBeCloseTo(params.heightM);
     geometry.dispose();
   });
 });

@@ -1,11 +1,11 @@
 import { useId } from 'react';
 
-export type PanelSelectOption = {
+export interface PanelSelectOption {
   value: string;
   label: string;
-};
+}
 
-type PanelSelectProps = {
+interface PanelSelectProps {
   label?: string;
   ariaLabel?: string;
   value: string;
@@ -14,7 +14,7 @@ type PanelSelectProps = {
   id?: string;
   disabled?: boolean;
   placeholder?: string;
-};
+}
 
 export function PanelSelect({
   label,
@@ -39,7 +39,7 @@ export function PanelSelect({
         value={value}
         disabled={disabled}
         aria-label={resolvedAriaLabel}
-        onChange={(event) => onChange(event.target.value)}
+        onChange={(event) => { onChange(event.target.value); }}
       >
         {placeholder ? <option value="">{placeholder}</option> : null}
         {options.map((option) => (

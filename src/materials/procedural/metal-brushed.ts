@@ -1,5 +1,9 @@
 import { clamp, float, sin, vec3 } from 'three/tsl';
 import { buildProceduralSampleUv } from './procedural-sample-uv';
+import {
+  triplanarMeterUvPairs,
+  triplanarMeterWeights,
+} from './procedural-triplanar-meters';
 import type { ProceduralMaterialNodes, ProceduralMaterialParams } from './procedural-types';
 
 /** Streak bands per tileScale unit on perimeter UV (meters). ~120 × tileScale 28 ≈ 0.3 mm spacing. */
@@ -13,8 +17,20 @@ const BRUSHED_PHASE_SCALE = BRUSHED_STREAKS_PER_TILE_UNIT * Math.PI * 2;
 export function buildMetalBrushedNodes(
   params: ProceduralMaterialParams,
 ): ProceduralMaterialNodes {
-  const sampleUv = buildProceduralSampleUv(params);
-  const phase = sampleUv.x.mul(float(BRUSHED_PHASE_SCALE));
+  const phase = (() => {
+  if (params.samplingSpace === 'meter-3d') {
+    const { wx, wy, wz } = triplanarMeterWeights();
+    const uvs = triplanarMeterUvPairs(params.tileScale);
+    const scale = float(BRUSHED_PHASE_SCALE);
+    return uvs.xy.x
+      .mul(scale)
+      .mul(wz)
+      .add(uvs.xz.x.mul(scale).mul(wy))
+      .add(uvs.yz.x.mul(scale).mul(wx));
+  }
+    const sampleUv = buildProceduralSampleUv(params);
+    return sampleUv.x.mul(float(BRUSHED_PHASE_SCALE));
+  })();
 
   const colorNode = vec3(params.color.r, params.color.g, params.color.b);
 

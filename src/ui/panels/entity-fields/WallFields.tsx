@@ -46,7 +46,7 @@ export function WallFields({ entity, images, screenImageFieldId }: WallFieldsPro
           format={(value) => formatLengthMeters(value, LENGTH_DECIMALS)}
           parse={parseLengthMetersInput}
           onChange={(value) => {
-            if (value > 0) setWallParams(entity.id, { widthM: value });
+            if (value > 0) {setWallParams(entity.id, { widthM: value });}
           }}
         />
         <PanelAxisField
@@ -56,7 +56,7 @@ export function WallFields({ entity, images, screenImageFieldId }: WallFieldsPro
           format={(value) => formatLengthMeters(value, LENGTH_DECIMALS)}
           parse={parseLengthMetersInput}
           onChange={(value) => {
-            if (value > 0) setWallParams(entity.id, { heightM: value });
+            if (value > 0) {setWallParams(entity.id, { heightM: value });}
           }}
         />
         <PanelAxisField
@@ -66,7 +66,7 @@ export function WallFields({ entity, images, screenImageFieldId }: WallFieldsPro
           format={(value) => formatLengthMeters(value, LENGTH_DECIMALS)}
           parse={parseLengthMetersInput}
           onChange={(value) => {
-            if (value > 0) setWallParams(entity.id, { thicknessM: value });
+            if (value > 0) {setWallParams(entity.id, { thicknessM: value });}
           }}
         />
       </SubPanelSection>
@@ -89,7 +89,7 @@ export function WallFields({ entity, images, screenImageFieldId }: WallFieldsPro
           images={images}
           imageLabel="Image"
           imageFieldId={screenImageFieldId}
-          onImageChange={(imageId) => setAssetScreenImage(entity.id, imageId)}
+          onImageChange={(imageId) => { setAssetScreenImage(entity.id, imageId); }}
         />
         <PanelAxisField
           label="Strip width"
@@ -98,7 +98,7 @@ export function WallFields({ entity, images, screenImageFieldId }: WallFieldsPro
           format={(value) => formatLengthMeters(value, LENGTH_DECIMALS)}
           parse={parseLengthMetersInput}
           onChange={(value) => {
-            if (value <= 0) return;
+            if (value <= 0) {return;}
             const patch: { stripWidthM: number; stripHeightM?: number } = {
               stripWidthM: value,
             };
@@ -120,7 +120,7 @@ export function WallFields({ entity, images, screenImageFieldId }: WallFieldsPro
           format={(value) => formatLengthMeters(value, LENGTH_DECIMALS)}
           parse={parseLengthMetersInput}
           onChange={(value) => {
-            if (value > 0) setWallpaperPattern(entity.id, { stripHeightM: value });
+            if (value > 0) {setWallpaperPattern(entity.id, { stripHeightM: value });}
           }}
         />
         <PanelAxisField
@@ -130,7 +130,7 @@ export function WallFields({ entity, images, screenImageFieldId }: WallFieldsPro
           format={(value) => formatLengthMeters(value, LENGTH_DECIMALS)}
           parse={parseLengthMetersInput}
           onChange={(value) => {
-            if (value >= 0) setWallpaperPattern(entity.id, { columnOffsetM: value });
+            if (value >= 0) {setWallpaperPattern(entity.id, { columnOffsetM: value });}
           }}
         />
         <p className="panel-hint">

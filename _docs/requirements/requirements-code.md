@@ -17,6 +17,12 @@ Architektur, Patterns und technische Vorgaben für Mockup Studio 3D.
 ---
 
 **Category:** Code  
+**Title:** Strict ESLint (type-checked)  
+**Description:** Unter `src/**/*.{ts,tsx}` gilt **strenges** ESLint auf Basis von `typescript-eslint` **`strictTypeChecked`** + **`stylisticTypeChecked`** (`eslint.config.js`). Diese Regeln sind **`error`** (explizit im Projekt, nicht nur implizit aus Presets): `@typescript-eslint/no-unnecessary-condition`, `no-non-null-assertion`, `prefer-nullish-coalescing`, `prefer-optional-chain`, `no-empty-function`, `no-unused-vars` (mit `^_`-Ignore), `no-unsafe-argument`, `require-await`, `no-deprecated`, `no-floating-promises`, `no-unsafe-assignment`, `no-redundant-type-constituents` — plus u. a. `no-explicit-any`, `eqeqeq`, `no-restricted-imports` für `@/`. **Ausnahmen:** `src/materials/procedural/**` (TSL-Grenzen, `no-unsafe-*`/`any` gelockert); `*.test.ts(x)` / `*.integration.test.ts(x)` (u. a. `no-non-null-assertion`, `no-floating-promises`, `no-unnecessary-condition`, `no-empty-function` aus). Keine `eslint-disable` in Produktionscode ohne User-Freigabe. Repo-Policy „kein deprecated Code“ zusätzlich: `.cursor/rules/no-deprecated.mdc`. Cursor-Agent: `.cursor/rules/eslint.mdc`.
+
+---
+
+**Category:** Code  
 **Title:** Module, Naming & Constants  
 **Description:** Ein Verantwortungsbereich pro Datei/Modul. Named exports bevorzugen. Dateinamen: `kebab-case.ts` oder bestehende Ordner-Konvention (`src/render/`, `src/physics/`). Magic Numbers verboten in Logik — Werte nach `src/constants.ts` oder domänenspezifische `constants.ts`. Wiederverwendbare Typen nahe bei der Domäne (`src/colors/rgb.ts`), nicht duplizieren. Keine zirkulären Imports. Keine toten Dateien — entfernte Dateien nach `/_deleted/` verschieben, nicht löschen. Dependencies minimal halten; keine „just in case"-Libraries.
 
@@ -64,6 +70,40 @@ Architektur, Patterns und technische Vorgaben für Mockup Studio 3D.
 - `atan2` in TSL — nutze `atan(y, x)` (2-Argument-Form)
 - Node-Material-Uniform `.value` vergessen zu updaten bei Runtime-Änderungen
 - Render-Reihenfolge: Skybox rendert Depth weg ohne `clearDepth`
+
+---
+
+**Category:** Code  
+**Title:** Procedural materials — TSL reference & sampling  
+**Description:** **Vorlagen / Patterns** für neue TSL-Procedural-Profile (nicht Copy-Paste blind): **[TSL Textures](https://boytchev.github.io/tsl-textures/)** (Prof. Slavina Boytchev) — Sammlung von `three/webgpu` + TSL-Generatoren (`npm install tsl-textures`), dokumentierte Parameter, `Fn` + `.setLayout`, WebGPU-first. Repo: [github.com/boytchev/tsl-textures](https://github.com/boytchev/tsl-textures). **Was wir daraus übernehmen:** 3D-Positions-Sampling (`positionGeometry` / `positionLocal`) statt nur einer 2D-Ebene; wiederverwendbare `Fn`-Texturen mit Defaults; klare Trennung Generator vs. Material-Zuweisung (`colorNode = wood({…})`). **Was Mockup Studio anders macht:** eigene Presets in `src/materials/procedural/`, kein NPM-Dependency auf `tsl-textures` in v1 — Ideen portieren, Domäne (Meter, `tileScale`, Asset-Slots) beibehalten.
+
+**Sampling-Räume** (`ProceduralSamplingSpace` in `procedural-types.ts`):
+
+| Raum | Mechanik |
+|---|---|
+| `uv` | Perimeter-`UV` in m am Frame (`grainAlongU`) |
+| `planar-meters` | `positionLocal.xy` × `tileScale` — Ground (Wood, Grid), Frame (`paper-grain`) |
+| `triplanar-meters` | XY/XZ/YZ in m — UV-Paare in `procedural-triplanar-meters.ts`; **Wood:** gewichtetes Skalar-Blend; **Grid:** dominante Normalen-Achse wählt **eine** Maske (`grid-paper.ts`) |
+| `meter-3d` | `positionLocal` × `tileScale` (+ seed) — `meterPositionLocal`; Brushed nutzt Triplanar nur für Streak-Phase |
+
+**Profil × `surfaceRole`:** normative Matrix → [`requirements-materials.md`](./requirements-materials.md) (*Procedural — Sampling (normativ)*). Resolver: `resolveProfileSamplingSpace` (`procedural-sampling-profiles.ts`).
+
+**Porting-Regeln (TSL Textures, MIT):** Vor Port **LICENSE** im Upstream-Repo prüfen; **Copyright-Hinweis** im portierten Modul (`tsl-noise.ts`, ggf. `wood-soft.ts` …). Parameter-Mapping: TSL `scale` → Mockup `tileScale` (repeats/m); `seed` → `preset.seed`; Fabric `pinch` → `normalScale`. Kein 1:1-API-Clone — Ausgabe immer `ProceduralMaterialNodes` für `createTexturedMaterial`. `mx_noise_float` aus `three/tsl` = Upstream `noise` in `tsl-utils.js`.
+
+**Typischer Fehler:** Nur `positionLocal.xy` auf einem Würfel → Front/Back ok, Seiten/Deckel ohne Muster. **Fix:** `meter-3d` oder `triplanar-meters`. Details → [`requirements-materials.md`](./requirements-materials.md) (Port map).
+
+---
+
+**Category:** Code  
+**Title:** Asset-specific TSL on surfaces (Bild + Preset)  
+**Description:** Manche Assets modifizieren **nicht** die Geometrie für einen visuellen Detail-Effekt, sondern **erweitern** das Flächen-Material in TSL (Uniforms aus Entity-Params). Pattern: ein Mesh, `createTexturedMaterial` / Bild-auf-Preset-Pipeline, zusätzliche Nodes vor dem finalen `colorNode` / `normalNode`.
+
+| Asset | Effekt | Sampling | Spec |
+|---|---|---|---|
+| **Fabric cloth** | Border-Inset (eingefärbter Rand) | Plane-Kanten in **Metern** (`positionLocal`) | [`requirements-assets-fabric-cloth.md`](./requirements-assets-fabric-cloth.md) |
+| **Book** (geplant) | **Hinge groove** (Falz/Gelenk) auf Cover-Außenfläche | **Objektspace** entlang Deckelbreite (mm-Params), unabhängig von Cover-UV | [`requirements-assets-book.md`](./requirements-assets-book.md) |
+
+**Book v1 (normativ):** Falz **nur** Shader auf Front/Back-Cover — **kein** Extra-Mesh für die Rinne. Implementierung: dedizierter Cover-Material-Builder mit Hinge-Nodes; Intensität/Breite/Offset aus `bookParams`.
 
 ---
 
@@ -206,5 +246,17 @@ Wechsel Perspective ↔ Orthographic behält **Target + Pan-Offset** bei. Export
 **Category:** Code  
 **Title:** Viewport — Invalidation Contract  
 **Description:** **`ViewportInvalidation`** (`src/engine/viewport-invalidation.ts`) ist die einzige Engine-API für „Canvas neu zeichnen“ (`invalidate`, `setContinuous`, optional `invalidateAfter`). **`MockupEngine`:** `invalidateViewport()` vs. `notifySceneApiListeners()` — Store-Sync **≠** Render. Registry-`subscribeEntities`/`subscribeSelection` → nur Store; sichtbare Änderungen enden mit `invalidateViewport()` oder `commitVisualState(fn)` (Selection + Gizmo, `setMode`, `applyAtmosphereSnapshot`). **Jede** SceneApi-Mutation mit Three-Auswirkung invalidiert (Lighting, Environment, Ground, Kamera, Assets). **Async:** `AssetSystem` nach `rebuildEntity`; `SkyEnvironmentMap` nach PMREM-`rebuild`. Neue Features: Invalidation anbinden, nicht ad-hoc `requestRender` verstreuen.
+
+---
+
+**Category:** Code — Fabric cloth  
+**Title:** Rapier cloth — Engine-Grenzen  
+**Description:** Physik in **`src/physics/`** + Session in **`src/engine/`** — ein Rapier-`step` pro Frame. Stoff: `FabricClothPhysicsColliders` (Rapier **SoftBody** + Vertex-Sync). → [`requirements-physics.md`](./requirements-physics.md).
+
+---
+
+**Category:** Code  
+**Title:** No deprecated APIs  
+**Description:** In **`src/**`**: kein `@deprecated`, keine Kommentare die APIs als „deprecated“ markieren, keine exportierten Kompatibilitäts-Aliase (alte Funktions-/Typ-/Konstantennamen parallel zum neuen Namen). Umbenennungen: alle Referenzen umstellen, alte Oberfläche löschen — nicht als deprecated stehen lassen. **Erlaubt:** einmalige **Load-Migration** (private Legacy-IDs in `migrate*` / `normalize*`, in Requirements dokumentiert). Cursor-Regel: `.cursor/rules/no-deprecated.mdc`. Entscheidung: Diary *2026-10-10 — Datenmodell — kein deprecated*.
 
 ---

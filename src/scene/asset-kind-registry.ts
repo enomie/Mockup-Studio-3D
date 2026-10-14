@@ -12,6 +12,42 @@ import {
   type BlockParams,
 } from './asset-block';
 import {
+  clampCylinderParams,
+  cloneCylinderParams,
+  defaultCylinderParams,
+  type CylinderParams,
+} from './asset-cylinder';
+import {
+  clampSphereParams,
+  cloneSphereParams,
+  defaultSphereParams,
+  type SphereParams,
+} from './asset-sphere';
+import {
+  clampWheelCarParams,
+  cloneWheelCarParams,
+  defaultWheelCarParams,
+  type WheelCarParams,
+} from './asset-wheel-car';
+import {
+  DEFAULT_PHYSICS_DENSITY_KG_PER_M3,
+  resolvePhysicsBodyMode,
+  resolvePhysicsDensityKgPerM3,
+} from './physics-rigid-body';
+import {
+  clampFabricClothParams,
+  cloneFabricClothParams,
+  defaultFabricClothParams,
+  type FabricClothParams,
+} from './asset-fabric-cloth';
+import {
+  clampBookParams,
+  cloneBookParams,
+  defaultBookParams,
+  resolveBookParams,
+  type BookParams,
+} from './asset-book';
+import {
   cloneHandheldParams,
   defaultHandheldParams,
   isHandheldAssetKind,
@@ -52,6 +88,12 @@ import {
   defaultWineBottleParams,
   type WineBottleParams,
 } from './asset-wine-bottle';
+import {
+  clampPenParams,
+  clonePenParams,
+  defaultPenParams,
+  type PenParams,
+} from './asset-pen';
 import type { AssetEntity } from './entity-types';
 import type { AssetGeometryVisibility } from './geometry-visibility';
 import type { AssetMaterialSlots } from './material-types';
@@ -66,6 +108,7 @@ import {
   GEOMETRY_PARTS_NONE,
   GEOMETRY_PARTS_PICTURE,
   GEOMETRY_PARTS_TIN_CAN,
+  GEOMETRY_PARTS_PEN,
   GEOMETRY_PARTS_WINE_BOTTLE,
 } from './geometry-parts-catalog';
 
@@ -75,7 +118,9 @@ export type AssetKindFamily =
   | 'device'
   | 'packaging'
   | 'architecture'
-  | 'block';
+  | 'block'
+  | 'fabric'
+  | 'book';
 
 export type AssetRebuildStrategy = 'sync-populateAssetGroup' | 'async-packaging-group';
 
@@ -89,13 +134,23 @@ export type AssetKindDefaultEntitySlice = Partial<
     | 'wallParams'
     | 'wallpaperPattern'
     | 'blockParams'
+    | 'cylinderParams'
+    | 'sphereParams'
+    | 'wheelCarParams'
     | 'beverageCanParams'
     | 'tinCanParams'
     | 'wineBottleParams'
+    | 'penParams'
+    | 'fabricClothParams'
+    | 'bookParams'
+    | 'bookBackCoverImageId'
+    | 'bookSpineImageId'
+    | 'physicsBodyMode'
+    | 'physicsDensityKgPerM3'
   >
 >;
 
-export type AssetKindDefinition = {
+export interface AssetKindDefinition {
   kind: AssetKind;
   family: AssetKindFamily;
   rebuildStrategy: AssetRebuildStrategy;
@@ -110,12 +165,45 @@ export type AssetKindDefinition = {
     partial: Partial<WallpaperPattern>,
   ) => AssetKindDefaultEntitySlice;
   cloneParamsFromEntity: (entity: AssetEntity) => AssetKindDefaultEntitySlice;
-};
+}
 
 type DefinitionMeta = Pick<
   AssetKindDefinition,
   'kind' | 'family' | 'rebuildStrategy' | 'screenImageRole' | 'geometryParts'
 >;
+
+function bookKindHooks(kind: 'book-softcover' | 'book-hardcover') {
+  return {
+    getDefaultEntitySlice: () => ({
+      bookParams: defaultBookParams(kind),
+      bookBackCoverImageId: null,
+      bookSpineImageId: null,
+    }),
+    mergeParamPatch: (entity: AssetEntity, partial: unknown) => {
+      const current = resolveBookParams(entity.assetKind, entity.bookParams);
+      return {
+        bookParams: clampBookParams(
+          partial as Partial<BookParams>,
+          current,
+          entity.assetKind,
+        ),
+      };
+    },
+    cloneParamsFromEntity: (entity: AssetEntity) => {
+      const slice: AssetKindDefaultEntitySlice = {};
+      if (entity.bookParams) {
+        slice.bookParams = cloneBookParams(entity.bookParams);
+      }
+      if (entity.bookBackCoverImageId !== undefined) {
+        slice.bookBackCoverImageId = entity.bookBackCoverImageId;
+      }
+      if (entity.bookSpineImageId !== undefined) {
+        slice.bookSpineImageId = entity.bookSpineImageId;
+      }
+      return slice;
+    },
+  };
+}
 
 function withSharedHooks(
   meta: DefinitionMeta,
@@ -136,6 +224,8 @@ function withSharedHooks(
     ...hooks,
   };
 }
+
+// --- Per-kind definitions (catalog order) ---
 
 const ASSET_KIND_DEFINITIONS = {
   print: withSharedHooks(
@@ -234,18 +324,151 @@ const ASSET_KIND_DEFINITIONS = {
       geometryParts: GEOMETRY_PARTS_NONE,
     },
     {
-      getDefaultEntitySlice: () => ({ blockParams: defaultBlockParams() }),
+      getDefaultEntitySlice: () => ({
+        blockParams: defaultBlockParams(),
+        physicsBodyMode: 'dynamic' as const,
+        physicsDensityKgPerM3: DEFAULT_PHYSICS_DENSITY_KG_PER_M3,
+      }),
       mergeParamPatch: (entity, partial) => {
         const current = entity.blockParams ?? defaultBlockParams();
         return {
           blockParams: clampBlockParams(partial as Partial<BlockParams>, current),
         };
       },
+      cloneParamsFromEntity: (entity) => ({
+        blockParams: cloneBlockParams(entity.blockParams ?? defaultBlockParams()),
+        physicsBodyMode: resolvePhysicsBodyMode(entity),
+        physicsDensityKgPerM3: resolvePhysicsDensityKgPerM3(entity),
+      }),
+    },
+  ),
+  cylinder: withSharedHooks(
+    {
+      kind: 'cylinder',
+      family: 'block',
+      rebuildStrategy: 'sync-populateAssetGroup',
+      screenImageRole: 'front',
+      geometryParts: GEOMETRY_PARTS_NONE,
+    },
+    {
+      getDefaultEntitySlice: () => ({
+        cylinderParams: defaultCylinderParams(),
+        physicsBodyMode: 'dynamic' as const,
+        physicsDensityKgPerM3: DEFAULT_PHYSICS_DENSITY_KG_PER_M3,
+      }),
+      mergeParamPatch: (entity, partial) => {
+        const current = entity.cylinderParams ?? defaultCylinderParams();
+        return {
+          cylinderParams: clampCylinderParams(partial as Partial<CylinderParams>, current),
+        };
+      },
+      cloneParamsFromEntity: (entity) => ({
+        cylinderParams: cloneCylinderParams(entity.cylinderParams ?? defaultCylinderParams()),
+        physicsBodyMode: resolvePhysicsBodyMode(entity),
+        physicsDensityKgPerM3: resolvePhysicsDensityKgPerM3(entity),
+      }),
+    },
+  ),
+  sphere: withSharedHooks(
+    {
+      kind: 'sphere',
+      family: 'block',
+      rebuildStrategy: 'sync-populateAssetGroup',
+      screenImageRole: 'front',
+      geometryParts: GEOMETRY_PARTS_NONE,
+    },
+    {
+      getDefaultEntitySlice: () => ({
+        sphereParams: defaultSphereParams(),
+        physicsBodyMode: 'dynamic' as const,
+        physicsDensityKgPerM3: DEFAULT_PHYSICS_DENSITY_KG_PER_M3,
+      }),
+      mergeParamPatch: (entity, partial) => {
+        const current = entity.sphereParams ?? defaultSphereParams();
+        return {
+          sphereParams: clampSphereParams(partial as Partial<SphereParams>, current),
+        };
+      },
+      cloneParamsFromEntity: (entity) => ({
+        sphereParams: cloneSphereParams(entity.sphereParams ?? defaultSphereParams()),
+        physicsBodyMode: resolvePhysicsBodyMode(entity),
+        physicsDensityKgPerM3: resolvePhysicsDensityKgPerM3(entity),
+      }),
+    },
+  ),
+  'wheel-car': withSharedHooks(
+    {
+      kind: 'wheel-car',
+      family: 'block',
+      rebuildStrategy: 'sync-populateAssetGroup',
+      screenImageRole: 'front',
+      geometryParts: GEOMETRY_PARTS_NONE,
+    },
+    {
+      getDefaultEntitySlice: () => ({
+        wheelCarParams: defaultWheelCarParams(),
+        physicsBodyMode: 'dynamic' as const,
+        physicsDensityKgPerM3: DEFAULT_PHYSICS_DENSITY_KG_PER_M3,
+      }),
+      mergeParamPatch: (entity, partial) => {
+        const current = entity.wheelCarParams ?? defaultWheelCarParams();
+        return {
+          wheelCarParams: clampWheelCarParams(partial as Partial<WheelCarParams>, current),
+        };
+      },
+      cloneParamsFromEntity: (entity) => ({
+        wheelCarParams: cloneWheelCarParams(entity.wheelCarParams ?? defaultWheelCarParams()),
+        physicsBodyMode: resolvePhysicsBodyMode(entity),
+        physicsDensityKgPerM3: resolvePhysicsDensityKgPerM3(entity),
+      }),
+    },
+  ),
+  'fabric-cloth': withSharedHooks(
+    {
+      kind: 'fabric-cloth',
+      family: 'fabric',
+      rebuildStrategy: 'sync-populateAssetGroup',
+      screenImageRole: 'front',
+      geometryParts: GEOMETRY_PARTS_NONE,
+    },
+    {
+      getDefaultEntitySlice: () => ({
+        fabricClothParams: defaultFabricClothParams(),
+      }),
+      mergeParamPatch: (entity, partial) => {
+        const current = entity.fabricClothParams ?? defaultFabricClothParams();
+        return {
+          fabricClothParams: clampFabricClothParams(
+            partial as Partial<FabricClothParams>,
+            current,
+          ),
+        };
+      },
       cloneParamsFromEntity: (entity) =>
-        entity.blockParams
-          ? { blockParams: cloneBlockParams(entity.blockParams) }
+        entity.fabricClothParams
+          ? { fabricClothParams: cloneFabricClothParams(entity.fabricClothParams) }
           : {},
     },
+  ),
+  'book-softcover': withSharedHooks(
+    {
+      kind: 'book-softcover',
+      family: 'book',
+      rebuildStrategy: 'sync-populateAssetGroup',
+      screenImageRole: 'front',
+      geometryParts: GEOMETRY_PARTS_NONE,
+    },
+    bookKindHooks('book-softcover'),
+  ),
+  'book-hardcover': withSharedHooks(
+    {
+      kind: 'book-hardcover',
+      family: 'book',
+      rebuildStrategy: 'sync-populateAssetGroup',
+      screenImageRole: 'front',
+      geometryParts: GEOMETRY_PARTS_NONE,
+    },
+    bookKindHooks('book-hardcover'),
   ),
   'beverage-can': withSharedHooks(
     {
@@ -325,6 +548,28 @@ const ASSET_KIND_DEFINITIONS = {
           : {},
     },
   ),
+  pen: withSharedHooks(
+    {
+      kind: 'pen',
+      family: 'packaging',
+      rebuildStrategy: 'async-packaging-group',
+      screenImageRole: 'label',
+      geometryParts: GEOMETRY_PARTS_PEN,
+    },
+    {
+      getDefaultEntitySlice: () => ({
+        penParams: defaultPenParams('marker'),
+      }),
+      mergeParamPatch: (entity, partial) => {
+        const current = entity.penParams ?? defaultPenParams('marker');
+        return {
+          penParams: clampPenParams(partial as Partial<PenParams>, current),
+        };
+      },
+      cloneParamsFromEntity: (entity) =>
+        entity.penParams ? { penParams: clonePenParams(entity.penParams) } : {},
+    },
+  ),
 } satisfies Record<AssetKind, AssetKindDefinition>;
 
 function handheldDeviceHooks(): Pick<
@@ -335,7 +580,7 @@ function handheldDeviceHooks(): Pick<
     getDefaultEntitySlice: () => ({}),
     mergeParamPatch: (entity, partial) => {
       const current =
-        (entity.params as HandheldDeviceParams | undefined) ??
+        (entity.params) ??
         defaultHandheldParams(entity.assetKind);
       return {
         params: {
@@ -346,7 +591,7 @@ function handheldDeviceHooks(): Pick<
     },
     cloneParamsFromEntity: (entity) =>
       entity.params && isHandheldAssetKind(entity.assetKind)
-        ? { params: cloneHandheldParams(entity.params as HandheldDeviceParams) }
+        ? { params: cloneHandheldParams(entity.params) }
         : {},
   };
 }
@@ -394,6 +639,8 @@ function wallKindHooks(
     },
   );
 }
+
+// --- Lookup ---
 
 export function getAssetKindDefinition(kind: AssetKind): AssetKindDefinition {
   return ASSET_KIND_DEFINITIONS[kind];

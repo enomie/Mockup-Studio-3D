@@ -8,7 +8,7 @@ import {
 } from 'three/webgpu';
 import { applySpotShadowCast, updateSpotShadowCamera } from '@/render/shadow-setup';
 import { rgbToColor, type Rgb } from '@/colors/rgb';
-import { cloneTransform, defaultTransform } from '@/scene/entity-types';
+import { cloneTransform, defaultTransform, type Vec3 } from '@/scene/entity-types';
 import { LIGHT_FILL_ID, LIGHT_KEY_ID, type StudioLightId } from '@/scene/light-ids';
 import { mergeLightingSettings } from '@/scene/lighting-merge';
 import type { DeepPartial, LightingSettings } from '@/scene/scene-api';
@@ -16,6 +16,8 @@ import {
   readTransformFromObject,
   type EntityRegistry,
 } from '@/engine/entity-registry';
+import type { PlanarReflectionPass } from '@/render/planar-reflection';
+import { applySpotBeamDisplayScale } from './spot-beam-display';
 import { FILL_DECAY, KEY_DECAY, LightPool } from './light-pool';
 import type { SpotLightRig } from './light-rig';
 import { orientFixtureDiscToward, setFixtureDiscColor } from './light-fixture-disc';
@@ -37,6 +39,8 @@ const _targetPosition = new Vector3();
 function cloneLightingSettings(settings: LightingSettings): LightingSettings {
   return {
     referenceMode: settings.referenceMode,
+    showFixtures: settings.showFixtures,
+    fixturesReflectInMirror: settings.fixturesReflectInMirror,
     ambient: {
       enabled: settings.ambient.enabled,
       color: { ...settings.ambient.color },
@@ -102,7 +106,9 @@ export class LightingSystem {
   private settings: LightingSettings;
   private selectedLightId: StudioLightId | null = null;
   private readonly selectionListeners = new Set<SelectionListener>();
-  private exportHideFixturesDepth = 0;
+  private lightHandlesVisible = false;
+  private planarReflection: PlanarReflectionPass | null = null;
+  private readonly referenceCenter: Vec3 = { x: 0, y: 0, z: 0 };
 
   constructor(scene: Scene, registry: EntityRegistry, initial: LightingSettings) {
     this.scene = scene;
@@ -122,12 +128,45 @@ export class LightingSystem {
     this.apply(initial);
   }
 
+  setPlanarReflection(pass: PlanarReflectionPass): void {
+    this.planarReflection = pass;
+    this.syncFixtureMirrorReflection();
+  }
+
+  setLightHandlesVisible(visible: boolean): void {
+    if (this.lightHandlesVisible === visible) {return;}
+    this.lightHandlesVisible = visible;
+    this.applyKey();
+    this.applyFill();
+    this.selectionListeners.forEach((listener) => { listener(this.selectedLightId); });
+  }
+
+  isLightHandlesVisible(): boolean {
+    return this.lightHandlesVisible;
+  }
+
+  getReferenceCenter(): Vec3 {
+    return { ...this.referenceCenter };
+  }
+
+  getRigWorldPosition(lightId: StudioLightId): Vec3 | null {
+    if (!this.isLightEnabled(lightId)) {return null;}
+    const rig = this.getRig(lightId);
+    if (!rig) {return null;}
+    return {
+      x: rig.helper.position.x,
+      y: rig.helper.position.y,
+      z: rig.helper.position.z,
+    };
+  }
+
   apply(settings: LightingSettings): void {
     this.settings = cloneLightingSettings(settings);
     this.updateRigTransforms();
     this.applyAmbient();
     this.applyKey();
     this.applyFill();
+    this.syncFixtureMirrorReflection();
   }
 
   setLighting(partial: DeepPartial<LightingSettings>): void {
@@ -145,6 +184,7 @@ export class LightingSystem {
     this.applyAmbient();
     this.applyKey();
     this.applyFill();
+    this.syncFixtureMirrorReflection();
   }
 
   getLighting(): LightingSettings {
@@ -154,8 +194,8 @@ export class LightingSystem {
   /** Keep shadow matrices current — call once per frame from the render loop. */
   updateFrame(): void {
     const rigs: SpotLightRig[] = [];
-    if (this.settings.key.enabled) rigs.push(this.getKeyRig());
-    if (this.settings.fill.enabled) rigs.push(this.getFillRig());
+    if (this.settings.key.enabled) {rigs.push(this.getKeyRig());}
+    if (this.settings.fill.enabled) {rigs.push(this.getFillRig());}
 
     for (const rig of rigs) {
       rig.light.position.copy(rig.helper.position);
@@ -172,6 +212,7 @@ export class LightingSystem {
       if (castsShadow) {
         updateSpotShadowCamera(rig.light);
       }
+      this.refreshSpotBeam(rig);
     }
   }
 
@@ -187,9 +228,9 @@ export class LightingSystem {
   }
 
   isLightEnabled(lightId: StudioLightId): boolean {
-    if (lightId === LIGHT_KEY_ID) return this.settings.key.enabled;
-    if (lightId === LIGHT_FILL_ID) return this.settings.fill.enabled;
-    return false;
+    return lightId === LIGHT_KEY_ID
+      ? this.settings.key.enabled
+      : this.settings.fill.enabled;
   }
 
   getHelperObject(lightId: StudioLightId): Group | null {
@@ -202,14 +243,14 @@ export class LightingSystem {
   }
 
   setSelectedLightId(lightId: StudioLightId | null): void {
-    if (this.selectedLightId === lightId) return;
+    if (this.selectedLightId === lightId) {return;}
     this.selectedLightId = lightId;
-    this.selectionListeners.forEach((listener) => listener(lightId));
+    this.selectionListeners.forEach((listener) => { listener(lightId); });
   }
 
-  getWireframe(lightId: StudioLightId): SpotLightRig['wireframe'] | null {
+  getSpotBeamHelper(lightId: StudioLightId): SpotLightRig['spotBeam'] | null {
     const rig = this.getRig(lightId);
-    return rig?.wireframe ?? null;
+    return rig?.spotBeam ?? null;
   }
 
   subscribeSelection(listener: SelectionListener): () => void {
@@ -219,9 +260,9 @@ export class LightingSystem {
 
   syncOffsetFromHelper(lightId: StudioLightId): void {
     const rig = this.getRig(lightId);
-    if (!rig) return;
+    if (!rig) {return;}
 
-    const center = this.getReferenceCenter();
+    const center = this.refreshReferenceCenter();
     const base = this.getBasePose(lightId, center);
     const world = readTransformFromObject(rig.helper);
     const offset = computeOffsetFromWorld(base, world);
@@ -254,36 +295,6 @@ export class LightingSystem {
     return this.lightPool;
   }
 
-  /** Export capture — hide fixture discs and wireframe chrome; viewport restored on pop. */
-  pushExportHideFixtures(): void {
-    if (this.exportHideFixturesDepth > 0) {
-      this.exportHideFixturesDepth += 1;
-      return;
-    }
-    this.exportHideFixturesDepth = 1;
-    this.setStudioFixtureChromeVisible(false);
-  }
-
-  popExportHideFixtures(): void {
-    if (this.exportHideFixturesDepth === 0) return;
-    this.exportHideFixturesDepth -= 1;
-    if (this.exportHideFixturesDepth === 0) {
-      this.applyKey();
-      this.applyFill();
-    }
-  }
-
-  private setStudioFixtureChromeVisible(visible: boolean): void {
-    for (const lightId of [LIGHT_KEY_ID, LIGHT_FILL_ID] as const) {
-      const rig = this.getRig(lightId);
-      if (!rig) continue;
-      rig.wireframe.visible = visible;
-      if (rig.fixtureDisc) {
-        rig.fixtureDisc.visible = visible;
-      }
-    }
-  }
-
   private getKeyRig(): SpotLightRig {
     return this.lightPool.getKeyRig();
   }
@@ -296,10 +307,13 @@ export class LightingSystem {
     return this.lightPool.getSpotRigById(lightId);
   }
 
-  private getReferenceCenter(): Group {
+  private refreshReferenceCenter(): Group {
     const center = computeSceneCenter(
       this.registry.getEntities().map((entity) => entity.transform.position),
     );
+    this.referenceCenter.x = center.x;
+    this.referenceCenter.y = center.y;
+    this.referenceCenter.z = center.z;
     const anchor = new Group();
     anchor.position.set(center.x, center.y, center.z);
     return anchor;
@@ -314,7 +328,7 @@ export class LightingSystem {
 
     if (this.settings.referenceMode === 'world-fixed') {
       const stored = this.worldFixedPoses.get(lightId);
-      if (stored) return stored;
+      if (stored) {return stored;}
     }
 
     if (lightId === LIGHT_KEY_ID) {
@@ -333,7 +347,7 @@ export class LightingSystem {
   }
 
   private updateRigTransforms(): void {
-    const centerAnchor = this.getReferenceCenter();
+    const centerAnchor = this.refreshReferenceCenter();
     _targetPosition.copy(centerAnchor.position);
 
     const keyPose = this.getWorldPose(LIGHT_KEY_ID, centerAnchor);
@@ -356,7 +370,7 @@ export class LightingSystem {
   private captureWorldFixedPoses(): void {
     for (const lightId of [LIGHT_KEY_ID, LIGHT_FILL_ID] as const) {
       const rig = this.getRig(lightId);
-      if (!rig) continue;
+      if (!rig) {continue;}
       const world = readTransformFromObject(rig.helper);
       this.worldFixedPoses.set(lightId, {
         position: { ...world.position },
@@ -386,10 +400,10 @@ export class LightingSystem {
     applySpotShadowCast(rig.light, key.enabled, key.castShadow);
     rig.light.shadow.radius = key.shadowSoftness;
     rig.helper.visible = key.enabled;
-    rig.wireframe.visible = key.enabled;
+    this.applySpotBeamVisibility(rig, key.enabled);
     if (rig.fixtureDisc) {
       setFixtureDiscColor(rig.fixtureDisc, key.color);
-      rig.fixtureDisc.visible = key.enabled;
+      rig.fixtureDisc.visible = key.enabled && this.settings.showFixtures;
     }
     this.updatePickColor(rig, KEY_PICK_COLOR);
     if (key.enabled && key.castShadow) {
@@ -411,10 +425,10 @@ export class LightingSystem {
     applySpotShadowCast(rig.light, fill.enabled, fill.castShadow);
     rig.light.shadow.radius = fill.shadowSoftness;
     rig.helper.visible = fill.enabled;
-    rig.wireframe.visible = fill.enabled;
+    this.applySpotBeamVisibility(rig, fill.enabled);
     if (rig.fixtureDisc) {
       setFixtureDiscColor(rig.fixtureDisc, fill.color);
-      rig.fixtureDisc.visible = fill.enabled;
+      rig.fixtureDisc.visible = fill.enabled && this.settings.showFixtures;
     }
     this.updatePickColor(rig, FILL_PICK_COLOR);
     if (fillCastsShadow) {
@@ -426,6 +440,22 @@ export class LightingSystem {
     const rgb = rgbToColor(color);
     const material = rig.pickMesh.material as MeshBasicNodeMaterial;
     material.color.setRGB(rgb.r, rgb.g, rgb.b);
+  }
+
+  private applySpotBeamVisibility(rig: SpotLightRig, roleEnabled: boolean): void {
+    rig.spotBeam.visible = roleEnabled && this.lightHandlesVisible;
+  }
+
+  private refreshSpotBeam(rig: SpotLightRig): void {
+    if (!rig.spotBeam.visible) {return;}
+    rig.spotBeam.update();
+    applySpotBeamDisplayScale(rig.spotBeam.cone, rig.light);
+  }
+
+  syncFixtureMirrorReflection(): void {
+    this.planarReflection?.setFixturesVisibleInReflection(
+      this.settings.fixturesReflectInMirror,
+    );
   }
 
 }

@@ -21,6 +21,22 @@ export class PhysicsBody {
     return this.rigidBody.isDynamic();
   }
 
+  getLinearDamping(): number {
+    return this.rigidBody.linearDamping();
+  }
+
+  getAngularDamping(): number {
+    return this.rigidBody.angularDamping();
+  }
+
+  getColliderFriction(colliderIndex = 0): number {
+    return this.rigidBody.collider(colliderIndex).friction();
+  }
+
+  getColliderRestitution(colliderIndex = 0): number {
+    return this.rigidBody.collider(colliderIndex).restitution();
+  }
+
   getTransform(): PhysicsTransform {
     const t = this.rigidBody.translation();
     const r = this.rigidBody.rotation();
@@ -30,8 +46,21 @@ export class PhysicsBody {
     };
   }
 
+  setPose(position: PhysicsTransform['position'], rotation: PhysicsTransform['rotation']): void {
+    this.rigidBody.setTranslation(position, true);
+    this.rigidBody.setRotation(rotation, true);
+  }
+
+  sleep(): void {
+    this.rigidBody.sleep();
+  }
+
+  wakeUp(): void {
+    this.rigidBody.wakeUp();
+  }
+
   dispose(): void {
-    if (this.disposed) return;
+    if (this.disposed) {return;}
     this.disposed = true;
     this.world.removeRigidBody(this.rigidBody);
   }

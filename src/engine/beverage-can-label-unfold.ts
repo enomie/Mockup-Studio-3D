@@ -16,43 +16,38 @@ export const BEVERAGE_CAN_LABEL_METAL_ZONES_MM = {
 export const BEVERAGE_CAN_LABEL_BOTTOM_METAL_MM =
   BEVERAGE_CAN_LABEL_METAL_ZONES_MM.bottomMetalBandMm;
 
-/** @deprecated Use bottom-only reserve for label band; kept for legacy references. */
-export const BEVERAGE_CAN_LABEL_METAL_RESERVE_MM =
-  BEVERAGE_CAN_LABEL_METAL_ZONES_MM.bottomMetalBandMm +
-  BEVERAGE_CAN_LABEL_METAL_ZONES_MM.topRingHeightMm;
-
 /** Nominal mockup dimensions at sizeScale = 1 (meters). See requirements-assets-beverage-can.md */
-export type BeverageCanNominalM = {
+export interface BeverageCanNominalM {
   heightM: number;
   diameterM: number;
   labelHeightM: number;
   labelBottomOffsetM: number;
-};
+}
 
-type BeverageCanBodyNominalMm = {
+interface BeverageCanBodyNominalMm {
   canHeightMm: number;
   bodyDiameterMm: number;
-};
+}
 
-export type LabelUnfoldMm = {
+export interface LabelUnfoldMm {
   /** One full wrap: π × body outside diameter */
   widthMm: number;
   /** Printable label band height */
   heightMm: number;
   circumferenceMm: number;
   bodyDiameterMm: number;
-};
+}
 
-export type LabelUnfoldAspect = {
+export interface LabelUnfoldAspect {
   widthOverHeight: number;
   heightOverWidth: number;
-};
+}
 
-export type LabelUnfoldPixels = {
+export interface LabelUnfoldPixels {
   dpi: number;
   widthPx: number;
   heightPx: number;
-};
+}
 
 const MM_PER_M = 1000;
 

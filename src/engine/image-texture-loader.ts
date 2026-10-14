@@ -35,10 +35,10 @@ export class ImageTextureLoader {
 
   async load(imageId: string): Promise<Texture | null> {
     const cached = this.cache.get(imageId);
-    if (cached) return cached;
+    if (cached) {return cached;}
 
     const meta = this.resolver?.(imageId);
-    if (!meta) return null;
+    if (!meta) {return null;}
 
     const texture = await this.loader.loadAsync(meta.url);
     configurePhotoTexture(texture, this.maxAnisotropy);
@@ -51,7 +51,7 @@ export class ImageTextureLoader {
 
   release(imageId: string): void {
     const texture = this.cache.get(imageId);
-    if (!texture) return;
+    if (!texture) {return;}
     texture.dispose();
     this.cache.delete(imageId);
   }

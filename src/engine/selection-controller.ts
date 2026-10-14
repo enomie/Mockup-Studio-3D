@@ -1,14 +1,15 @@
 import { Raycaster, Vector2, type Camera, type Object3D } from 'three/webgpu';
+import { noop } from '@/utils/noop';
 import type { EntityRegistry } from './entity-registry';
 
 const _pointer = new Vector2();
 const _raycaster = new Raycaster();
 
 function isEditableTarget(target: EventTarget | null): boolean {
-  if (!(target instanceof HTMLElement)) return false;
+  if (!(target instanceof HTMLElement)) {return false;}
   const tag = target.tagName;
-  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true;
-  if (target.isContentEditable) return true;
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') {return true;}
+  if (target.isContentEditable) {return true;}
   return Boolean(target.closest('input, textarea, select, [contenteditable="true"]'));
 }
 
@@ -22,8 +23,8 @@ export class SelectionController {
       return;
     }
 
-    if (event.code !== 'Delete' && event.code !== 'Backspace') return;
-    if (isEditableTarget(event.target)) return;
+    if (event.code !== 'Delete' && event.code !== 'Backspace') {return;}
+    if (isEditableTarget(event.target)) {return;}
 
     event.preventDefault();
     this.onDelete();
@@ -31,8 +32,8 @@ export class SelectionController {
 
   private getCamera: () => Camera | null = () => null;
   private getLightPickables: () => Object3D[] = () => [];
-  private onSelect: (entityId: string | null) => void = () => {};
-  private onDelete: () => void = () => {};
+  private onSelect: (entityId: string | null) => void = noop;
+  private onDelete: () => void = noop;
 
   constructor(domElement: HTMLElement, registry: EntityRegistry) {
     this.domElement = domElement;
@@ -58,10 +59,10 @@ export class SelectionController {
 
   pickAt(clientX: number, clientY: number): string | null {
     const camera = this.getCamera();
-    if (!camera) return null;
+    if (!camera) {return null;}
 
     const rect = this.domElement.getBoundingClientRect();
-    if (rect.width === 0 || rect.height === 0) return null;
+    if (rect.width === 0 || rect.height === 0) {return null;}
 
     _pointer.x = ((clientX - rect.left) / rect.width) * 2 - 1;
     _pointer.y = -((clientY - rect.top) / rect.height) * 2 + 1;
@@ -70,13 +71,13 @@ export class SelectionController {
 
     const assetHits = _raycaster.intersectObjects(this.collectAssetRoots(), true);
     const assetEntityId = this.findEntityId(assetHits);
-    if (assetEntityId) return assetEntityId;
+    if (assetEntityId) {return assetEntityId;}
 
     const lightPickables = this.getLightPickables();
     if (lightPickables.length > 0) {
       const lightHits = _raycaster.intersectObjects(lightPickables, true);
       const lightEntityId = this.findEntityId(lightHits);
-      if (lightEntityId) return lightEntityId;
+      if (lightEntityId) {return lightEntityId;}
     }
 
     return null;
@@ -106,7 +107,7 @@ export class SelectionController {
       let current: Object3D | null = hit.object;
       while (current) {
         const entityId = current.userData.entityId as string | undefined;
-        if (entityId) return entityId;
+        if (entityId) {return entityId;}
         current = current.parent;
       }
     }

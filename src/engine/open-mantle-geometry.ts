@@ -1,6 +1,6 @@
 import { BufferAttribute, BufferGeometry } from 'three/webgpu';
 
-export type OpenMantleBuildInput = {
+export interface OpenMantleBuildInput {
   y0: number;
   y1: number;
   sampleRadius: (y: number) => number;
@@ -10,7 +10,7 @@ export type OpenMantleBuildInput = {
   heightSegments: number;
   /** Per-vertex UV; defaults to (phiT, heightT). */
   uvAt?: (x: number, y: number, z: number, phiT: number, heightT: number) => [number, number];
-};
+}
 
 export function buildOpenMantleGeometry(input: OpenMantleBuildInput): BufferGeometry {
   const {

@@ -7,12 +7,12 @@ import {
   type BufferGeometry,
 } from 'three/webgpu';
 
-export type FrameGeometryParams = {
+export interface FrameGeometryParams {
   faceWidth: number;
   faceHeight: number;
   frameThickness: number;
   frameDepth: number;
-};
+}
 
 const CAP_EPSILON_RATIO = 0.02;
 
@@ -40,10 +40,10 @@ function buildFrameShape(
   return shape;
 }
 
-type FrameUvSample = {
+interface FrameUvSample {
   u: number;
   v: number;
-};
+}
 
 type FrameBarSide = 'top' | 'bottom' | 'right' | 'left' | 'interior';
 
@@ -53,10 +53,10 @@ function resolveFrameBarSide(
   halfFaceW: number,
   halfFaceH: number,
 ): FrameBarSide {
-  if (y >= halfFaceH) return 'top';
-  if (y <= -halfFaceH) return 'bottom';
-  if (x >= halfFaceW) return 'right';
-  if (x <= -halfFaceW) return 'left';
+  if (y >= halfFaceH) {return 'top';}
+  if (y <= -halfFaceH) {return 'bottom';}
+  if (x >= halfFaceW) {return 'right';}
+  if (x <= -halfFaceW) {return 'left';}
   return 'interior';
 }
 

@@ -14,7 +14,7 @@ export function AssetsPanel() {
               className="image-tile"
               aria-label={`Add ${entry.label}`}
               title={`Add ${entry.label}`}
-              onClick={() => addAssetFromCatalog(entry.kind)}
+              onClick={() => { addAssetFromCatalog(entry.kind); }}
             >
               <span className="image-tile__thumb image-tile__thumb--icon">
                 <Icon icon={entry.icon} />

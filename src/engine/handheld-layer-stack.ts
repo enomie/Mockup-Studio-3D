@@ -9,21 +9,21 @@ import {
   SIDE_BUTTON_SPACING_MM,
 } from '@/scene/asset-handheld';
 
-export type HandheldLayerBounds = {
+export interface HandheldLayerBounds {
   zFront: number;
   zBack: number;
   width: number;
   height: number;
   cornerRadius: number;
-};
+}
 
-export type SideButtonCenter = {
+export interface SideButtonCenter {
   x: number;
   y: number;
   z: number;
-};
+}
 
-export type HandheldLayerStack = {
+export interface HandheldLayerStack {
   bodyDepth: number;
   frameFrontZ: number;
   frameBackZ: number;
@@ -44,9 +44,9 @@ export type HandheldLayerStack = {
   innerBack: HandheldLayerBounds;
   outerBackGlass: HandheldLayerBounds;
   sideButtonCenters: SideButtonCenter[];
-};
+}
 
-export type HandheldLayerStackInput = {
+export interface HandheldLayerStackInput {
   screenWidth: number;
   screenHeight: number;
   innerRadius: number;
@@ -58,7 +58,7 @@ export type HandheldLayerStackInput = {
   glazingVisible?: boolean;
   /** Y center factor for stacked side buttons (handheld upper half: 0.25, monitor lower: -0.25). */
   sideButtonCenterYFactor?: number;
-};
+}
 
 export const HANDHELD_SIDE_BUTTON_CENTER_Y_FACTOR = 0.25;
 export const MONITOR_SIDE_BUTTON_CENTER_Y_FACTOR = -0.25;

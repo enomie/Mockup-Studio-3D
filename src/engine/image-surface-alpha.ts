@@ -7,7 +7,7 @@ import type {
 const ALPHA_IMAGE_EXT = /\.(png|webp|gif|avif)$/i;
 
 export function imageFormatMayHaveAlpha(fileName: string | undefined): boolean {
-  if (!fileName) return false;
+  if (!fileName) {return false;}
   return ALPHA_IMAGE_EXT.test(fileName);
 }
 
@@ -15,8 +15,8 @@ export function resolveImageFileName(
   tex: Texture | null | undefined,
   imageName?: string,
 ): string | undefined {
-  if (imageName) return imageName;
-  const fromTexture = tex?.userData?.imageName;
+  if (imageName) {return imageName;}
+  const fromTexture = (tex?.userData as { imageName?: unknown }).imageName;
   if (typeof fromTexture === 'string' && fromTexture.length > 0) {
     return fromTexture;
   }

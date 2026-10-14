@@ -34,7 +34,7 @@ function defaultPrintFaces(): AssetFaces {
 }
 
 export function defaultFacesForKind(kind: AssetKind): AssetFaces | undefined {
-  if (kind === 'print') return defaultPrintFaces();
+  if (kind === 'print') {return defaultPrintFaces();}
   return undefined;
 }
 

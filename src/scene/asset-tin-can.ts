@@ -9,7 +9,7 @@ export const TIN_CAN_BEAD_COUNT_MIN = 1;
 export const TIN_CAN_BEAD_COUNT_MAX = 20;
 export const TIN_CAN_BEAD_COUNT_DEFAULT = 11;
 
-export type TinCanParams = {
+export interface TinCanParams {
   bodyRadiusM: number;
   bodyHeightM: number;
   /** Full sine cycles in the 80 % bead zone (not scaled by height). */
@@ -20,7 +20,7 @@ export type TinCanParams = {
   endRingThicknessM: number;
   /** Lid/base disc radius = bodyRadius − inset (sits inside the seam lip). */
   lidInsetM: number;
-};
+}
 
 const RADIUS_MIN_M = 25 * MM_TO_M;
 const RADIUS_MAX_M = 60 * MM_TO_M;

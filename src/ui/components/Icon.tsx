@@ -1,15 +1,15 @@
 import type { LucideIcon } from 'lucide-react';
 
-type IconProps = {
+interface IconProps {
   icon: LucideIcon;
   size?: number;
   strokeWidth?: number;
   className?: string;
-};
+}
 
 export function Icon({
   icon: IconComponent,
-  size = 14,
+  size = 16,
   strokeWidth = 1.75,
   className,
 }: IconProps) {

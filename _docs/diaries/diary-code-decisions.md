@@ -6,6 +6,360 @@ Kurze Historie: **wie** wir uns entschieden haben (Warum, Alternativen). Require
 
 ## Einträge
 
+### 2026-10-14 — Fabric cloth — Grid vertex normals (CPU quick win)
+- **Entscheidung:** `writeFabricClothGridNormalsFromPositions` ersetzt `computeVertexNormals` im Stoff-Sync/Reset/Mesh-Build; O(vertices) zentrale Differenz auf PlaneGeometry-Grid; `FABRIC_CLOTH_SYNC_NORMALS_EVERY_N_FRAMES = 1`, Bounds-Stride bleibt 2.
+- **Grund:** `computeVertexNormals` war CPU-Hotspot bei high-Grid; Rapier bleibt einzige Physik.
+- **Verworfen:** GPU-Normals in dieser Runde; Sleep-Gate.
+
+### 2026-10-14 — Fabric cloth — FPS sync stride (ohne Sleep-Gate)
+- **Entscheidung:** `syncFabricClothMeshFromSoftBody` mit optionalen Flags; World-Physics-Tick: **Positionen jeden Frame**, `computeVertexNormals`/Bounds nur jeden **2.** Tick (`FABRIC_CLOTH_SYNC_*_EVERY_N_FRAMES`); Spawn/Reset voller Sync. Continuous Rendering während `simulating` unverändert; `invalidateViewport` nach Render nur wenn nicht bereits continuous.
+- **Grund:** CPU-Hotspot `computeVertexNormals` bei high-Grid; Sleep-Gate bewusst nicht (User).
+- **Verworfen:** `isSleeping()`-Skip; On-Demand-Viewport nach Cloth-Settle.
+
+### 2026-10-14 — Dead code — Fabric plane collider + Block physics shims
+- **Entscheidung:** Legacy `fabric-cloth-collider-shape` (nur Tests) und `block-physics-colliders` Re-Export nach `_deleted/`; `FABRIC_CLOTH_PHYSICS_MASS_KG` entfernt; tote API (`spawnAll`/`removeAll`/`isActive` auf Cloth-Colliders, `spawnDynamicAll`/`removeDynamicAll`, `setBlockPhysicsColliders`, `BlockPhysicsColliders`-Alias); SoftBody-Material-Helfer nur in `fabric-cloth-soft-body.ts`.
+- **Grund:** SoftBody-Pfad seit Tagen produktiv; kein Caller mehr auf Plane-Proxy-Collider-Shape und Deprecation-Shims.
+- **Verworfen:** Dateien hart löschen (Projektregel: `_deleted/`).
+
+### 2026-10-14 — Fabric cloth — Settle-Damping + Border `restPlaneXY`
+- **Entscheidung:** Drape-Profile ergänzt um `deformationDamping` / `elasticDampingRatio`; höheres Profil-`linearDamping`; `SoftBodyDesc.setCanSleep(true)`. Border-TSL liest **`restPlaneXY`** (StaticDraw, beim Build aus Ruhe-`position.xy`) — Physik-Sync ändert nur `position`.
+- **Grund:** Dauer-Zittern nach Landung; Border verschwand, weil Inset aus deformiertem `positionLocal` berechnet wurde.
+- **Verworfen:** Border aus aktuellem `positionLocal` während Sim.
+
+### 2026-10-14 — Fabric cloth — Drape aus Material-Preset (Rapier SoftBody)
+- **Entscheidung:** `resolveFabricDrape(materialId)` + Preset-`fabricDrape.profile` (`silk`/`linen`/…); `prepareFabricClothSimSession(mesh, drape)` nutzt `clothAnisotropic`, getrennte edge/bend/shear-Frequenzen, `setParticleMass` aus `areaDensityKgPerM2`, Kontakt-Reibung via `setSurfaceCollider` — **nicht** `SoftBodyMaterial.uniform(1, FABRIC_PLANE_DYNAMIC_FRICTION)` (war Damping-Ratio, nicht Friction).
+- **Grund:** Default-Szene Silk wirkte „Schleim bis Boden“; Requirements: Drape nur über `fabricClothMaterialId`.
+- **Verworfen:** Globales Drape-Dropdown; Default-`positionY` 0,5 → 0,31 in dieser Session (User: nur Drape fixen).
+
+### 2026-10-14 — Fabric cloth — WebGPU vertex sync + Spawn-Invarianten
+- **Entscheidung:** Stoff-`position` mit `DynamicDrawUsage`; nach Sync/Reset `needsUpdate` + Bounds; `spawnOne` aktualisiert Root-`matrixWorld`, prüft Rest-Pose (`maxFabricClothRestPoseWorldError`), sync sofort; Integrationstests (Sizing→Mesh→`FabricClothPhysicsColliders`).
+- **Grund:** WebGPU lädt statische Attribute sonst nicht zuverlässig nach CPU-Vertex-Updates; Tests deckten isoliertes Mesh, nicht `populateAssetGroup`-Pfad.
+- **Verworfen:** Nur `needsUpdate` ohne `DynamicDrawUsage` (Browser zeigte „explodiertes“ Mesh trotz korrekter CPU-Daten).
+
+### 2026-10-14 — Fabric cloth — Rapier SoftBody (statt Plane-Proxy)
+- **Entscheidung:** World-Physics-Stoff = `SoftBodyDesc.cloth(origin, du, dv, nu, nv)` mit **Spacing** `du`/`dv` (nicht Kantenvektor); `createSoftBody(bodies, colliders, desc)`; Vertex-Sync über Partikel→`PlaneGeometry`-Index-Map (`v * nu + u`); Dynamic-Box-Proxy entfernt.
+- **Grund:** Rapier-only im Browser (`@dimforge/rapier3d-simd-compat`); eine `world.step()`-Pipeline; Requirements WYSIWYG-Mesh.
+- **Verworfen:** `cloth(width, height, …, cell)`-Missbrauch (NaN); separates CPU-XPBD v1; Einbindung des Rust-Crates [botrail/rapier-cloth](https://github.com/botrail/rapier-cloth) (Vorlage für Integration/Material, kein WASM in v1).
+
+### 2026-10-13 — Fabric cloth — ein subdividiertes Grid (Geometrie)
+- **Entscheidung:** Stoff-Mesh **immer** subdividiert (`fabricClothGridSegments` + `buildFabricClothMesh`); Default-Quality **`standard`**; **kein** Ruhe-1×1 und kein Mesh-Swap bei Physics Start/Reset — Solver schreibt später nur Vertices.
+- **Grund:** Eine Topologie für Render und Rapier-Cloth; weniger Rebuild-Churn.
+- **Verworfen:** Getrenntes Ruhe-Quad vs. Sim-Gitter.
+
+### 2026-10-13 — Fabric cloth — Cloth-Sim Requirements (Docs)
+- **Entscheidung:** Normativ: Ruhe-Mesh **1×1** Quad; Sim subdividiert per global **`fabricClothSimQuality`** (`draft` / `standard` / `high`); Drape über Preset-**`fabricDrape.profile`** + `resolveFabricDrape` (UI nur Fabric material); Export **WYSIWYG** ohne Bake-Schritt v1; Gizmo auf `fabric-cloth` **gesperrt** bei `simulating`/`paused`.
+- **Grund:** Docs first vor Rapier-Cloth-Implementierung; eine Pipeline (Rapier-only); keine Desync-Transforms; Export = Viewport-Mesh.
+- **Verworfen:** Pflicht-`FabricClothBakedMesh` + Export-Bake-Button v1; separates Physics-Drape-Dropdown.
+
+### 2026-10-13 — Wheel Car: Felgen-Stirnseiten + Speichen aus SVG-Bounds
+- **Entscheidung:** `rimOuter` / `rimInner` je **zwei** `RingGeometry`-Stirnflächen (axial min/max des SVG-Bands); Speichen radial von **Innenkante Außenband** bis **Naben-Innenkante** (`rimInner`), axial **Mitte** des Außenbands minus halbe Box-Tiefe.
+- **Grund:** Dünne Lathe-Bänder zeigen sonst keine sichtbare Felgenfläche; Speichen sauber in der Felge statt proud an der Stirn.
+- **Verworfen:** Nur Lathe ohne Stirn; Speichen nur über `rimRadiusM` / `hubRadiusM`-Panel.
+
+### 2026-10-13 — Wheel Car: SVG-Lathe (3 Teile) + Speichen
+- **Entscheidung:** Reifen/Felge/Nabe aus `wheel-car.svg` als drei Lathe-Meshes; Speichen bleiben prozedural; Skalierung nur uniform über `outerRadiusM`; Pfad-Zuordnung per **CSS-Klasse vor** Default-Stroke (sonst alles schwarz = Reifen).
+- **Grund:** Illustrator-Profil ist autoritativ; Pen-Pattern für SVG-Load.
+- **Verworfen:** Parametrisches Reifen-Lathe + Barrel/Hub-Zylinder; getrennte radial/axiale Skalierung; sync populate.
+
+### 2026-10-13 — Wheel Car (`wheel-car`) — Physik & Achse *(weiter gültig)*
+- **Entscheidung:** Achse **+X** via `rotation.z = π/2`; Foot-Pivot **min y = 0** auf Gruppe. Physik: Rapier-**Zylinder** mit **90°-Z-Rotation**; Defaults **255/30 R20**.
+- **Grund:** [`requirements-assets-wheel-car.md`](../requirements/requirements-assets-wheel-car.md).
+
+### 2026-10-13 — Transmission — surfaceNormalScale (glass-surface)
+- **Entscheidung:** `surfaceNormalScale` auf `MaterialPreset`; Engine wendet implizites TSL-Profil **`glass-surface`** auf `MeshPhysicalNodeMaterial.normalNode` bei `createTransmissionMaterial` und **`createDisplayGlazingMaterial`**. Built-ins: Pane/Frosted pane/Wine **0.15**, Solid/Frosted solid **0.20**. Skala 0 → kein `normalNode`.
+- **Grund:** Subtiles Glas-Relief ohne Transmission-`kind` mit `proceduralProfile` zu vermischen; Requirements Surface-Sektion.
+- **Verworfen:** `proceduralProfile: glass-surface` auf transmission-Presets; Pattern-UI (seed/tile) für Glas in v1.
+
+### 2026-10-13 — Concrete — Stained vs. Porous (Profile-Split)
+- **Entscheidung:** Bisheriger Beton-Look = Built-in **`Concrete Stained`**, Profil **`concrete-stained`** (Shader aus altem `concrete-porous`). Neues Built-in **`material-concrete-porous`** + Profil **`concrete-porous`** = echte Kavitäten (blasig, Referenz Wood Porous). Load: alte `proceduralProfile: concrete-porous` auf Presets ≠ `material-concrete-porous` → `concrete-stained`.
+- **Grund:** Name/Profil passten nicht zum sichtbaren Look; poröser Beton braucht eigenen Generator.
+- **Verworfen:** Ein Preset „Concrete“ mit beiden Looks; globales Profile-Rename ohne Load-Migration.
+
+### 2026-10-13 — Sub-Panel Split & Collapse
+- **Entscheidung:** **List | Detail** in der Sub-Spalte (`SubPanelSplit`); Collapse **eine** Fußzeile — links ganzes Sub, rechts nur Editor; Main-Collapse schließt Sub mit; Sub öffnet per Main-Nav-Klick. Kein Viewport-Reopen-Streifen.
+- **Grund:** Mehr Canvas; klare Hierarchie Main → Sub → Detail.
+- **Verworfen:** Drittes Shell-Segment; Collapse im Header; Reopen-Strip.
+
+### 2026-10-13 — Viewport helpers — X-Ray + Forward arrow
+- **Entscheidung:** Alle Viewport helpers gemeinsam **see-through** (`transparent`, `depthWrite: false`, `depthTest: false`, feste Opacity in constants). **Forward arrow** am Boden: Checkbox **Forward arrow**, Richtung XZ vom Stage-Center **zum Key** (Fallback Fill), „vorne“ = Lichtseite; mit Scene center mitwandern.
+- **Grund:** Orientierung im Set ohne Mockup zu verdecken; Pfeil erklärt Studio-Layout vs. Kamera.
+- **Verworfen:** Pfeil fix auf Welt-+Z unabhängig von Key side; volle Opacity/depthTest wie Produkt-Meshes.
+
+### 2026-10-13 — Viewport helpers vs. Light fixtures (UI & Export)
+- **Entscheidung:** Neue Environment-Sektion **Viewport helpers** (unter Ground): Floor grid, World origin, Light handles (Wireframe) — WYSIWYG im Export wenn an. **Fixture-Discs** = Lighting (Show fixtures), **kein** Helper. Export: Fixtures primär über Lighting-State; `exportHideLightFixtures` nur Übergang/optionaler Override.
+- **Grund:** Discs sind Studio-/Mockup-Inhalt (Spiegel, sichtbare Softbox), Grid/Achsen/Wireframe sind Authoring-Referenz.
+- **Verworfen:** Fixture-Toggle in Environment helpers; Fixtures und Wireframe dauerhaft über eine Export-Checkbox koppeln.
+
+### 2026-10-13 — Wine bottle SVG — offene Außen-Silhouette (Ist)
+- **Entscheidung:** Shipped `bottle-*-open.svg` = **ein offener** Außen-Stroke (kein Pflicht-`Z`); Glas = **`trimLatheProfileToAscendingOuterMantle`** + Lathe + Stirnringe — nicht geschlossener Wandring im SVG.
+- **Grund:** Stabiler Mockup-Pfad; Tests/Requirements an offene Pfade angepasst (kein „geschlossenes Wand-SVG“ als Norm).
+- **Verworfen:** Requirement/Test, dass jede Flaschen-SVG `Z` schließt.
+
+### 2026-10-13 — Builtin SVG profiles — `public/profiles/lathe` + `extrude`
+- **Entscheidung:** Lathe-Authoring-SVGs aus `public/` root nach **`public/profiles/lathe/`**; **`public/profiles/extrude/`** leer für spätere Extrude-Assets. URLs `/profiles/lathe/…` via `src/constants/builtin-profile-paths.ts` (`builtinLatheProfileUrl`).
+- **Grund:** Parallele Struktur zu `public/images/`; klare Trennung Mockup-Bilder vs. Engine-Silhouetten.
+- **Verworfen:** Alles unter `public/svg/` ohne lathe/extrude-Unterteilung.
+
+### 2026-10-13 — Pen body wrap — 90°-Mapping, Plastik-Underlay, Orientierung
+- **Entscheidung:** Body-Bild = **`createPenBodyWrapMaterial`** (`fitPenBodyWrapColorNode`): Bild**höhe** auf Umfang (`maxBodyRadiusM`), Bild**breite** auf Schaft; PNG → **`bodyMaterialId`-Farbe** (deckend, kein `createImagePbrMaterial`); Umlauf gespiegelt + **180°** in ST damit Front lesbar und **Kappe links** im Motiv; UV = `cylindricalLabelUv` auf Body-Lathe.
+- **Grund:** Gleiches Alpha-Problem wie Dose vor Fix; Design-Dateien portrait entlang Schaft; Dosen-Label bleibt Breite=Umfang.
+- **Verworfen:** Transparentes Body-Mesh; separates Wrap-Mantel-Mesh in v1.
+
+### 2026-10-13 — Book hinge groove — TSL auf Deckel-Außenfläche (v1)
+- **Entscheidung:** Falz/Gelenk an Vorder- und Rückdeckel **nur** per **TSL-Material-Modifier** auf der äußeren Cover-Fläche (mm-Offset/Breite, Intensität 0–1); Sampling in **Objektspace**, nicht Cover-UV; Cover-Bild bleibt vollflächig, Effekt moduliert Licht/Relief darüber.
+- **Grund:** Mockup-Qualität wie Referenzfoto; ein Mesh pro Deckel; gleiches Pattern wie Fabric-Border-Inset; Soft/Hard nur Default-Intensität.
+- **Verworfen:** Falz als zweites Mesh oder reine Geometrie-Vertiefung in v1.
+
+### 2026-10-13 — Pen asset — ein Kind, SVG-Stroke-Teile, maxRadiusM
+- **Entscheidung:** `assetKind: pen` mit `penBodyProfile: marker | fountain`; je Profil eine SVG mit **drei** Pfaden (Cap/Ring/Body); Stroke **#ff0000 / #00ff00 / #0000ff** (Cap/Ring/Body), `cls-1/2/3` in beiden Dateien gleich; Default **`maxRadiusM = 0,0065 m`** (Permanentmarker Mantel **Ø 13 mm**, Höhe **≈ 141 mm** via `svgMaxRadius = 26.09`); Authoring-Koordinaten ≠ Engine-mm; Bild nur auf Body-Wrap.
+- **Grund:** Ein Kind + Profil wie Wine bottle/Dose; normierte Farben für Parser; Kalibrierung am Ring-Querschnitt.
+- **Verworfen:** Zwei `assetKind`s; image-driven sizing für Stiftlänge; 7 mm Default-Radius.
+
+### 2026-10-13 — Fabric cloth border — Inset im Shader, scharfkantig
+- **Entscheidung:** Border = **Inset** auf dem einen Plane-Mesh (`step` in TSL, `borderColor` + `borderWidthM`); Footprint/Collider = Bildbahn ohne Aufschlag.
+- **Grund:** Eingefärbte Kante ohne Extra-Meshes; Requirements Ring-Grid war nie im Code.
+- **Verworfen:** Außen-Ring / vier Border-Planes; Diary 2026-10-12 „Rand innen verworfen“ für Plane-Proxy; weicher Rand in v1.
+
+### 2026-10-13 — Builtin Images — public/images + Auto-Manifest
+- **Entscheidung:** Werk-Bilder nur in `public/images/`; Dateiname `{name}--{format}--{pixelsize}.{ext}` (Feldtrenner `--`); Build-Skript `scripts/generate-builtin-images.ts` → `builtin-images.generated.ts`; `predev`/`prebuild` via `tsx`.
+- **Grund:** Neue Samples ohne manuelles `STARTER_IMAGES`; Parser testbar; Browser kann Ordner nicht listen; `import.meta.glob` greift nicht auf Vite-`public/`.
+- **Verworfen:** Manuelle Pflege in `image-assets.ts`; altes `sample-{ori}-{WxH}` nur mit `-` (mehrdeutig bei `label-F-…`).
+
+### 2026-10-13 — Grid paper — triplanar dominant axis
+- **Entscheidung:** Grid-Linienmaske auf Solids: **eine** Projektion pro Pixel (|n| max → XY / XZ / YZ), nicht `max`/Summe über drei Ebenen.
+- **Grund:** Konstante Koordinate auf Box-Face macht in „falschen“ Projektionen `min(distX,distY)→0` → volle Linienfarbe auf der Fläche.
+- **Verworfen:** Gewichtete Triplanar-Summe (gestrichelt/schwach); `max()` über alle drei (solides Blau auf Flächen).
+
+### 2026-10-13 — Grid paper — gridUnit (mm/cm/dm/m)
+- **Entscheidung:** Preset-Feld `gridUnit`; `tileScale` via `grid-paper-unit.ts`; UI-Dropdown; Linienbreite mm-konstant (`smoothstep` in Zell-Einheiten × `tileScale/1000`); Major alle 5 Minor-Zellen.
+- **Grund:** Rasterabstand in lesbaren Einheiten ohne mitwachsende Strichstärke.
+- **Verworfen:** Freier `tileScale`-Slider für Grid; reine Meter-`smoothstep` ohne Major-Zell-Raum (Hauptlinien unsichtbar).
+
+### 2026-10-13 — Wood on solids — triplanar-meters (not meter-3d)
+- **Entscheidung:** `wood-soft` / `wood-porous` auf `default` surface role → `triplanar-meters` (Grain-Scalar pro Ebene blenden); Ground → `planar-meters`; Frame unverändert `uv`.
+- **Grund:** `meter-3d` mit Ringen nur entlang Objekt-X wirkt auf Kugeln wie „Schnitt durch den Block“, nicht wie Millimeterpapier auf allen Flächen; Sphere-Mesh war nicht das Problem.
+- **Verworfen:** Nur `positionGeometry` statt `positionLocal` auf der Kugel.
+
+### 2026-10-13 — Sphere render mesh — Icosahedron detail 20
+- **Entscheidung:** `IcosahedronGeometry(radiusM, 20)` + `mergeVertices` + `computeTangents()` vor Bottom-Pivot; Konstante `SPHERE_RENDER_ICOSAEDRON_DETAIL`.
+- **Grund:** Gleiche Mesh-Vorbereitung wie tsl-textures `USE_BALL` — dichteres Netz, Tangents für PBR/Anisotropie; unabhängig von triplanar vs. meter-3d Sampling.
+- **Verworfen:** Tetrahedron detail 17; ungemergte Duplikat-Vertices.
+
+### 2026-10-13 — TSL Textures material upgrade (meter-3d + triplanar)
+- **Entscheidung:** Ports aus [tsl-textures](https://boytchev.github.io/tsl-textures/) (MIT) für Concrete, Fabric, Silk, Plastics, Coated gloss, Grid; **`meter-3d`** auf vielen Solids; **Wood** später auf **`triplanar-meters`** (Solids); `tsl-noise.ts` re-exports `mx_noise_float`.
+- **Grund:** Boytchev-3D-Position + triplanar wo 2D-Muster alle Box-/Kugelflächen brauchen.
+- **Verworfen:** NPM-Dependency `tsl-textures`; Wood nur `meter-3d` auf Kugeln.
+
+### 2026-10-13 — Procedural triplanar-meters (box faces)
+- **Entscheidung:** `triplanar-meters` für `grid-paper-*` auf Solids; später auch Wood; Blend via `procedural-triplanar-meters.ts`. `paper-grain` auf Solids: `meter-3d` (nicht triplanar).
+- **Grund:** `positionLocal.xy` zeigt Gitter nur auf Front/Back eines Blocks; professionelles Box-Mapping ohne per-Face-UV-Authoring.
+- **Verworfen:** Nur Geometry-UV-Fix für Block; NPM-Dependency `tsl-textures` (nur Docs-Referenz).
+
+### 2026-10-13 — Grid paper materials (opaque + transparent lines)
+- **Entscheidung:** Zwei `textured`-Profile `grid-paper-opaque` / `grid-paper-lines`; zweite Preset-Farbe `lineColor` nur für opaque; 1 mm + 5 mm Raster im TSL-Shader; `tileScale` = Linien/m; Lines-Profil mit `opacityNode`, `depthWrite: false`.
+- **Grund:** Millimeterpapier-Look als Material (Mockups, Overlays, PNG-Export) — getrennt von Asset-Geometrie-mm.
+- **Verworfen:** Gitter als Mesh-Geometrie; ein Preset mit Alpha-Slider statt zwei klarer Built-ins.
+
+### 2026-10-13 — Rigid primitives: Block, Cylinder, Sphere
+- **Entscheidung:** Ein Engine-Service `RigidPrimitivePhysicsColliders` für `block` | `cylinder` | `sphere`; Rapier-IDs `physics:${kind}:${entityId}`; Collider-Union in `rigid-collider-desc.ts`; shared UI `RigidBodyPhysicsFields`.
+- **Grund:** Cylinder/Sphere ohne Copy-Paste von Block-Physik; Architecture-Doc „World physics participants“.
+- **Verworfen:** Drei getrennte Collider-Klassen; Block weiter mit bare `entityId` als Body-Key.
+
+### 2026-10-13 — Fabric plane collider centered on sheet
+- **Entscheidung:** `fabricClothColliderShapeFromExtents`: `colliderOffsetY = 0` — 1 cm Rapier-Slab **±5 mm um die Stoffebene** (Fuß), nicht nur darüber.
+- **Grund:** Stapel Block–Stoff–Block soll **~1 cm** sichtbaren Abstand liefern (0,5 cm Partner-Margin); vorher lag Collider komplett über der Plane → Stoff wirkte „auf“ dem Block.
+- **Verworfen:** Extra Render-Offset nur für Luft.
+
+### 2026-10-13 — Physics parameter inventory follow-up
+- **Entscheidung:** `STANDARD_GRAVITY_Y_MPS2` nur in `physics/constants.ts`; `createDynamicBox` verlangt `massKg`; Fabric-Masse in `constants`; Restitution über `RIGID_DYNAMIC_RESTITUTION`; Kontakt-Friction/Restitution-Tests auf Ground/Box/Fixed-Block.
+- **Grund:** Requirement „Parameter sinnvoll besetzt“ — eine g-Quelle, keine stillen Default-Massen, weniger Literale.
+- **Verworfen:** CCD pro Asset abschalten (Fabric bleibt CCD an in v1).
+
+### 2026-10-13 — Dynamic rigid damping — global constants
+- **Entscheidung:** `PHYSICS_DYNAMIC_LINEAR_DAMPING` (0.4) und `PHYSICS_DYNAMIC_ANGULAR_DAMPING` (0.55) in `physics/constants.ts`; gesetzt nur in `PhysicsWorld.createDynamicRigidBody` (Block, Fabric-Plane, Rigid-Test).
+- **Grund:** Alle Dynamic-Bodies gleich schnell zur Ruhe kommen; Requirements explizit; Werte erhöht gegen Rockern nach Aufprall.
+- **Verworfen:** Pro-Asset-Damping oder UI-Slider in v1.
+
+### 2026-10-13 — World physics DRY (Block + Fabric)
+- **Entscheidung:** Gemeinsame Helfer in `physics-sync.ts` (`poseFromObject3D`, `setPhysicsBindingsSleeping`, `syncPhysicsBindingsToRegistry`). `WorldPhysicsSessionController` iteriert `dynamicParticipants` (`WorldPhysicsDynamicParticipant`). `PhysicsWorld.createDynamicRigidBody` für Block-Box und Fabric-Box.
+- **Grund:** Weniger Copy-Paste; Cylinder später als weiterer Participant.
+- **Verworfen:** Separate Adapter-Objekte in `mockup-engine`.
+
+### 2026-10-13 — Physics cleanup — participants + Block collider API
+- **Entscheidung:** `physics-participants.ts` an fixed/dynamic Block + Fabric angepasst (`spawnsDynamicBodyOnWorldStart`, `hasIdleFixedPhysicsCollider`, …). `BlockPhysicsColliders` nur noch `reconcileEntity` (kein `upsertFromRuntime` / tote Helfer). Unbenutzter `fixedAssetColliderCount` in `PhysicsWorld` entfernt.
+- **Grund:** Semantik nach Block-Physik-Implementierung; weniger tote Oberfläche.
+- **Verworfen:** „Jeder Block = Collision participant“.
+
+### 2026-10-13 — Rigid props — Dichte pro Entity
+- **Entscheidung:** Block/Zylinder: **`physicsDensityKgPerM3`** Default **1000**; Panel **Density** editierbar, **Weight (kg)** read-only aus Volumen × Dichte; Scene Save.
+- **Grund:** Mockup-realistische Masse; User kann Material nachstellen ohne separates Gewichtsfeld.
+- **Verworfen:** Nur implizite Masse ohne UI.
+
+### 2026-10-13 — Physics body mode + Cylinder asset (Docs)
+- **Entscheidung:** Rigide Props (**Block**, **Cylinder**): **`physicsBodyMode`** `fixed` | `dynamic` im **Scene-Panel** (Asset-Editor); World-**Start** aktiviert Dynamics nur für `dynamic` + Stoff. Neues Asset **`cylinder`** wie Block, **Corner radius** nur an **2 Kreiskanten** (Deckel↔Mantel).
+- **Grund:** User platziert Szene, wählt pro Objekt Verhalten, dann ein Start-Button.
+- **Verworfen:** Block immer Fixed ohne UI.
+
+### 2026-10-13 — Fabric cloth — kein wavy/deformation
+- **Entscheidung:** Kein prozeduraler **wavy**-Modus; kein `fabricClothParams.deformation` — Verformung nur **Rapier** (World physics).
+- **Grund:** Eine Pipeline; Docs und Types vereinfacht.
+- **Verworfen:** stiff/wavy/physical-Tripel.
+
+### 2026-10-13 — Physics-Requirements — eine kurze Datei
+- **Entscheidung:** Normativ nur [`requirements-physics.md`](../requirements/requirements-physics.md) (Szene bauen → Start; **1 dm³ ≈ 1 kg**; Rapier). `requirements-physics-fabric-pbd.md` nach `/_deleted`; `requirements-physics-fabric-rapier.md` nur Redirect.
+- **Grund:** Weniger Docs, klares Nutzer-Ziel statt Meilenstein-Listen.
+- **Verworfen:** Getrennte GPU-/Fabric-Requirement-Dateien als Pflicht-Lektüre.
+
+### 2026-10-13 — Fabric cloth — Rapier-only nach Backup (Docs)
+- **Entscheidung:** Stoff-Simulation **nur Rapier** — MVP = dynamisches Plane-Proxy; Ziel = Partikel + Spring-Impulse-Joints + Mesh-Sync. **Kein** WebGPU GPU-PBD, **kein** CPU-Verlet als Produktpfad.
+- **Grund:** Backup-Stand (flaches Tuch fällt per Rapier auf Block); eine Pipeline in `PhysicsWorld.step`, weniger Sonderfälle.
+- **Verworfen:** `requirements-physics-fabric-pbd.md` / GPU-Fahrplan; `FabricClothVerletSession` als Primärweg; `deformation` stiff/wavy/physical in UI.
+
+### 2026-10-13 — Fabric cloth — Registry-Reconcile + Pose-Sync pro Step
+- **Entscheidung:** `BlockPhysicsColliders.reconcileWithRegistry` / `getClothColliderEntityIds`; jeden Cloth-Step `syncAllBlockPosesFromRuntime`; Sim-Start `syncAllBlocks` + Reconcile; Verlet **1×** `FIXED_TIMESTEP`/Frame, `subSteps=1`, Blöcke vor Boden in `fixedBodyIds`.
+- **Grund:** Geister-Würfel = Rapier-Body an alter Pose / verwaiste `trackedIds`; Ruckeln = bis 4×4 Substeps vs. TSL (2) `step(1/60, 10)`.
+- **Verworfen:** Blindes `getTrackedEntityIds` ohne Registry; Multi-Step-Accumulator pro Frame.
+
+### 2026-10-13 — Fabric cloth — Kollision nur Rapier-Collider
+- **Entscheidung:** Tuch-Partikel via `collider.projectPoint` auf **dieselben** Fixed-Bodies wie `BlockPhysicsColliders` (roundCuboid inkl. Radius); paralleles `fabric-cloth-block-collision` entfernt.
+- **Grund:** Block-Panel-Änderungen müssen 1:1 die Drapierfläche sein; kein zweites Shape-Modell.
+- **Verworfen:** TS-Obstacle-Buffer / SDF-Duplikat.
+
+### 2026-10-13 — Fabric cloth — TSL-Demo Block-SDF + Kontaktreibung
+- **Entscheidung:** Block-Kollision = **rounded-box SDF** (Kanten/Corners), Margin `halfThickness + 10 mm`; Boden/Block **Verlet-Reibung** auf `prev`; PBD **Stretch/Shear/Bend** mit Stiffness 1 / 0.75 / 0.45, ~10 Iterationen, Dämpfung 0.991.
+- **Grund:** Tischtuch: scharfe AABB ließ Würfelkanten durchscheinen; ohne Reibung keine Ruhe (TSL-Demo).
+- **Verworfen:** Nur 2 mm Skin + Facetten-Push (gemini AABB).
+
+### 2026-10-13 — Fabric cloth Verlet — fixed dt, Boden 1 mm, enge Block-AABB
+- **Entscheidung:** Cloth-Step nur mit **`FIXED_TIMESTEP`** (Accumulator, max 3/Frame); Boden **`FABRIC_CLOTH_GROUND_CONTACT_Y_M = 0.001`**; Block-Kollision ohne Fillet-Puffer auf `halfExtents`, Margin 1 mm; Dämpfung ~0.992 wie Demo.
+- **Grund:** Variables `deltaSeconds` → Zappeln; `groundY = 0.02` → sichtbare Luft über y=0-Boden; aufgeblähte Block-Box → cm-Abstand.
+- **Verworfen:** Rapier-`borderRadius` im Cloth-AABB; 0.01 m Block-/Boden-Puffer.
+
+### 2026-10-13 — Fabric cloth — CPU Verlet/PBD wie HTML-Demo, keine Rapier-Federn
+- **Entscheidung:** Tuch = **`FabricClothVerletSession`** (Welt-Partikel, Distanz-Constraints, Boden + Block-AABB). Rapier bleibt für Boden/Blöcke/Rigid-Test; **keine** Spring-Joints pro Kantenpixel.
+- **Grund:** Referenz-Beispiel ist PBD/Verlet, nicht Rapier-Springs; stabileres Drapieren ohne tausende Dynamic Bodies.
+- **Verworfen:** Rapier Spring-Gitter (`FabricClothRapierSession`).
+
+### 2026-10-13 — Fabric cloth — Rapier Spring-Gitter statt GPU/Deformation-Modi
+- **Entscheidung:** Ein Verhalten: waagrechtes Tuch; Simulation nur **Rapier** (Partikel + Spring-Impulse-Joints, Kantenlänge aus Quality). UI/Entity **`deformation`** entfällt. GPU/Verlet/PBD-Cloth-Code entfernt.
+- **Grund:** Eine Pipeline, weniger Sonderfälle; Mockup-Physik im bestehenden `PhysicsWorld.step`.
+- **Verworfen:** WebGPU-PBD/Verlet als Primärpfad; stiff/wavy/physical-Tripel; Rapier-Plane-Proxy; separates GPU-Block-Collider-Array für Tuch.
+
+### 2026-10-12 — Fabric cloth M4a — Block-Kontakt aus `blockBody`-Mesh
+- **Entscheidung:** Snapshot `axisAlignedWorldVolume` = `Box3.setFromObject(blockBody)` (+ Margin); Pose `getWorldPosition/Quaternion`; nur sichtbare Blocks; Shape-Fallback für gedrehte Round-Cuboid-Pfade.
+- **Grund:** Param-only AABB wich vom platzierten Asset ab („anderer Würfel“).
+- **Verworfen:** Nur `entity.transform` / theoretische Maße ohne Render-Mesh.
+
+### 2026-10-12 — Fabric cloth M4a — Block-Kollision Performance
+- **Entscheidung:** Ungedrehte Blöcke → gecachtes `axisAlignedWorldVolume` + Silk-`collideCube`-Pfad (O(1)); gedrehte Blöcke → Round-Cuboid nur mit 3 mm Margin + Kollision in Constraint-Pässen nur letzter Pass; Fillet: AABB-Slab vor SDF.
+- **Grund:** Round-Cuboid + 20 mm Margin auf jedem Vertex × 8 Pässe war spürbar ruckelig.
+- **Verworfen:** Rapier auslesen; komplett zurück auf Entity-AABB ohne Shape/Pose.
+
+### 2026-10-12 — Fabric cloth M4a — Block-Kontakt aus Entity-Shape, nicht Rapier
+- **Entscheidung:** Cloth-Verlet-Kollision: `fabricClothBlockCollidersFromRegistry` = `blockColliderShapeFromParams` + `poseFromObject(runtime.object)`; Snapshot in `FabricClothGpuSession.spawnAll`; `resolveWorldPointAgainstBlockCollider` (Fillet + Rotation). Gemeinsam mit Rapier nur die **Shape-Definition** (`block-collider-from-runtime.ts`), **kein** Auslesen aus `PhysicsWorld`.
+- **Grund:** Hot Path nutzte Silk-`collideCube`-AABB aus `entity.transform` — weder sichtbarer Block noch Rapier-Fillet/Rotate.
+- **Verworfen:** Rapier-Collider-Liste als Datenquelle für GPU/Verlet (Rigid-Test-Cube, Lifecycle).
+
+### 2026-10-12 — Fabric border — Ring-Grid DRY (stiff + physical)
+- **Entscheidung:** `fabric-cloth-ring-grid.ts` — `fabricClothRingAxisCoords` + `buildFabricClothRingGridMesh`; Stiff und Sim teilen Achsen/Material-Quads; Sim ohne gleichmäßiges Voll-Grid bei Border.
+- **Grund:** Nach dem Fallen uneinheitliche Bordürenbreite (Sim-Grenze wich von 2-mm-Innenkante ab).
+- **Verworfen:** Dreieck-Klassifikation per Vertex-Position auf uniformem Sim-Raster.
+
+### 2026-10-12 — Fabric border — exakte 2 mm + `borderWidthM`
+- **Entscheidung:** Ring-Geometrie mit 4×4-Vertices (Innenkante = Bildmaß, Außen = +`borderWidthM`); kein `PlaneGeometry(3×3)` mit gleichen Dritteln. Parameter `borderWidthM` (Default 0,002 m), Panel Width (mm).
+- **Grund:** Equal-thirds wirkte ~15 cm breit; Physical-Sim nutzte korrektes Außenmaß, Material-Rand nicht.
+- **Verworfen:** Fixe 2 mm nur per Konstante (früher Diary „borderWidthMm verworfen“ — wieder aufgenommen auf User-Wunsch).
+
+### 2026-10-12 — Fabric drape — Leather statt „Stiff cloth“
+- **Entscheidung:** Built-in **`material-leather`** (Optik Leder, PBR); Physik weiter `fabricDrapePresetId: 'stiff'` (schwer/steif). `material-stiff` → Migration auf Leather.
+- **Grund:** User-sichtbarer Name; steifes Mockup-Material ohne generisches „Stiff cloth“.
+- **Verworfen:** Canvas als viertes Preset (Leder passt besser zu schwerem Drape-Mockup).
+
+### 2026-10-12 — Fabric drape — Material-Preset statt Physics-Panel
+- **Entscheidung:** Vier Built-ins (`material-silk` … `material-stiff`) mit `fabricDrapePresetId`; Solver via `resolveFabricDrapeForClothEntity`; Physics-Panel Drape-Dropdown entfernt; `physicsOverride` am Entity entfällt; `material-fabric` → Cotton.
+- **Grund:** User wählt Stoff wie Optik — eine Dropdown am Asset; weniger globale Settings.
+- **Verworfen:** Globales `physicsSettings.fabricDrapePreset`.
+
+### 2026-10-12 — Fabric cloth — Silk-HTML Verlet reference solver
+- **Entscheidung:** `physical` CPU-Pfad = Port von `interactive_silk_cloth_simulation.html`: Verlet + prevPos, 10 Substeps, 8 Constraint-Pässe, Stiffness 0,75, nur Stretch+Shear (keine Bend-Pairs), `collideCube`-AABB + Boden, Damping `pow(0.989, subDt*600)`.
+- **Grund:** User-Referenz für draping; alter Euler+PBD/Bend wich stark ab (Gelee, Zappeln).
+- **Verworfen:** Bend-Pairs im Hot Path; separater GPU-PBD-Pfad für MVP-Drape.
+
+### 2026-10-12 — Fabric PBD — Damping, Block-AABB, Constraint-Passes
+- **Entscheidung:** `effectiveVelocityDamping`: Panel=1 → Preset ζ; Block-Kollision = volles AABB (Push-out + Top), Kollision **in** jedem Constraint-Pass; 2 Substeps × 6 interleaved Stretch/Shear/Bend; Silk ζ≈0,985.
+- **Grund:** Zappeln/Schrumpfen (kein Preset-Damping bei global 1); Glitch in Würfel (nur Top bei XZ, keine Seiten); Referenz-HTML: Kollision während Constraint-Relaxation.
+- **Verworfen:** `Math.max` für ζ bei Multiplikatoren (wirkte wie „aus“).
+
+### 2026-10-12 — Fabric PBD — Welt↔Mesh-Matrix + stabiler CPU-Solver
+- **Entscheidung:** Sim nutzt `clothMesh.matrixWorld` (nicht Entity-Root); bei Physics-Start `rotation.x = 0` (Sim-Grid = XZ, Y = Fall); keine Boden-Clamps mitten in Distance-Constraints; skip-2 out-of-plane vorerst aus; Velocity-Cap + weichere Constraint-Stärke.
+- **Grund:** Zickzack/„Explosion“ — Schwerkraft in Welt-Y, aber Plane −90° + falsche Matrix koppelten Deformation falsch; skip-2-Constraints destabilisierten bei 3D-Drape.
+- **Verworfen:** Out-of-plane skip-2 im Hot Path bis dihedral/XPBD.
+
+### 2026-10-12 — Fabric cloth — CPU PBD hot path + Default `physical`
+- **Entscheidung:** `FabricClothGpuClothSim.step` = Welt-PBD nur CPU (integrate, stretch/shear/bend + skip-2 out-of-plane, Block-Top-AABB + Boden); Default-Szene `fabricClothDeformation: 'physical'`, Start-Y ~0,32 m; Default-Drape-Preset **silk**.
+- **Grund:** „Steif auf Würfel“ war oft **`stiff`** (Rapier-Platte fällt als Ganzes) + GPU-Constraint-Blend wirkungslos; CPU-Pfad liefert sichtbare Deformation ohne Readback-Risiko.
+- **Verworfen:** Default-Szene ohne `deformation`-Override (blieb `stiff`).
+
+### 2026-10-12 — Fabric PBD M3 — Hybrid integrate GPU + CPU constraints
+- **Entscheidung:** Nach `computeAsync(integrate)` GPU→CPU Readback (pos/vel); Stretch/Shear/Bend auf CPU mit `constraintStrengthFromK` (Preset-k, nicht XPBD-Compliance); Upload zurück. GPU-Jacobi-Passes deaktiviert im Hot Path (Blend war ~0).
+- **Grund:** Keine sichtbaren Falten — `complianceToDeltaBlend` aus riesiger Compliance wirkungslos; CPU-Array ohne Readback stale.
+- **Verworfen:** Nur GPU-Jacobi ohne Readback pro Substep.
+
+### 2026-10-12 — Fabric PBD M3 — GPU Jacobi constraints + skip-pair bend
+- **Entscheidung:** Stretch/Shear/Bend als TSL-Compute (edge-dispatch, `atomicAdd` auf `posDelta`, apply + ground pass); Bending = **skip-pair hinge** aus `bendPairs`; Drape → `compliancesFromDrapeParams`; Mesh-Sync ein `getArrayBufferAsync`/Frame.
+- **Grund:** M3 Roadmap; CPU-PBD nur noch Tests (`solveDistanceConstraints`).
+- **Verworfen:** Dihedral 4-vertex bend in M3; Gauss-Seidel edge coloring (Jacobi + atomics stattdessen).
+
+### 2026-10-12 — Fabric PBD — Primärpfad WebGPU; Docs Stand M2
+- **Entscheidung:** `physical` bleibt **WebGPU-PBD** (M3 Bend, M4 Block-Kontakt aus Rapier-Collider-Daten). **Kein** Rapier SoftBody/SpringJoint-Cloth. Requirements/Roadmap: „flach auf Block“ = M2-Limit (kein Block in GPU, kein Bending).
+- **Grund:** Mockup-Ziel Tischtuch; Rapier nur für rigide Welt; M2 bewiesen Compute+Sync.
+- **Verworfen:** Rapier-Cloth als Ersatz für GPU-PBD (Diskussion 2026-10-12).
+
+### 2026-10-12 — Fabric PBD M2 — GPU integrate + world-space ground
+- **Entscheidung:** WebGPU `ComputeNode` (TSL) integriert `worldPos`/`worldVel`; Boden `max(y,0)` in Welt; `getArrayBufferAsync` → lokales `position`-Attribut; fixed timestep in Session; nur Hauptbahn-Mesh subdividiert.
+- **Grund:** M2-Spike laut Roadmap; Entity-Foot/Rotation über matrixWorld.
+- **Verworfen:** Deep-import ComputeNode langfristig — vorerst `three/src/nodes/gpgpu/ComputeNode.js` als Typ.
+
+### 2026-10-12 — Fabric PBD M1 — Sim-Mesh, GpuSession shell, Plane nur stiff
+- **Entscheidung:** `FabricClothSimMesh` CPU-Builder; `FabricClothGpuSession` an World-Session; Rapier-Plane nur `deformation: 'stiff'`; `physical` → GpuSession (step leer bis M2). Drape/Quality in `physics-settings` + `fabric-cloth-drape-presets.ts`.
+- **Grund:** Fahrplan M1 — Daten/Teilnehmer trennen vor WebGPU-Spike.
+- **Verworfen:** Plane für alle Stoffe parallel zu GPU.
+
+### 2026-10-12 — Fabric cloth GPU — Sim-State / Bake ohne SAB
+- **Entscheidung:** **Freeze** = GPU-Compute pause, Buffer behalten; **Bake** = expliziter async GPU→CPU Readback ins Mesh; zwei Schichten `SimState` vs `BakedMesh`. **Kein** SharedArrayBuffer / COOP-COEP für Cloth v3.
+- **Grund:** SAB hilft Worker/Parallelität, nicht Freeze; Bake-Kosten liegen am GPU-Readback, nicht am CPU-Sharing.
+- **Verworfen:** World-Freeze als Vertex-Bake; SAB „von Anfang an“ für Export.
+
+### 2026-10-12 — Fabric cloth — World physics: Rapier plane proxy
+- **Entscheidung:** Beim World-Physics-**Start** jedes `fabric-cloth` → **dynamischer** dünner Cuboid (Plane-Proxy, ~0,2 kg, Foot-Pivot); Pose-Sync Rapier → Entity; **Reset** entfernt Bodies; **Freeze** = `sleep`.
+- **Grund:** Schnell Kollision/Masse testen, bevor GPU-PBD für `physical` da ist.
+- **Verworfen:** Softbody in Rapier; nur `physical`-Cloths mit Dynamic (vorerst alle Stoffe gleich).
+
+### 2026-10-12 — Block — Default-Maße 0,3 m Würfel
+- **Entscheidung:** `defaultBlockParams`: **0,3 × 0,3 × 0,3 m** (statt 1 m); `cornerRadiusMm` unverändert **5**.
+- **Grund:** Neuer Block soll Stilleben-Prop-Größe sein, nicht metergroßer Platzhalter.
+- **Verworfen:** 1×1×1 m als Spawn-Default.
+
+### 2026-10-12 — Fabric cloth — Material-Dropdown statt Matt/Glossy
+- **Entscheidung:** Stoffbahn: **gesamte** Materials-Bibliothek (`fabricClothMaterialId`), **kein** `ImageSurfaceFields`; Bild = Albedo, Preset nur **Struktur** (Roughness, procedural, …) — **keine** Material-Farbe/Tint auf der Bahn.
+- **Grund:** Stoffmockup = Motiv + Stoffcharakter (Seide, Leinen, …), nicht Print-Finish.
+- **Verworfen:** Matt/Glossy wie Picture; Preset-`color` auf bildtragender Fläche.
+
+### 2026-10-12 — Fabric cloth — Default waagrecht auf Boden
+- **Entscheidung:** `fabric-cloth` wird **horizontal** platziert (Ebene **XZ**, Oberseite **+Y**, Flatlay); Default-Spawn **flach auf Ground** — Abweichung von senkrechten bildtragenden Planes (Print, Picture, …). Mesh in XZ gebaut, nicht aufrecht + Dauer-Rotation.
+- **Grund:** Ausgelegtes Tuch / Draufsicht-Mockups.
+- **Verworfen:** Gleiche Default-Orientierung wie Print-Front (senkrecht).
+
+### 2026-10-12 — Fabric cloth — Border 2 mm außen, flach
+- **Entscheidung:** Optionale **Bordüre** fest **2 mm** breit, **flach** in der Bahn-Ebene, **außen** rund um die Bildfläche; Panel **Enable** + **Color** (`ColorPicker`, Colors-Bibliothek); Panel-Maße = Motiv ohne Border.
+- **Grund:** Einfaches Mockup (Saum/Bindung), keine extrudierte Paspel, keine mm-Slider in v1.
+- **Verworfen:** Rand **innen** auf dem Motiv; erhabene Extrusion. *(User-`borderWidthM` später ergänzt — s. Eintrag Ring-Grid.)*
+
+### 2026-10-11 — Große Module — Store/Engine Aufräumen (ohne Verhalten)
+- **Entscheidung:** [`app-store-internals.ts`](../../src/ui/store/app-store-internals.ts) + Domain-Slices (`app-store-*`); [`app-store.ts`](../../src/ui/store/app-store.ts) Barrel/`setSceneApi`. Engine: [`asset-system-rebuild.ts`](../../src/engine/asset-system-rebuild.ts), [`mockup-engine-capture.ts`](../../src/engine/mockup-engine-capture.ts). Section-Kommentare in `entity-registry` / `asset-kind-registry`.
+- **Grund:** Audit „Große Dateien“ — Lesbarkeit; öffentliche Imports bleiben `@/ui/store/app-store`.
+- **Verworfen:** Generisches `setAssetParams` im Store (Save v2).
+
 ### 2026-10-11 — Produktname Mockup Studio 3D, Version 0.0.1
 - **Entscheidung:** Anzeigename **Mockup Studio 3D**; npm-Paket `mockup-studio-3d`; Version **0.0.1**. Zentrale Konstanten in [`app-meta.ts`](../../src/app-meta.ts) (Name + `version` aus `package.json`); UI: Top-Bar-Titel, Status-Bar, `document.title`.
 - **Grund:** Umbenennung von „Mockup Studio Light“; frühe 0.0.x-Versionierung.

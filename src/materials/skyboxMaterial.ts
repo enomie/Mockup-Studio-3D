@@ -5,11 +5,11 @@ import { SCENE_DEFAULTS } from '@/config/scene-defaults';
 import { createFloatUniform, setUniformFloat } from './uniform-float';
 import { createRgbUniform, setUniformRgb } from './uniform-rgb';
 
-export type SkyState = {
+export interface SkyState {
   horizonColor: Rgb;
   zenithColor: Rgb;
   gradientFade: number;
-};
+}
 
 const { environment } = SCENE_DEFAULTS;
 

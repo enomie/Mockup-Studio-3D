@@ -3,13 +3,13 @@ import { isMonitorAssetKind, MONITOR_DEFAULT_BODY_DEPTH_MM } from './asset-monit
 import { MM_TO_M } from '@/units/length';
 
 /** Geometry params for handheld devices — mm values at sizeScale 1. */
-export type HandheldDeviceParams = {
+export interface HandheldDeviceParams {
   screenCornerRadiusMm: number;
   bezelWidthMm: number;
   /** Outer perimeter edge roundness (front/back face to side wall), mm at sizeScale 1. */
   outerEdgeRadiusMm: number;
   bodyDepthMm?: number;
-};
+}
 
 export const SMARTPHONE_REF_SCREEN_HEIGHT_M = 0.16;
 export const TABLET_REF_SCREEN_HEIGHT_M = 0.25;
@@ -120,7 +120,7 @@ export function outerEdgeRadiusM(
   sizeScale = 1,
 ): number {
   const radiusMm = clampOuterEdgeRadiusMm(
-    params.outerEdgeRadiusMm ?? DEFAULT_OUTER_EDGE_RADIUS_MM,
+    params.outerEdgeRadiusMm,
     bodyDepthMm,
   );
   return radiusMm * MM_TO_M * sizeScale;

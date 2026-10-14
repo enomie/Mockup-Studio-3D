@@ -15,9 +15,12 @@ export type AssetGeometryPart =
   | 'label'
   | 'cork'
   | 'capsuleFoil'
-  | 'capsuleDisc';
+  | 'capsuleDisc'
+  | 'cap'
+  | 'ring'
+  | 'penBody';
 
-export type AssetGeometryVisibility = {
+export interface AssetGeometryVisibility {
   frame?: boolean;
   glazing?: boolean;
   backWall?: boolean;
@@ -31,7 +34,10 @@ export type AssetGeometryVisibility = {
   cork?: boolean;
   capsuleFoil?: boolean;
   capsuleDisc?: boolean;
-};
+  cap?: boolean;
+  ring?: boolean;
+  penBody?: boolean;
+}
 
 export function defaultGeometryVisibility(
   assetKind: AssetKind,
@@ -44,7 +50,7 @@ export function isGeometryVisible(
   part: AssetGeometryPart,
 ): boolean {
   const value = visibility?.[part];
-  return value === undefined ? true : value;
+  return value ?? true;
 }
 
 export function cloneGeometryVisibility(
@@ -67,7 +73,7 @@ export function migrateGeometryVisibility(
   const legacyMaterials = materials as AssetMaterialSlots & {
     glazingEnabled?: boolean;
   };
-  if (legacyMaterials?.glazingEnabled === false) {
+  if (legacyMaterials.glazingEnabled === false) {
     base.glazing = false;
   }
 

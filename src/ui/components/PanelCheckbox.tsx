@@ -1,9 +1,9 @@
-type PanelCheckboxProps = {
+interface PanelCheckboxProps {
   label: string;
   checked: boolean;
   onChange: (checked: boolean) => void;
   disabled?: boolean;
-};
+}
 
 export function PanelCheckbox({
   label,
@@ -20,7 +20,7 @@ export function PanelCheckbox({
           className="panel-checkbox__input"
           checked={checked}
           disabled={disabled}
-          onChange={(event) => onChange(event.target.checked)}
+          onChange={(event) => { onChange(event.target.checked); }}
         />
       </span>
     </label>

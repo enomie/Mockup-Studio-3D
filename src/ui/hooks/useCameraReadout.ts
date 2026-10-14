@@ -46,7 +46,7 @@ export function useCameraReadout(): CameraReadout {
     };
 
     frameId = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frameId);
+    return () => { cancelAnimationFrame(frameId); };
   }, []);
 
   return readout;

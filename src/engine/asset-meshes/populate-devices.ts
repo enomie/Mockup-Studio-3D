@@ -13,7 +13,6 @@ import {
 } from '@/scene/asset-handheld';
 import {
   clampDisplayTiltDeg,
-  MONITOR_DEFAULT_STAND_FOOT_OFFSET_Z_MM,
   monitorMountHeightM,
   monitorStandHeightsM,
   type MonitorDeviceParams,
@@ -85,9 +84,9 @@ function addSideButtons(
   }
 }
 
-type HandheldDisplayBuildOptions = {
+interface HandheldDisplayBuildOptions {
   sideButtonCenterYFactor?: number;
-};
+}
 
 function buildHandheldDisplayMeshes(
   group: Group,
@@ -294,7 +293,7 @@ export function addHandheld(
   geometryVisibility?: AssetGeometryVisibility,
   imageSurfaces?: Partial<Record<AssetFaceId, ImageSurfaceSettings>>,
 ): void {
-  if (!handheldParams) return;
+  if (!handheldParams) {return;}
   buildHandheldDisplayMeshes(
     group,
     assetKind,
@@ -326,7 +325,7 @@ export function addMonitor(
   geometryVisibility?: AssetGeometryVisibility,
   imageSurfaces?: Partial<Record<AssetFaceId, ImageSurfaceSettings>>,
 ): void {
-  if (!monitorParams) return;
+  if (!monitorParams) {return;}
 
   const mm = 0.001 * sizeScale;
   const standBaseMaterialId =
@@ -347,8 +346,7 @@ export function addMonitor(
   const baseCornerM = monitorParams.standBaseCornerRadiusMm * mm;
   const footWidthM = monitorParams.standFootWidthMm * mm;
   const footDepthM = monitorParams.standFootDepthMm * mm;
-  const footOffsetZMm =
-    monitorParams.standFootOffsetZMm ?? MONITOR_DEFAULT_STAND_FOOT_OFFSET_Z_MM;
+  const footOffsetZMm = monitorParams.standFootOffsetZMm;
   const footOffsetZ = -footOffsetZMm * mm;
 
   if (isGeometryVisible(geometryVisibility, 'standBase')) {

@@ -63,7 +63,7 @@ export class CameraController {
   private viewportActivityListener: (() => void) | null = null;
 
   private readonly onKeyDown = (event: KeyboardEvent): void => {
-    if (this.shouldIgnoreKeyboard(event)) return;
+    if (this.shouldIgnoreKeyboard(event)) {return;}
     if (event.code === 'Space') {
       event.preventDefault();
       this.spaceDown = true;
@@ -215,7 +215,7 @@ export class CameraController {
   }
 
   updateDrag(clientX: number, clientY: number): void {
-    if (!this.dragMode) return;
+    if (!this.dragMode) {return;}
 
     const dx = clientX - _pointerPrev.x;
     const dy = clientY - _pointerPrev.y;
@@ -237,7 +237,7 @@ export class CameraController {
 
   beginPinch(pointers: Map<number, Vector2>): void {
     const points = [...pointers.values()];
-    if (points.length < 2) return;
+    if (points.length < 2) {return;}
 
     this.endDrag();
     this.prevTouchCenter = new Vector2(
@@ -250,7 +250,7 @@ export class CameraController {
 
   updatePinch(pointers: Map<number, Vector2>): void {
     const points = [...pointers.values()];
-    if (points.length < 2) return;
+    if (points.length < 2) {return;}
 
     const center = new Vector2(
       (points[0].x + points[1].x) * 0.5,
@@ -290,7 +290,7 @@ export class CameraController {
   }
 
   detach(): void {
-    if (!this.domElement) return;
+    if (!this.domElement) {return;}
 
     window.removeEventListener('keydown', this.onKeyDown);
     window.removeEventListener('keyup', this.onKeyUp);
@@ -302,7 +302,7 @@ export class CameraController {
   }
 
   setProjection(projection: CameraProjection): void {
-    if (this.activeProjection === projection) return;
+    if (this.activeProjection === projection) {return;}
 
     if (this.activeProjection === 'perspective') {
       _offset.copy(this.perspective.position).sub(this.target);
@@ -327,9 +327,9 @@ export class CameraController {
   }
 
   setTarget(partial: Partial<Vec3>): void {
-    if (partial.x !== undefined) this.target.x = partial.x;
-    if (partial.y !== undefined) this.target.y = partial.y;
-    if (partial.z !== undefined) this.target.z = partial.z;
+    if (partial.x !== undefined) {this.target.x = partial.x;}
+    if (partial.y !== undefined) {this.target.y = partial.y;}
+    if (partial.z !== undefined) {this.target.z = partial.z;}
     this.applyActiveProjection();
     this.notifyChange();
   }
@@ -373,7 +373,7 @@ export class CameraController {
   }
 
   handleResize(width: number, height: number): void {
-    if (width === 0 || height === 0) return;
+    if (width === 0 || height === 0) {return;}
     this.aspect = width / height;
     this.perspective.aspect = this.aspect;
     this.perspective.updateProjectionMatrix();
@@ -507,7 +507,7 @@ export class CameraController {
   }
 
   private updateCursor(): void {
-    if (!this.domElement) return;
+    if (!this.domElement) {return;}
     if (this.spaceDown || this.dragMode === 'pan') {
       this.domElement.style.cursor = this.dragMode === 'pan' ? 'grabbing' : 'grab';
     } else {
