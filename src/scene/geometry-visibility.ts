@@ -70,10 +70,7 @@ export function migrateGeometryVisibility(
     ...visibility,
   };
 
-  const legacyMaterials = materials as AssetMaterialSlots & {
-    glazingEnabled?: boolean;
-  };
-  if (legacyMaterials.glazingEnabled === false) {
+  if (materials && 'glazingEnabled' in materials && materials.glazingEnabled === false) {
     base.glazing = false;
   }
 

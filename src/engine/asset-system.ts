@@ -377,7 +377,7 @@ export class AssetSystem {
       printParams,
     );
     if (fabricClothSpawnParams) {
-      this.registry.setFabricClothParams(id, fabricClothSpawnParams);
+      this.registry.setKindParams('fabricCloth', id, fabricClothSpawnParams);
     }
     if (usesAsyncPackagingRebuild(assetKind)) {
       void rebuildEntity(this.rebuildCtx, id);
@@ -562,7 +562,7 @@ export class AssetSystem {
     const runtime = this.registry.getRuntime(entityId);
     if (!runtime || !isHandheldAssetKind(runtime.entity.assetKind)) {return;}
 
-    this.registry.setHandheldParams(entityId, partial);
+    this.registry.setKindParams('handheld', entityId, partial);
     await rebuildEntity(this.rebuildCtx, entityId);
   }
 
@@ -573,7 +573,7 @@ export class AssetSystem {
     const runtime = this.registry.getRuntime(entityId);
     if (!runtime || !isMonitorAssetKind(runtime.entity.assetKind)) {return;}
 
-    this.registry.setMonitorParams(entityId, partial);
+    this.registry.setKindParams('monitor', entityId, partial);
     await rebuildEntity(this.rebuildCtx, entityId);
   }
 
@@ -592,7 +592,7 @@ export class AssetSystem {
     }
 
     const footY = footWorldY(runtime.entity, this.imageResolver);
-    this.registry.setPrintParams(entityId, partial);
+    this.registry.setKindParams('print', entityId, partial);
     const updated = this.registry.getRuntime(entityId);
     if (!updated?.entity.faces || updated.entity.depth === undefined) {return;}
 
@@ -608,7 +608,7 @@ export class AssetSystem {
     const runtime = this.registry.getRuntime(entityId);
     if (!runtime || !isWallAssetKind(runtime.entity.assetKind)) {return;}
 
-    this.registry.setWallParams(entityId, partial);
+    this.registry.setKindParams('wall', entityId, partial);
     await rebuildEntity(this.rebuildCtx, entityId);
   }
 
@@ -627,7 +627,7 @@ export class AssetSystem {
     const runtime = this.registry.getRuntime(entityId);
     if (!runtime || !isBlockAssetKind(runtime.entity.assetKind)) {return;}
 
-    this.registry.setBlockParams(entityId, partial);
+    this.registry.setKindParams('block', entityId, partial);
     await rebuildEntity(this.rebuildCtx, entityId);
   }
 
@@ -655,7 +655,7 @@ export class AssetSystem {
     const runtime = this.registry.getRuntime(entityId);
     if (!runtime || !isCylinderAssetKind(runtime.entity.assetKind)) {return;}
 
-    this.registry.setCylinderParams(entityId, partial);
+    this.registry.setKindParams('cylinder', entityId, partial);
     await rebuildEntity(this.rebuildCtx, entityId);
   }
 
@@ -663,7 +663,7 @@ export class AssetSystem {
     const runtime = this.registry.getRuntime(entityId);
     if (!runtime || !isSphereAssetKind(runtime.entity.assetKind)) {return;}
 
-    this.registry.setSphereParams(entityId, partial);
+    this.registry.setKindParams('sphere', entityId, partial);
     await rebuildEntity(this.rebuildCtx, entityId);
   }
 
@@ -671,7 +671,7 @@ export class AssetSystem {
     const runtime = this.registry.getRuntime(entityId);
     if (!runtime || !isWheelCarAssetKind(runtime.entity.assetKind)) {return;}
 
-    this.registry.setWheelCarParams(entityId, partial);
+    this.registry.setKindParams('wheelCar', entityId, partial);
     await rebuildEntity(this.rebuildCtx, entityId);
   }
 
@@ -686,7 +686,7 @@ export class AssetSystem {
       runtime.entity.fabricClothParams?.sim.pinnedCornersCount ?? 0;
     const runtimeTuning = isFabricRuntimeTuningPatch(partial);
 
-    this.registry.setFabricClothParams(entityId, partial);
+    this.registry.setKindParams('fabricCloth', entityId, partial);
     const nextSim = runtime.entity.fabricClothParams?.sim;
     if (partial.sim !== undefined && nextSim) {
       this.fabricClothSimulation?.onSimPinsChanged(entityId, prevCount, nextSim);
@@ -772,7 +772,7 @@ export class AssetSystem {
     const runtime = this.registry.getRuntime(entityId);
     if (!runtime || !isBookAssetKind(runtime.entity.assetKind)) {return;}
 
-    this.registry.setBookParams(entityId, partial);
+    this.registry.setKindParams('book', entityId, partial);
     await rebuildEntity(this.rebuildCtx, entityId);
   }
 
@@ -811,7 +811,7 @@ export class AssetSystem {
     const runtime = this.registry.getRuntime(entityId);
     if (!runtime || !isBeverageCanAssetKind(runtime.entity.assetKind)) {return;}
 
-    this.registry.setBeverageCanParams(entityId, partial);
+    this.registry.setKindParams('beverageCan', entityId, partial);
     await rebuildEntity(this.rebuildCtx, entityId);
   }
 
@@ -822,7 +822,7 @@ export class AssetSystem {
     const runtime = this.registry.getRuntime(entityId);
     if (!runtime || !isTinCanAssetKind(runtime.entity.assetKind)) {return;}
 
-    this.registry.setTinCanParams(entityId, partial);
+    this.registry.setKindParams('tinCan', entityId, partial);
     await rebuildEntity(this.rebuildCtx, entityId);
   }
 
@@ -833,7 +833,7 @@ export class AssetSystem {
     const runtime = this.registry.getRuntime(entityId);
     if (!runtime || !isWineBottleAssetKind(runtime.entity.assetKind)) {return;}
 
-    this.registry.setWineBottleParams(entityId, partial);
+    this.registry.setKindParams('wineBottle', entityId, partial);
     await rebuildEntity(this.rebuildCtx, entityId);
   }
 
@@ -844,7 +844,7 @@ export class AssetSystem {
     const runtime = this.registry.getRuntime(entityId);
     if (!runtime || !isPenAssetKind(runtime.entity.assetKind)) {return;}
 
-    this.registry.setPenParams(entityId, partial);
+    this.registry.setKindParams('pen', entityId, partial);
     await rebuildEntity(this.rebuildCtx, entityId);
   }
 
@@ -855,7 +855,7 @@ export class AssetSystem {
     const runtime = this.registry.getRuntime(entityId);
     if (!runtime || !isTrianglePatchAssetKind(runtime.entity.assetKind)) {return;}
 
-    this.registry.setTrianglePatchParams(entityId, partial);
+    this.registry.setKindParams('trianglePatch', entityId, partial);
     await rebuildEntity(this.rebuildCtx, entityId);
   }
 
