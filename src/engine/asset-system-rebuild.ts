@@ -1,33 +1,22 @@
+import type { AssetKind } from '@/scene/asset-kind';
 import type { Group, Texture } from 'three/webgpu';
-import {
-  defaultHandheldParams,
-  isHandheldAssetKind,
-} from '@/scene/asset-handheld';
+import { defaultHandheldParams } from '@/scene/asset-handheld';
 import {
   defaultMonitorParams,
-  isMonitorAssetKind,
   type MonitorDeviceParams,
 } from '@/scene/asset-monitor';
-import {
-  isPrintAssetKind,
-  type AssetFaceContent,
-  type AssetFaceId,
-  type AssetFaces,
+import type {
+  AssetFaceContent,
+  AssetFaceId,
+  AssetFaces,
 } from '@/scene/asset-faces';
 import type { AssetEntity, ImageResolver } from '@/scene/entity-types';
-import {
-  getAssetKindDefinition,
-  usesAsyncPackagingRebuild,
-} from '@/scene/asset-kind-registry';
+import { getAssetKindDefinition } from '@/scene/asset-kind-registry';
 import { migrateGeometryVisibility } from '@/scene/geometry-visibility';
 import { defaultPrintParams } from '@/scene/asset-print';
-import {
-  defaultBeverageCanParams,
-} from '@/scene/asset-beverage-can';
+import { defaultBeverageCanParams } from '@/scene/asset-beverage-can';
 import { defaultTinCanParams } from '@/scene/asset-tin-can';
-import {
-  defaultWineBottleParams,
-} from '@/scene/asset-wine-bottle';
+import { defaultWineBottleParams } from '@/scene/asset-wine-bottle';
 import { defaultPenParams } from '@/scene/asset-pen';
 import { defaultBlockParams, isBlockAssetKind } from '@/scene/asset-block';
 import { defaultCylinderParams, isCylinderAssetKind } from '@/scene/asset-cylinder';
@@ -35,29 +24,18 @@ import {
   defaultSphereParams,
   isSphereAssetKind,
 } from '@/scene/asset-sphere';
-import {
-  defaultTrianglePatchParams,
-  isTrianglePatchAssetKind,
-} from '@/scene/asset-triangle-patch';
+import { defaultTrianglePatchParams } from '@/scene/asset-triangle-patch';
 import {
   defaultWheelCarParams,
   isWheelCarAssetKind,
 } from '@/scene/asset-wheel-car';
-import { isRigidPrimitiveAssetKind } from '@/scene/rigid-primitive-asset';
-import {
-  defaultFabricClothParams,
-  isFabricClothAssetKind,
-  isFabricClothBakedAssetKind,
-} from '@/scene/asset-fabric-cloth';
+
+import { defaultFabricClothParams } from '@/scene/asset-fabric-cloth';
 import type { UserBakedAssetResolver } from '@/scene/user-baked-asset';
-import {
-  resolveBookParams,
-  isBookAssetKind,
-} from '@/scene/asset-book';
+import { resolveBookParams } from '@/scene/asset-book';
 import {
   defaultWallParams,
   defaultWallpaperPattern,
-  isWallAssetKind,
   resolveWallpaperPattern,
 } from '@/scene/asset-wall';
 import {
@@ -146,95 +124,62 @@ export function rebuildEntity(ctx: AssetRebuildContext, entityId: string): Promi
   return pending;
 }
 
+type EntityRebuilder = (
+  ctx: AssetRebuildContext,
+  root: Group,
+  entity: AssetEntity,
+) => Promise<void>;
+
+function rebuildTrianglePatch(
+  ctx: AssetRebuildContext,
+  root: Group,
+  entity: AssetEntity,
+): Promise<void> {
+  const definition = getAssetKindDefinition(entity.assetKind);
+  populateAssetGroup(root, 'triangle-patch', {
+    materials: entity.materials ?? definition.getDefaultMaterials(),
+    materialResolver: ctx.materialResolver,
+    trianglePatchParams: entity.trianglePatchParams ?? defaultTrianglePatchParams(),
+  });
+  return Promise.resolve();
+}
+
+/** Rebuild function per asset kind; exhaustive so new kinds must register one. */
+const REBUILDERS: Record<AssetKind, EntityRebuilder> = {
+  print: rebuildFacetedAsset,
+  picture: rebuildPicture,
+  smartphone: rebuildHandheld,
+  tablet: rebuildHandheld,
+  monitor: rebuildMonitor,
+  wall: rebuildWall,
+  'wall-door': rebuildWall,
+  block: rebuildRigidPrimitive,
+  cylinder: rebuildRigidPrimitive,
+  sphere: rebuildRigidPrimitive,
+  'wheel-car': rebuildRigidPrimitive,
+  'beverage-can': rebuildBeverageCan,
+  'tin-can': rebuildTinCan,
+  'wine-bottle': rebuildWineBottle,
+  pen: rebuildPen,
+  'fabric-cloth': rebuildFabricCloth,
+  'fabric-cloth-baked': rebuildFabricClothBaked,
+  'book-softcover': rebuildBook,
+  'book-hardcover': rebuildBook,
+  'triangle-patch': rebuildTrianglePatch,
+};
+
 async function rebuildEntityNow(ctx: AssetRebuildContext, entityId: string): Promise<void> {
-    const runtime = ctx.registry.getRuntime(entityId);
-    if (!runtime) {return;}
+  const runtime = ctx.registry.getRuntime(entityId);
+  if (!runtime) {return;}
 
-    const footY = footWorldY(runtime.entity, ctx.imageResolver);
-
-    try {
-    if (isPrintAssetKind(runtime.entity.assetKind)) {
-      const faces = runtime.entity.faces;
-      const depth = runtime.entity.depth;
-      if (!faces || depth === undefined) {return;}
-
-      await rebuildFacetedAsset(ctx, 
-        runtime.object as Group,
-        runtime.entity,
-      );
-      syncEntityYForFoot(ctx, entityId, footY);
-      return;
-    }
-
-    if (runtime.entity.assetKind === 'picture') {
-      await rebuildPicture(ctx, runtime.object as Group, runtime.entity);
-      syncEntityYForFoot(ctx, entityId, footY);
-      return;
-    }
-
-    if (isHandheldAssetKind(runtime.entity.assetKind)) {
-      await rebuildHandheld(ctx, runtime.object as Group, runtime.entity);
-      syncEntityYForFoot(ctx, entityId, footY);
-      return;
-    }
-
-    if (isMonitorAssetKind(runtime.entity.assetKind)) {
-      await rebuildMonitor(ctx, runtime.object as Group, runtime.entity);
-      syncEntityYForFoot(ctx, entityId, footY);
-      return;
-    }
-
-    if (isWallAssetKind(runtime.entity.assetKind)) {
-      await rebuildWall(ctx, runtime.object as Group, runtime.entity);
-      syncEntityYForFoot(ctx, entityId, footY);
-      return;
-    }
-
-    if (isRigidPrimitiveAssetKind(runtime.entity.assetKind)) {
-      await rebuildRigidPrimitive(ctx, runtime.object as Group, runtime.entity);
-      syncEntityYForFoot(ctx, entityId, footY);
-      return;
-    }
-
-    if (isTrianglePatchAssetKind(runtime.entity.assetKind)) {
-      const definition = getAssetKindDefinition(runtime.entity.assetKind);
-      const materials = runtime.entity.materials ?? definition.getDefaultMaterials();
-      populateAssetGroup(runtime.object as Group, 'triangle-patch', {
-        materials,
-        materialResolver: ctx.materialResolver,
-        trianglePatchParams:
-          runtime.entity.trianglePatchParams ?? defaultTrianglePatchParams(),
-      });
-      syncEntityYForFoot(ctx, entityId, footY);
-      return;
-    }
-
-    if (isFabricClothBakedAssetKind(runtime.entity.assetKind)) {
-      await rebuildFabricClothBaked(ctx, runtime.object as Group, runtime.entity);
-      syncEntityYForFoot(ctx, entityId, footY);
-      return;
-    }
-
-    if (isFabricClothAssetKind(runtime.entity.assetKind)) {
-      await rebuildFabricCloth(ctx, runtime.object as Group, runtime.entity);
-      syncEntityYForFoot(ctx, entityId, footY);
-      return;
-    }
-
-    if (isBookAssetKind(runtime.entity.assetKind)) {
-      await rebuildBook(ctx, runtime.object as Group, runtime.entity);
-      syncEntityYForFoot(ctx, entityId, footY);
-      return;
-    }
-
-    if (usesAsyncPackagingRebuild(runtime.entity.assetKind)) {
-      await rebuildPackagingAsset(ctx, runtime.object as Group, runtime.entity);
-      syncEntityYForFoot(ctx, entityId, footY);
-    }
-    } finally {
-      ctx.viewportInvalidation?.invalidate();
-    }
+  const footY = footWorldY(runtime.entity, ctx.imageResolver);
+  try {
+    await REBUILDERS[runtime.entity.assetKind](ctx, runtime.object as Group, runtime.entity);
+    syncEntityYForFoot(ctx, entityId, footY);
+  } finally {
+    ctx.viewportInvalidation?.invalidate();
   }
+}
 
 export function syncEntityYForFoot(
   ctx: AssetRebuildContext,
@@ -258,23 +203,6 @@ export function syncEntityYForFoot(
         y: nextY,
       },
     });
-  }
-
-export async function rebuildPackagingAsset(ctx: AssetRebuildContext, root: Group, entity: AssetEntity): Promise<void> {
-    switch (entity.assetKind) {
-      case 'beverage-can':
-        await rebuildBeverageCan(ctx, root, entity);
-        return;
-      case 'tin-can':
-        await rebuildTinCan(ctx, root, entity);
-        return;
-      case 'wine-bottle':
-        await rebuildWineBottle(ctx, root, entity);
-        return;
-      case 'pen':
-        await rebuildPen(ctx, root, entity);
-        return;
-    }
   }
 
 export async function rebuildBeverageCan(ctx: AssetRebuildContext, root: Group, entity: AssetEntity): Promise<void> {
