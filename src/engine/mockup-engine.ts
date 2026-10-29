@@ -110,32 +110,9 @@ import { ViewportHelpersSystem } from './viewport-helpers/viewport-helpers-syste
 const GROUND_PHYSICS_ID = 'ground';
 
 export class MockupEngine implements SceneApi {
-  private readonly container: HTMLElement;
-  private readonly renderer: WebGPURenderer;
-  private readonly cameras: CameraController;
-  private readonly scene: Scene;
-  private readonly skybox: Skybox;
-  private readonly environment: EnvironmentSystem;
-  private readonly lighting: LightingSystem;
-  private readonly physics: PhysicsWorld;
-  private readonly rigidPrimitivePhysics: RigidPrimitivePhysicsColliders;
-  private readonly fabricClothSimulation: FabricClothSimulationParticipant;
-  private readonly rigidTest: PhysicsRigidTestController;
-  private readonly worldPhysics: WorldPhysicsSessionController;
-  private readonly ground: Mesh;
-  private readonly groundMaterial: GroundMaterial;
   private readonly resizeObserver: ResizeObserver;
-  private readonly registry: EntityRegistry;
-  private readonly textureLoader: ImageTextureLoader;
-  private readonly assets: AssetSystem;
   private readonly patchGizmo: TrianglePatchGizmoController;
-  private readonly gizmo: GizmoController;
-  private readonly selection: SelectionController;
-  private readonly selectionHighlight: SelectionHighlight;
-  private readonly viewportInput: ViewportInputController;
-  private readonly viewportPipeline: ViewportRenderPipeline;
   private readonly viewportInvalidation: ViewportInvalidation;
-  private readonly viewportHelpers: ViewportHelpersSystem;
   private readonly listeners = new Set<SceneApiListener>();
 
   private appMode: AppMode = 'select';
@@ -148,54 +125,31 @@ export class MockupEngine implements SceneApi {
   private readonly fabricClothActivePinCorner = new Map<string, number>();
 
   private constructor(
-    container: HTMLElement,
-    renderer: WebGPURenderer,
-    cameras: CameraController,
-    scene: Scene,
-    skybox: Skybox,
-    environment: EnvironmentSystem,
-    lighting: LightingSystem,
-    physics: PhysicsWorld,
-    rigidPrimitivePhysics: RigidPrimitivePhysicsColliders,
-    fabricClothSimulation: FabricClothSimulationParticipant,
-    rigidTest: PhysicsRigidTestController,
-    worldPhysics: WorldPhysicsSessionController,
-    ground: Mesh,
-    groundMaterial: GroundMaterial,
-    registry: EntityRegistry,
-    textureLoader: ImageTextureLoader,
-    assets: AssetSystem,
-    gizmo: GizmoController,
-    selection: SelectionController,
-    selectionHighlight: SelectionHighlight,
-    viewportInput: ViewportInputController,
-    viewportPipeline: ViewportRenderPipeline,
-    viewportHelpers: ViewportHelpersSystem,
+    private readonly container: HTMLElement,
+    private readonly renderer: WebGPURenderer,
+    private readonly cameras: CameraController,
+    private readonly scene: Scene,
+    private readonly skybox: Skybox,
+    private readonly environment: EnvironmentSystem,
+    private readonly lighting: LightingSystem,
+    private readonly physics: PhysicsWorld,
+    private readonly rigidPrimitivePhysics: RigidPrimitivePhysicsColliders,
+    private readonly fabricClothSimulation: FabricClothSimulationParticipant,
+    private readonly rigidTest: PhysicsRigidTestController,
+    private readonly worldPhysics: WorldPhysicsSessionController,
+    private readonly ground: Mesh,
+    private readonly groundMaterial: GroundMaterial,
+    private readonly registry: EntityRegistry,
+    private readonly textureLoader: ImageTextureLoader,
+    private readonly assets: AssetSystem,
+    private readonly gizmo: GizmoController,
+    private readonly selection: SelectionController,
+    private readonly selectionHighlight: SelectionHighlight,
+    private readonly viewportInput: ViewportInputController,
+    private readonly viewportPipeline: ViewportRenderPipeline,
+    private readonly viewportHelpers: ViewportHelpersSystem,
   ) {
-    this.container = container;
-    this.renderer = renderer;
-    this.cameras = cameras;
-    this.scene = scene;
-    this.skybox = skybox;
-    this.environment = environment;
-    this.lighting = lighting;
-    this.physics = physics;
-    this.rigidPrimitivePhysics = rigidPrimitivePhysics;
-    this.fabricClothSimulation = fabricClothSimulation;
-    this.rigidTest = rigidTest;
-    this.worldPhysics = worldPhysics;
-    this.ground = ground;
-    this.groundMaterial = groundMaterial;
-    this.registry = registry;
-    this.textureLoader = textureLoader;
-    this.assets = assets;
     this.patchGizmo = new TrianglePatchGizmoController(scene, registry);
-    this.gizmo = gizmo;
-    this.selection = selection;
-    this.selectionHighlight = selectionHighlight;
-    this.viewportInput = viewportInput;
-    this.viewportPipeline = viewportPipeline;
-    this.viewportHelpers = viewportHelpers;
     this.viewportInvalidation = new ViewportInvalidation(renderer, (time) => { this.onFrame(time); },
     );
     this.assets.setViewportInvalidation(this.viewportInvalidation);
@@ -376,7 +330,6 @@ export class MockupEngine implements SceneApi {
     const gizmo = new GizmoController(cameras.camera, renderer.domElement);
     const selection = new SelectionController(renderer.domElement, registry);
     const selectionHighlight = new SelectionHighlight(registry, lightingSystem);
-    const gizmoForInput = gizmo;
 
     const engine = new MockupEngine(
       container,
@@ -403,7 +356,7 @@ export class MockupEngine implements SceneApi {
         renderer.domElement,
         cameras,
         selection,
-        gizmoForInput,
+        gizmo,
       ),
       viewportPipeline,
       viewportHelpersSystem,
@@ -685,9 +638,7 @@ export class MockupEngine implements SceneApi {
   }
 
   getFabricClothActivePinCorner(entityId: string): number {
-    const stored = this.fabricClothActivePinCorner.get(entityId);
-    if (stored !== undefined) {return stored;}
-    return 0;
+    return this.fabricClothActivePinCorner.get(entityId) ?? 0;
   }
 
   setBookBackCoverImageId(entityId: string, imageId: string | null): void {
