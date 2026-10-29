@@ -92,7 +92,61 @@ export interface AssetRebuildContext {
   userBakedAssetResolver: UserBakedAssetResolver | null;
 }
 
-export async function rebuildEntity(ctx: AssetRebuildContext, entityId: string): Promise<void> {
+interface EntityRebuildQueue {
+  running: Promise<void>;
+  pending: Promise<void> | null;
+  latestCtx: AssetRebuildContext;
+}
+
+const rebuildQueues = new WeakMap<EntityRegistry, Map<string, EntityRebuildQueue>>();
+
+/**
+ * Rebuilds an entity with at most one rebuild running and one queued per entity.
+ * Calls arriving while a rebuild is queued share it, since the queued rebuild reads
+ * the latest entity state when it starts. This keeps an older rebuild from finishing
+ * after a newer one and overwriting it with stale geometry.
+ */
+export function rebuildEntity(ctx: AssetRebuildContext, entityId: string): Promise<void> {
+  let queues = rebuildQueues.get(ctx.registry);
+  if (!queues) {
+    queues = new Map();
+    rebuildQueues.set(ctx.registry, queues);
+  }
+  const map = queues;
+
+  const start = (startCtx: AssetRebuildContext): Promise<void> => {
+    const running = rebuildEntityNow(startCtx, entityId).catch((error: unknown) => {
+      console.error(`Rebuild failed for entity ${entityId}`, error);
+    });
+    void running.then(() => {
+      const queue = map.get(entityId);
+      if (queue?.running === running && !queue.pending) {
+        map.delete(entityId);
+      }
+    });
+    return running;
+  };
+
+  const queue = map.get(entityId);
+  if (!queue) {
+    const running = start(ctx);
+    map.set(entityId, { running, pending: null, latestCtx: ctx });
+    return running;
+  }
+
+  queue.latestCtx = ctx;
+  if (queue.pending) {return queue.pending;}
+
+  const pending = queue.running.then(() => {
+    queue.pending = null;
+    queue.running = start(queue.latestCtx);
+    return queue.running;
+  });
+  queue.pending = pending;
+  return pending;
+}
+
+async function rebuildEntityNow(ctx: AssetRebuildContext, entityId: string): Promise<void> {
     const runtime = ctx.registry.getRuntime(entityId);
     if (!runtime) {return;}
 

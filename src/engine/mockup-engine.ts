@@ -1273,7 +1273,11 @@ export class MockupEngine implements SceneApi {
     options?: { refreshGizmo?: boolean },
   ): void {
     void (async () => {
-      await mutation();
+      try {
+        await mutation();
+      } catch (error: unknown) {
+        console.error('Asset mutation failed', error);
+      }
       if (options?.refreshGizmo) {
         this.applyGizmoMode(this.appMode);
       }
