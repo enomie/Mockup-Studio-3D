@@ -604,7 +604,7 @@ export class EntityRegistry {
 
   setTrianglePatchParams(entityId: string, partial: Partial<TrianglePatchParams>): void {
     const runtime = this.entities.get(entityId);
-    if (!runtime || runtime.entity.assetKind !== 'triangle-patch') {return;}
+    if (runtime?.entity.assetKind !== 'triangle-patch') {return;}
 
     Object.assign(
       runtime.entity,

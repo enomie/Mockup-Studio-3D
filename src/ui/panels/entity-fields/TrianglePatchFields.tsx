@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { SubPanelSection } from '@/ui/components/SubPanelSection';
 import { PanelAxisField } from '@/ui/components/PanelAxisField/PanelAxisField';
 import { MaterialSelect } from '@/ui/panels/MaterialSelect';
@@ -52,16 +52,13 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
   const [selectedTargetKey, setSelectedTargetKey] = useState<PatchHandleTarget>('pos');
   const [anchorHandleRotRad, setAnchorHandleRotRad] = useState({ x: 0, y: 0, z: 0 });
 
-  useEffect(() => {
-    setAnchorHandleRotRad({ x: 0, y: 0, z: 0 });
-  }, [selectedCornerIdx, selectedTargetKey]);
-
   const activeNode = patchParams.nodes[selectedCornerIdx] ?? patchParams.nodes[0];
   const activeVec = activeNode[selectedTargetKey];
 
   const handleSelectTarget = (cornerIdx: number, targetKey: PatchHandleTarget) => {
     setSelectedCornerIdx(cornerIdx);
     setSelectedTargetKey(targetKey);
+    setAnchorHandleRotRad({ x: 0, y: 0, z: 0 });
     selectPatchHandle(entity.id, cornerIdx, targetKey);
   };
 

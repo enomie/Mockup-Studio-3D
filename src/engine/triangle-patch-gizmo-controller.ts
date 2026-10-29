@@ -1,3 +1,4 @@
+import type { Vec3 } from '@/scene/entity-types';
 import {
   BufferGeometry,
   Group,
@@ -71,7 +72,7 @@ export class TrianglePatchGizmoController {
   private readonly handleMeshes: Mesh[] = [];
 
   // Corner helper meshes per corner index (0, 1, 2)
-  private readonly cornerHelpers: Array<{
+  private readonly cornerHelpers: {
     anchor: Mesh;
     handleNext: Mesh;
     handlePrev: Mesh;
@@ -80,7 +81,7 @@ export class TrianglePatchGizmoController {
     lineNext: Line;
     linePrev: Line;
     lineCross: Line;
-  }> = [];
+  }[] = [];
 
   /** Glowing ring on the active lever line: drag it to change only the lever length. */
   private readonly lengthRing: Mesh;
@@ -357,14 +358,9 @@ export class TrianglePatchGizmoController {
   getActiveHandleMesh(): Mesh | null {
     if (!this.activeTarget || !this.helperGroup.visible) {return null;}
     const { nodeIndex, targetKey } = this.activeTarget;
-    const corner = this.cornerHelpers[nodeIndex];
+    const corner = this.cornerHelpers.at(nodeIndex);
     if (!corner) {return null;}
-    if (targetKey === 'pos') {return corner.anchor;}
-    if (targetKey === 'handleNext') {return corner.handleNext;}
-    if (targetKey === 'handlePrev') {return corner.handlePrev;}
-    if (targetKey === 'handleCrossIn') {return corner.handleCrossIn;}
-    if (targetKey === 'handleCrossOut') {return corner.handleCrossOut;}
-    return null;
+    return corner[targetKey === 'pos' ? 'anchor' : targetKey];
   }
 
   setActiveEntity(entityId: string | null): void {
@@ -379,7 +375,7 @@ export class TrianglePatchGizmoController {
     }
 
     const runtime = this.registry.getRuntime(entityId);
-    if (!runtime || runtime.entity.assetKind !== 'triangle-patch') {
+    if (runtime?.entity.assetKind !== 'triangle-patch') {
       this.helperGroup.visible = false;
       this.activeTarget = null;
       return;
@@ -417,7 +413,7 @@ export class TrianglePatchGizmoController {
   syncHelpersFromEntity(): void {
     if (!this.activeEntityId) {return;}
     const runtime = this.registry.getRuntime(this.activeEntityId);
-    if (!runtime || !runtime.entity.trianglePatchParams) {return;}
+    if (!runtime?.entity.trianglePatchParams) {return;}
 
     const params = runtime.entity.trianglePatchParams;
     const parentObject = runtime.object;
@@ -426,15 +422,17 @@ export class TrianglePatchGizmoController {
     parentObject.updateMatrixWorld(true);
 
     for (let c = 0; c < 3; c++) {
-      const node = params.nodes[c];
-      const h = this.cornerHelpers[c];
+      const node = params.nodes.at(c);
+      const h = this.cornerHelpers.at(c);
       if (!node || !h) {continue;}
 
-      const pPos = new Vector3(node.pos.x, node.pos.y, node.pos.z).applyMatrix4(parentObject.matrixWorld);
-      const pNext = new Vector3(node.handleNext.x, node.handleNext.y, node.handleNext.z).applyMatrix4(parentObject.matrixWorld);
-      const pPrev = new Vector3(node.handlePrev.x, node.handlePrev.y, node.handlePrev.z).applyMatrix4(parentObject.matrixWorld);
-      const pCrossIn = new Vector3(node.handleCrossIn.x, node.handleCrossIn.y, node.handleCrossIn.z).applyMatrix4(parentObject.matrixWorld);
-      const pCrossOut = new Vector3(node.handleCrossOut.x, node.handleCrossOut.y, node.handleCrossOut.z).applyMatrix4(parentObject.matrixWorld);
+      const toWorld = (v: Vec3) =>
+        new Vector3(v.x, v.y, v.z).applyMatrix4(parentObject.matrixWorld);
+      const pPos = toWorld(node.pos);
+      const pNext = toWorld(node.handleNext);
+      const pPrev = toWorld(node.handlePrev);
+      const pCrossIn = toWorld(node.handleCrossIn);
+      const pCrossOut = toWorld(node.handleCrossOut);
 
       h.anchor.position.copy(pPos);
       h.handleNext.position.copy(pNext);
@@ -455,12 +453,12 @@ export class TrianglePatchGizmoController {
   applyHandleTransform(gizmoMode: 'translate' | 'rotate'): boolean {
     if (!this.activeEntityId || !this.activeTarget) {return false;}
     const runtime = this.registry.getRuntime(this.activeEntityId);
-    if (!runtime || !runtime.entity.trianglePatchParams) {return false;}
+    if (!runtime?.entity.trianglePatchParams) {return false;}
 
     const params = runtime.entity.trianglePatchParams;
     const nodeIndex = this.activeTarget.nodeIndex;
     const targetKey = this.activeTarget.targetKey;
-    const node = params.nodes[nodeIndex];
+    const node = params.nodes.at(nodeIndex);
     if (!node) {return false;}
 
     const parentObject = runtime.object;
@@ -481,7 +479,7 @@ export class TrianglePatchGizmoController {
         corner.anchor.quaternion.identity();
 
         const p0 = new Vector3(node.pos.x, node.pos.y, node.pos.z);
-        const keys: Array<'handleNext' | 'handlePrev' | 'handleCrossIn' | 'handleCrossOut'> = [
+        const keys: ('handleNext' | 'handlePrev' | 'handleCrossIn' | 'handleCrossOut')[] = [
           'handleNext',
           'handlePrev',
           'handleCrossIn',
@@ -500,7 +498,7 @@ export class TrianglePatchGizmoController {
         node.pos.y = newLocal.y;
         node.pos.z = newLocal.z;
 
-        const keys: Array<'handleNext' | 'handlePrev' | 'handleCrossIn' | 'handleCrossOut'> = [
+        const keys: ('handleNext' | 'handlePrev' | 'handleCrossIn' | 'handleCrossOut')[] = [
           'handleNext',
           'handlePrev',
           'handleCrossIn',
