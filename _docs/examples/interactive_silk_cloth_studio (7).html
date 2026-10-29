@@ -1,0 +1,1729 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Interactive Silk Cloth Studio</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: 'Inter', sans-serif;
+      background-color: #f8fafc;
+    }
+    #viewport-container {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+    /* Custom scrollbar for clean UI */
+    ::-webkit-scrollbar {
+      width: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(241, 245, 249, 0.5);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(203, 213, 225, 0.8);
+      border-radius: 9999px;
+    }
+    input[type=range] {
+      accent-color: #0284c7;
+    }
+  </style>
+
+  <!-- Import maps polyfill & Three.js r170 -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.170.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.170.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body class="relative select-none text-slate-800">
+
+  <!-- 3D Canvas Container -->
+  <div id="viewport-container"></div>
+
+  <!-- Hidden texture processing canvas -->
+  <canvas id="hidden-texture-canvas" style="display: none;"></canvas>
+
+  <!-- Top Info Badge -->
+  <div class="absolute top-4 left-4 z-10 bg-white/90 backdrop-blur-md px-4 py-2.5 rounded-2xl shadow-sm border border-slate-200/80 flex items-center space-x-3 pointer-events-none">
+    <div class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></div>
+    <div>
+      <h1 class="text-xs font-bold tracking-wide text-slate-800 uppercase">Silk Studio (Three.js)</h1>
+      <p id="label-dimensions" class="text-[11px] text-slate-500 font-mono">0.90 × 0.90 m | 3mm Bordüre</p>
+    </div>
+  </div>
+
+  <!-- Studio Settings Floating Glass Panel -->
+  <div class="absolute top-4 right-4 z-10 w-80 max-h-[92vh] overflow-y-auto bg-white/95 backdrop-blur-md p-4 rounded-2xl shadow-xl border border-slate-200/80 text-xs space-y-4">
+    
+    <!-- Header with Quick Drop Button -->
+    <div class="flex items-center justify-between pb-2 border-b border-slate-200">
+      <span class="font-bold text-slate-800 text-sm tracking-tight">Studio Setup</span>
+      <div class="flex items-center space-x-1.5">
+        <button id="btn-reset-pins" title="Setzt nur die Eck-Pins und Gizmos auf die Standardposition zurück" class="px-2 py-1 text-[11px] font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors cursor-pointer">
+          Reset Pins
+        </button>
+        <button id="btn-restart" title="Lässt das Tuch neu fallen, behält deine verschobenen Pins bei" class="px-2 py-1 text-[11px] font-medium bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 rounded-lg transition-colors cursor-pointer">
+          Reset Sim
+        </button>
+      </div>
+    </div>
+
+    <!-- Bild & Textur Upload -->
+    <div class="space-y-2">
+      <label class="font-semibold text-slate-700 uppercase text-[10px] tracking-wider block">Bild auswählen</label>
+      <input type="file" id="file-texture" accept="image/*" class="w-full text-slate-600 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-[11px] file:font-semibold file:bg-sky-50 file:text-sky-700 hover:file:bg-sky-100 file:cursor-pointer border border-slate-200 rounded-xl p-1 bg-slate-50 text-[11px]">
+      <p class="text-[10px] text-slate-400">Das Bildformat passt die Tuchgröße unverzerrt an.</p>
+    </div>
+
+    <!-- Bordüre / Saum -->
+    <div class="space-y-2 pt-2 border-t border-slate-200">
+      <div class="flex justify-between items-center">
+        <span class="font-semibold text-slate-700 uppercase text-[10px] tracking-wider">Bordüre / Saum</span>
+        <span id="val-border-mm" class="font-mono text-sky-600 font-semibold text-[11px]">3 mm</span>
+      </div>
+      <div class="flex items-center space-x-3">
+        <div class="flex items-center space-x-2">
+          <input type="color" id="input-border-color" value="#87CEEB" class="w-7 h-7 rounded-lg border border-slate-300 cursor-pointer p-0 bg-transparent">
+        </div>
+        <div class="flex-1">
+          <input type="range" id="input-border-mm" min="0" max="30" step="1" value="3" class="w-full h-1.5 bg-slate-200 rounded-lg cursor-pointer">
+        </div>
+      </div>
+    </div>
+
+    <!-- Pin-Auswahl (0 bis 4 Ecken) -->
+    <div class="space-y-2 pt-2 border-t border-slate-200">
+      <div class="flex justify-between items-center">
+        <span class="font-semibold text-slate-700 uppercase text-[10px] tracking-wider">Ecken fixieren</span>
+        <span id="label-gizmo-mode" class="text-[10px] text-slate-400">Gizmo: <kbd class="px-1 bg-slate-100 rounded border">W</kbd> Pos / <kbd class="px-1 bg-slate-100 rounded border">E</kbd> Rot</span>
+      </div>
+      <select id="select-pinned" class="w-full bg-slate-50 border border-slate-200 text-slate-700 rounded-xl px-2.5 py-1.5 font-medium cursor-pointer focus:ring-1 focus:ring-sky-500 text-xs">
+        <option value="0">0 Ecken (Freier Fall / Tischdecke)</option>
+        <option value="1">1 Ecke fixiert</option>
+        <option value="2">2 Ecken fixiert (Hängend)</option>
+        <option value="3">3 Ecken fixiert</option>
+        <option value="4">4 Ecken fixiert</option>
+      </select>
+
+      <!-- Aktive Gizmo Ecke Button Row -->
+      <div id="corner-buttons-container" class="grid grid-cols-4 gap-1 pt-1">
+        <button data-corner="0" class="btn-corner py-1 rounded-lg text-[10px] font-semibold bg-sky-50 text-sky-700 border border-sky-200 hover:bg-sky-100 transition-all">Ecke 1</button>
+        <button data-corner="1" class="btn-corner py-1 rounded-lg text-[10px] font-semibold bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200 transition-all">Ecke 2</button>
+        <button data-corner="2" class="btn-corner py-1 rounded-lg text-[10px] font-semibold bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200 transition-all">Ecke 3</button>
+        <button data-corner="3" class="btn-corner py-1 rounded-lg text-[10px] font-semibold bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200 transition-all">Ecke 4</button>
+      </div>
+    </div>
+
+    <!-- Würfel / Tischdecke Toggle -->
+    <div class="space-y-2 pt-2 border-t border-slate-200">
+      <div class="flex items-center justify-between">
+        <span class="text-slate-600 font-medium">Würfel-Sockel (0.3m)</span>
+        <input type="checkbox" id="toggle-pedestal" checked class="w-4 h-4 text-sky-600 rounded border-slate-300 focus:ring-sky-500 cursor-pointer">
+      </div>
+    </div>
+
+    <!-- Tuch-Verhalten & Physik-Eigenschaften -->
+    <div class="space-y-2.5 pt-2 border-t border-slate-200">
+      <div class="flex justify-between items-center">
+        <span class="font-semibold text-slate-700 uppercase text-[10px] tracking-wider">Stoff-Verhalten</span>
+        <span id="label-active-preset" class="font-mono text-sky-600 font-semibold text-[10px]">Seide</span>
+      </div>
+
+      <!-- Quick Presets -->
+      <div class="grid grid-cols-4 gap-1">
+        <button id="preset-silk" class="preset-btn py-1 px-1 rounded-lg text-[10px] font-semibold bg-sky-500 text-white shadow-sm transition-all text-center">Seide</button>
+        <button id="preset-satin" class="preset-btn py-1 px-1 rounded-lg text-[10px] font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition-all text-center">Satin</button>
+        <button id="preset-linen" class="preset-btn py-1 px-1 rounded-lg text-[10px] font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition-all text-center">Leinen</button>
+        <button id="preset-chiffon" class="preset-btn py-1 px-1 rounded-lg text-[10px] font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition-all text-center">Chiffon</button>
+      </div>
+
+      <!-- Detail-Regler für Physik -->
+      <div class="space-y-2 pt-1">
+        <!-- Biegewiderstand / Steifigkeit -->
+        <div>
+          <div class="flex justify-between text-[11px] text-slate-600">
+            <span>Biegesteifigkeit</span>
+            <span id="val-fabric-bending" class="font-mono text-[10px] text-sky-600">0.25</span>
+          </div>
+          <input type="range" id="input-fabric-bending" min="0.0" max="1.0" step="0.02" value="0.25" class="w-full h-1.5 bg-slate-200 rounded-lg cursor-pointer">
+          <div class="flex justify-between text-[9px] text-slate-400">
+            <span>Weich / Falten</span>
+            <span>Starr / Steif</span>
+          </div>
+        </div>
+
+        <!-- Schwerkraft / Stoffgewicht -->
+        <div>
+          <div class="flex justify-between text-[11px] text-slate-600">
+            <span>Gewicht / Schwerkraft</span>
+            <span id="val-fabric-gravity" class="font-mono text-[10px] text-sky-600">4.2</span>
+          </div>
+          <input type="range" id="input-fabric-gravity" min="1.0" max="12.0" step="0.2" value="4.2" class="w-full h-1.5 bg-slate-200 rounded-lg cursor-pointer">
+        </div>
+
+        <!-- Luftdämpfung / Gleitverhalten -->
+        <div>
+          <div class="flex justify-between text-[11px] text-slate-600">
+            <span>Luftwiderstand / Dämpfung</span>
+            <span id="val-fabric-damping" class="font-mono text-[10px] text-sky-600">0.985</span>
+          </div>
+          <input type="range" id="input-fabric-damping" min="0.92" max="0.995" step="0.002" value="0.985" class="w-full h-1.5 bg-slate-200 rounded-lg cursor-pointer">
+        </div>
+
+        <!-- Tisch-Reibung / Haftung -->
+        <div>
+          <div class="flex justify-between text-[11px] text-slate-600">
+            <span>Oberflächen-Reibung</span>
+            <span id="val-fabric-friction" class="font-mono text-[10px] text-sky-600">0.88</span>
+          </div>
+          <input type="range" id="input-fabric-friction" min="0.1" max="0.98" step="0.02" value="0.88" class="w-full h-1.5 bg-slate-200 rounded-lg cursor-pointer">
+        </div>
+      </div>
+    </div>
+
+    <!-- Seiden-Oberfläche & Optik (Research 2026) -->
+    <div class="space-y-2 pt-2 border-t border-slate-200">
+      <div class="flex justify-between items-center">
+        <span class="font-semibold text-slate-700 uppercase text-[10px] tracking-wider">Seiden-Optik (PBR+)</span>
+        <span class="font-mono text-emerald-600 font-semibold text-[10px]">Anisotropie & Sheen</span>
+      </div>
+
+      <!-- Anisotropie Stärke -->
+      <div class="space-y-1">
+        <div class="flex justify-between text-[11px] text-slate-600">
+          <span>Faser-Anisotropie (Glanzstrich)</span>
+          <span id="val-silk-anisotropy" class="font-mono text-[10px] text-sky-600">0.85</span>
+        </div>
+        <input type="range" id="input-silk-anisotropy" min="0.0" max="1.0" step="0.05" value="0.85" class="w-full h-1.5 bg-slate-200 rounded-lg cursor-pointer">
+      </div>
+
+      <!-- Anisotropie Webwinkel -->
+      <div class="space-y-1">
+        <div class="flex justify-between text-[11px] text-slate-600">
+          <span>Webwinkel (Kett-/Schussfaden)</span>
+          <span id="val-silk-anisotropy-rot" class="font-mono text-[10px] text-sky-600">45°</span>
+        </div>
+        <input type="range" id="input-silk-anisotropy-rot" min="0" max="180" step="5" value="45" class="w-full h-1.5 bg-slate-200 rounded-lg cursor-pointer">
+      </div>
+
+      <!-- Sheen Kantenschimmer -->
+      <div class="space-y-1">
+        <div class="flex justify-between text-[11px] text-slate-600">
+          <span>Kanten-Schimmer (Sheen)</span>
+          <span id="val-silk-sheen" class="font-mono text-[10px] text-sky-600">0.30</span>
+        </div>
+        <input type="range" id="input-silk-sheen" min="0.0" max="1.5" step="0.05" value="0.30" class="w-full h-1.5 bg-slate-200 rounded-lg cursor-pointer">
+      </div>
+
+      <!-- Irideszenz (Prismen-Interferenz) -->
+      <div class="space-y-1">
+        <div class="flex justify-between text-[11px] text-slate-600">
+          <span>Perlmutt-Schimmer (Irideszenz)</span>
+          <span id="val-silk-iridescence" class="font-mono text-[10px] text-sky-600">0.35</span>
+        </div>
+        <input type="range" id="input-silk-iridescence" min="0.0" max="1.0" step="0.05" value="0.35" class="w-full h-1.5 bg-slate-200 rounded-lg cursor-pointer">
+      </div>
+
+      <!-- Mikro-Webung Normal-Map Stärke -->
+      <div class="space-y-1">
+        <div class="flex justify-between text-[11px] text-slate-600">
+          <span>Mikro-Webmuster (Gewebe-Poren)</span>
+          <span id="val-silk-weave-depth" class="font-mono text-[10px] text-sky-600">0.40</span>
+        </div>
+        <input type="range" id="input-silk-weave-depth" min="0.0" max="1.5" step="0.05" value="0.40" class="w-full h-1.5 bg-slate-200 rounded-lg cursor-pointer">
+      </div>
+    </div>
+
+    <!-- Ansicht / Overlays -->
+    <div class="space-y-2 pt-2 border-t border-slate-200">
+      <span class="font-semibold text-slate-700 uppercase text-[10px] tracking-wider block">Ansicht & Overlays</span>
+      <div class="flex items-center justify-between">
+        <span class="text-slate-600">Pins & Gizmo anzeigen</span>
+        <input type="checkbox" id="toggle-gizmos" checked class="w-4 h-4 text-sky-600 rounded border-slate-300 focus:ring-sky-500 cursor-pointer">
+      </div>
+      <div class="flex items-center justify-between">
+        <span class="text-slate-600">Raster am Boden</span>
+        <input type="checkbox" id="toggle-grid" checked class="w-4 h-4 text-sky-600 rounded border-slate-300 focus:ring-sky-500 cursor-pointer">
+      </div>
+    </div>
+
+    <!-- Beleuchtung (Key & Fill) -->
+    <div class="space-y-3 pt-2 border-t border-slate-200">
+      <span class="font-semibold text-slate-700 uppercase text-[10px] tracking-wider block">Studio-Licht</span>
+      
+      <!-- Key Light -->
+      <div class="space-y-1.5 p-2 bg-slate-50/70 rounded-xl border border-slate-200/80">
+        <div class="flex justify-between items-center text-slate-700 font-medium">
+          <span>Key Light</span>
+          <span id="val-key-intensity" class="font-mono text-[10px] text-sky-600">1.6</span>
+        </div>
+        <div class="flex items-center space-x-2">
+          <span class="text-[10px] text-slate-500 w-14">Helligkeit</span>
+          <input type="range" id="input-key-intensity" min="0" max="4" step="0.1" value="1.6" class="flex-1">
+        </div>
+        <div class="flex items-center space-x-2">
+          <span class="text-[10px] text-slate-500 w-14">Blur (Soft)</span>
+          <input type="range" id="input-key-blur" min="0" max="15" step="0.5" value="4.0" class="flex-1">
+          <span id="val-key-blur" class="font-mono text-[10px] text-slate-500 w-6 text-right">4.0</span>
+        </div>
+      </div>
+
+      <!-- Fill Light -->
+      <div class="space-y-1.5 p-2 bg-slate-50/70 rounded-xl border border-slate-200/80">
+        <div class="flex justify-between items-center text-slate-700 font-medium">
+          <span>Fill Light</span>
+          <span id="val-fill-intensity" class="font-mono text-[10px] text-sky-600">0.8</span>
+        </div>
+        <div class="flex items-center space-x-2">
+          <span class="text-[10px] text-slate-500 w-14">Helligkeit</span>
+          <input type="range" id="input-fill-intensity" min="0" max="4" step="0.1" value="0.8" class="flex-1">
+        </div>
+        <div class="flex items-center space-x-2">
+          <span class="text-[10px] text-slate-500 w-14">Blur (Soft)</span>
+          <input type="range" id="input-fill-blur" min="0" max="15" step="0.5" value="6.0" class="flex-1">
+          <span id="val-fill-blur" class="font-mono text-[10px] text-slate-500 w-6 text-right">6.0</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { TransformControls } from 'three/addons/controls/TransformControls.js';
+
+    // Application state
+    let renderer, scene, camera, orbitControls, transformControls;
+    let clothMesh, clothGeometry, clothMaterial;
+    let groundMesh, pedestalMesh;
+    let canvasTexture, canvasEl, canvasCtx;
+    let floorGrid, gizmoHelper;
+    let mainLight, fillLight;
+    let showGizmosAndPins = true;
+    let weaveNormalTexture = null;
+
+    // Simulation & Sizing state
+    const clothConfig = {
+      defaultWidth: 0.90,   // 90 cm
+      defaultHeight: 0.90,  // 90 cm
+      width: 0.90,
+      height: 0.90,
+      subdivX: 38,
+      subdivY: 38,
+      aspectRatio: 1.0,
+      borderThicknessMm: 3, // 3 mm
+      borderColor: '#87CEEB',
+      baseColor: '#f7f6f2',
+      thicknessOffsetM: 0.001 // 1 mm Sicherheitsabstand gegen Z-Fighting
+    };
+
+    // Anpassbare physikalische Materialeigenschaften
+    const fabricPhysics = {
+      gravityMagnitude: 4.2,  // Schwerkraftbetrag (Seide ca. 4.2, Leinen ca. 8.5)
+      damping: 0.985,         // Luftwiderstand (0.985 = geschmeidig)
+      bendingStiffness: 0.25, // Biegesteifigkeit (0.0 = völlig schlaff, 1.0 = starr)
+      friction: 0.88,         // Haftung auf Kanten/Tisch
+      solverIterations: 5,    // Constraint-Auflösung
+      activePreset: 'silk'
+    };
+
+    const FABRIC_PRESETS = {
+      silk: {
+        name: 'Seide',
+        gravity: 4.2,
+        damping: 0.985,
+        bending: 0.25,
+        friction: 0.88,
+        roughness: 0.32,
+        sheen: 0.30,
+        sheenColor: 0xd4d4d8
+      },
+      satin: {
+        name: 'Satin',
+        gravity: 5.8,
+        damping: 0.982,
+        bending: 0.40,
+        friction: 0.70,
+        roughness: 0.22,
+        sheen: 0.25,
+        sheenColor: 0xe4e4e7
+      },
+      linen: {
+        name: 'Leinen',
+        gravity: 8.5,
+        damping: 0.965,
+        bending: 0.75,
+        friction: 0.95,
+        roughness: 0.75,
+        sheen: 0.05,
+        sheenColor: 0xa1a1aa,
+        anisotropy: 0.15,
+        iridescence: 0.02
+      },
+      chiffon: {
+        name: 'Chiffon',
+        gravity: 2.2,
+        damping: 0.992,
+        bending: 0.08,
+        friction: 0.60,
+        roughness: 0.45,
+        sheen: 0.20,
+        sheenColor: 0xd4d4d8,
+        anisotropy: 0.60,
+        iridescence: 0.15
+      }
+    };
+
+    // Optische Seideneigenschaften (PBR+)
+    const silkOptics = {
+      anisotropy: 0.85,
+      anisotropyRotation: Math.PI / 4, // 45° Twill-Bindung
+      sheen: 0.30,                     // Reduziert von 1.0 auf dezente 0.30 gegen Weißschleier
+      sheenRoughness: 0.50,            // Erhöht auf 0.50, damit Schimmer nur an echten Faltenkanten greift
+      sheenColor: 0xd4d4d8,            // Sanftes, neutrales Grau statt grellem Deckweiß
+      iridescence: 0.25,
+      iridescenceIOR: 1.33,
+      weaveDepth: 0.40
+    };
+
+    // Pedestal cube setup
+    const pedestalConfig = {
+      size: 0.30, // 30 cm cube
+      height: 0.30,
+      enabled: true
+    };
+
+    // Physics Verlet Buffers
+    let numVertices = 0;
+    let pos = [];
+    let oldPos = [];
+    let originalLocal = [];
+    let constraints = [];
+    let cornerIndexMap = [0, 0, 0, 0];
+    let pinAnchors = [];
+    let pinnedFlags = [];
+    let pinnedCornersCount = 0; // Default: 0 corners pinned (free fall onto pedestal)
+    let activeCornerGizmo = 0;
+
+    let loadedUserImage = null;
+
+    // Raycaster for selecting pins in 3D scene
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+
+    // Entry point
+    init();
+
+    async function init() {
+      const container = document.getElementById('viewport-container');
+
+      // 1. Scene with soft white studio background
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0xfcfdfd);
+
+      // 2. Camera setup focused on table / cloth - Near plane tuned to 0.1 for high precision 24-bit Z-Buffer
+      camera = new THREE.PerspectiveCamera(38, window.innerWidth / window.innerHeight, 0.1, 50);
+      camera.position.set(1.4, 0.9, 1.6);
+
+      // 3. Renderer mit logarithmischem Tiefenpuffer zur vollständigen Z-Fighting-Eliminierung
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        alpha: false,
+        powerPreference: 'high-performance',
+        logarithmicDepthBuffer: true
+      });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.05;
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.VSMShadowMap; // VSM ermöglicht echte, stufenlose, weiche Diffusor-Schatten
+      container.appendChild(renderer.domElement);
+
+      // 4. Orbit Controls
+      orbitControls = new OrbitControls(camera, renderer.domElement);
+      orbitControls.enableDamping = true;
+      orbitControls.dampingFactor = 0.05;
+      orbitControls.target.set(0, 0.25, 0);
+      orbitControls.maxPolarAngle = Math.PI / 2 - 0.02; // Prevent going beneath floor
+
+      // 5. TransformControls Gizmo for moving pins
+      transformControls = new TransformControls(camera, renderer.domElement);
+      transformControls.size = 0.65;
+      transformControls.setSpace('world');
+
+      gizmoHelper = transformControls.getHelper ? transformControls.getHelper() : transformControls;
+      scene.add(gizmoHelper);
+
+      // Disable orbit rotation while dragging transform gizmo
+      transformControls.addEventListener('dragging-changed', (event) => {
+        orbitControls.enabled = !event.value;
+      });
+
+      // 6. Lighting, Floor & Pedestal
+      setupLighting();
+      setupStudioEnvironment();
+      setupWhiteFloor();
+      setupPedestal();
+
+      // 7. Dynamic 2D Canvas for Hem / Texture & Procedural Weave Normal Map
+      setupTextureCanvas();
+      setupWeaveNormalMap();
+
+      // 8. Initialize Silk Cloth Mesh & Verlet Physics
+      setupCloth();
+
+      // 9. UI Event Listeners
+      setupUI();
+
+      // 10. Window resize & Viewport Click raycast
+      window.addEventListener('resize', onWindowResize);
+      renderer.domElement.addEventListener('pointerdown', onPointerDown);
+
+      // 11. Start animation loop
+      animate();
+    }
+
+    function setupLighting() {
+      // Clean, bright high-key studio lighting with soft shadows
+      const ambientLight = new THREE.AmbientLight(0xffffff, 1.4);
+      scene.add(ambientLight);
+
+      mainLight = new THREE.DirectionalLight(0xffffff, 1.6);
+      mainLight.position.set(2.5, 4.5, 3.0);
+      mainLight.castShadow = true;
+      mainLight.shadow.mapSize.width = 2048;
+      mainLight.shadow.mapSize.height = 2048;
+      mainLight.shadow.bias = -0.0003;
+      mainLight.shadow.radius = 4.0;
+      mainLight.shadow.blurSamples = 16; // Hohe Sample-Zahl für weiche Fotostudio-Qualität
+      mainLight.shadow.camera.near = 0.5;
+      mainLight.shadow.camera.far = 10;
+      mainLight.shadow.camera.left = -1.5;
+      mainLight.shadow.camera.right = 1.5;
+      mainLight.shadow.camera.top = 1.5;
+      mainLight.shadow.camera.bottom = -1.5;
+      scene.add(mainLight);
+
+      fillLight = new THREE.DirectionalLight(0xf0f7ff, 0.8);
+      fillLight.position.set(-3.0, 2.5, -2.0);
+      fillLight.castShadow = true;
+      fillLight.shadow.mapSize.width = 1024;
+      fillLight.shadow.mapSize.height = 1024;
+      fillLight.shadow.bias = -0.0003;
+      fillLight.shadow.radius = 6.0;
+      fillLight.shadow.blurSamples = 16;
+      fillLight.shadow.camera.near = 0.5;
+      fillLight.shadow.camera.far = 10;
+      fillLight.shadow.camera.left = -1.5;
+      fillLight.shadow.camera.right = 1.5;
+      fillLight.shadow.camera.top = 1.5;
+      fillLight.shadow.camera.bottom = -1.5;
+      scene.add(fillLight);
+
+      const topLight = new THREE.DirectionalLight(0xffffff, 0.5);
+      topLight.position.set(0, 5, 0);
+      scene.add(topLight);
+    }
+
+    // High-Dynamic Studio HDRI Environment (essentiell für echte Seiden-Spiegelung & Anisotropie)
+    function setupStudioEnvironment() {
+      const pmremGenerator = new THREE.PMREMGenerator(renderer);
+      pmremGenerator.compileEquirectangularShader();
+
+      // Erstelle ein weiches, warmweißes Studio-Gradient-Environment
+      const envCanvas = document.createElement('canvas');
+      envCanvas.width = 512;
+      envCanvas.height = 256;
+      const ctx = envCanvas.getContext('2d');
+
+      // Studio-Lauflicht und Softbox-Spiegelungen simulieren
+      const grad = ctx.createLinearGradient(0, 0, 0, 256);
+      grad.addColorStop(0, '#ffffff');
+      grad.addColorStop(0.3, '#f1f5f9');
+      grad.addColorStop(0.7, '#e2e8f0');
+      grad.addColorStop(1, '#cbd5e1');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 512, 256);
+
+      // Zwei leuchtende Softbox-Lichtpunkte
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.ellipse(140, 90, 70, 45, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.ellipse(370, 110, 50, 35, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      const envTex = new THREE.CanvasTexture(envCanvas);
+      envTex.mapping = THREE.EquirectangularReflectionMapping;
+      envTex.colorSpace = THREE.SRGBColorSpace;
+
+      const envMapTarget = pmremGenerator.fromEquirectangular(envTex);
+      scene.environment = envMapTarget.texture;
+    }
+
+    // Generiert eine hochfrequente Mikro-Normal-Map für feine Seiden-Webfäden (Twill- / Köperbindung)
+    function setupWeaveNormalMap() {
+      const size = 256;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      const imgData = ctx.createImageData(size, size);
+      const data = imgData.data;
+
+      // Fadenfrequenz (hohe Kachelung = mikroskopische Fäden)
+      const freq = 0.55;
+
+      for (let y = 0; y < size; y++) {
+        for (let x = 0; x < size; x++) {
+          const idx = (y * size + x) * 4;
+
+          // Seiden-Twill-Muster (Fäden kreuzen sich unter 45 Grad)
+          const warp = Math.sin(x * freq);
+          const weft = Math.cos(y * freq);
+          const diagonal = Math.sin((x + y) * freq * 0.7);
+
+          // Normalen-Vektoren (Tangent-Space)
+          // R: Normal X (-1..1 skaliert auf 0..255)
+          // G: Normal Y (-1..1 skaliert auf 0..255)
+          // B: Normal Z (vorwiegend 1 nach außen)
+          const nx = warp * 0.35 + diagonal * 0.2;
+          const ny = weft * 0.35 - diagonal * 0.2;
+          const nz = 1.0;
+
+          const len = Math.sqrt(nx * nx + ny * ny + nz * nz) || 1.0;
+
+          data[idx] = Math.floor(((nx / len) * 0.5 + 0.5) * 255);
+          data[idx + 1] = Math.floor(((ny / len) * 0.5 + 0.5) * 255);
+          data[idx + 2] = Math.floor(((nz / len) * 0.5 + 0.5) * 255);
+          data[idx + 3] = 255;
+        }
+      }
+
+      ctx.putImageData(imgData, 0, 0);
+
+      weaveNormalTexture = new THREE.CanvasTexture(canvas);
+      weaveNormalTexture.wrapS = THREE.RepeatWrapping;
+      weaveNormalTexture.wrapT = THREE.RepeatWrapping;
+      weaveNormalTexture.repeat.set(48, 48); // Feine Mikrostuktur über 90cm
+      weaveNormalTexture.colorSpace = THREE.NoColorSpace;
+    }
+
+    function setupWhiteFloor() {
+      // Infinite clean white studio ground
+      const groundGeo = new THREE.PlaneGeometry(80, 80);
+      const groundMat = new THREE.MeshStandardMaterial({
+        color: 0xfcfdfd,
+        roughness: 0.65,
+        metalness: 0.05
+      });
+      groundMesh = new THREE.Mesh(groundGeo, groundMat);
+      groundMesh.rotation.x = -Math.PI / 2;
+      groundMesh.position.y = 0.0;
+      groundMesh.receiveShadow = true;
+      scene.add(groundMesh);
+
+      // Subtle light grid for studio depth
+      floorGrid = new THREE.GridHelper(20, 40, 0xdfe6ee, 0xf1f5f9);
+      floorGrid.position.y = 0.001;
+      scene.add(floorGrid);
+    }
+
+    function setupPedestal() {
+      // 0.3 x 0.3 x 0.3m cube pedestal
+      const size = pedestalConfig.size;
+      const geo = new THREE.BoxGeometry(size, size, size);
+      const mat = new THREE.MeshStandardMaterial({
+        color: 0xffffff,
+        roughness: 0.3,
+        metalness: 0.05
+      });
+      pedestalMesh = new THREE.Mesh(geo, mat);
+      pedestalMesh.position.set(0, size / 2, 0);
+      pedestalMesh.castShadow = true;
+      pedestalMesh.receiveShadow = true;
+      scene.add(pedestalMesh);
+    }
+
+    function setupTextureCanvas() {
+      canvasEl = document.getElementById('hidden-texture-canvas');
+      canvasEl.width = 1024;
+      canvasEl.height = 1024;
+      canvasCtx = canvasEl.getContext('2d');
+      canvasTexture = new THREE.CanvasTexture(canvasEl);
+      canvasTexture.colorSpace = THREE.SRGBColorSpace;
+      canvasTexture.anisotropy = 8;
+      canvasTexture.generateMipmaps = true;
+      canvasTexture.minFilter = THREE.LinearMipmapLinearFilter;
+      canvasTexture.magFilter = THREE.LinearFilter;
+      updateCanvasTexture();
+    }
+
+    function updateCanvasTexture() {
+      const w = canvasEl.width;
+      const h = canvasEl.height;
+
+      canvasCtx.clearRect(0, 0, w, h);
+
+      if (loadedUserImage) {
+        // Draw user uploaded image without distortion
+        canvasCtx.drawImage(loadedUserImage, 0, 0, w, h);
+      } else {
+        // Clean high-grade natural silk base with rich, warm color
+        canvasCtx.fillStyle = '#f8fafc';
+        canvasCtx.fillRect(0, 0, w, h);
+
+        // Soft elegant silk foulard background ornament
+        const grad = canvasCtx.createRadialGradient(w/2, h/2, 50, w/2, h/2, w * 0.65);
+        grad.addColorStop(0, '#ffffff');
+        grad.addColorStop(0.5, '#f1f5f9');
+        grad.addColorStop(1, '#e2e8f0');
+        canvasCtx.fillStyle = grad;
+        canvasCtx.fillRect(0, 0, w, h);
+
+        // Delicate decorative concentric border frames (Foulard Pattern)
+        canvasCtx.strokeStyle = 'rgba(14, 116, 144, 0.22)';
+        canvasCtx.lineWidth = 4;
+        canvasCtx.strokeRect(60, 60, w - 120, h - 120);
+
+        canvasCtx.strokeStyle = 'rgba(14, 116, 144, 0.12)';
+        canvasCtx.lineWidth = 1.5;
+        canvasCtx.strokeRect(80, 80, w - 160, h - 160);
+
+        // Subtle weave pattern lines
+        canvasCtx.strokeStyle = 'rgba(0, 0, 0, 0.03)';
+        canvasCtx.lineWidth = 1;
+        for (let i = 0; i < w; i += 12) {
+          canvasCtx.beginPath();
+          canvasCtx.moveTo(i, 0);
+          canvasCtx.lineTo(i, h);
+          canvasCtx.stroke();
+        }
+
+        // Minimalist silk logo stamp
+        canvasCtx.save();
+        canvasCtx.fillStyle = 'rgba(15, 23, 42, 0.75)';
+        canvasCtx.font = 'bold 38px Inter, sans-serif';
+        canvasCtx.textAlign = 'center';
+        canvasCtx.textBaseline = 'middle';
+        canvasCtx.fillText('ATELIER DE SOIE', w / 2, h / 2 - 20);
+        canvasCtx.font = '500 18px Inter, sans-serif';
+        canvasCtx.fillStyle = 'rgba(51, 65, 85, 0.65)';
+        canvasCtx.fillText('100% PURE SILK  •  HAND-ROLLED HEM', w / 2, h / 2 + 25);
+        canvasCtx.restore();
+      }
+
+      // Draw customizable hem / border (Bordüre)
+      const borderMm = clothConfig.borderThicknessMm;
+      if (borderMm > 0) {
+        // Convert mm relative to 900mm width into pixels
+        const borderPixels = Math.max(2, (borderMm / 900) * w);
+        canvasCtx.strokeStyle = clothConfig.borderColor;
+        canvasCtx.lineWidth = borderPixels * 2;
+        canvasCtx.strokeRect(0, 0, w, h);
+
+        // Subtle inner rolled-hem seam line (Handrollsaum)
+        canvasCtx.strokeStyle = 'rgba(0, 0, 0, 0.25)';
+        canvasCtx.lineWidth = 2;
+        canvasCtx.strokeRect(borderPixels, borderPixels, w - borderPixels * 2, h - borderPixels * 2);
+      }
+
+      if (canvasTexture) {
+        canvasTexture.needsUpdate = true;
+      }
+    }
+
+    function setupCloth() {
+      // Remove old cloth mesh if exists
+      if (clothMesh) {
+        scene.remove(clothMesh);
+        clothGeometry.dispose();
+      }
+
+      // Cleanup existing pin anchors
+      pinAnchors.forEach(anchor => scene.remove(anchor));
+      pinAnchors = [];
+
+      // Compute mesh geometry based on dimensions
+      const width = clothConfig.width;
+      const height = clothConfig.height;
+      const segX = clothConfig.subdivX;
+      const segY = clothConfig.subdivY;
+
+      // Photorealistisches Seiden-Material (MeshPhysicalMaterial mit Anisotropie, Sheen & Irideszenz)
+      clothMaterial = new THREE.MeshPhysicalMaterial({
+        color: 0xffffff,
+        map: canvasTexture,
+        roughness: 0.30,
+        metalness: 0.0,
+        
+        // 1. Kanten-Schimmer (Micro-Fiber Sheen) - jetzt dezent und faltenfokussiert
+        sheen: silkOptics.sheen,
+        sheenRoughness: silkOptics.sheenRoughness,
+        sheenColor: new THREE.Color(silkOptics.sheenColor),
+        
+        // 2. Faser-Anisotropie (Längsverzug der Glanzlichter)
+        anisotropy: silkOptics.anisotropy,
+        anisotropyRotation: silkOptics.anisotropyRotation,
+        
+        // 3. Prismen-Interferenz (Perlmutt-Dünnschicht)
+        iridescence: silkOptics.iridescence,
+        iridescenceIOR: silkOptics.iridescenceIOR,
+        iridescenceThicknessRange: [100, 350],
+
+        // 4. Mikro-Gewebe Normal Map
+        normalMap: weaveNormalTexture,
+        normalScale: new THREE.Vector2(silkOptics.weaveDepth, silkOptics.weaveDepth),
+
+        clearcoat: 0.0,
+        clearcoatRoughness: 0.1,
+        specularIntensity: 0.6,
+        envMapIntensity: 0.45,
+        depthWrite: true,
+        depthTest: true
+      });
+
+      // Erstelle ein 3D-Volumen-Mesh: Oberseite + Unterseite mit 1mm Abstand (echte Dicke)
+      const nx = segX + 1;
+      const ny = segY + 1;
+      const planeVerts = nx * ny;
+      const totalVerts = planeVerts * 2; // Oberschale + Unterschale
+
+      clothGeometry = new THREE.BufferGeometry();
+
+      const posArray = new Float32Array(totalVerts * 3);
+      const normalArray = new Float32Array(totalVerts * 3);
+      const uvsArray = new Float32Array(totalVerts * 2);
+      const indices = [];
+
+      const startElevationY = 0.35;
+      const halfThick = 0.0006; // 0.6mm nach oben und unten = 1.2mm Gesamtdicke
+
+      // 1. Oberschale (Top layer)
+      for (let y = 0; y < ny; y++) {
+        for (let x = 0; x < nx; x++) {
+          const idx = y * nx + x;
+          const u = x / segX;
+          const v = y / segY;
+          const px = (u - 0.5) * width;
+          const pz = (v - 0.5) * height;
+
+          posArray[idx * 3] = px;
+          posArray[idx * 3 + 1] = startElevationY + halfThick;
+          posArray[idx * 3 + 2] = pz;
+
+          normalArray[idx * 3] = 0;
+          normalArray[idx * 3 + 1] = 1;
+          normalArray[idx * 3 + 2] = 0;
+
+          uvsArray[idx * 2] = u;
+          uvsArray[idx * 2 + 1] = v;
+        }
+      }
+
+      // Top Triangles (CCW)
+      for (let y = 0; y < segY; y++) {
+        for (let x = 0; x < segX; x++) {
+          const a = y * nx + x;
+          const b = y * nx + (x + 1);
+          const c = (y + 1) * nx + x;
+          const d = (y + 1) * nx + (x + 1);
+
+          indices.push(a, d, b);
+          indices.push(a, c, d);
+        }
+      }
+
+      // 2. Unterschale (Bottom layer)
+      for (let y = 0; y < ny; y++) {
+        for (let x = 0; x < nx; x++) {
+          const srcIdx = y * nx + x;
+          const idx = planeVerts + srcIdx;
+          const u = x / segX;
+          const v = y / segY;
+          const px = (u - 0.5) * width;
+          const pz = (v - 0.5) * height;
+
+          posArray[idx * 3] = px;
+          posArray[idx * 3 + 1] = startElevationY - halfThick;
+          posArray[idx * 3 + 2] = pz;
+
+          normalArray[idx * 3] = 0;
+          normalArray[idx * 3 + 1] = -1;
+          normalArray[idx * 3 + 2] = 0;
+
+          // Gespiegelte U-Koordinate für die Rückseite, damit Motive beidseitig deckungsgleich sind
+          uvsArray[idx * 2] = 1.0 - u;
+          uvsArray[idx * 2 + 1] = 1.0 - v;
+        }
+      }
+
+      // Bottom Triangles (CW, zeigt nach außen bzw. unten)
+      for (let y = 0; y < segY; y++) {
+        for (let x = 0; x < segX; x++) {
+          const a = planeVerts + (y * nx + x);
+          const b = planeVerts + (y * nx + (x + 1));
+          const c = planeVerts + ((y + 1) * nx + x);
+          const d = planeVerts + ((y + 1) * nx + (x + 1));
+
+          indices.push(a, b, d);
+          indices.push(a, d, c);
+        }
+      }
+
+      clothGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+      clothGeometry.setAttribute('normal', new THREE.BufferAttribute(normalArray, 3));
+      clothGeometry.setAttribute('uv', new THREE.BufferAttribute(uvsArray, 2));
+      clothGeometry.setIndex(indices);
+
+      // Berechne Tangenten für Anisotropie und Normal-Mapping
+      clothGeometry.computeTangents();
+
+      clothMesh = new THREE.Mesh(clothGeometry, clothMaterial);
+      clothMesh.castShadow = true;
+      clothMesh.receiveShadow = true;
+      scene.add(clothMesh);
+
+      // Initialize Verlet positions (wir simulieren die neutrale Mittelschicht)
+      numVertices = planeVerts;
+
+      pos = new Float32Array(numVertices * 3);
+      oldPos = new Float32Array(numVertices * 3);
+      originalLocal = new Float32Array(numVertices * 3);
+      pinnedFlags = new Uint8Array(numVertices);
+
+      for (let i = 0; i < numVertices; i++) {
+        const u = (i % nx) / segX;
+        const v = Math.floor(i / nx) / segY;
+        const x = (u - 0.5) * width;
+        const y = startElevationY;
+        const z = (v - 0.5) * height;
+
+        pos[i * 3] = x;
+        pos[i * 3 + 1] = y;
+        pos[i * 3 + 2] = z;
+
+        oldPos[i * 3] = x;
+        oldPos[i * 3 + 1] = y;
+        oldPos[i * 3 + 2] = z;
+
+        originalLocal[i * 3] = x;
+        originalLocal[i * 3 + 1] = 0;
+        originalLocal[i * 3 + 2] = z;
+      }
+
+      // Map corner indices: 0: Top-Left, 1: Top-Right, 2: Bottom-Left, 3: Bottom-Right
+      cornerIndexMap = [
+        0,                 // Corner 0
+        segX,              // Corner 1
+        (ny - 1) * nx,     // Corner 2
+        (ny - 1) * nx + segX // Corner 3
+      ];
+
+      // Create 3D pin sphere markers for each corner
+      const pinGeo = new THREE.SphereGeometry(0.018, 16, 16);
+      const pinMat = new THREE.MeshStandardMaterial({
+        color: 0x0284c7,
+        roughness: 0.2,
+        metalness: 0.8
+      });
+
+      for (let c = 0; c < 4; c++) {
+        const pinMesh = new THREE.Mesh(pinGeo, pinMat);
+        pinMesh.castShadow = true;
+        const vIdx = cornerIndexMap[c];
+        pinMesh.position.set(pos[vIdx * 3], pos[vIdx * 3 + 1], pos[vIdx * 3 + 2]);
+        pinMesh.userData.cornerIndex = c;
+        scene.add(pinMesh);
+        pinAnchors.push(pinMesh);
+      }
+
+      // Generate structural, shear and bending distance constraints
+      constraints = [];
+      function addConstraint(i1, i2, type = 'structural') {
+        const dx = pos[i1 * 3] - pos[i2 * 3];
+        const dy = pos[i1 * 3 + 1] - pos[i2 * 3 + 1];
+        const dz = pos[i1 * 3 + 2] - pos[i2 * 3 + 2];
+        const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        constraints.push({ i1, i2, restDist: dist, type: type });
+      }
+
+      for (let y = 0; y < ny; y++) {
+        for (let x = 0; x < nx; x++) {
+          const idx = y * nx + x;
+
+          // Structural constraints (horizontal & vertical)
+          if (x < segX) addConstraint(idx, idx + 1, 'structural');
+          if (y < segY) addConstraint(idx, idx + nx, 'structural');
+
+          // Shear constraints (cross diagonals for anti-stretching)
+          if (x < segX && y < segY) {
+            addConstraint(idx, idx + nx + 1, 'shear');
+            addConstraint(idx + 1, idx + nx, 'shear');
+          }
+
+          // Bending constraints (skip 1 and 2 vertices for bending stiffness)
+          if (x < segX - 1) addConstraint(idx, idx + 2, 'bending');
+          if (y < segY - 1) addConstraint(idx, idx + nx * 2, 'bending');
+          if (x < segX - 2) addConstraint(idx, idx + 3, 'bending');
+          if (y < segY - 2) addConstraint(idx, idx + nx * 3, 'bending');
+        }
+      }
+
+      // Apply initial pinned corners
+      applyPinnedSelection();
+
+      // Ensure canvas texture is drawn and updated on the material
+      updateCanvasTexture();
+    }
+
+    // Setzt nur die physikalischen Tuchpartikel zurück, behält aber die benutzerdefinierten Pin-Positionen
+    function resetSimulationPreservePins() {
+      if (!clothMesh || numVertices === 0) return;
+
+      const segX = clothConfig.subdivX;
+      const segY = clothConfig.subdivY;
+      const nx = segX + 1;
+      const ny = segY + 1;
+
+      // Ausgangs-Höhe für unfixierte Vertices über dem Würfel
+      const baseElev = 0.35;
+
+      for (let y = 0; y < ny; y++) {
+        const v = y / segY;
+        for (let x = 0; x < nx; x++) {
+          const u = x / segX;
+          const idx = y * nx + x;
+
+          // Ist dieser Punkt ein aktiver Pin?
+          let isPinnedCorner = false;
+          let pinnedIdx = -1;
+          for (let c = 0; c < pinnedCornersCount; c++) {
+            if (cornerIndexMap[c] === idx) {
+              isPinnedCorner = true;
+              pinnedIdx = c;
+              break;
+            }
+          }
+
+          if (isPinnedCorner && pinnedIdx >= 0) {
+            // Pin-Position bleibt exakt an der durch das Gizmo eingestellten Position
+            const p = pinAnchors[pinnedIdx].position;
+            pos[idx * 3] = p.x;
+            pos[idx * 3 + 1] = p.y;
+            pos[idx * 3 + 2] = p.z;
+            oldPos[idx * 3] = p.x;
+            oldPos[idx * 3 + 1] = p.y;
+            oldPos[idx * 3 + 2] = p.z;
+          } else {
+            // Ungepinnte Partikel starten wieder in planarer horizontaler Lage
+            const origX = originalLocal[idx * 3];
+            const origZ = originalLocal[idx * 3 + 2];
+            pos[idx * 3] = origX;
+            pos[idx * 3 + 1] = baseElev;
+            pos[idx * 3 + 2] = origZ;
+
+            oldPos[idx * 3] = origX;
+            oldPos[idx * 3 + 1] = baseElev;
+            oldPos[idx * 3 + 2] = origZ;
+          }
+        }
+      }
+
+      // Buffer sofort aktualisieren
+      const posAttr = clothGeometry.attributes.position;
+      for (let i = 0; i < numVertices; i++) {
+        posAttr.setXYZ(i, pos[i * 3], pos[i * 3 + 1], pos[i * 3 + 2]);
+      }
+      posAttr.needsUpdate = true;
+      clothGeometry.computeVertexNormals();
+    }
+
+    // Setzt nur die 4 Pins & Gizmos auf die Ursprungs-Ecken zurück
+    function resetPinPositionsOnly() {
+      const startElevationY = 0.35;
+      for (let c = 0; c < 4; c++) {
+        const vIdx = cornerIndexMap[c];
+        const origX = originalLocal[vIdx * 3];
+        const origZ = originalLocal[vIdx * 3 + 2];
+
+        pinAnchors[c].position.set(origX, startElevationY, origZ);
+        pinAnchors[c].rotation.set(0, 0, 0);
+
+        pos[vIdx * 3] = origX;
+        pos[vIdx * 3 + 1] = startElevationY;
+        pos[vIdx * 3 + 2] = origZ;
+
+        oldPos[vIdx * 3] = origX;
+        oldPos[vIdx * 3 + 1] = startElevationY;
+        oldPos[vIdx * 3 + 2] = origZ;
+      }
+
+      if (pinnedCornersCount > 0 && activeCornerGizmo < pinnedCornersCount && showGizmosAndPins) {
+        transformControls.attach(pinAnchors[activeCornerGizmo]);
+      }
+    }
+
+    function applyPinnedSelection() {
+      // Clear flags
+      for (let i = 0; i < numVertices; i++) pinnedFlags[i] = 0;
+
+      // Hide or show pin markers based on pinnedCornersCount
+      for (let c = 0; c < 4; c++) {
+        const isPinned = c < pinnedCornersCount;
+        pinAnchors[c].visible = isPinned && showGizmosAndPins;
+        if (isPinned) {
+          pinnedFlags[cornerIndexMap[c]] = 1;
+        }
+      }
+
+      // If active gizmo is on a hidden pin, switch to an active one
+      if (pinnedCornersCount > 0 && activeCornerGizmo >= pinnedCornersCount) {
+        updateActivePinGizmo(pinnedCornersCount - 1);
+      } else if (pinnedCornersCount === 0 || !showGizmosAndPins) {
+        transformControls.detach();
+      } else {
+        updateActivePinGizmo(activeCornerGizmo);
+      }
+    }
+
+    function updateActivePinGizmo(index) {
+      activeCornerGizmo = index;
+
+      if (pinnedCornersCount > 0 && activeCornerGizmo < pinnedCornersCount && showGizmosAndPins) {
+        transformControls.attach(pinAnchors[activeCornerGizmo]);
+      } else {
+        transformControls.detach();
+      }
+
+      // Update UI button highlights
+      document.querySelectorAll('.btn-corner').forEach((btn, idx) => {
+        if (idx === activeCornerGizmo && pinnedCornersCount > idx) {
+          btn.className = 'btn-corner py-1 rounded-lg text-[10px] font-semibold bg-sky-500 text-white shadow-sm transition-all';
+        } else if (idx < pinnedCornersCount) {
+          btn.className = 'btn-corner py-1 rounded-lg text-[10px] font-semibold bg-sky-50 text-sky-700 border border-sky-200 hover:bg-sky-100 transition-all';
+        } else {
+          btn.className = 'btn-corner py-1 rounded-lg text-[10px] font-semibold bg-slate-100 text-slate-400 border border-slate-200 transition-all opacity-60';
+        }
+      });
+    }
+
+    function simulatePhysics() {
+      // Smooth Verlet integration sub-stepped for silk stability
+      const subSteps = 6;
+      const gravity = -fabricPhysics.gravityMagnitude;
+      const damping = fabricPhysics.damping;
+      const bendingStiff = fabricPhysics.bendingStiffness;
+      const tableFriction = fabricPhysics.friction;
+      const dt = 0.016 / subSteps;
+      const halfSize = pedestalConfig.size / 2;
+      const cubeTopY = pedestalConfig.size; // 0.30m
+      const isPedestalActive = pedestalConfig.enabled;
+      
+      // Physikalische Dicke: 1mm garantierter Abstand zur Tischplatte und Wänden
+      const halfThickness = 0.0008; // 0.8mm Halbdicke
+      const safetyMargin = 0.0012;   // 1.2mm Puffer
+
+      // Update pin positions from transform controls
+      for (let c = 0; c < pinnedCornersCount; c++) {
+        const vIdx = cornerIndexMap[c];
+        const anchor = pinAnchors[c];
+        pos[vIdx * 3] = anchor.position.x;
+        pos[vIdx * 3 + 1] = anchor.position.y;
+        pos[vIdx * 3 + 2] = anchor.position.z;
+        oldPos[vIdx * 3] = anchor.position.x;
+        oldPos[vIdx * 3 + 1] = anchor.position.y;
+        oldPos[vIdx * 3 + 2] = anchor.position.z;
+      }
+
+      for (let step = 0; step < subSteps; step++) {
+        // 1. Verlet Integration
+        for (let i = 0; i < numVertices; i++) {
+          if (pinnedFlags[i] === 1) continue;
+
+          const idx = i * 3;
+          const px = pos[idx];
+          const py = pos[idx + 1];
+          const pz = pos[idx + 2];
+
+          let vx = (px - oldPos[idx]) * damping;
+          let vy = (py - oldPos[idx + 1]) * damping + gravity * dt * dt;
+          let vz = (pz - oldPos[idx + 2]) * damping;
+
+          oldPos[idx] = px;
+          oldPos[idx + 1] = py;
+          oldPos[idx + 2] = pz;
+
+          let nextX = px + vx;
+          let nextY = py + vy;
+          let nextZ = pz + vz;
+
+          // Kollision mit dem Würfel unter Einbezug der Tuchdicke
+          if (isPedestalActive) {
+            const boundX = halfSize + halfThickness + safetyMargin;
+            const boundZ = halfSize + halfThickness + safetyMargin;
+            const topContactY = cubeTopY + halfThickness + safetyMargin;
+
+            const insideX = nextX > -boundX && nextX < boundX;
+            const insideZ = nextZ > -boundZ && nextZ < boundZ;
+            const insideY = nextY >= 0.0 && nextY <= topContactY;
+
+            if (insideX && insideZ && insideY) {
+              if (py >= cubeTopY - 0.002) {
+                // Liegt oben auf dem Würfel -> Reibung hemmt horizontales Verrutschen
+                nextY = topContactY;
+                vy = 0;
+                oldPos[idx + 1] = nextY;
+                const slipRatio = 1.0 - tableFriction;
+                nextX = px + vx * slipRatio;
+                nextZ = pz + vz * slipRatio;
+              } else {
+                // Seitliche Kollision
+                const distNegX = Math.abs(nextX - (-boundX));
+                const distPosX = Math.abs(nextX - boundX);
+                const distNegZ = Math.abs(nextZ - (-boundZ));
+                const distPosZ = Math.abs(nextZ - boundZ);
+
+                const minDist = Math.min(distNegX, distPosX, distNegZ, distPosZ);
+                if (minDist === distNegX) nextX = -boundX;
+                else if (minDist === distPosX) nextX = boundX;
+                else if (minDist === distNegZ) nextZ = -boundZ;
+                else nextZ = boundZ;
+
+                vy *= 0.5;
+                nextY = py + vy;
+              }
+            }
+          }
+
+          // Kollision mit dem Boden
+          const floorContactY = halfThickness + safetyMargin;
+          if (nextY < floorContactY) {
+            nextY = floorContactY;
+            vy = 0;
+            oldPos[idx + 1] = nextY;
+            nextX = px + vx * (1.0 - tableFriction);
+            nextZ = pz + vz * (1.0 - tableFriction);
+          }
+
+          pos[idx] = nextX;
+          pos[idx + 1] = nextY;
+          pos[idx + 2] = nextZ;
+        }
+
+        // 2. Solve Distance Constraints mit dynamischer Biegesteifigkeit
+        for (let iter = 0; iter < fabricPhysics.solverIterations; iter++) {
+          for (let k = 0; k < constraints.length; k++) {
+            const c = constraints[k];
+
+            // Biege-Constraints skalieren mit der eingestellten Steifigkeit
+            let stiff = 1.0;
+            if (c.type === 'bending') {
+              stiff = bendingStiff;
+              if (stiff <= 0.001) continue; // Bei 0 komplett weich überspringen
+            } else if (c.type === 'shear') {
+              stiff = 0.85;
+            }
+
+            const i1 = c.i1;
+            const i2 = c.i2;
+            const idx1 = i1 * 3;
+            const idx2 = i2 * 3;
+
+            const dx = pos[idx2] - pos[idx1];
+            const dy = pos[idx2 + 1] - pos[idx1 + 1];
+            const dz = pos[idx2 + 2] - pos[idx1 + 2];
+            const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+            if (dist < 1e-6) continue;
+
+            const diff = ((dist - c.restDist) / dist) * stiff;
+            const p1Pinned = pinnedFlags[i1];
+            const p2Pinned = pinnedFlags[i2];
+
+            if (p1Pinned && p2Pinned) continue;
+
+            const weight1 = p1Pinned ? 0 : (p2Pinned ? 1 : 0.5);
+            const weight2 = p2Pinned ? 0 : (p1Pinned ? 1 : 0.5);
+
+            pos[idx1] += dx * diff * weight1;
+            pos[idx1 + 1] += dy * diff * weight1;
+            pos[idx1 + 2] += dz * diff * weight1;
+
+            pos[idx2] -= dx * diff * weight2;
+            pos[idx2 + 1] -= dy * diff * weight2;
+            pos[idx2 + 2] -= dz * diff * weight2;
+          }
+        }
+      }
+
+      // 3. Normalen berechnen und Oberschale sowie Unterschale mit Dicke updaten
+      updateClothShellVertices(halfThickness);
+    }
+
+    // Berechnet aus der neutralen Mittelschicht die Oberschale (+Normal*halfThickness)
+    // und die Unterschale (-Normal*halfThickness). Dadurch hat das Tuch echte 3D-Dicke.
+    function updateClothShellVertices(halfThick) {
+      const segX = clothConfig.subdivX;
+      const segY = clothConfig.subdivY;
+      const nx = segX + 1;
+      const ny = segY + 1;
+      const planeVerts = nx * ny;
+
+      const posAttr = clothGeometry.attributes.position;
+      const normAttr = clothGeometry.attributes.normal;
+      const posArr = posAttr.array;
+      const normArr = normAttr.array;
+
+      // Zuerst lokale Normalen der Mittelschicht schätzen
+      for (let y = 0; y < ny; y++) {
+        for (let x = 0; x < nx; x++) {
+          const idx = y * nx + x;
+
+          // Nachbarn für Tangente und Bitangente
+          const xPrev = Math.max(0, x - 1);
+          const xNext = Math.min(nx - 1, x + 1);
+          const yPrev = Math.max(0, y - 1);
+          const yNext = Math.min(ny - 1, y + 1);
+
+          const idxL = (y * nx + xPrev) * 3;
+          const idxR = (y * nx + xNext) * 3;
+          const idxD = (yPrev * nx + x) * 3;
+          const idxU = (yNext * nx + x) * 3;
+
+          // Tangentenvektor entlang X
+          const tx = pos[idxR] - pos[idxL];
+          const ty = pos[idxR + 1] - pos[idxL + 1];
+          const tz = pos[idxR + 2] - pos[idxL + 2];
+
+          // Tangentenvektor entlang Y/Z
+          const bx = pos[idxU] - pos[idxD];
+          const by = pos[idxU + 1] - pos[idxD + 1];
+          const bz = pos[idxU + 2] - pos[idxD + 2];
+
+          // Kreuzprodukt t x b ergibt die Normale
+          let nxVal = ty * bz - tz * by;
+          let nyVal = tz * bx - tx * bz;
+          let nzVal = tx * by - ty * bx;
+
+          const len = Math.sqrt(nxVal * nxVal + nyVal * nyVal + nzVal * nzVal) || 1;
+          nxVal /= len;
+          nyVal /= len;
+          nzVal /= len;
+
+          const cx = pos[idx * 3];
+          const cy = pos[idx * 3 + 1];
+          const cz = pos[idx * 3 + 2];
+
+          // Oberschale (Top face, nach außen/oben versetzt)
+          const topOffset = halfThick;
+          posArr[idx * 3] = cx + nxVal * topOffset;
+          posArr[idx * 3 + 1] = cy + nyVal * topOffset;
+          posArr[idx * 3 + 2] = cz + nzVal * topOffset;
+
+          normArr[idx * 3] = nxVal;
+          normArr[idx * 3 + 1] = nyVal;
+          normArr[idx * 3 + 2] = nzVal;
+
+          // Unterschale (Bottom face, nach unten versetzt)
+          const bIdx = (planeVerts + idx) * 3;
+          posArr[bIdx] = cx - nxVal * topOffset;
+          posArr[bIdx + 1] = cy - nyVal * topOffset;
+          posArr[bIdx + 2] = cz - nzVal * topOffset;
+
+          normArr[bIdx] = -nxVal;
+          normArr[bIdx + 1] = -nyVal;
+          normArr[bIdx + 2] = -nzVal;
+        }
+      }
+
+      posAttr.needsUpdate = true;
+      normAttr.needsUpdate = true;
+
+      // Tangenten dynamisch aktualisieren für korrekte anisotrope Lichtbrechung in den Falten
+      if (clothGeometry.attributes.tangent) {
+        clothGeometry.computeTangents();
+      }
+
+      clothGeometry.computeBoundingSphere();
+      clothGeometry.computeBoundingBox();
+    }
+
+    function onPointerDown(event) {
+      if (!showGizmosAndPins || pinnedCornersCount === 0) return;
+
+      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+      raycaster.setFromCamera(mouse, camera);
+      const visibleAnchors = pinAnchors.slice(0, pinnedCornersCount);
+      const intersects = raycaster.intersectObjects(visibleAnchors, false);
+
+      if (intersects.length > 0) {
+        const hitCorner = intersects[0].object.userData.cornerIndex;
+        if (hitCorner !== undefined && hitCorner < pinnedCornersCount) {
+          updateActivePinGizmo(hitCorner);
+        }
+      }
+    }
+
+    function setupUI() {
+      // Image upload handling
+      const fileInput = document.getElementById('file-texture');
+      fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          const img = new Image();
+          img.onload = () => {
+            loadedUserImage = img;
+            const aspect = img.width / img.height;
+            clothConfig.aspectRatio = aspect;
+
+            // Preserve fabric area based on 0.9 x 0.9m standard
+            if (aspect >= 1.0) {
+              clothConfig.width = 0.90;
+              clothConfig.height = 0.90 / aspect;
+            } else {
+              clothConfig.height = 0.90;
+              clothConfig.width = 0.90 * aspect;
+            }
+
+            document.getElementById('label-dimensions').textContent = 
+              `${clothConfig.width.toFixed(2)} × ${clothConfig.height.toFixed(2)} m | ${clothConfig.borderThicknessMm}mm Bordüre`;
+
+            updateCanvasTexture();
+            setupCloth();
+          };
+          img.src = evt.target.result;
+        };
+        reader.readAsDataURL(file);
+      });
+
+      // Border Color
+      const inputBorderColor = document.getElementById('input-border-color');
+      inputBorderColor.addEventListener('input', (e) => {
+        clothConfig.borderColor = e.target.value;
+        updateCanvasTexture();
+      });
+
+      // Border Thickness
+      const inputBorderMm = document.getElementById('input-border-mm');
+      const valBorderMm = document.getElementById('val-border-mm');
+      inputBorderMm.addEventListener('input', (e) => {
+        const mm = parseInt(e.target.value, 10);
+        clothConfig.borderThicknessMm = mm;
+        valBorderMm.textContent = `${mm} mm`;
+        document.getElementById('label-dimensions').textContent = 
+          `${clothConfig.width.toFixed(2)} × ${clothConfig.height.toFixed(2)} m | ${mm}mm Bordüre`;
+        updateCanvasTexture();
+      });
+
+      // Pin Count Dropdown
+      const selectPinned = document.getElementById('select-pinned');
+      selectPinned.addEventListener('change', (e) => {
+        pinnedCornersCount = parseInt(e.target.value, 10);
+        applyPinnedSelection();
+      });
+
+      // Corner selection buttons
+      document.querySelectorAll('.btn-corner').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const idx = parseInt(e.currentTarget.getAttribute('data-corner'), 10);
+          if (idx < pinnedCornersCount) {
+            updateActivePinGizmo(idx);
+          }
+        });
+      });
+
+      // Keyboard shortcuts: W for translate, E for rotate
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 'w' || e.key === 'W') {
+          transformControls.setMode('translate');
+        } else if (e.key === 'e' || e.key === 'E') {
+          transformControls.setMode('rotate');
+        }
+      });
+
+      // Pedestal Toggle
+      const togglePedestal = document.getElementById('toggle-pedestal');
+      togglePedestal.addEventListener('change', (e) => {
+        pedestalConfig.enabled = e.target.checked;
+        pedestalMesh.visible = e.target.checked;
+      });
+
+      // Gizmo & Pins Visibility Toggle
+      const toggleGizmos = document.getElementById('toggle-gizmos');
+      toggleGizmos.addEventListener('change', (e) => {
+        showGizmosAndPins = e.target.checked;
+        if (gizmoHelper) {
+          gizmoHelper.visible = showGizmosAndPins;
+        }
+        applyPinnedSelection();
+      });
+
+      // Boden-Raster Toggle
+      const toggleGrid = document.getElementById('toggle-grid');
+      toggleGrid.addEventListener('change', (e) => {
+        if (floorGrid) {
+          floorGrid.visible = e.target.checked;
+        }
+      });
+
+      // Key Light Controls (Intensität & Blur)
+      const inputKeyInt = document.getElementById('input-key-intensity');
+      const valKeyInt = document.getElementById('val-key-intensity');
+      inputKeyInt.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        mainLight.intensity = val;
+        valKeyInt.textContent = val.toFixed(1);
+      });
+
+      const inputKeyBlur = document.getElementById('input-key-blur');
+      const valKeyBlur = document.getElementById('val-key-blur');
+      inputKeyBlur.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        mainLight.shadow.radius = val;
+        // Dynamische Sample-Anpassung: Wenn Blur fast 0 ist, weniger Samples, bei starkem Blur viele Samples für Glätte
+        mainLight.shadow.blurSamples = val <= 0.5 ? 4 : Math.min(25, Math.round(8 + val * 1.5));
+        mainLight.shadow.needsUpdate = true;
+        valKeyBlur.textContent = val === 0 ? '0 (Hart)' : val.toFixed(1);
+      });
+
+      // Fill Light Controls (Intensität & Blur)
+      const inputFillInt = document.getElementById('input-fill-intensity');
+      const valFillInt = document.getElementById('val-fill-intensity');
+      inputFillInt.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        fillLight.intensity = val;
+        valFillInt.textContent = val.toFixed(1);
+      });
+
+      const inputFillBlur = document.getElementById('input-fill-blur');
+      const valFillBlur = document.getElementById('val-fill-blur');
+      inputFillBlur.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        fillLight.shadow.radius = val;
+        fillLight.shadow.blurSamples = val <= 0.5 ? 4 : Math.min(25, Math.round(8 + val * 1.5));
+        fillLight.shadow.needsUpdate = true;
+        valFillBlur.textContent = val === 0 ? '0 (Hart)' : val.toFixed(1);
+      });
+
+      // Simulation neu starten (Pins & Gizmo-Positionen bleiben unberührt)
+      document.getElementById('btn-restart').addEventListener('click', () => {
+        resetSimulationPreservePins();
+      });
+
+      // Nur Pins & Gizmos auf Standardkoordinaten zurücksetzen
+      document.getElementById('btn-reset-pins').addEventListener('click', () => {
+        resetPinPositionsOnly();
+      });
+
+      // Stoff-Verhalten: Detail-Regler
+      const inputBending = document.getElementById('input-fabric-bending');
+      const valBending = document.getElementById('val-fabric-bending');
+      inputBending.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        fabricPhysics.bendingStiffness = val;
+        valBending.textContent = val.toFixed(2);
+        highlightCustomPreset();
+      });
+
+      const inputGravity = document.getElementById('input-fabric-gravity');
+      const valGravity = document.getElementById('val-fabric-gravity');
+      inputGravity.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        fabricPhysics.gravityMagnitude = val;
+        valGravity.textContent = val.toFixed(1);
+        highlightCustomPreset();
+      });
+
+      const inputDamping = document.getElementById('input-fabric-damping');
+      const valDamping = document.getElementById('val-fabric-damping');
+      inputDamping.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        fabricPhysics.damping = val;
+        valDamping.textContent = val.toFixed(3);
+        highlightCustomPreset();
+      });
+
+      const inputFriction = document.getElementById('input-fabric-friction');
+      const valFriction = document.getElementById('val-fabric-friction');
+      inputFriction.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        fabricPhysics.friction = val;
+        valFriction.textContent = val.toFixed(2);
+        highlightCustomPreset();
+      });
+
+      // PBR+ Seiden-Optik Regler
+      const inputAnisotropy = document.getElementById('input-silk-anisotropy');
+      const valAnisotropy = document.getElementById('val-silk-anisotropy');
+      inputAnisotropy.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        silkOptics.anisotropy = val;
+        valAnisotropy.textContent = val.toFixed(2);
+        if (clothMaterial) {
+          clothMaterial.anisotropy = val;
+          clothMaterial.needsUpdate = true;
+        }
+      });
+
+      const inputAnisotropyRot = document.getElementById('input-silk-anisotropy-rot');
+      const valAnisotropyRot = document.getElementById('val-silk-anisotropy-rot');
+      inputAnisotropyRot.addEventListener('input', (e) => {
+        const deg = parseFloat(e.target.value);
+        const rad = THREE.MathUtils.degToRad(deg);
+        silkOptics.anisotropyRotation = rad;
+        valAnisotropyRot.textContent = `${deg}°`;
+        if (clothMaterial) {
+          clothMaterial.anisotropyRotation = rad;
+          clothMaterial.needsUpdate = true;
+        }
+      });
+
+      const inputSheen = document.getElementById('input-silk-sheen');
+      const valSheen = document.getElementById('val-silk-sheen');
+      inputSheen.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        silkOptics.sheen = val;
+        valSheen.textContent = val.toFixed(1);
+        if (clothMaterial) {
+          clothMaterial.sheen = val;
+          clothMaterial.needsUpdate = true;
+        }
+      });
+
+      const inputIridescence = document.getElementById('input-silk-iridescence');
+      const valIridescence = document.getElementById('val-silk-iridescence');
+      inputIridescence.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        silkOptics.iridescence = val;
+        valIridescence.textContent = val.toFixed(2);
+        if (clothMaterial) {
+          clothMaterial.iridescence = val;
+          clothMaterial.needsUpdate = true;
+        }
+      });
+
+      const inputWeaveDepth = document.getElementById('input-silk-weave-depth');
+      const valWeaveDepth = document.getElementById('val-silk-weave-depth');
+      inputWeaveDepth.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        silkOptics.weaveDepth = val;
+        valWeaveDepth.textContent = val.toFixed(2);
+        if (clothMaterial) {
+          clothMaterial.normalScale.set(val, val);
+          clothMaterial.needsUpdate = true;
+        }
+      });
+
+      // Preset Buttons
+      function applyPreset(presetKey) {
+        const p = FABRIC_PRESETS[presetKey];
+        if (!p) return;
+
+        fabricPhysics.activePreset = presetKey;
+        fabricPhysics.gravityMagnitude = p.gravity;
+        fabricPhysics.damping = p.damping;
+        fabricPhysics.bendingStiffness = p.bending;
+        fabricPhysics.friction = p.friction;
+
+        // Sliders & Labels synchronisieren
+        inputBending.value = p.bending;
+        valBending.textContent = p.bending.toFixed(2);
+
+        inputGravity.value = p.gravity;
+        valGravity.textContent = p.gravity.toFixed(1);
+
+        inputDamping.value = p.damping;
+        valDamping.textContent = p.damping.toFixed(3);
+
+        inputFriction.value = p.friction;
+        valFriction.textContent = p.friction.toFixed(2);
+
+        document.getElementById('label-active-preset').textContent = p.name;
+
+        // Visuelle Materialeigenschaften anpassen
+        if (clothMaterial) {
+          clothMaterial.roughness = p.roughness;
+          clothMaterial.sheen = p.sheen;
+          clothMaterial.sheenColor = new THREE.Color(p.sheenColor);
+          if (p.anisotropy !== undefined) {
+            clothMaterial.anisotropy = p.anisotropy;
+            inputAnisotropy.value = p.anisotropy;
+            valAnisotropy.textContent = p.anisotropy.toFixed(2);
+          }
+          if (p.iridescence !== undefined) {
+            clothMaterial.iridescence = p.iridescence;
+            inputIridescence.value = p.iridescence;
+            valIridescence.textContent = p.iridescence.toFixed(2);
+          }
+          clothMaterial.needsUpdate = true;
+        }
+
+        // Preset Button Styles hervorheben
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+          if (btn.id === `preset-${presetKey}`) {
+            btn.className = 'preset-btn py-1 px-1 rounded-lg text-[10px] font-semibold bg-sky-500 text-white shadow-sm transition-all text-center';
+          } else {
+            btn.className = 'preset-btn py-1 px-1 rounded-lg text-[10px] font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition-all text-center';
+          }
+        });
+      }
+
+      function highlightCustomPreset() {
+        document.getElementById('label-active-preset').textContent = 'Benutzerdefiniert';
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+          btn.className = 'preset-btn py-1 px-1 rounded-lg text-[10px] font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition-all text-center';
+        });
+      }
+
+      document.getElementById('preset-silk').addEventListener('click', () => applyPreset('silk'));
+      document.getElementById('preset-satin').addEventListener('click', () => applyPreset('satin'));
+      document.getElementById('preset-linen').addEventListener('click', () => applyPreset('linen'));
+      document.getElementById('preset-chiffon').addEventListener('click', () => applyPreset('chiffon'));
+    }
+
+    function onWindowResize() {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      // Physics update
+      simulatePhysics();
+
+      // Camera controls update
+      orbitControls.update();
+
+      // Render frame
+      renderer.render(scene, camera);
+    }
+  </script>
+</body>
+</html>

@@ -21,6 +21,7 @@ import type {
   AssetKind,
   BlockParams,
   FabricClothParams,
+  TrianglePatchParams,
   BookParams,
   BeverageCanParams,
   TinCanParams,
@@ -56,6 +57,10 @@ import {
   isSphereAssetKind,
   type SphereParams,
 } from '@/scene/asset-sphere';
+import {
+  defaultTrianglePatchParams,
+  isTrianglePatchAssetKind,
+} from '@/scene/asset-triangle-patch';
 import { isWheelCarAssetKind, type WheelCarParams } from '@/scene/asset-wheel-car';
 import { isRigidPrimitiveAssetKind } from '@/scene/rigid-primitive-asset';
 import {
@@ -63,9 +68,21 @@ import {
   type PhysicsBodyMode,
 } from '@/scene/physics-rigid-body';
 import {
+  cloneFabricClothParams,
   defaultFabricClothParams,
+  fabricClothFootprintFromSizes,
   isFabricClothAssetKind,
+  isFabricClothBakedAssetKind,
+  isFabricClothFamilyAssetKind,
+  isFabricRuntimeTuningPatch,
 } from '@/scene/asset-fabric-cloth';
+import { fabricClothPhysicsParamsFromMaterialId } from '@/config/fabric-physics-presets';
+import { cloneAssetMaterials } from '@/scene/material-types';
+import type {
+  UserBakedAsset,
+  UserBakedAssetResolver,
+} from '@/scene/user-baked-asset';
+import { normalizeFabricClothBakedMeshPayload } from '@/engine/fabric-cloth-bake';
 import {
   defaultBookParams,
   isBookAssetKind,
@@ -105,7 +122,8 @@ import {
   syncEntityYForFoot,
 } from './asset-system-rebuild';
 import type { RigidPrimitivePhysicsColliders } from './rigid-primitive-physics-colliders';
-import type { FabricClothPhysicsColliders } from './fabric-cloth-physics-colliders';
+import type { FabricClothSimulationParticipant } from './fabric-cloth-simulation-participant';
+
 
 export class AssetSystem {
   private readonly scene: Scene;
@@ -115,7 +133,8 @@ export class AssetSystem {
   private imageResolver: ImageResolver | null = null;
   private viewportInvalidation: ViewportInvalidation | null = null;
   private rigidPrimitivePhysics: RigidPrimitivePhysicsColliders | null = null;
-  private fabricClothPhysics: FabricClothPhysicsColliders | null = null;
+  private fabricClothSimulation: FabricClothSimulationParticipant | null = null;
+  private userBakedAssetResolver: UserBakedAssetResolver | null = null;
 
   constructor(scene: Scene, registry: EntityRegistry, textureLoader: ImageTextureLoader) {
     this.scene = scene;
@@ -135,8 +154,14 @@ export class AssetSystem {
     this.rigidPrimitivePhysics = colliders;
   }
 
-  setFabricClothPhysicsColliders(colliders: FabricClothPhysicsColliders | null): void {
-    this.fabricClothPhysics = colliders;
+  setFabricClothSimulationParticipant(
+    participant: FabricClothSimulationParticipant | null,
+  ): void {
+    this.fabricClothSimulation = participant;
+  }
+
+  setUserBakedAssetResolver(resolver: UserBakedAssetResolver | null): void {
+    this.userBakedAssetResolver = resolver;
   }
 
   getImageResolver(): ImageResolver | null {
@@ -156,7 +181,8 @@ export class AssetSystem {
       imageResolver: this.imageResolver,
       viewportInvalidation: this.viewportInvalidation,
       rigidPrimitivePhysics: this.rigidPrimitivePhysics,
-      fabricClothPhysics: this.fabricClothPhysics,
+      fabricClothSimulation: this.fabricClothSimulation,
+      userBakedAssetResolver: this.userBakedAssetResolver,
     };
   }
 
@@ -209,6 +235,17 @@ export class AssetSystem {
     const transform = spawn
       ? this.registry.createTransformAt(spawn.x, spawn.z, spawnY)
       : this.registry.createSpawnTransform(spawnY);
+
+    const fabricClothSpawnParams = isFabricClothAssetKind(assetKind)
+      ? {
+          ...defaultFabricClothParams(
+            fabricClothFootprintFromSizes(face.width, face.height),
+          ),
+          physics: fabricClothPhysicsParamsFromMaterialId(
+            materials.fabricClothMaterialId ?? 'material-fabric',
+          ),
+        }
+      : undefined;
 
     const root = new Group();
     root.userData.entityId = id;
@@ -282,6 +319,14 @@ export class AssetSystem {
         materialResolver: this.materialResolver,
         sphereParams: defaultSphereParams(),
       });
+    } else if (isTrianglePatchAssetKind(assetKind)) {
+      populateAssetGroup(root, assetKind, {
+        sizeScale: 1,
+        materials,
+        materialResolver: this.materialResolver,
+        trianglePatchParams:
+          kindDefaults.trianglePatchParams ?? defaultTrianglePatchParams(),
+      });
     } else if (isWheelCarAssetKind(assetKind)) {
       // Meshes built asynchronously in rebuildEntity (SVG lathe).
     } else if (isFabricClothAssetKind(assetKind)) {
@@ -331,6 +376,9 @@ export class AssetSystem {
         : undefined,
       printParams,
     );
+    if (fabricClothSpawnParams) {
+      this.registry.setFabricClothParams(id, fabricClothSpawnParams);
+    }
     if (usesAsyncPackagingRebuild(assetKind)) {
       void rebuildEntity(this.rebuildCtx, id);
     } else if (isBookAssetKind(assetKind)) {
@@ -341,6 +389,10 @@ export class AssetSystem {
       this.rigidPrimitivePhysics?.reconcileEntity(id);
     }
     return id;
+  }
+
+  rebuildEntity(entityId: string): Promise<void> {
+    return rebuildEntity(this.rebuildCtx, entityId);
   }
 
   seedDefaultScene(): void {
@@ -483,7 +535,8 @@ export class AssetSystem {
     if (
       !runtime ||
       isWallAssetKind(runtime.entity.assetKind) ||
-      isRigidPrimitiveAssetKind(runtime.entity.assetKind)
+      isRigidPrimitiveAssetKind(runtime.entity.assetKind) ||
+      isFabricClothBakedAssetKind(runtime.entity.assetKind)
     ) {
       return;
     }
@@ -627,10 +680,92 @@ export class AssetSystem {
     partial: Partial<FabricClothParams>,
   ): Promise<void> {
     const runtime = this.registry.getRuntime(entityId);
-    if (!runtime || !isFabricClothAssetKind(runtime.entity.assetKind)) {return;}
+    if (!runtime || !isFabricClothFamilyAssetKind(runtime.entity.assetKind)) {return;}
+
+    const prevCount =
+      runtime.entity.fabricClothParams?.sim.pinnedCornersCount ?? 0;
+    const runtimeTuning = isFabricRuntimeTuningPatch(partial);
 
     this.registry.setFabricClothParams(entityId, partial);
+    const nextSim = runtime.entity.fabricClothParams?.sim;
+    if (partial.sim !== undefined && nextSim) {
+      this.fabricClothSimulation?.onSimPinsChanged(entityId, prevCount, nextSim);
+    }
+    if (partial.physics !== undefined) {
+      this.fabricClothSimulation?.wakeSimulation(entityId);
+    }
+    if (runtimeTuning) {
+      return;
+    }
     await rebuildEntity(this.rebuildCtx, entityId);
+  }
+
+  addAssetFromUserBaked(userAsset: UserBakedAsset, spawn?: { x: number; z: number }): string {
+    const assetKind = userAsset.placementKind;
+    const id = crypto.randomUUID();
+    const materials = cloneAssetMaterials(userAsset.defaults.materials);
+    const fabricClothParams = cloneFabricClothParams(userAsset.defaults.fabricClothParams);
+    const normalizedMesh = normalizeFabricClothBakedMeshPayload(userAsset.mesh);
+    const footprint = {
+      widthM: normalizedMesh.planeWidthM,
+      heightM: normalizedMesh.planeHeightM,
+    };
+    const face = {
+      width: footprint.widthM,
+      height: footprint.heightM,
+    };
+    const spawnEntity: AssetEntity = {
+      id,
+      type: 'asset',
+      name: userAsset.name,
+      assetKind,
+      screenImageId: userAsset.defaults.screenImageId,
+      sizeScale: 1,
+      visible: true,
+      transform: { position: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
+      bakedClothFootprint: footprint,
+    };
+    const spawnY = assetGroundCenterY(assetKind, face, 1, spawnEntity);
+    const transform = spawn
+      ? this.registry.createTransformAt(spawn.x, spawn.z, spawnY)
+      : this.registry.createSpawnTransform(spawnY);
+
+    const root = new Group();
+    root.userData.entityId = id;
+
+    populateAssetGroup(root, assetKind, {
+      faceWidth: face.width,
+      faceHeight: face.height,
+      materials,
+      materialResolver: this.materialResolver,
+      fabricClothParams,
+      bakedFabricClothMesh: userAsset.mesh,
+      imageTexture: null,
+    });
+
+    this.scene.add(root);
+    this.registry.addEntity(
+      id,
+      assetKind,
+      root,
+      transform,
+      userAsset.defaults.screenImageId,
+      undefined,
+      undefined,
+      materials,
+    );
+    this.registry.patchEntityFields(id, {
+      userBakedAssetId: userAsset.id,
+      bakedClothFootprint: footprint,
+      fabricClothParams,
+      name: userAsset.name,
+    });
+
+    if (userAsset.defaults.screenImageId) {
+      void this.setAssetImage(id, userAsset.defaults.screenImageId);
+    }
+
+    return id;
   }
 
   async setBookParams(entityId: string, partial: Partial<BookParams>): Promise<void> {
@@ -713,6 +848,17 @@ export class AssetSystem {
     await rebuildEntity(this.rebuildCtx, entityId);
   }
 
+  async setTrianglePatchParams(
+    entityId: string,
+    partial: Partial<TrianglePatchParams>,
+  ): Promise<void> {
+    const runtime = this.registry.getRuntime(entityId);
+    if (!runtime || !isTrianglePatchAssetKind(runtime.entity.assetKind)) {return;}
+
+    this.registry.setTrianglePatchParams(entityId, partial);
+    await rebuildEntity(this.rebuildCtx, entityId);
+  }
+
   async setEntityMaterial(
     entityId: string,
     slot: MaterialEntitySlot,
@@ -778,7 +924,7 @@ export class AssetSystem {
     if (!runtime) {return;}
 
     this.rigidPrimitivePhysics?.remove(entityId);
-    this.fabricClothPhysics?.removeOne(entityId);
+    this.fabricClothSimulation?.removeOne(entityId);
     disposeAssetGroup(runtime.object as Group);
     this.scene.remove(runtime.object);
     this.registry.removeEntity(entityId);
@@ -787,7 +933,7 @@ export class AssetSystem {
   dispose(): void {
     this.viewportInvalidation = null;
     this.rigidPrimitivePhysics?.dispose();
-    this.fabricClothPhysics?.dispose();
+    this.fabricClothSimulation?.dispose();
     for (const runtime of this.registry.getEntities()) {
       const objectRuntime = this.registry.getRuntime(runtime.id);
       if (!objectRuntime) {continue;}

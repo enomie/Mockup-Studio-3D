@@ -16,6 +16,7 @@ import {
   type WallParams,
 } from '@/scene/asset-wall';
 import { HANDHELD_CSG_EPSILON_M } from './handheld-geometry';
+import { ensureGeometryTangents } from '@/engine/geometry-tangents';
 
 function subtractDoorFromWall(
   wallGeometry: BufferGeometry,
@@ -36,6 +37,7 @@ export function createWallSolidBoxGeometry(
 ): BufferGeometry {
   const geometry = new BoxGeometry(widthM, heightM, thicknessM);
   geometry.translate(0, heightM / 2, 0);
+  ensureGeometryTangents(geometry);
   return geometry;
 }
 
@@ -52,13 +54,16 @@ export function buildWallBodyGeometry(
   const solid = createWallSolidBoxGeometry(widthM, heightM, thicknessM);
 
   if (assetKind !== 'wall-door') {
+    ensureGeometryTangents(solid);
     return solid;
   }
 
   const cutter = createDoorCutterGeometry(thicknessM);
   const centerX = doorCutterCenterX(widthM);
   const centerY = DOOR_HEIGHT_M / 2;
-  return subtractDoorFromWall(solid, cutter, new Vector3(centerX, centerY, 0));
+  const result = subtractDoorFromWall(solid, cutter, new Vector3(centerX, centerY, 0));
+  ensureGeometryTangents(result);
+  return result;
 }
 
 function addDoorHoleToShape(shape: Shape, widthM: number): void {

@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Vector2 } from 'three/webgpu';
-import {
-  computePenHeightM,
-  PEN_MAX_RADIUS_DEFAULT_M,
-} from '@/scene/asset-pen';
+import { penNominalFootprintM } from '@/scene/asset-pen';
 import { bandUToTextureS } from './beverage-can-label-unfold';
 import {
   mapPenBandUvToTextureST,
@@ -17,11 +14,11 @@ import {
 } from './pen-body-wrap-unfold';
 
 describe('penBodyWrapAspectNominal', () => {
-  it('matches default pen height calibration', () => {
-    const aspect = penBodyWrapAspectNominal(PEN_MAX_RADIUS_DEFAULT_M);
-    expect(aspect).toBeGreaterThan(0.2);
+  it('returns positive unfold aspect for marker profile', () => {
+    const aspect = penBodyWrapAspectNominal('marker');
+    expect(aspect).toBeGreaterThan(0.05);
     expect(aspect).toBeLessThan(0.5);
-    expect(computePenHeightM(PEN_MAX_RADIUS_DEFAULT_M)).toBeCloseTo(0.1412, 3);
+    expect(penNominalFootprintM('marker').heightM).toBeCloseTo(0.2, 3);
   });
 });
 

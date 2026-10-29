@@ -16,7 +16,7 @@ Zentrale **Farben-Bibliothek** im Projekt — benannte RGB-Swatches für schnell
 
 **Category:** Colors  
 **Title:** Panel-Platzierung (UI)  
-**Description:** **Left Main** Nav: **Colors** (Lucide `Droplet`), **vor** Materials. Reihenfolge: Assets → Images → **Colors** → Materials. **Left Sub:** scrollbare **Liste** aller Presets + **Footer „Add color"** (+). Klick auf Eintrag = **Selection** + Editor im Sub (Name, ColorPicker für RGB). Kompakte Dichte → [`requirements-look-and-feel.md`](./requirements-look-and-feel.md).
+**Description:** **Left Main** Nav: **Colors** (Lucide `Droplet`), **vor** Materials. Reihenfolge: Assets → Images → **Colors** → Materials. **Left Sub:** scrollbare **Liste** aller Presets + **Footer „Add color"** (+). Liste und ColorPicker-Library-Swatches **alphabetisch A–Z** nach `name` → [`requirements-look-and-feel.md`](./requirements-look-and-feel.md). Klick auf Eintrag = **Selection** + Editor im Sub (Name, ColorPicker für RGB). Kompakte Dichte → [`requirements-look-and-feel.md`](./requirements-look-and-feel.md).
 
 ---
 
@@ -80,7 +80,7 @@ Typen: `src/scene/color-types.ts`. Built-ins: `src/data/color-presets.ts` (`COLO
 
 **Category:** Colors  
 **Title:** ColorPicker-Integration  
-**Description:** Popover unten: (1) **Library** — alle Presets als Mini-Swatches (Built-ins, dann User); Klick → `onChange(rgb)` + Recent aktualisieren. Swatch: `title` / `aria-label` = Preset-Name — **kein sichtbarer Text** im Popover. (2) **Recent** — letzte 8 Session-Farben (unverändert, `color-picker-recent.ts`). Library aus Store; Recent session-only.
+**Description:** Popover unten: (1) **Library** — alle Presets als Mini-Swatches (Built-ins, dann User); Klick → `onChange(rgb)` live. Swatch: `title` / `aria-label` = Preset-Name — **kein sichtbarer Text** im Popover. (2) **Recent** — letzte 8 Session-Farben (`color-picker-recent.ts`); Update nur **Commit-on-close** des Popovers (siehe [`requirements-color-picker.md`](./requirements-color-picker.md) UX-Details). (3) **Current color preview** — breiter Live-Streifen unter Recent. Library aus Store; Recent session-only.
 
 ---
 

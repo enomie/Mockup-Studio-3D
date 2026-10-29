@@ -48,6 +48,8 @@ Viewport-Gizmo zum **Verschieben** und **Drehen** selektierter Objekte. Gehört 
 
 Pose des Tuchs ändern: **Reset**, Gizmo, neu **Start**. **Rigide dynamic** Props (Block, …) können vorerst anders sein (Registry vs. Body) — Known limitation; nur `fabric-cloth` normativ gesperrt.
 
+**Eck-Pins (Ziel, Verlet):** Bis zu **vier** Pin-Anker pro `fabric-cloth`; eigenes Gizmo an aktivem Pin (wie Silk Studio). Pin-Positionen in **Entity-Lokalraum** (`fabricClothParams.sim.pinCorners`). Während **`simulating`**: Pin-Gizmo bewegt Partikel + `wake` Sim; Entity-Root-Gizmo weiter gesperrt wie oben. Details → [`requirements-assets-fabric-cloth.md`](./requirements-assets-fabric-cloth.md).
+
 ---
 
 **Category:** Gimbals  

@@ -1,6 +1,7 @@
 import type { MaterialEntitySlot, MaterialPreset } from '@/scene/entity-types';
 import type { MaterialKind } from '@/scene/material-types';
 import { PanelSelect } from '@/ui/components/PanelSelect';
+import { sortPanelSelectOptions } from '@/ui/utils/library-list-order';
 import { setEntityMaterial } from '@/ui/store/app-store';
 
 interface MaterialSelectProps {
@@ -61,10 +62,12 @@ export function MaterialSelect({
       id={id}
       value={value ?? ''}
       disabled={disabled}
-      options={options.map((material) => ({
-        value: material.id,
-        label: material.name,
-      }))}
+      options={sortPanelSelectOptions(
+        options.map((material) => ({
+          value: material.id,
+          label: material.name,
+        })),
+      )}
       onChange={(next) => {
         if (next) {setEntityMaterial(entityId, slot, next);}
       }}

@@ -47,7 +47,7 @@ Nur **Lighting** tauschen → [`requirements-lighting-presets.md`](./requirement
 
 **Category:** Environments  
 **Title:** Built-in Environments (Werk) — drei Stück  
-**Description:** Drei **nicht löschbare** Vorlagen beim App-Start. Feste **Reihenfolge** in der Liste (oben → unten):
+**Description:** Drei **nicht löschbare** Vorlagen beim App-Start. **Built-ins** in fester **Seed-Reihenfolge** in der Liste (oben → unten); **User**-Environments **darunter**, unter sich alphabetisch nach `name` → [`requirements-look-and-feel.md`](./requirements-look-and-feel.md). Built-in-Reihenfolge:
 
 1. **Default** — entspricht **`SCENE_DEFAULTS`** für `environment`, `ground`, `lighting` (heutiger App-Start-Look: blaugrauer Sky, sandiger Ground, v1 Studio-Rig).
 

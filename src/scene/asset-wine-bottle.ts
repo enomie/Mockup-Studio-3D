@@ -69,11 +69,11 @@ const CAPSULE_DISC_HEIGHT_MAX = 0.03;
 export function wineBottleSvgUrl(profile: WineBottleBodyProfile): string {
   switch (profile) {
     case 'bordeaux':
-      return builtinLatheProfileUrl('bottle-bordeaux-open.svg');
+      return builtinLatheProfileUrl('lathe-y-bottle-bordeaux-open.svg');
     case 'alsace':
-      return builtinLatheProfileUrl('bottle-alsace-open.svg');
+      return builtinLatheProfileUrl('lathe-y-bottle-alsace-open.svg');
     case 'sparkling':
-      return builtinLatheProfileUrl('bottle-sparkling-open.svg');
+      return builtinLatheProfileUrl('lathe-y-bottle-sparkling-open.svg');
   }
 }
 

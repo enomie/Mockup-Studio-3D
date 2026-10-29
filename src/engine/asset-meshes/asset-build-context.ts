@@ -6,7 +6,9 @@ import type { CylinderParams } from '@/scene/asset-cylinder';
 import type { SphereParams } from '@/scene/asset-sphere';
 import type { WheelCarParams } from '@/scene/asset-wheel-car';
 import type { FabricClothParams } from '@/scene/asset-fabric-cloth';
+import type { FabricClothBakedMeshPayload } from '@/scene/user-baked-asset';
 import type { BookParams } from '@/scene/asset-book';
+import type { TrianglePatchParams } from '@/scene/asset-triangle-patch';
 import type { BookTextures } from '@/engine/asset-meshes/populate-book';
 import type { HandheldDeviceParams } from '@/scene/asset-handheld';
 import type { MonitorDeviceParams } from '@/scene/asset-monitor';
@@ -54,12 +56,14 @@ export interface AssetBuildContext {
   sphereParams?: SphereParams;
   wheelCarParams?: WheelCarParams;
   fabricClothParams?: FabricClothParams;
+  bakedFabricClothMesh?: FabricClothBakedMeshPayload;
   bookParams?: BookParams;
   bookTextures?: BookTextures;
   beverageCanParams?: BeverageCanParams;
   tinCanParams?: TinCanParams;
   wineBottleParams?: WineBottleParams;
   penParams?: PenParams;
+  trianglePatchParams?: TrianglePatchParams;
   assetKind?: AssetKind;
   imageSurfaces?: Partial<Record<AssetImageSurfaceId, ImageSurfaceSettings>>;
 }

@@ -49,7 +49,7 @@ Bezüge: [`requirements-lighting.md`](./requirements-lighting.md), [`requirement
 
 **Category:** Light rigs  
 **Title:** Built-in Light rigs (Werk) — drei Stück  
-**Description:** Drei **nicht löschbare** Vorlagen. Feste **Reihenfolge** (oben → unten):
+**Description:** Drei **nicht löschbare** Vorlagen. **Built-ins** in fester **Seed-Reihenfolge** (oben → unten); **User**-Rigs **darunter**, unter sich alphabetisch nach `name` → [`requirements-look-and-feel.md`](./requirements-look-and-feel.md). Built-in-Reihenfolge:
 
 1. **Default** — **`SCENE_DEFAULTS.lighting`** (Referenz-Helper `lightingFromSceneDefaults()` in `src/data/builtin-light-rigs.ts`, keine duplizierten Zahlen).
 

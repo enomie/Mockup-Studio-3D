@@ -27,6 +27,8 @@ export const GROUND_PLANE_SIZE = 5000;
 
 /** Shadow map resolution — 4096² for mm-scale contact shadows in studio mockups. */
 export const SHADOW_MAP_SIZE = 4096;
+/** One-frame image export — higher shadow map resolution (restored after capture). */
+export const SHADOW_MAP_SIZE_EXPORT = 8192;
 
 /** Pre-allocated light slots per type (v2 extra lights; studio rig reserves spot 0 + 1). */
 export const LIGHT_POOL_SPOT_COUNT = 10;
@@ -39,6 +41,10 @@ export const LIGHT_POOL_FILL_SPOT_INDEX = 1;
 export const SHADOW_CAMERA_HALF_EXTENT = 2.5;
 /** Spot shadow coverage radius at the light target — 5 m diameter around scene center. */
 export const SHADOW_COVERAGE_RADIUS = 2.5;
+/** Minimum spot shadow coverage radius when fitting to scene content (m). */
+export const SHADOW_COVERAGE_RADIUS_MIN = 1.25;
+/** Extra margin beyond entity AABB horizontal extent for soft penumbra (m). */
+export const SHADOW_COVERAGE_CONTENT_PADDING_M = 0.35;
 export const SHADOW_CAMERA_NEAR = 0.1;
 /** Past-target margin along the light axis (spot shadow camera far). */
 export const SHADOW_CAMERA_FAR_MARGIN = 2;

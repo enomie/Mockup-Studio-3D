@@ -2,7 +2,8 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { PEN_MAX_RADIUS_DEFAULT_M } from '@/scene/asset-pen';
+import { MM_TO_M } from '@/units/length';
+import { PEN_PROFILE_VIEWBOX_WIDTH_MM } from '@/scene/asset-pen';
 import {
   extractPenPathsFromSvgText,
   globalBoundsFromRawPaths,
@@ -16,9 +17,9 @@ const FIXTURE_DIR = join(
 
 const MINI_SVG = `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 100">
-  <path stroke="#ff0000" fill="none" d="M0,0h10v20H0"/>
-  <path stroke="#00ff00" fill="none" d="M0,25h12v5H0"/>
-  <path stroke="#0000ff" fill="none" d="M0,30h8v70H0"/>
+  <path class="path_red" stroke="#ff0000" fill="none" d="M0,0h10v20H0"/>
+  <path class="path_green" stroke="#00ff00" fill="none" d="M0,25h12v5H0"/>
+  <path class="path_blue" stroke="#0000ff" fill="none" d="M0,30h8v70H0"/>
 </svg>`;
 
 describe('extractPenPathsFromSvgText', () => {
@@ -29,15 +30,14 @@ describe('extractPenPathsFromSvgText', () => {
     expect(paths.body.length).toBeGreaterThan(2);
   });
 
-  it('normalizes marker SVG with foot at y=0 and max radius', () => {
-    const svgText = readFileSync(join(FIXTURE_DIR, 'pen-marker.svg'), 'utf8');
+  it('normalizes marker SVG with foot at y=0 and path coordinates in meters (mm)', () => {
+    const svgText = readFileSync(join(FIXTURE_DIR, 'lathe-y-pen-marker.svg'), 'utf8');
     const raw = extractPenPathsFromSvgText(svgText);
-    const maxRadiusM = PEN_MAX_RADIUS_DEFAULT_M;
-    const lathe = normalizePenPaths(raw, maxRadiusM);
+    const lathe = normalizePenPaths(raw);
 
     expect(lathe.body.length).toBeGreaterThan(2);
     const bounds = globalBoundsFromRawPaths(raw);
-    const normalized = normalizePenPaths(raw, maxRadiusM);
+    const normalized = normalizePenPaths(raw);
     let maxX = 0;
     let minY = Infinity;
     for (const part of [normalized.cap, normalized.ring, normalized.body]) {
@@ -48,8 +48,8 @@ describe('extractPenPathsFromSvgText', () => {
     for (const p of normalized.body) {
       minY = Math.min(minY, p.y);
     }
-    expect(maxX).toBeCloseTo(maxRadiusM, 3);
-    expect(minY).toBeCloseTo(0, 3);
-    expect(bounds.maxX).toBeCloseTo(28.35, 1);
+    expect(maxX).toBeCloseTo(bounds.maxX * MM_TO_M, 5);
+    expect(minY).toBeCloseTo(0, 4);
+    expect(bounds.maxX).toBeCloseTo(PEN_PROFILE_VIEWBOX_WIDTH_MM, 1);
   });
 });

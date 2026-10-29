@@ -52,6 +52,10 @@ export class GizmoController {
     }
   }
 
+  getAttachedObject(): Object3D | null {
+    return this.attachedObject;
+  }
+
   setTransformMode(mode: GizmoTransformMode): void {
     this.controls.setMode(mode);
   }

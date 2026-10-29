@@ -1,9 +1,5 @@
 import { isRigidPrimitiveAssetKind } from '@/scene/rigid-primitive-asset';
 import { isWallAssetKind } from '@/scene/asset-wall';
-import {
-  sizeScaleFromFaceHeight,
-  sizeScaleFromFaceWidth,
-} from '@/scene/asset-ui-helpers';
 import type { AssetEntity } from '@/scene/entity-types';
 import {
   formatLengthMeters,
@@ -12,13 +8,9 @@ import {
 } from '@/units/length';
 import { PanelAxisField } from '@/ui/components/PanelAxisField/PanelAxisField';
 import { SubPanelSection } from '@/ui/components/SubPanelSection';
-import { setAssetSizeScale, setEntityTransform } from '@/ui/store/app-store';
-import {
-  formatDegrees,
-  formatSizeScale,
-  parseDegreesInput,
-  parseSizeScaleInput,
-} from './field-input-helpers';
+import { setEntityTransform } from '@/ui/store/app-store';
+import { AssetDimensionsFields } from './EntityDimensionsSection';
+import { formatDegrees, parseDegreesInput } from './field-input-helpers';
 
 export interface EntityTransformSectionProps {
   entity: AssetEntity;
@@ -46,41 +38,7 @@ export function EntityTransformSection({
   return (
     <SubPanelSection title="Transform">
       {!isWallAssetKind(entity.assetKind) && !isRigidPrimitiveAssetKind(entity.assetKind) ? (
-        <>
-          <PanelAxisField
-            label="Size"
-            value={entity.sizeScale}
-            format={formatSizeScale}
-            parse={parseSizeScaleInput}
-            onChange={(value) => { setAssetSizeScale(entity.id, value); }}
-          />
-          <PanelAxisField
-            label="Width"
-            unit="m"
-            value={faceSize.width}
-            format={(value) => formatLengthMeters(value, LENGTH_DECIMALS)}
-            parse={parseLengthMetersInput}
-            onChange={(value) => {
-              const nextScale = sizeScaleFromFaceWidth(entity.assetKind, value);
-              if (nextScale !== null) {setAssetSizeScale(entity.id, nextScale);}
-            }}
-          />
-          <PanelAxisField
-            label="Height"
-            unit="m"
-            value={faceSize.height}
-            format={(value) => formatLengthMeters(value, LENGTH_DECIMALS)}
-            parse={parseLengthMetersInput}
-            onChange={(value) => {
-              const nextScale = sizeScaleFromFaceHeight(
-                entity.assetKind,
-                value,
-                aspect,
-              );
-              if (nextScale !== null) {setAssetSizeScale(entity.id, nextScale);}
-            }}
-          />
-        </>
+        <AssetDimensionsFields entity={entity} faceSize={faceSize} aspect={aspect} />
       ) : null}
       <PanelAxisField
         label="Pos X"

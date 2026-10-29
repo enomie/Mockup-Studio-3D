@@ -5,6 +5,7 @@ import {
 } from 'three/webgpu';
 import type { AssetFaceId } from '@/scene/asset-faces';
 import { createRoundedScreenGeometry } from './handheld-geometry';
+import { ensureGeometryTangents } from '@/engine/geometry-tangents';
 
 export interface PrintFacePlacement {
   faceId: AssetFaceId;
@@ -22,7 +23,7 @@ function buildSharpPrintFacePlacements(
   const halfH = faceHeight * 0.5;
   const halfD = depth * 0.5;
 
-  return [
+  const placements: PrintFacePlacement[] = [
     {
       faceId: 'front',
       geometry: new PlaneGeometry(faceWidth, faceHeight),
@@ -60,6 +61,10 @@ function buildSharpPrintFacePlacements(
       rotation: [Math.PI / 2, 0, 0],
     },
   ];
+  for (const placement of placements) {
+    ensureGeometryTangents(placement.geometry);
+  }
+  return placements;
 }
 
 function createQuarterCylinderWall(
@@ -78,6 +83,7 @@ function createQuarterCylinderWall(
     Math.PI / 2,
   );
   geometry.rotateX(Math.PI / 2);
+  ensureGeometryTangents(geometry);
   return geometry;
 }
 
@@ -174,6 +180,10 @@ function buildRoundedPrintFacePlacements(
       position: [corner.x, corner.y, 0],
       rotation: [0, 0, 0],
     });
+  }
+
+  for (const placement of placements) {
+    ensureGeometryTangents(placement.geometry);
   }
 
   return placements;

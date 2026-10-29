@@ -6,6 +6,131 @@ Kurze Historie: **wie** wir uns entschieden haben (Warum, Alternativen). Require
 
 ## Einträge
 
+### 2026-10-29 — Fabric cloth — Platzhalter ohne Bild = Preset-Pipeline
+- **Entscheidung:** `createImageOnPresetMaterial` bei `tex === null` → `createStructureBaseMaterial(preset)` + `DoubleSide`, nicht `createPassepartoutPbrMaterial`.
+- **Grund:** Requirements: `fabricClothMaterialId` gilt **auch ohne** `screenImageId`; Passepartout-Matt ignorierte Aluminum Brushed / Silk / Linen-Struktur.
+- **Verworfen:** Graues Matt als einziger No-Image-Look.
+
+### 2026-10-29 — metal-brushed — MikkTSpace-Tangents auf Render-Geometrie
+- **Entscheidung:** Zentral `ensureGeometryTangents()` nach Normals/UVs in allen Asset-Geometrie-Buildern; Cloth-Sim rekalkuliert Tangents mit Grid-Normals.
+- **Grund:** Ohne `tangent`-Attribut nutzt WebGPU/TSL derivative-TBN (pro Dreieck konstant) → sichtbare Facetten bei anisotropem Brushed auf jeder Mesh.
+- **Verworfen:** Nur Roughness-Streifen ohne Anisotropie; Shader-Workaround statt korrekter Tangent-Basis.
+
+### 2026-10-24 — Fabric cloth bake — restPlaneXY vor Deformation
+- **Entscheidung:** Beim Bake `restPlaneXY` aus dem dichten Ruhe-`PlaneGeometry` **vor** dem Schreiben deformierter `position` serialisieren; `planeWidthM`/`planeHeightM` aus `fabricClothRestPlaneFootprintM(restPlane)`; Load: `normalizeFabricClothBakedMeshPayload` wenn Metadaten von Extents abweichen.
+- **Grund:** Border-TSL braucht zentriertes Ruhe-Gitter — Kopie nach Deformation verschob Center und brach Bake/Footprint-Validierung; Legacy-Katalog mit falschem `planeWidthM` bleibt ladbar.
+- **Verworfen:** Footprint aus deformierten XY-Positionen.
+
+### 2026-10-24 — Fabric cloth border v1 — TSL cutout + render shell + bake
+- **Entscheidung:** Bordüre bleibt `restPlaneXY`-TSL (kein Canvas); Cutout-Alpha `max(imageAlpha, borderMask)`; `applyFabricClothRenderShellToMaterial` in `createFabricClothMaterial` (live + baked); gleiches Material für `fabric-cloth-baked`.
+- **Grund:** Saum meter-genau nach Falten/Bake; PNG-Ränder dürfen Bordüre nicht weg-testen; DoubleSide ohne Vertex-Shell flackert (Requirements Depth).
+- **Verworfen:** Silk-Canvas-Bordüre in der Albedo-Map.
+
+### 2026-10-24 — Fabric cloth bake — Entity-lokal AABB-Alignment
+- **Entscheidung:** Nach Centerline-Dichte `alignFabricClothBakePayloadToSourceMesh` verschiebt Payload-Vertices so dass min-Y und X/Z-Zentrum zur Live-Shell (entity-lokal, `mesh.matrix`) passen.
+- **Grund:** Gizmo ~0,3 m über platziertem baked cloth trotz korrekter Centerline — stiff Plane vs. Double-Shell-Frame.
+- **Verworfen:** Nur `mesh.position`-Offset auf Instanz (Pose muss im serialisierten Mesh stehen).
+
+### 2026-10-24 — Fabric cloth bake — Verlet centerline als Bake-Quelle
+- **Entscheidung:** Bake liest mesh-lokale Centerline aus `binding.pos` (`fabricClothMeshLocalCenterlineFromBinding`) nach `flushBindingShell`; `getBindingForBake` in Participant; stiff Payload unverändert (PlaneGeometry + -X rotation).
+- **Grund:** Gebackene Instanz wich vom Gizmo ab, obwohl pausierte Quelle stimmte — Top-Shell-Attribute ≠ Centerline-Frame.
+- **Verworfen:** Shell-Top-Vertices als coarse source für Double-Shell.
+
+### 2026-10-23 — Fabric cloth Phase F — physics UI ohne Rebuild
+- **Entscheidung:** Presets + vier Slider in `FabricClothFields` (`fabricClothParams.physics`); `isFabricRuntimeTuningPatch` (nur `physics`/`sim`) überspringt `rebuildEntity`; `wakeFabricClothVerletBinding` bei Physics-Änderung während World-Session.
+- **Grund:** Live-Drape wie Silk Studio; Border/Material weiterhin Rebuild.
+- **Verworfen:** Silk-PBR-Optik-Slider in Phase F (Material bleibt `fabricClothMaterialId`).
+
+### 2026-10-23 — Fabric cloth pins — scene anchors + entity-local persist
+- **Entscheidung:** Pin-Meshes in Hauptszene (Weltkoordinaten); Gizmo translate an aktive Ecke während World-Session; `sim.pinCorners` bleiben Entity-lokal und werden bei Drag persistiert; Sim-only Param-Patches ohne Mesh-Rebuild.
+- **Grund:** Silk-Parität + Requirements Gimbals (Entity-Root gesperrt, Pins beweglich).
+- **Verworfen:** Pins als Child des Cloth-Meshes.
+
+### 2026-10-23 — Fabric cloth Phase D — live CPU Verlet + double shell
+- **Entscheidung:** World physics nutzt `FabricClothSimulationParticipant` + `fabric-cloth-verlet-session` (Welt-`pos`, `buildSceneColliderSnapshot`, `entity.fabricClothParams.physics`); Mesh = physische Doppelhülle (`shell-vertices`, `SHELL_HALF_THICKNESS`); Shader-Render-Shell aus Material entfernt.
+- **Grund:** Silk-Verhalten im Browser; Rapier SoftBody nur noch ungenutzt bis Phase G.
+- **Verworfen:** Rapier `createSoftBody` weiter für Stoff.
+
+### 2026-10-23 — Fabric cloth collider snapshot — Rapier-equivalent SDF
+- **Entscheidung:** `buildSceneColliderSnapshot` liest `rigidColliderShapeFromEntity` + `colliderWorldMatricesFromObject` (Foot-Pivot `centerOffsetY`, Wheel `WHEEL_COLLIDER_AXLE_QUATERNION`); Zylinder-SDF v1 ohne `borderRadiusM`-Fillet.
+- **Grund:** Cloth-Kontakt muss dieselbe Hülle wie Rapier-Rigids nutzen, nicht Mesh-Bounding-Box.
+- **Verworfen:** Roh-Mesh-Half-Extents für Snapshot.
+
+### 2026-10-23 — Fabric cloth SDF — non-uniform round box half extents
+- **Entscheidung:** Cloth collision SDF `sdfRoundBoxLocal` nutzt **`RoundBoxHalfExtents` {x,y,z}** (IQ round box), nicht Silk-Scalar — passt zu Mockup-Block-Maßen; Snapshot (Phase C) liefert Welt-Matrix + diese Half-Extents.
+- **Grund:** Blöcke sind kein Würfel; ein Skalar `half` würde Kontakt verzerren.
+- **Verworfen:** Silk-Scalar beibehalten und nur größte Kante verwenden.
+
+### 2026-10-23 — Fabric cloth — CPU Verlet (Silk Studio) statt Rapier SoftBody
+- **Entscheidung:** Stoff-Simulation = **1:1-Port** aus `_docs/fabric-physics/src-silk-studio` (Verlet, OGC-lite, SDF, physische Doppelhülle, Pins). Rapier nur noch für **Rigid primitives** + Ground. Collider-Snapshot aus **allen** bestehenden Rapier-Collider-Formen (Block, Sphere, Cylinder, Wheel-Car) inkl. Welt-Transform.
+- **Grund:** Rapier SoftBody liefert falsches Drape/Kontakt; Silk-Referenz ist produktreif und dokumentiert.
+- **Verworfen:** Rapier-Parameter-Tuning (`fabric-cloth-drape`, Partikel-Balls); Shader-only Render-Shell als Ersatz für Sim-Dicke.
+
+### 2026-10-23 — Schatten — Export 8192² + adaptive Spot-Coverage
+- **Entscheidung:** Live-Viewport **`SHADOW_MAP_SIZE` 4096²**; Bild-Export temporär **`SHADOW_MAP_SIZE_EXPORT` 8192²** (`LightingSystem.pushExportShadowQuality` im Capture-`finally`). Spot-Frustum-Coverage aus Entity-AABB: `computeSceneShadowCoverageRadius` zwischen **`SHADOW_COVERAGE_RADIUS_MIN`** und **`SHADOW_COVERAGE_RADIUS`**.
+- **Grund:** Weiche Schatten (PCF) zeigten Texelgitter auf Boden und Assets; Export-Frame kann mehr Shadow-Fillrate, engere Coverage erhöht Texel/m im Mockup ohne dauerhaft 8192² im Viewport.
+- **Verworfen:** Dauerhaft 8192² im Viewport; nur Softness reduzieren als Produktfix.
+
+### 2026-10-14 — Fabric cloth Bake v1 — Session store, kein Workspace
+- **Entscheidung:** `userBakedAssets` im AppState; Bake-Button Physics-Panel; Placement `fabric-cloth-baked` + `userBakedAssetResolver` in Engine; Mesh-Glättung `fabric-cloth-bake.ts` (bilinear, subdiv factor 2).
+- **Grund:** Requirements User-Asset-Flow; Reload-Persistenz bewusst später (Workspace).
+- **Verworfen:** IndexedDB in v1.
+
+### 2026-10-14 — Bake — explizite Entity-Selektion (Querschnitt)
+- **Entscheidung:** Bake erzeugt **einen** User-Asset-Katalogeintrag aus **`selectedEntityId`**; v1 nur bake-fähiges **`fabric-cloth`** bei `paused`. Später: zentrale Bake-Registry pro `assetKind`, nicht „alles mit Mesh“.
+- **Grund:** Mehrere Tücher / künftige deformierbare Assets brauchen klares „was wird gebacken“.
+- **Verworfen:** Implizit alle Cloth-Instanzen beim Freeze; globaler Bake ohne Selektion.
+
+### 2026-10-14 — Fabric cloth — „Bake“ = User-Asset (stiff), Glättung beim Bake
+- **Entscheidung:** **Bake** = eingefrorene Pose als **`source: 'user'`** in der **Assets-Liste** persistieren (`fabric-cloth-baked` o. ä.) — **steif**, ohne Rapier; **Fold-Glättung** (dichteres Mesh + Interpolation) nur in dieser Bake-Pipeline, **nicht** live in `simulating`. **Freeze** = nur Pause (Voraussetzung), separater Bake-Trigger.
+- **Grund:** User-Intent: photoreal Falten wiederverwendbar wie Katalog-Baustein; nicht nur temporäres Freeze-Mesh für Export.
+- **Verworfen:** „Bake“ = automatisches Freeze-Viewport-Subdivide ohne Bibliotheks-Eintrag (Missverständnis Agent 2026-10-14).
+
+### 2026-10-14 — Fabric Silk — Built-in = `metal-brushed` (Preset-Parität)
+- **Entscheidung:** `material-silk` → **`proceduralProfile: metal-brushed`** + dieselben strukturellen PBR-Felder wie Gold Brushed (metalness 1, tileScale 28, anisotropy 0.25, roughness 0.32); Generator nur `buildMetalBrushedNodes`. Profil-Id **`silk-fine`** bleibt Legacy-Alias (Registry + Re-Export).
+- **Grund:** Nur TSL-Duplikat reichte nicht — unterschiedliche Preset-Werte ließen Silk nicht wie Brushed aussehen.
+- **Verworfen:** Paralleles `silk-fine`-Shaderfile mit eigenen Konstanten; `silk-speckle`.
+
+### 2026-10-14 — Fabric Silk — `silk-speckle` statt `silk-fine`
+- **Entscheidung:** Built-in `material-silk` → Procedural-Profil **`silk-speckle`**: Mikro-Bump + **hohe Roughness-Variation** + **moderater Clearcoat** (~0,30); `silk-fine` bleibt für Legacy/User-Duplikate.
+- **Grund:** `silk-fine` (Satin-Albedo-Shimmer, kaum Normal) wirkt visuell zu flach; Zielbild näher **Print Glossy**, aber fleckiger/rauer (viele Reflexionsstärken nebeneinander).
+- **Verworfen:** Nur Preset-Tuning auf `silk-fine`; reines `coated-gloss` ohne stärkere Variation (zu homogen für Stoff).
+
+### 2026-10-14 — Fabric cloth — PNG alpha cutout (depthWrite)
+- **Entscheidung:** `createFabricClothMaterial` → `createImageOnPresetMaterial({ imageAlphaMode: 'cutout' })` — `applyImagePlaneAlphaCutout` statt transparentem Alpha-Blend (`depthWrite: false`).
+- **Grund:** Durchsicht auf den Boden/Objekte ~dm dahinter beim Kameradreh; Requirements verbieten `depthWrite: false` auf Stoff.
+- **Verworfen:** Alpha-Blend wie Print-Overlays (ok für senkrechte Screens, nicht für drapiertes DoubleSide-Cloth).
+
+### 2026-10-14 — Fabric cloth — render shell gegen Z-Fighting
+- **Entscheidung:** `DoubleSide` bleibt; Vertex-`positionNode` verschiebt Vorder-/Rückseite entlang `normalLocal * faceDirection` um **`FABRIC_CLOTH_RENDER_SHELL_HALF_M`** (½ × `FABRIC_CLOTH_MESH_THICKNESS_M`, 1 mm gesamt) — `applyFabricClothRenderShellToMaterial`.
+- **Grund:** Dünnes Plane + beidseitiges Rendering → koplanare Depth-Kämpfe beim Drapieren/Kameradreh; Shell trennt Front/Back im Depth-Buffer ohne zweites Mesh.
+- **Verworfen:** Nur `polygonOffset` (hilft kaum bei Self-Overlap); `FrontSide` only (Requirements: Unterseite sichtbar).
+
+### 2026-10-14 — Lathe SVG — path_red / path_green / path_blue
+- **Entscheidung:** Alle Built-in-Lathe-SVGs: bis zu drei Geometrie-Pfade mit festen Klassen + RGB-Strokes; zentraler Parser [`lathe-svg-path-slots.ts`](../../src/engine/lathe-svg-path-slots.ts); strikt (kein „erster Pfad“-Fallback). Asset-Code mappt Slot 0/1/2 auf Semantik (cap/tire/can body, …).
+- **Grund:** Nachhaltiges Authoring; keine gemischten Illustrator-`cls-n`/schwarzer Reifen mehr.
+- **Verworfen:** Asset-spezifische Stroke-Paletten und semantische SVG-Klassen (`.tire`, …) als Engine-Quelle.
+
+### 2026-10-14 — Bottle Wine — UI label + Dimensions footprint
+- **Entscheidung:** Katalog-Label **Bottle Wine** (wie Can Beverage); `computeFaceSize` + `sizeScaleFromFace*` für `wine-bottle` nutzen **Entity**-`heightM` und **Bauch-Durchmesser** pro Profil (nicht generischen `referenceFaceHeight('bordeaux')`).
+- **Grund:** Panel Width/Height gekoppelt zu `sizeScale`; vorher falscher Ref bei Profil/Höhe ≠ Default.
+- **Verworfen:** `assetKind` umbenennen (`wine-bottle` bleibt stabil).
+
+### 2026-10-14 — Pen engine — mm SVG import, no maxRadiusM
+- **Entscheidung:** `pen-svg-profile` skaliert Pfade mit `MM_TO_M` × `sizeScale`; `PenParams` nur `penBodyProfile`; Panel-Footprint aus `penNominalFootprintM` (nicht Label-Unfold-Aspect).
+- **Grund:** Lathe-Doc + Szene-Dimensions; gespeichertes `maxRadiusM` wird beim Load ignoriert (nur `sizeScale` skaliert).
+- **Verworfen:** Weiterer User-Radius-Param; alte ~13 mm-Normierung über `maxRadiusM/bounds.maxX`.
+
+### 2026-10-14 — Lathe assets — SVG path coordinates in mm
+- **Entscheidung:** Neue Querschnitt-Spec [`requirements-assets-lathe.md`](../requirements/requirements-assets-lathe.md): **1 Pfad-Einheit = 1 mm**; **viewBox ≠ Produktmaß**; Szene nur **uniform** (`sizeScale`, gekoppeltes Width/Height); keine Verzerrung von Dose/Flasche/Rad/Stift; anderes Profil = SVG. Pen-Panel: **kein** „Max radius“.
+- **Grund:** User-Intent vor Lathe-Panel-Rollout; trennt bildgetriebene Assets (gekoppeltes WH ohne Size) von Profil-Assets.
+- **Verworfen:** User-stellbarer `maxRadiusM` im Pen-UI; non-uniform Width/Height für Lathe.
+
+### 2026-10-14 — Fabric cloth — kein Sim-Quality-Toggle
+- **Entscheidung:** Ein festes Subdivision-Grid — **`FABRIC_CLOTH_SIM_CELL_SIZE_M` = 0,0125 m** (~36×36 bei 0,45 m); `fabricClothGridSegments(width, height)` ohne Quality-Parameter; keine `draft` / `standard` / `high`, kein Physics-Panel-Feld.
+- **Grund:** Aktuelles Verhalten (ehem. „high“) reicht; weniger Produkt- und Doc-Overhead.
+- **Verworfen:** `fabricClothSimQuality` in Store/UI und drei Zellgrößen-Konstanten.
+
 ### 2026-10-14 — Fabric cloth — Grid vertex normals (CPU quick win)
 - **Entscheidung:** `writeFabricClothGridNormalsFromPositions` ersetzt `computeVertexNormals` im Stoff-Sync/Reset/Mesh-Build; O(vertices) zentrale Differenz auf PlaneGeometry-Grid; `FABRIC_CLOTH_SYNC_NORMALS_EVERY_N_FRAMES = 1`, Bounds-Stride bleibt 2.
 - **Grund:** `computeVertexNormals` war CPU-Hotspot bei high-Grid; Rapier bleibt einzige Physik.
@@ -57,7 +182,7 @@ Kurze Historie: **wie** wir uns entschieden haben (Warum, Alternativen). Require
 - **Verworfen:** Nur Lathe ohne Stirn; Speichen nur über `rimRadiusM` / `hubRadiusM`-Panel.
 
 ### 2026-10-13 — Wheel Car: SVG-Lathe (3 Teile) + Speichen
-- **Entscheidung:** Reifen/Felge/Nabe aus `wheel-car.svg` als drei Lathe-Meshes; Speichen bleiben prozedural; Skalierung nur uniform über `outerRadiusM`; Pfad-Zuordnung per **CSS-Klasse vor** Default-Stroke (sonst alles schwarz = Reifen).
+- **Entscheidung:** Reifen/Felge/Nabe aus `lathe-x-wheel-car.svg` als drei Lathe-Meshes; Speichen bleiben prozedural; Skalierung nur uniform über `outerRadiusM`; Pfad-Zuordnung per **CSS-Klasse vor** Default-Stroke (sonst alles schwarz = Reifen).
 - **Grund:** Illustrator-Profil ist autoritativ; Pen-Pattern für SVG-Load.
 - **Verworfen:** Parametrisches Reifen-Lathe + Barrel/Hub-Zylinder; getrennte radial/axiale Skalierung; sync populate.
 

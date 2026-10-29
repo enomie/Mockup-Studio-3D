@@ -1,12 +1,12 @@
 # Assets — Fabric cloth (Stoffbahn / Textilstück)
 
-Dünnes **Textilstück** mit **Bild auf Vorder- und Rückseite** — Mockups für Schals, Tücher, Stoffmuster, Swatches, Flatlays. **Nicht** nur Seide: beliebiges Stoffmotiv aus der Images-Bibliothek → [`requirements-images.md`](./requirements-images.md). Katalog, Entity-Modell, Drop/Add, image-driven sizing → [`requirements-assets.md`](./requirements-assets.md). Bild-Flächen (Finish, Emissive) → [`requirements-image-surfaces.md`](./requirements-image-surfaces.md). Schatten → [`requirements-shadows.md`](./requirements-shadows.md). Placement & Gizmo → [`requirements-scene-placement.md`](./requirements-scene-placement.md), [`requirements-gimbals.md`](./requirements-gimbals.md). Aspect Ratio → `.cursor/rules/image-aspect-ratio.mdc`. Simulation, **On/Freeze**, Taste **`P`**, Right-Panel **Physics** → [`requirements-physics.md`](./requirements-physics.md).
+Dünnes **Textilstück** mit **Bild auf Vorder- und Rückseite** — Mockups für Schals, Tücher, Stoffmuster, Swatches, Flatlays. **Nicht** nur Seide: beliebiges Stoffmotiv aus der Images-Bibliothek → [`requirements-images.md`](./requirements-images.md). Katalog, Entity-Modell, Drop/Add, image-driven sizing → [`requirements-assets.md`](./requirements-assets.md). Bild-Flächen (Finish, Emissive) → [`requirements-image-surfaces.md`](./requirements-image-surfaces.md). Schatten → [`requirements-shadows.md`](./requirements-shadows.md). Placement & Gizmo → [`requirements-scene-placement.md`](./requirements-scene-placement.md), [`requirements-gimbals.md`](./requirements-gimbals.md). Aspect Ratio → `.cursor/rules/image-aspect-ratio.mdc`. Simulation, **On/Freeze** über Right-Panel **Physics** → [`requirements-physics.md`](./requirements-physics.md).
 
 **Englisch (Naming):** UI-Label **Fabric cloth**; `assetKind` **`fabric-cloth`**. Allgemeiner als „silk scarf“ / „silk handkerchief“ (Seide-spezifisch). Alternativ in anderen Tools: *fabric swatch*, *cloth panel* — im Projekt einheitlich **Fabric cloth**.
 
 **Abgrenzung:** **Picture framed** → [`requirements-assets-picture-framed.md`](./requirements-assets-picture-framed.md) (Rahmen + Opening, Bild nur vorne im Opening). **Print** = Prisma mit optional getrennten Faces — typisch **senkrecht** (Front zur Kamera). **Fabric cloth** = eine **dünne Bahn**, **waagrecht** auf dem Boden (Flatlay), **gleiches Bild oben und unten**, optional **Border**. **Wall** = Architektur + Repeat, **senkrecht** → [`requirements-assets-wall.md`](./requirements-assets-wall.md). **Block** = Volumen ohne Bild → [`requirements-assets-block.md`](./requirements-assets-block.md).
 
-**Status:** Bild, Material, Border, Sizing **implementiert**. Physik mit **World physics Start** → [`requirements-physics.md`](./requirements-physics.md).
+**Status:** Bild, Material, **Border** (Live-Sim + **`fabric-cloth-baked`** nach Bake), Sizing, **Bake — User Asset** / Katalog-Platzierung **implementiert**. Physik: CPU **Verlet** (Silk Studio) — siehe [`requirements-physics.md`](./requirements-physics.md), Plan [`new-implementation.md`](../fabric-physics/new-implementation.md).
 
 ---
 
@@ -24,7 +24,7 @@ Mehrfach-Instanzen unbegrenzt. Default-Szene: **keine** Pflicht-Instanz.
 
 **Category:** Assets — Fabric cloth  
 **Title:** Image-driven sizing  
-**Description:** Wie [`requirements-assets.md`](./requirements-assets.md): **Nie Bilder verzerren.** Zugewiesenes Bild (`screenImageId`) definiert **Breite-zu-Höhe** der Stoffbahn. **Referenzkante:** **Breite** **0,450 m** (45 cm). Höhe = Breite / Aspect-Ratio. **`sizeScale`** (Default `1`, Range `0.05`–`5`) skaliert Breite und Höhe **proportional** — Ratio bleibt bildgetrieben. Panel: **Size**, **Width (m)**, **Height (m)**; `setAssetSizeScale` hält **Bodenkontakt** (Fuß-Pivot, `position.y` nachziehen — nicht Mittelpunkt-Pivot wie senkrechter Print).
+**Description:** Wie [`requirements-assets.md`](./requirements-assets.md): **Nie Bilder verzerren.** Zugewiesenes Bild (`screenImageId`) definiert **Breite-zu-Höhe** der Stoffbahn. **Referenzkante:** **Breite** **0,450 m** (45 cm). Höhe = Breite / Aspect-Ratio. **`sizeScale`** (Default `1`, Range `0.05`–`5`) skaliert Breite und Höhe **proportional** — Ratio bleibt bildgetrieben. Panel **Dimensions:** nur **Width (m)** und **Height (m)** — **kein** separates Size-Feld; Änderung **einer** Kante setzt `sizeScale`, die **andere** Kante folgt automatisch der Bild-Ratio (bzw. Platzhalter-Quadrat ohne Bild). `setAssetSizeScale` hält **Bodenkontakt** (Fuß-Pivot, `position.y` nachziehen — nicht Mittelpunkt-Pivot wie senkrechter Print).
 
 | Zustand | Aspect-Ratio |
 |---|---|
@@ -69,7 +69,7 @@ Texture auf der Stofffläche: **Cover** auf Plane mit **exakt** berechneten Maß
 **Description:** Rechteckige Bahn in **XZ** (Normal **+Y**). Ruhe = flach; Verformung **nur** über Rapier nach **Physik Start** → [`requirements-physics.md`](./requirements-physics.md).
 
 - Basis: **ein** rechteckiges Plane in **XZ** (`assetMeshRole: fabricCloth`); dünne Ausdehnung in **Y** für Schatten-Kontakt → [`requirements-shadows.md`](./requirements-shadows.md). **Kein** Ring-Grid, **keine** Border-Child-Meshes.
-- **Subdivision** (unabhängig vom Border-Inset — Border nur Shader): **ein** subdividiertes `PlaneGeometry` über die gesamte Session — **kein** separates Ruhe-Quad und **kein** Mesh-Wechsel bei Physics Start/Reset. Footprint **width × height** (Bildbahn); Zellgröße aus globaler **`fabricClothSimQuality`** → [`requirements-physics.md`](./requirements-physics.md). Implementierung: `fabricClothGridSegments` + `buildFabricClothMesh` in `src/engine/fabric-cloth-geometry.ts`.
+- **Subdivision** (unabhängig vom Border-Inset — Border nur Shader): Sim-`PlaneGeometry` mit festem Gitter für **`fabric-cloth`** (Rapier-Session) — **kein** separates Ruhe-Quad; **kein** Topologie-Wechsel während `simulating` / `paused`. **User-Asset nach Bake** = separates gespeichertes Mesh → *Bake — User Asset (stiff)*. Footprint **width × height** (Bildbahn); feste Zellgröße **`FABRIC_CLOTH_SIM_CELL_SIZE_M`** (~1,25 cm) → [`requirements-physics.md`](./requirements-physics.md). Implementierung: `fabricClothGridSegments` + `buildFabricClothMesh` in `src/engine/fabric-cloth-geometry.ts`.
 - **UV:** Cover-UV auf dem Grid; **Texturkoordinaten an Vertices** — Motiv-Ratio **nicht** per UV-Stretch verzerren; Border-TSL nutzt **`restPlaneXY`** (Ruhe-Plane-Meter, frozen), nicht deformiertes `position`.
 - **Cap:** Max. Zellen pro Achse / max. Partikel (Konstanten in `src/physics/constants.ts` oder `physics-settings`) — bei Überschreitung **clamp** (längere Kante begrenzt).
 - Rebuild bei: `screenImageId`, `sizeScale`, `fabricClothParams`, `materials.fabricClothMaterialId`. **Während Session:** Rebuild → Cloth-Sim **neu initialisieren** (kein halb altes Gitter).
@@ -98,6 +98,11 @@ Texture auf der Stofffläche: **Cover** auf Plane mit **exakt** berechneten Maß
 
 - Border ist **kein** zweites Bild — nur **einfarbige** Fläche im Randstreifen; **kein** separates Material-Preset-Dropdown für die Bordüre in v1 (Roughness im Randstreifen fest, z. B. ~0,65).
 - **Kein** Stretch auf dem Motiv — Cover-UV der Plane unverändert.
+- **PNG/WebP-Cutout:** `alphaTest` auf der Bild-Alpha; der **Bordürenstreifen** bleibt **opak** (`max(imageAlpha, borderMask)`), damit transparente Motiv-Ränder keine Löcher am Saum erzeugen.
+- **Live + gebacken:** Dieselbe Material-Pipeline (`createFabricClothMaterial` → `applyFabricClothInsetBorderToMaterial` in `src/engine/fabric-cloth-border-nodes.ts`) für **`fabric-cloth`** und **`fabric-cloth-baked`**; Katalog-Defaults enthalten `fabricClothParams` inkl. Border der Quell-Instanz beim Bake.
+- **Nach Bake:** Bordüre am **Schnittmuster-Umfang** (Rechteck in `restPlaneXY`), nicht an beliebigen Falten-Silhouetten — wie bei der Live-Bahn während/ nach Sim.
+
+**Implementierung (Referenz):** `fabric-cloth-material.ts`, `fabric-cloth-border-nodes.ts`, `fabric-cloth-render-shell.ts` (Render-Shell in `createFabricClothMaterial` nach Border-Nodes). Tests: `fabric-cloth-border-nodes.test.ts`, `fabric-cloth-material.test.ts`, `fabric-cloth-bake.test.ts`.
 
 ---
 
@@ -121,11 +126,11 @@ Texture auf der Stofffläche: **Cover** auf Plane mit **exakt** berechneten Maß
 
 **Default:** **`material-fabric`** (oder zum Implementierungszeitpunkt nächstpassendes Stoff-Preset).
 
-**Farbe auf der Stoffbahn:** Das **sichtbare Motiv und alle Farben** auf der Bildfläche (Ober- und Unterseite) kommen **ausschließlich** aus dem zugewiesenen **`screenImageId`** (Cover, ohne Stretch). **Kein** ColorPicker, **kein** Preset-`color`, **kein** `tint` auf dieser Fläche — auch Presets mit Namen wie „Silk“ oder „Fabric“ sind **keine** Stofffarbe: sie liefern nur **PBR-Struktur** (Roughness, Metalness, ggf. Sheen/Anisotropie, procedural Normal/Roughness), multipliziert mit der **Bild-Albedo** bei neutralem Faktor **(1,1,1)**. Es gibt **kein** separates „Seiden-Material“ o. Ä., das die Bahn einfärbt.
+**Farbe auf der Stoffbahn:** Das **sichtbare Motiv und alle Farben** auf der Bildfläche (Ober- und Unterseite) kommen **ausschließlich** aus dem zugewiesenen **`screenImageId`** (Cover, ohne Stretch). **Kein** ColorPicker, **kein** Preset-`color`, **kein** `tint` auf dieser Fläche — auch Presets mit Namen wie „Fabric Silk“ oder „Fabric Linen“ sind **keine** Stofffarbe: sie liefern nur **PBR-Struktur** (Roughness, Metalness, ggf. Sheen/Anisotropie, procedural Normal/Roughness), multipliziert mit der **Bild-Albedo** bei neutralem Faktor **(1,1,1)**. Es gibt **kein** separates „Seiden-Material“ o. Ä., das die Bahn einfärbt.
 
 **Bordüre:** **Shader-Inset** auf demselben Material — `colorNode`-Mix Motiv × `borderColor` im Randstreifen (`createFabricClothMaterial` / TSL); **kein** Bild, **kein** Material-Dropdown für den Rand.
 
-**Engine:** Bild-×-Preset-Pipeline (`createImageOnPresetMaterial` + Inset-Border-Nodes), **ohne** `finishToMaterialId()`; Preset-ID aus `materials.fabricClothMaterialId`. **`side: DoubleSide`** wird in **`createFabricClothMaterial`** gesetzt (nach Border-Nodes) — **auch** im Platzhalter-Zweig ohne Textur (`createImageOnPresetMaterial` mit `tex === null` liefert sonst Default `FrontSide`). Procedural: `tileScale` / Sampling auf der Stoff-Plane (meter-konsistent auf XZ-Fläche — Inventur `surfaceRole` / `planar-meters`). Test: `fabric-cloth-material.test.ts`.
+**Engine:** Bild-×-Preset-Pipeline (`createImageOnPresetMaterial` + Inset-Border-Nodes), **ohne** `finishToMaterialId()`; Preset-ID aus `materials.fabricClothMaterialId`. **`applyFabricClothRenderShellToMaterial`** und **`side: DoubleSide`** in **`createFabricClothMaterial`** (nach Border-Nodes) — **auch** Platzhalter ohne Textur. Procedural: `tileScale` / Sampling auf der Stoff-Plane (meter-konsistent). Tests: `fabric-cloth-material.test.ts`.
 
 **UI:** Szene-Panel Sektion **Material** — Dropdown **Fabric material** (Label TBD); **keine** Emissive-Zeile in v1 (Stoff leuchtet nicht standardmäßig). Dropdown **ohne** `transmission`-Presets (kein Glas auf Stoffbahn).
 
@@ -135,12 +140,12 @@ Texture auf der Stofffläche: **Cover** auf Plane mit **exakt** berechneten Maß
 **Title:** Simulation — Drape aus Fabric material  
 **Description:** **Kein** separates Physics-Drape-Dropdown — nur **`fabricClothMaterialId`**. Drape-Parameter kommen aus dem **Material-Preset** (optional `fabricDrape`) → [`requirements-materials.md`](./requirements-materials.md).
 
-- **Resolver (Ziel):** `resolveFabricDrape(materialId)` → Sim-Konstanten (eine Quelle, Tabelle in Physics-Doc).
+- **Resolver (implementiert):** `resolveFabricDrape(materialId)` in `src/physics/fabric-cloth-drape.ts` → Sim-Konstanten; Spawn in `prepareFabricClothSimSession` (`clothAnisotropic`, Partikelmasse, Surface-Collider).
 
 | `fabricDrape.profile` | Mockup-Bedeutung | Typische Built-in-Zuordnung (Ziel) |
 |---|---|---|
-| `silk` | leicht, weich fallend | `material-silk` |
-| `linen` | mittel | `material-fabric` (`fabric-linen`) |
+| `silk` | leicht, weich fallend | `material-silk` (UI **Fabric Silk**) |
+| `linen` | mittel | `material-fabric` (UI **Fabric Linen**, `fabric-linen`) |
 | `heavy` | schwerer, träger | Preset-ID beim Implementieren (z. B. dickes Web) |
 | `stiff` | steif, wenig Falten | Preset-ID beim Implementieren |
 
@@ -162,34 +167,23 @@ Texture auf der Stofffläche: **Cover** auf Plane mit **exakt** berechneten Maß
 ---
 
 **Category:** Assets — Fabric cloth  
-**Title:** Physik — Plane-Collider (World physics)  
-**Description:** MVP: eine **Dynamic**-Plane pro Tuch bei **Physik Start** (kein `physicsBodyMode`-Toggle) → [`requirements-physics.md`](./requirements-physics.md).
+**Title:** Physik — Rapier SoftBody (implementiert)  
+**Description:** Kein `physicsBodyMode`-Toggle. Bei **World physics Start** pro Instanz ein Rapier **SoftBody** (`fabric-soft:${entityId}`) auf dem **gleichen** subdividierten Render-Mesh — **kein** Dynamic-Rigid-Plane-Proxy, **kein** separates Sim-Mesh. Details Session, Margin, Freeze → [`requirements-physics.md`](./requirements-physics.md).
 
 | Aspekt | Regel |
 |---|---|
-| Footprint **X/Z** | **Bildbahn-Maß** (wie Mesh) — optionaler Border-Inset ändert Collider **nicht** — **kein** extra 5-mm-Rand in der Ebene |
-| Dicke **Y** (nur Rapier) | Slab **zentriert** auf der Stoffebene (Fuß): **±5 mm** → **1 cm** gesamt (`colliderOffsetY = 0`) |
-| Stapel mit **Block** | Nach Physik **~1 cm** Luft zwischen sichtbarer Block-Fläche und Stoffebene (Margin addiert sich wie Block↔Block) → [`requirements-physics.md`](./requirements-physics.md) |
-| Render-Mesh | Bleibt dünn (Schatten-Kontakt); Margin **nur** Collider |
-| Später (Cloth-Mesh / Joints) | Joint-Kugeln **Radius 5 mm**; echte Stoffdicke später **1 cm gesamt** (0,5 cm pro Seite) — gleiche Konstante |
-| **Damping** | SoftBody: `resolveFabricDrape` (`linearDamping`, Feder-`dampingRatio`, `deformationDamping`, `setCanSleep`) — **nicht** `PHYSICS_DYNAMIC_*` am Rigid-Proxy (Plane-MVP obsolet) → [`requirements-physics.md`](./requirements-physics.md) |
+| **Teilnehmer** | `FabricClothPhysicsColliders` — `SoftBodyDesc.clothAnisotropic` aus Mesh-Ruhepose + `resolveFabricDrape(fabricClothMaterialId)` |
+| **Kollision** | Soft-Body-**Surface-Collider** (Partikel-Radius **`PHYSICS_COLLIDER_MARGIN_M`**, 5 mm) gegen Boden und rigide Props (Fixed/Dynamic) |
+| Footprint **X/Z** | **Bildbahn-Maß** (wie Mesh) — Border-Inset ändert Kollision **nicht** |
+| Stapel mit **Block** | Kontakt über Partikel + Partner-Margins — sichtbarer Spalt typ. **~1 cm** (je **0,5 cm** Collider-Margin) → [`requirements-physics.md`](./requirements-physics.md) |
+| **Render-Mesh** | Dünn in Y (Schatten); Deformation = Vertex-**`position`**-Sync aus Partikeln |
+| **Damping** | Aus Drape-Profil — **nicht** `PHYSICS_DYNAMIC_*` (nur rigide Dynamic-Bodies) |
+| **Gitter** | Siehe **Geometrie — Flatlay-Mesh**; fest hardcoded (`FABRIC_CLOTH_SIM_CELL_SIZE_M`), kein Panel |
+| **Freeze (`paused`)** | Letzte Vertex-Deformation **sichtbar** — **kein** `tick`-Sync (Voraussetzung für **Bake** in die Assets-Liste) |
+| **Reset** | Sim-Gitter flach; Snapshot-Transform; SoftBody entfernt — **kein** Löschen von User-Assets aus dem Katalog |
+| **Export** | WYSIWYG aus aktuellem Mesh; Instanz aus **gebackenem User-Asset** = steife Geometrie wie platziert → [`requirements-export.md`](./requirements-export.md) |
 
----
-
-**Category:** Assets — Fabric cloth  
-**Title:** Physik — Cloth-Mesh (Ziel)  
-**Description:** Ersetzt Plane-MVP: subdividiertes Render-Mesh + Rapier Partikel/Joints. Details Session, Quality, Freeze → [`requirements-physics.md`](./requirements-physics.md).
-
-| Aspekt | Regel |
-|---|---|
-| **Heute (MVP)** | Starre **Dynamic-Plane** (dünner Cuboid-Proxy) — Abschnitt oben |
-| **Ziel** | Kein Dynamic-Box-Proxy mehr für dieselbe Entity; Kollision nur über **bestehende** Rapier-Collider (Boden, Fixed/Dynamic Props) |
-| Partikel / Joints | Radius **`PHYSICS_COLLIDER_MARGIN_M` (5 mm)** |
-| Gitter | Siehe **Geometrie — Flatlay-Mesh**; Quality global **`fabricClothSimQuality`** |
-| Drape | `resolveFabricDrape(fabricClothMaterialId)` |
-| **Freeze (`paused`)** | Letzte Vertex-Deformation **sichtbar** — kein Zurückflachen |
-| **Reset** | Grid-Topologie unverändert; Vertices flach, Snapshot-Transform, Sim-State weg |
-| Export | WYSIWYG aus aktuellem Mesh → [`requirements-export.md`](./requirements-export.md) |
+**Historisch (entfernt):** Dynamic-Box- / Plane-Proxy (`fabric-physics:${entityId}`).
 
 ---
 
@@ -223,7 +217,7 @@ type FabricClothParams = {
 - `setFabricClothParams(entityId, partial: Partial<FabricClothParams>)`
 - `setEntityMaterial(entityId, 'fabricClothMaterialId', materialId)`
 
-**Szene-Panel (Right):** **Image**; **Material** (Fabric drape Presets); **Border**; **Dimensions** (Motivmaße). Verformung nur **Physics → Start** (Rapier).
+**Szene-Panel (Right):** **Image** → **Material** (Fabric drape Presets) → **Border** → **Dimensions** (Width, Height gekoppelt — **kein** Size-Feld) → **Position** (Pos/Rot). Verformung nur **Physics → Start** (Rapier). Footer-Muster → [`improve-04-asset-settings.md`](../../improve/improve-04-asset-settings.md).
 
 ---
 
@@ -240,8 +234,65 @@ type FabricClothParams = {
 ---
 
 **Category:** Assets — Fabric cloth  
+**Title:** Bake — User Asset (stiff)  
+**Description:** **Bake** (Stoff) = die **selektierte** `fabric-cloth`-**Entity** wird als **User-Asset** in der **Left-Assets-Liste** persistiert — **steif**, Drop/Add als `fabric-cloth-baked`. Auswahl & Querschnitt → [`requirements-assets.md`](./requirements-assets.md) (*Bake — User Assets*). Ownership `source: 'user'` → löschbar → [`requirements-builtin-and-user-content.md`](./requirements-builtin-and-user-content.md).
+
+| Aspekt | Regel |
+|---|---|
+| **Was genau?** | **Nur die selektierte Instanz:** deformiertes Stoff-**Mesh** (nach Glättungs-Pipeline), plus **Default-Metadaten** für neue Platzierungen (`screenImageId`, `fabricClothMaterialId`, `fabricClothParams`, Transform der Entity **nicht** im Katalog — nur Mesh/Defaults; Platzierung = neuer Spawn wie Built-in) |
+| **Auswahl** | **`selectedEntityId`** muss diese `fabric-cloth`-Instanz sein — siehe Querschnitt; bei mehreren Tüchern explizit anklicken, dann Bake |
+| **Voraussetzung** | World-Physics **`paused`**; diese Instanz hat aktive Cloth-Session + deformiertes Mesh (letzter Sim-Sync) |
+| **Trigger (UI)** | **Primär:** Button **Bake** in **Right → Physics** (World physics, neben Start/Freeze/Reset) nach Selektion im Viewport — **nicht** beim Freeze-Klick allein. **Optional:** gleiche Aktion im Szene-Panel der selektierten Entity |
+| **Katalog** | Neue Zeile unter **Assets** neben Built-ins: Anzeigename (User, Default z. B. „Fabric cloth (baked)“ + fortlaufend), Thumbnail aus Pose; `source: 'user'`; **Remove** aus Katalog |
+| **Platzierung** | Drop/Klick wie Built-in → neue Entity mit **festem** deformiertem Mesh; **`assetKind`** Ziel: **`fabric-cloth-baked`** (oder äquivalent — **kein** World-physics-Teilnehmer) |
+| **Physik** | **Kein** SoftBody bei Start/Freeze/Reset der World-Session; **kein** `fabric-cloth`-Sim auf Instanzen aus gebackenem User-Asset — rein **statisches** Mesh (optional später: rigid fixed collider TBD, v1: Schatten-Mesh wie Block-Plane) |
+| **Gizmo** | Move/Rotate nach Platzierung erlaubt (nicht an World-`simulating` gebunden); Uniform-Scale-Regel wie `fabric-cloth` / Foot-Pivot TBD in Implementierung |
+| **Gespeicherte Daten** | Deformierte **`position`** (+ `normal`, `uv`, **`restPlaneXY`**), Topologie (Indices/Segmente), **`planeWidthM`** / **`planeHeightM`** (Footprint für Border-TSL), **Default** beim Bake: `screenImageId`, `materials.fabricClothMaterialId`, `fabricClothParams` (Border) der Quell-Instanz; **kein** Rapier-State |
+| **Border nach Bake** | **`restPlaneXY`** = Ruhe-Gitter **vor** Deformation (zentriert, ±½ Footprint); deformierte `position` ändert `restPlaneXY` **nicht**. Material wie Live: `planeWidthM`/`planeHeightM` + `restPlaneXY` in `buildBufferGeometryFromBakedMeshPayload` / `addBakedFabricCloth`. Legacy-Payloads: `normalizeFabricClothBakedMeshPayload` gleicht deklarierte Plane-Maße an `restPlaneXY`-Extents an (`fabric-cloth-bake.ts`). |
+| **Bild nach Platzierung** | Jede platzierte **`fabric-cloth-baked`**-Entity: **`screenImageId` frei änderbar** (Images-Picker / Szene-Panel **Image** wie `fabric-cloth`). **Pose/Mesh bleibt fix** — Bildwechsel **kein** Geometrie-Rebuild, **kein** image-driven Footprint-Resize (Faltenform ≠ Bild-Ratio). Textur: **Cover** auf unveränderten UVs, **kein** Stretch → `.cursor/rules/image-aspect-ratio.mdc` |
+| **Mesh-Glättung (Teil des Bake)** | Beim Bake aus grobem Sim-Gitter: **einmalig** dichteres Grid + **interpoliertes** Displacement (bilinear Minimum, bicubic Ziel) — Kanten an Falten für Seiden-Look; Konstanten `FABRIC_CLOTH_BAKE_SUBDIV_FACTOR`, `FABRIC_CLOTH_BAKE_MAX_VERTICES` |
+| **Szene-Instanz nach Bake** | **Quell-`fabric-cloth` bleibt** in der Szene (weiter **`paused`**, grobes Sim-Mesh unverändert) — **kein** Ersetzen/Umwandeln der Entity. Bake legt **nur** einen neuen Katalog-Eintrag an; User platziert gebackenes Asset **optional** zusätzlich per Drop/Add |
+| **Project Save** | User-Assets-Array im Projekt-JSON (mit Mesh-Payload oder dediziertem Blob-Store im Save) — **überlebt** Reload |
+| **Built-in `fabric-cloth`** | Unverändert löschbar nur als **Entity**; Katalog-Baustein bleibt Werk |
+
+**Abgrenzung:** **Freeze** hält die Sim-Pose in der **aktuellen Szene** (grobes Gitter). **Bake** schreibt eine **Bibliotheks-Kopie** (glatt + steif). **Reset** auf World-Physics setzt **simulierbare** Tücher zurück, **nicht** User-Assets.
+
+**Nicht:** Bake während `simulating`; Bake nur in Export-Pipeline ohne Katalog-Eintrag; `SharedArrayBuffer` als Speicherformat; eingebettetes Bitmap „fest im Mesh“ ohne nachträglichen Image-Slot.
+
+---
+
+**Category:** Assets — Fabric cloth  
+**Title:** `fabric-cloth-baked` — Image-Slot (Szene-Instanz)  
+**Description:** Gebackenes User-Asset = **Form aus Bake**, **Motiv aus Images-Bibliothek** pro Instanz.
+
+- Szene-Panel: Sektion **Image** mit `screenImageId` (null = neutraler Platzhalter wie `fabric-cloth`).
+- `setAssetImage` / gleiche Store-Pfade wie andere bildtragende Assets — **Material-Rebuild** oder Textur-Swap, **ohne** `fabricClothGridSegments`-Rebuild.
+- **Dimensions (Width/Height):** Footprint der **Bake-Pose** — nicht aus neuem Bild neu berechnen; optional **`sizeScale`** uniform auf die ganze Instanz (TBD Implementierung, analog steifer Props).
+- Katalog-Eintrag kann Thumbnail mit Bake-Quellbild zeigen; **neu platzierte** Instanz startet mit dem beim Bake gespeicherten Default-`screenImageId`, User darf sofort ein anderes Bild wählen.
+- **Border:** `fabricClothParams` aus Katalog-Defaults (Enable, Width, Color); Änderung → Entity-Rebuild wie bei `fabric-cloth`. Footprint für Sizing: `bakedClothFootprint` aus normalisiertem Mesh-Footprint beim Spawn.
+
+---
+
+**Category:** Assets — Fabric cloth  
+**Title:** Rendering — Fold smooth (nur beim Bake)  
+**Description:** Grobes Sim-Gitter (~**1,25 cm**) erzeugt **sichtbare Kanten an Falten**. **Kein** Live-Glätten während **`simulating`**. Die **Interpolations-Pipeline** läuft **nur** als Schritt von **Bake — User Asset (stiff)** — nicht als dauerhafter Freeze-Effekt auf dem Sim-Mesh.
+
+---
+
+**Category:** Assets — Fabric cloth  
+**Title:** Rendering — Depth / Z-Fighting (DoubleSide)  
+**Description:** Sim-Mesh bleibt ein **mathematisch dünnes** Plane; Material **`DoubleSide`** (Motiv oben/unten). Ohne Korrektur kämpfen Vorder- und Rückseite sowie überlappende Falten im Depth-Buffer beim Kameradreh.
+
+- **Render-Shell (v1):** Vertex-`positionNode` verschiebt jede Sichtseite entlang der Normalen um **`FABRIC_CLOTH_RENDER_SHELL_HALF_M`** (½ × **`FABRIC_CLOTH_MESH_THICKNESS_M`**, Ziel **1 mm** Gesamtdicke) — Front **`+`**, Back **`−`** via TSL **`faceDirection`**. Wired in **`createFabricClothMaterial`** (`fabric-cloth-render-shell.ts`) — gilt für Sim- und **gebackenes** Mesh. **Kein** zweites Mesh; Physik/Collider unverändert.
+- **Grenze:** Stark überlappende Schichten derselben Bahn können bei sehr flachen Winkeln noch minimal flackern — kein OIT in v1.
+- **Alpha (PNG/WebP/…):** **`imageAlphaMode: cutout`** — `depthWrite: true`, `alphaTest` (kein Alpha-Blend mit `depthWrite: false`; sonst scheint der Boden ~dm dahinter durch).
+- **Nicht:** `depthWrite: false` auf dem Stoff (würde Boden/Hintergrund durchscheinen lassen).
+
+---
+
+**Category:** Assets — Fabric cloth  
 **Title:** Bewusst nicht v1  
-**Description:** Prozedurale Wellen ohne Rapier; getrenntes Rückseiten-Bild; Spiegeln der Rückseiten-UV; **erhabene** Bordüre (Extrusion); Border **außen** (Footprint-Erweiterung) oder **weicher** Rand; **Preset-Farbe oder Tint auf der Motiv-Bahn**; Matt/Glossy-Finish; Emissive auf Stoff; Blender-Export-Pipeline; eigenes `assetKind` „silk scarf“. *(Inset-Border im Shader ist **implementiert**.)*
+**Description:** Prozedurale Wellen ohne Rapier; getrenntes Rückseiten-Bild; Spiegeln der Rückseiten-UV; **erhabene** Bordüre (Extrusion); Border **außen** (Footprint-Erweiterung) oder **weicher** Rand; **Preset-Farbe oder Tint auf der Motiv-Bahn**; Matt/Glossy-Finish; Emissive auf Stoff; Blender-Export-Pipeline; eigenes `assetKind` „silk scarf“; **Live**-Glättung während `simulating`. *(Inset-Border TSL + Bake/`fabric-cloth-baked` **implementiert** — siehe Border- und Bake-Abschnitte oben.)*
 
 ---
 
@@ -256,5 +307,26 @@ type FabricClothParams = {
 | **Stoff-Optik** (Glanz, Faser, Rauheit) | `materials.fabricClothMaterialId` — **Struktur**, Preset-`color` auf der Bahn **ignorieren** |
 | **Bordüre** | `fabricClothParams.borderColor` — einfarbig, beidseitig, **kein** User-Bild |
 
-Preset-Namen (z. B. „Silk“) beschreiben **Oberflächenverhalten**, nicht „rotes/seidenfarbenes Tuch ohne Bild“. Mockups: Muster, Logos, Fotos — alles über **Images**.
+Preset-Namen (z. B. „Fabric Silk“) beschreiben **Oberflächenverhalten**, nicht „rotes/seidenfarbenes Tuch ohne Bild“. Mockups: Muster, Logos, Fotos — alles über **Images**.
+
+---
+
+**Category:** Assets — Fabric cloth  
+**Title:** Simulation — CPU Verlet (Ziel; ersetzt Rapier-Abschnitte oben)  
+**Description:** Normativ ab Phase A. Vollständige Sim-Spezifikation: [`cloth-physics.md`](../fabric-physics/cloth-physics.md). **Superseded (Historie):** Abschnitte *Simulation — Drape aus Fabric material* und *Physik — Rapier SoftBody* gelten nur bis Code-Port abgeschlossen.
+
+| Thema | Regel |
+|---|---|
+| **Solver** | CPU Verlet + OGC-lite + SDF (kein Rapier SoftBody) |
+| **Mesh** | Physische **Doppelhülle** (Top/Bottom); Centerline-Partikel; `restPlaneXY` für Border-TSL unverändert |
+| **Tuning** | `fabricClothParams.physics` — Presets `silk` \| `satin` \| `linen` \| `chiffon` + Slider (wie Silk Studio Panel) |
+| **Pins** | `sim.pinnedCornersCount` 0–4; `sim.pinCorners[4]` in **Entity-Lokalraum**; Gizmo Phase E |
+| **Rest / Spawn** | `entity.transform` (Position, Rotation) + `sim.restPose` (lokales Offset/Extra-Rotation für Ruhegitter) |
+| **Material** | `fabricClothMaterialId` nur **Look** (PBR/Procedural); Preset-Buttons dürfen optional PBR-Felder setzen (wie Silk) — **nicht** Sim-Resolver über `fabricDrape` |
+
+**Panel-Reihenfolge (Ziel):** Image → Material → **Fabric simulation** → Border → Dimensions → Position.
+
+**Geometrie-Subdiv:** bis Phase D unverändert (`FABRIC_CLOTH_SIM_CELL_SIZE_M`, `fabricClothGridSegments`).
+
+---
 

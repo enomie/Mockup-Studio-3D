@@ -108,6 +108,12 @@ Architektur, Patterns und technische Vorgaben für Mockup Studio 3D.
 ---
 
 **Category:** Code  
+**Title:** Lathe assets — SVG paths in millimeters  
+**Description:** Körper aus **`LatheGeometry`** + Profilen unter `public/profiles/lathe/`. **Normativ:** Pfadkoordinaten = **Millimeter** (1 Einheit = 1 mm → Meter in Engine); **viewBox-Größe ist nicht das Produktmaß**. Skalierung in der Szene nur **uniform** (`sizeScale`, gekoppeltes Width/Height im Panel) — **keine** Verzerrung von Dose, Flasche, Rad, Stift; Bilder ändern nur Textur. Anderes Produktprofil = **SVG bearbeiten**, nicht non-uniform UI-Scale. Vollständig → [`requirements-assets-lathe.md`](./requirements-assets-lathe.md).
+
+---
+
+**Category:** Code  
 **Title:** Three.js — Ressourcen & Cleanup  
 **Description:** Jede `BufferGeometry`, jedes `Material`, jede `Texture` die erzeugt wird, muss einen Owner haben der `dispose()` aufruft wenn das Objekt entfernt wird. Bei Material-Swap: altes Material disposen. Renderer-Canvas beim Unmount entfernen (`domElement.remove()`). Keine doppelten Loader-Instanzen ohne Cache. Große Assets lazy laden wo sinnvoll.
 
@@ -185,7 +191,7 @@ Architektur, Patterns und technische Vorgaben für Mockup Studio 3D.
 
 **Category:** Code  
 **Title:** Hochqualitative Schatten (Pflicht)  
-**Description:** Mockups brauchen **realistische, weiche, stabile Schatten** — kein „Flat-3D". Vollständige Szene-Schatten-Requirements: [`requirements-shadows.md`](./requirements-shadows.md). Code-Bezug: **WebGPURenderer** + `PCFShadowMap` (r186, Vogel-Disk + IGN), `renderer.highPrecision = true`; Helper `src/render/shadow-setup.ts`; Konstanten u. a. `SHADOW_MAP_SIZE` (4096), `SHADOW_COVERAGE_RADIUS`, `SHADOW_SOFTNESS_*`, `SHADOW_DEPTH_BIAS`, `SHADOW_NORMAL_BIAS` (Referenz **0** / **0** für Boden-Kontakt) in `constants.ts`.
+**Description:** Mockups brauchen **realistische, weiche, stabile Schatten** — kein „Flat-3D". Vollständige Szene-Schatten-Requirements: [`requirements-shadows.md`](./requirements-shadows.md). Code-Bezug: **WebGPURenderer** + `PCFShadowMap` (r186, Vogel-Disk + IGN), `renderer.highPrecision = true`; Helper `src/render/shadow-setup.ts`, adaptive Spot-Coverage `src/render/scene-shadow-coverage.ts`; Konstanten u. a. `SHADOW_MAP_SIZE` (4096), `SHADOW_MAP_SIZE_EXPORT` (8192, nur Capture), `SHADOW_COVERAGE_RADIUS` / `SHADOW_COVERAGE_RADIUS_MIN`, `SHADOW_SOFTNESS_*`, `SHADOW_DEPTH_BIAS`, `SHADOW_NORMAL_BIAS` (Referenz **0** / **0** für Boden-Kontakt) in `constants.ts`. Export: `LightingSystem.pushExportShadowQuality` in `mockup-engine-capture.ts`.
 
 **Typische Fehler vermeiden:**
 - `castShadow`/`receiveShadow` vergessen → Objekte schweben optisch

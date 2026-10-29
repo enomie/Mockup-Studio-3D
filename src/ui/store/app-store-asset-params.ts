@@ -11,6 +11,10 @@ import type { WheelCarParams } from '@/scene/asset-wheel-car';
 import type { FabricClothParams } from '@/scene/asset-fabric-cloth';
 import type { BookParams } from '@/scene/asset-book';
 import type { BookMaterialTintPart } from '@/scene/book-material-tints';
+import type {
+  PatchHandleTarget,
+  TrianglePatchParams,
+} from '@/scene/asset-triangle-patch';
 import type { Rgb } from '@/colors/rgb';
 import { cloneAssetMaterials } from '@/scene/material-types';
 import { defaultMaterialsForKind } from '@/data/material-presets';
@@ -134,6 +138,13 @@ export function setFabricClothParams(
   getDeps().getSceneApi()?.setFabricClothParams(entityId, partial);
 }
 
+export function setFabricClothActivePinCorner(
+  entityId: string,
+  cornerIndex: number,
+): void {
+  getDeps().getSceneApi()?.setFabricClothActivePinCorner(entityId, cornerIndex);
+}
+
 export function setBookParams(entityId: string, partial: Partial<BookParams>): void {
   optimisticParamPatch(entityId, partial);
   getDeps().getSceneApi()?.setBookParams(entityId, partial);
@@ -204,6 +215,22 @@ export function setWineBottleParams(
 export function setPenParams(entityId: string, partial: Partial<PenParams>): void {
   optimisticParamPatch(entityId, partial);
   getDeps().getSceneApi()?.setPenParams(entityId, partial);
+}
+
+export function setTrianglePatchParams(
+  entityId: string,
+  partial: Partial<TrianglePatchParams>,
+): void {
+  optimisticParamPatch(entityId, partial);
+  getDeps().getSceneApi()?.setTrianglePatchParams(entityId, partial);
+}
+
+export function selectPatchHandle(
+  entityId: string,
+  nodeIndex: number,
+  targetKey: PatchHandleTarget,
+): void {
+  getDeps().getSceneApi()?.selectPatchHandle(entityId, nodeIndex, targetKey);
 }
 
 export function setWallpaperPattern(

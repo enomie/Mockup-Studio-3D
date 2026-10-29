@@ -21,7 +21,7 @@ const CORNER_EPSILON_M = 0.0001;
 const MIN_SIDEWALL_M = 0.015;
 const SPOKE_COUNT = 5 as const;
 
-/** SVG [`wheel-car.svg`](../../public/profiles/lathe/wheel-car.svg) reference size (mm). */
+/** SVG [`lathe-x-wheel-car.svg`](../../public/profiles/lathe/lathe-x-wheel-car.svg) reference size (mm). */
 export const WHEEL_CAR_SVG_OUTER_RADIUS_MM = 330.5;
 export const WHEEL_CAR_SVG_TIRE_WIDTH_MM = 255;
 export const WHEEL_CAR_SVG_AXIS_Y_MM = 330.5;
@@ -29,6 +29,10 @@ export const WHEEL_CAR_SVG_AXIAL_CENTER_MM = WHEEL_CAR_SVG_TIRE_WIDTH_MM / 2;
 
 export function wheelCarUniformScale(outerRadiusM: number): number {
   return outerRadiusM / (WHEEL_CAR_SVG_OUTER_RADIUS_MM / 1000);
+}
+
+export function wheelCarSizeRatio(outerRadiusM: number): number {
+  return outerRadiusM / defaultWheelCarParams().outerRadiusM;
 }
 
 /** Default 255/30 R20 sport low-profile reference. */

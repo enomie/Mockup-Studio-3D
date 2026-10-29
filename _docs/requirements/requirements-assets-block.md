@@ -1,4 +1,4 @@
-# Assets — Block (parametrischer Quader)
+# Assets — Object Block (`block`)
 
 Einfacher **3D-Quader** für Stilleben, Podeste, Abstraktionen und Props — **ohne Bild**, **ein Material** auf allen Flächen. Katalog, Entity-Modell, Placement → [`requirements-assets.md`](./requirements-assets.md). Schatten → [`requirements-shadows.md`](./requirements-shadows.md). Material-Zuweisung → [`requirements-materials.md`](./requirements-materials.md) (alle Presets im Dropdown). Statischer **Physik-Collider** (Rapier) für spätere Cloth-Kollision → [`requirements-physics.md`](./requirements-physics.md).
 
@@ -16,7 +16,7 @@ Einfacher **3D-Quader** für Stilleben, Podeste, Abstraktionen und Props — **o
 
 | `assetKind` | UI-Label | Kategorie (Ziel) |
 |---|---|---|
-| `block` | Block | **Objects** (Lucide z. B. `box` / `cube`) |
+| `block` | Object Block | **Objects** (Lucide z. B. `box` / `cube`) |
 
 Mehrfach-Instanzen unbegrenzt. Default-Szene: **keine** Pflicht-Instanz.
 
@@ -127,7 +127,7 @@ type BlockParams = {
 - `setEntityMaterial(entityId, 'blockMaterialId', materialId)`
 - `setPhysicsBodyMode`, `setPhysicsDensity` (oder kombiniert)
 
-Szene-Panel (Right): **Dimensions**; **Material**; **Physics** (Mode, Density, Weight read-only) → [`requirements-physics.md`](./requirements-physics.md).
+Szene-Panel (Right): **Material** → **Physics** (Mode, Density, Weight read-only) → **Dimensions** (Width, Height, Depth, Corner radius) → **Position** (Pos/Rot; kein Transform-Block) → [`requirements-physics.md`](./requirements-physics.md). Footer-Muster Pilot → [`improve-04-asset-settings.md`](../../improve/improve-04-asset-settings.md).
 
 ---
 

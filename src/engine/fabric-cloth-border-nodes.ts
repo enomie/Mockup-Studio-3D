@@ -8,6 +8,7 @@ import type {
   MeshStandardNodeMaterial,
   Node,
 } from 'three/webgpu';
+import { imagePlaneCutoutOpacityWithOpaqueMask } from '@/engine/image-surface-alpha';
 import { abs, attribute, float, min, step, vec3 } from 'three/tsl';
 
 type ShaderColorNode = NonNullable<MeshStandardNodeMaterial['colorNode']>;
@@ -67,4 +68,19 @@ export function applyFabricClothInsetBorderToMaterial(
   material.roughnessNode = interiorRough
     .mul(interior)
     .add(borderRough.mul(mask));
+
+  const imageOpacity = material.opacityNode;
+  if (imageOpacity) {
+    material.opacityNode = imagePlaneCutoutOpacityWithOpaqueMask(
+      imageOpacity as Node<'float'>,
+      mask,
+    );
+  }
+
+  const emissive = material.emissiveNode;
+  if (emissive && imageOpacity) {
+    const cutoutOpacity = material.opacityNode as Node<'float'>;
+    const emissiveVec = emissive as Node<'vec3'>;
+    material.emissiveNode = emissiveVec.mul(cutoutOpacity);
+  }
 }

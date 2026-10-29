@@ -261,6 +261,6 @@ Scene Save / Entity-JSON: neue Felder optional in `imageSurfaces[faceId]`.
 
 **Category:** Image Surfaces  
 **Title:** Fabric cloth — Ausnahme (kein Finish, Farbe aus Image)  
-**Description:** `fabric-cloth` nutzt **dieses** Panel-Modell **nicht**. Sichtbare **Farben auf der Stoffbahn** kommen **nur** aus der Images-Bibliothek (`screenImageId`); optionale **Bordüre** = `borderColor` am Asset. Material-Presets liefern **keine** Ersatz-Stofffarbe (auch nicht „Silk“). Vollständig → [`requirements-assets-fabric-cloth.md`](./requirements-assets-fabric-cloth.md).
+**Description:** `fabric-cloth` nutzt **dieses** Panel-Modell **nicht**. Sichtbare **Farben auf der Stoffbahn** kommen **nur** aus der Images-Bibliothek (`screenImageId`); optionale **Bordüre** = `borderColor` am Asset. Material-Presets liefern **keine** Ersatz-Stofffarbe (auch nicht „Fabric Silk“). Vollständig → [`requirements-assets-fabric-cloth.md`](./requirements-assets-fabric-cloth.md).
 
 ---

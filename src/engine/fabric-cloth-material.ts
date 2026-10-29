@@ -39,6 +39,7 @@ export function createFabricClothMaterial(
     imageW,
     imageH,
     imageName,
+    { imageAlphaMode: 'cutout' },
   );
 
   if (fabricClothParams.borderEnabled && planeW > 0 && planeH > 0) {

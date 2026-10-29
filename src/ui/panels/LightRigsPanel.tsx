@@ -13,6 +13,7 @@ import {
   saveCurrentAsLightingPreset,
   updateLightingPreset,
 } from '@/ui/store/app-store';
+import { sortBuiltinThenUserByName } from '@/ui/utils/library-list-order';
 import { useAppStore } from '@/ui/store/use-app-store';
 
 function lightRigSwatchStyle(preset: LightingPreset): CSSProperties {
@@ -61,6 +62,11 @@ function LightRigEditor({ preset }: LightRigEditorProps) {
 
 export function LightRigsPanel() {
   const lightingPresets = useAppStore((s) => s.lightingPresets);
+  const sortedLightingPresets = sortBuiltinThenUserByName(
+    lightingPresets,
+    (preset) => preset.name,
+    (preset) => preset.source === 'builtin',
+  );
   const activeLightingPresetId = useAppStore((s) => s.activeLightingPresetId);
   const activeUser = lightingPresets.find(
     (entry) => entry.id === activeLightingPresetId && entry.source === 'user',
@@ -83,7 +89,7 @@ export function LightRigsPanel() {
       }
     >
       <ul className="material-list">
-        {lightingPresets.map((preset) => (
+        {sortedLightingPresets.map((preset) => (
           <li key={preset.id}>
             <button
               type="button"

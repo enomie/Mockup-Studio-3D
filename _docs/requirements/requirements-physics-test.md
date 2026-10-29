@@ -6,7 +6,7 @@
 
 **Status:** **implementiert & verifiziert** — Fall auf Boden, **Gravity scale**, Kollision mit **Block**-Fixed-Collider (inkl. Fillet / Pose mit Entity-Transform). `PhysicsRigidTestController` (`src/engine/physics-rigid-test.ts`), Scene-API `startPhysicsRigidTest` / `stopPhysicsRigidTest`, Store `physics.rigidTestPhase`. Compile-Time-Debug **`DEBUG_PHYSICS_CUBE`** entfernt.
 
-**Abgrenzung:** **Nicht** Fabric-Cloth **World physics** (Start / Freeze / Reset) — siehe [`requirements-physics.md`](./requirements-physics.md). Test-**Stop** = Test-Würfel **entfernen** (Mesh + Body weg). Cloth-**Freeze** = **Pause** (kein Vertex-Bake); Bake = separates Export-Thema.
+**Abgrenzung:** **Nicht** Fabric-Cloth **World physics** (Start / Freeze / Reset) — siehe [`requirements-physics.md`](./requirements-physics.md). Test-**Stop** = Test-Würfel **entfernen** (Mesh + Body weg). Cloth-**Freeze** = **Pause**; **Bake** = selektierte Entity → User-Asset in Assets-Katalog → [`requirements-assets.md`](./requirements-assets.md).
 
 ---
 

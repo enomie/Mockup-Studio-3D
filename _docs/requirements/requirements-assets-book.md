@@ -16,8 +16,8 @@ Parametrischer **Buch-Mockup** für Print- und Verpackungspräsentationen — **
 
 | `assetKind` | UI-Label | Kategorie (Ziel) |
 |---|---|---|
-| `book-softcover` | Book (softcover) | **Print** (Lucide z. B. `book`) |
-| `book-hardcover` | Book (hardcover) | **Print** |
+| `book-softcover` | Book Softcover | **Print** (Lucide z. B. `book`) |
+| `book-hardcover` | Book Hardcover | **Print** |
 
 Mehrfach-Instanzen unbegrenzt. Default-Szene: **keine** Pflicht-Instanz.
 
@@ -152,7 +152,7 @@ Technik-Referenz → [`requirements-code.md`](./requirements-code.md) (*Asset-sp
 
 **Verworfen für v1:** Falz als **zweites Mesh** oder **eigene Textur** nur für die Rinne (Aufkleber-Look / bricht Cover-UV); reine **Geometrie-Falz** ohne Shader.
 
-**Panel:** Unter **Cover** — Falz aktiv, Offset, Breite, Intensität (mm + Slider). Soft/Hard ändert nur **Voreinstellung**, nicht die verfügbaren Regler.
+**Panel:** Unter **Dimensions** (Footer-Sektion) — Falz aktiv, Offset, Breite, Intensität (mm + Slider). Soft/Hard ändert nur **Voreinstellung**, nicht die verfügbaren Regler.
 
 ---
 
@@ -237,12 +237,17 @@ Ohne Spine-Bild: Rücken zeigt **Einband-Material/Farbe** (`coverMaterialId`).
 
 **Category:** Assets — Book  
 **Title:** Geometrie & Panel (UI-Ziel)  
-**Description:** Right Sub bei selektierter Book-Entity (Struktur analog Picture **Geometries**):
+**Description:** Right Sub bei selektierter Book-Entity (Footer wie [`improve-04-asset-settings.md`](../improve/improve-04-asset-settings.md)):
 
-- **Pages:** Dicke (Z), Material (Papier).  
-- **Cover:** Stil (nur Anzeige bei Hard/Soft aus Kind), Deckel-Dicke (Z), Rücken-Dicke (X, Default = Deckel), Hardcover-Überhang.  
-- **Images:** Front cover, Back cover (optional), Spine (optional); Back „solid color“ = Bild abwählen.  
-- **Materials:** Pages vs. Cover (ggf. Unterteile später).
+| Reihenfolge | Sektion |
+|-------------|---------|
+| 1 | **Front cover** / **Back cover** / **Spine** — Bilder (optional außer Front); Back ohne Bild = Einbandfarbe. |
+| 2 | **Pages** — Seitenfarbe, Papier-Material. |
+| 3 | **Cover** — Einbandfarbe, Cover-Material. |
+| 4 | **Dimensions** — Width/Height (vom Front-Cover-Bild + `sizeScale`, gekoppelt, **kein** Size-Feld); `pagesThicknessM`, `coverThicknessM`, `spineThicknessM`, Hardcover-`coverOverhangMm`; Falz (`hingeGroove*`). |
+| 5 | **Position** — Pos X/Y/Z, Rot (kein Transform-Titel). |
+
+Softcover vs. Hardcover: Kind aus Katalog; Überhang nur bei Hardcover im Panel.
 
 Sichtbarkeit pro Teil (Checkbox) optional v1 — TBD.
 

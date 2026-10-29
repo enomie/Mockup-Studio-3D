@@ -20,6 +20,7 @@ import {
   resolveWineBottleStirnRadiiAtY,
   wineBottleLatheProfileBounds,
 } from './wine-bottle-svg-profile';
+import { ensureGeometryTangents } from '@/engine/geometry-tangents';
 
 export const WINE_BOTTLE_GLASS_LATHE_SEGMENTS = 64;
 /**
@@ -236,6 +237,7 @@ function buildWineBottleGlassBodyGeometry(
   }
   applyLatheGeometryFootToY0(merged);
   merged.computeVertexNormals();
+  ensureGeometryTangents(merged);
   return merged;
 }
 

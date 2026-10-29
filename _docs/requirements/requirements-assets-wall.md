@@ -1,12 +1,12 @@
-# Assets — Wall & Wall with Door
+# Assets — Wall & Wall Doorway
 
 Parametrische **Wand-Bausteine** für Raum-/Tapeten-Mockups — Tapetenmotiv aus der **Images-Bibliothek** nur auf der **Vorderseite**. Katalog, Entity-Modell, Placement-Grundlagen → [`requirements-assets.md`](./requirements-assets.md). Schatten → [`requirements-shadows.md`](./requirements-shadows.md). Material-Presets → [`requirements-materials.md`](./requirements-materials.md) (**Print Matt** = `material-paper`). Bild-Finish/Emissive → [`requirements-image-surfaces.md`](./requirements-image-surfaces.md). Tapeten-Front: **Repeat in m** (Ausnahme zu Cover-only auf anderen Screens) → `.cursor/rules/image-aspect-ratio.mdc` (Tile/Repeat erlaubt).
 
-**Abgrenzung:** Dieses Doc beschreibt **`assetKind: wall`** (UI: **Wall**) und **`assetKind: wall-door`** (UI: **Wall with Door**). Picture framed, Print, Devices → eigene Asset-Docs. **Ausbaustufe** Türrahmen (wie Picture framed) nur als Platzhalter — separates Design-Gespräch.
+**Abgrenzung:** Dieses Doc beschreibt **`assetKind: wall`** (UI: **Wall**) und **`assetKind: wall-door`** (UI: **Wall Doorway**). Picture framed, Print, Devices → eigene Asset-Docs. **Ausbaustufe** Türrahmen (wie Picture framed) nur als Platzhalter — separates Design-Gespräch.
 
 **Status:** v1 **teilweise implementiert** — Katalog (`architecture`), `wall` / `wall-door`, Box-Geometrie + Tür-CSG, Half-Drop-Wallpaper-Shader, Szene-Panel (Maße, Material, Strip), Bottom-Pivot-Spawn. **Offen:** Türrahmen, Drag Image → Viewport, Scene-Presets.
 
-**v1-Scope (Basis):** Rechteckige Wand (Box), drei einstellbare Maße (Breite, Höhe, Dicke), Vorderseite mit **Tapeten-Repeat** (festes Raster in m + **Half-Drop**), Wand ohne Bild = neutrale Vorderseite mit Default-Material. **Wall with Door:** gleiche Parameter + feste Türöffnung per CSG. **Soll (kein Muss):** beim Platzieren Y so setzen, dass die Wand auf dem Boden steht. **Nicht v1:** Türrahmen, Türblatt, Zarge, Drag Image → Viewport, gerades Raster ohne Versatz.
+**v1-Scope (Basis):** Rechteckige Wand (Box), drei einstellbare Maße (Breite, Höhe, Dicke), Vorderseite mit **Tapeten-Repeat** (festes Raster in m + **Half-Drop**), Wand ohne Bild = neutrale Vorderseite mit Default-Material. **Wall Doorway:** gleiche Parameter + feste Türöffnung per CSG. **Soll (kein Muss):** beim Platzieren Y so setzen, dass die Wand auf dem Boden steht. **Nicht v1:** Türrahmen, Türblatt, Zarge, Drag Image → Viewport, gerades Raster ohne Versatz.
 
 ---
 
@@ -17,7 +17,7 @@ Parametrische **Wand-Bausteine** für Raum-/Tapeten-Mockups — Tapetenmotiv aus
 | `assetKind` | UI-Label | Kategorie (Ziel) |
 |---|---|---|
 | `wall` | Wall | **Architecture** (neue Katalog-Gruppe; Lucide z. B. `brick-wall` / `panel-top`) |
-| `wall-door` | Wall with Door | **Architecture** |
+| `wall-door` | Wall Doorway | **Architecture** |
 
 Stabile `kind`-IDs — kein Upload eigener 3D-Wände in v1. Mehrfach-Instanzen unbegrenzt. Default-Szene: **keine** Pflicht-Instanz (optional später in Scene-Presets für Tapeten-Layouts).
 
@@ -67,7 +67,7 @@ Min/Max (TBD Implementierung): sinnvolle Clamps z. B. Breite/Höhe `0,5`–`20` 
 ---
 
 **Category:** Assets — Wall  
-**Title:** Geometrie — Wall with Door (CSG)  
+**Title:** Geometrie — Wall Doorway (CSG)  
 **Description:** Ausgangs-Box wie **Wall**, dann **Boolean Subtract** (Ziel: **`three-bvh-csg`**, gleiches Muster wie Handheld/Monitor-Recesses → [`requirements-assets-devices-handheld.md`](./requirements-assets-devices-handheld.md)):
 
 **Türöffnung (v1 fest, nicht im Panel):**
@@ -185,10 +185,12 @@ type WallpaperPattern = {
 **Title:** Szene-Panel (Ziel)  
 **Description:** Bei selektierter Wall-Entity, Right Sub:
 
-1. **Dimensions** — Width, Height, Thickness (m)
+1. **Material** — Wall body (`wallMaterialId`, Default Print Matt)
 2. **Wallpaper / Image** — Image, **Strip width**, **Strip height** (Half-Drop automatisch), `ImageSurfaceFields`
-3. **Material** — Wall body (`wallMaterialId`, Default Print Matt)
-4. **Transform** — Position / Rotation (Gizmo + Felder)
+3. **Dimensions** — Width, Height, Thickness (m)
+4. **Position** — Pos / Rot (Gizmo + Felder; kein Transform-Block)
+
+Footer-Muster → [`improve-04-asset-settings.md`](../../improve/improve-04-asset-settings.md). Gilt für `wall` und `wall-door`.
 
 `wall-door`: keine extra Türmaß-Felder in v1 (Öffnung fest). Hinweis-Label „Door opening 2 × 2,5 m, 1 m from left“ (read-only).
 
@@ -196,7 +198,7 @@ type WallpaperPattern = {
 
 **Category:** Assets — Wall  
 **Title:** Ausbaustufe — Türrahmen (nicht v1)  
-**Description:** **Wall with Door** soll später einen **parametrischen Türrahmen** um die Öffnung erhalten — ähnlich **Picture framed** (extrudierter Rahmen, Material-Slots, ggf. Zarge/Türblatt). **Vor Implementierung:** eigenes Requirement-Update oder Unterkapitel nach User-Workshop (Profilmaße, Falz, Glas, innen/außen, Schweller). v1 = nur CSG-Loch.
+**Description:** **Wall Doorway** soll später einen **parametrischen Türrahmen** um die Öffnung erhalten — ähnlich **Picture framed** (extrudierter Rahmen, Material-Slots, ggf. Zarge/Türblatt). **Vor Implementierung:** eigenes Requirement-Update oder Unterkapitel nach User-Workshop (Profilmaße, Falz, Glas, innen/außen, Schweller). v1 = nur CSG-Loch.
 
 ---
 

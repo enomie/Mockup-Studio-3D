@@ -1,4 +1,4 @@
-import { Raycaster, Vector2, type Camera, type Object3D } from 'three/webgpu';
+import { Raycaster, Vector2, type Camera, type Object3D, type Ray } from 'three/webgpu';
 import { noop } from '@/utils/noop';
 import type { EntityRegistry } from './entity-registry';
 
@@ -11,6 +11,12 @@ function isEditableTarget(target: EventTarget | null): boolean {
   if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') {return true;}
   if (target.isContentEditable) {return true;}
   return Boolean(target.closest('input, textarea, select, [contenteditable="true"]'));
+}
+
+export interface PatchLengthDragHandlers {
+  begin: (ray: Ray) => boolean;
+  update: (ray: Ray) => void;
+  end: () => void;
 }
 
 export class SelectionController {
@@ -32,6 +38,9 @@ export class SelectionController {
 
   private getCamera: () => Camera | null = () => null;
   private getLightPickables: () => Object3D[] = () => [];
+  private getPatchPickables: () => Object3D[] = () => [];
+  private onSelectPatchHandle: (mesh: Object3D) => boolean = () => false;
+  private patchLengthDrag: PatchLengthDragHandlers | null = null;
   private onSelect: (entityId: string | null) => void = noop;
   private onDelete: () => void = noop;
 
@@ -49,6 +58,14 @@ export class SelectionController {
     this.getLightPickables = provider;
   }
 
+  setPatchPickablesProvider(
+    provider: () => Object3D[],
+    selectHandler: (mesh: Object3D) => boolean,
+  ): void {
+    this.getPatchPickables = provider;
+    this.onSelectPatchHandle = selectHandler;
+  }
+
   setSelectHandler(handler: (entityId: string | null) => void): void {
     this.onSelect = handler;
   }
@@ -57,17 +74,52 @@ export class SelectionController {
     this.onDelete = handler;
   }
 
-  pickAt(clientX: number, clientY: number): string | null {
+  setPatchLengthDragHandlers(handlers: PatchLengthDragHandlers): void {
+    this.patchLengthDrag = handlers;
+  }
+
+  /** Starts a patch lever length drag if the pointer is on the length ring. */
+  beginPatchLengthDragAt(clientX: number, clientY: number): boolean {
+    if (!this.patchLengthDrag || !this.setRayFromClient(clientX, clientY)) {return false;}
+    return this.patchLengthDrag.begin(_raycaster.ray);
+  }
+
+  updatePatchLengthDragAt(clientX: number, clientY: number): void {
+    if (!this.patchLengthDrag || !this.setRayFromClient(clientX, clientY)) {return;}
+    this.patchLengthDrag.update(_raycaster.ray);
+  }
+
+  endPatchLengthDrag(): void {
+    this.patchLengthDrag?.end();
+  }
+
+  private setRayFromClient(clientX: number, clientY: number): boolean {
     const camera = this.getCamera();
-    if (!camera) {return null;}
+    if (!camera) {return false;}
 
     const rect = this.domElement.getBoundingClientRect();
-    if (rect.width === 0 || rect.height === 0) {return null;}
+    if (rect.width === 0 || rect.height === 0) {return false;}
 
     _pointer.x = ((clientX - rect.left) / rect.width) * 2 - 1;
     _pointer.y = -((clientY - rect.top) / rect.height) * 2 + 1;
 
     _raycaster.setFromCamera(_pointer, camera);
+    return true;
+  }
+
+  pickAt(clientX: number, clientY: number): string | null {
+    if (!this.setRayFromClient(clientX, clientY)) {return null;}
+
+    const patchPickables = this.getPatchPickables();
+    if (patchPickables.length > 0) {
+      const patchHits = _raycaster.intersectObjects(patchPickables, false);
+      if (patchHits.length > 0) {
+        const handled = this.onSelectPatchHandle(patchHits[0].object);
+        if (handled) {
+          return '__PATCH_HANDLE_SELECTED__';
+        }
+      }
+    }
 
     const assetHits = _raycaster.intersectObjects(this.collectAssetRoots(), true);
     const assetEntityId = this.findEntityId(assetHits);

@@ -13,6 +13,7 @@ import {
   createSideButtonHoleCutterGeometry,
   HANDHELD_CSG_EPSILON_M,
 } from './handheld-geometry';
+import { ensureGeometryTangents } from '@/engine/geometry-tangents';
 
 export type { CsgCutterPlacement };
 
@@ -79,6 +80,7 @@ export function buildHandheldFrameGeometryCsg(
 
   const frameGeometry = subtractGeometries(solidGeometry, cutters);
   buttonCutterGeometry.dispose();
+  ensureGeometryTangents(frameGeometry);
 
   return frameGeometry;
 }

@@ -6,13 +6,57 @@ import { EntityPropertyFields } from './EntityPropertyFields';
 import { removeEntity, setEntityVisible, setSelectedEntity } from '@/ui/store/app-store';
 import { useAppStore } from '@/ui/store/use-app-store';
 
+function defaultCollapsedEntityIds(
+  entityIds: readonly string[],
+  selectedId: string | null,
+): Set<string> {
+  const collapsed = new Set(entityIds);
+  if (selectedId) {
+    collapsed.delete(selectedId);
+  }
+  return collapsed;
+}
+
 export function SceneSubPanel() {
   const entities = useAppStore((s) => s.entities);
   const selectedEntityId = useAppStore((s) => s.selectedEntityId);
   const images = useAppStore((s) => s.images);
   const sectionRefs = useRef(new Map<string, HTMLElement>());
-  const [collapsedIds, setCollapsedIds] = useState<Set<string>>(() => new Set());
+  const [collapsedIds, setCollapsedIds] = useState<Set<string>>(() =>
+    defaultCollapsedEntityIds(
+      entities.map((entity) => entity.id),
+      selectedEntityId,
+    ),
+  );
   const [prevSelectedEntityId, setPrevSelectedEntityId] = useState(selectedEntityId);
+  const knownEntityIdsRef = useRef(new Set(entities.map((entity) => entity.id)));
+
+  useEffect(() => {
+    const entityIdSet = new Set(entities.map((entity) => entity.id));
+    setCollapsedIds((prev) => {
+      const next = new Set(prev);
+      let changed = false;
+      for (const id of entityIdSet) {
+        if (!knownEntityIdsRef.current.has(id)) {
+          knownEntityIdsRef.current.add(id);
+          if (id !== selectedEntityId) {
+            next.add(id);
+            changed = true;
+          }
+        }
+      }
+      for (const id of knownEntityIdsRef.current) {
+        if (!entityIdSet.has(id)) {
+          knownEntityIdsRef.current.delete(id);
+          if (next.has(id)) {
+            next.delete(id);
+            changed = true;
+          }
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [entities, selectedEntityId]);
 
   if (selectedEntityId !== prevSelectedEntityId) {
     setPrevSelectedEntityId(selectedEntityId);

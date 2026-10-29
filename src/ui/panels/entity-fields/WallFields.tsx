@@ -38,39 +38,6 @@ export function WallFields({ entity, images, screenImageFieldId }: WallFieldsPro
 
   return (
     <>
-      <SubPanelSection title="Dimensions">
-        <PanelAxisField
-          label="Width"
-          unit="m"
-          value={wallParams.widthM}
-          format={(value) => formatLengthMeters(value, LENGTH_DECIMALS)}
-          parse={parseLengthMetersInput}
-          onChange={(value) => {
-            if (value > 0) {setWallParams(entity.id, { widthM: value });}
-          }}
-        />
-        <PanelAxisField
-          label="Height"
-          unit="m"
-          value={wallParams.heightM}
-          format={(value) => formatLengthMeters(value, LENGTH_DECIMALS)}
-          parse={parseLengthMetersInput}
-          onChange={(value) => {
-            if (value > 0) {setWallParams(entity.id, { heightM: value });}
-          }}
-        />
-        <PanelAxisField
-          label="Thickness"
-          unit="m"
-          value={wallParams.thicknessM}
-          format={(value) => formatLengthMeters(value, LENGTH_DECIMALS)}
-          parse={parseLengthMetersInput}
-          onChange={(value) => {
-            if (value > 0) {setWallParams(entity.id, { thicknessM: value });}
-          }}
-        />
-      </SubPanelSection>
-
       <SubPanelSection title="Material">
         <MaterialSelect
           entityId={entity.id}
@@ -141,6 +108,39 @@ export function WallFields({ entity, images, screenImageFieldId }: WallFieldsPro
             Door opening: 2.0 × 2.5 m, 1.0 m from left edge (fixed).
           </p>
         ) : null}
+      </SubPanelSection>
+
+      <SubPanelSection title="Dimensions">
+        <PanelAxisField
+          label="Width"
+          unit="m"
+          value={wallParams.widthM}
+          format={(value) => formatLengthMeters(value, LENGTH_DECIMALS)}
+          parse={parseLengthMetersInput}
+          onChange={(value) => {
+            if (value > 0) {setWallParams(entity.id, { widthM: value });}
+          }}
+        />
+        <PanelAxisField
+          label="Height"
+          unit="m"
+          value={wallParams.heightM}
+          format={(value) => formatLengthMeters(value, LENGTH_DECIMALS)}
+          parse={parseLengthMetersInput}
+          onChange={(value) => {
+            if (value > 0) {setWallParams(entity.id, { heightM: value });}
+          }}
+        />
+        <PanelAxisField
+          label="Thickness"
+          unit="m"
+          value={wallParams.thicknessM}
+          format={(value) => formatLengthMeters(value, LENGTH_DECIMALS)}
+          parse={parseLengthMetersInput}
+          onChange={(value) => {
+            if (value > 0) {setWallParams(entity.id, { thicknessM: value });}
+          }}
+        />
       </SubPanelSection>
     </>
   );

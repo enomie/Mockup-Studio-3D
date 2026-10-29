@@ -18,6 +18,8 @@ import type {
   WheelCarParams,
   FabricClothParams,
   BookParams,
+  TrianglePatchParams,
+  PatchHandleTarget,
   PrintDeviceParams,
   WallParams,
   WallpaperPattern,
@@ -32,6 +34,11 @@ import type { MaterialPresetResolver } from './material-types';
 import type { PhysicsSettings } from './physics-settings';
 import type { PhysicsBodyMode } from './physics-rigid-body';
 import type { BookMaterialTintPart } from './book-material-tints';
+import type {
+  BakeFabricClothDraft,
+  UserBakedAsset,
+  UserBakedAssetResolver,
+} from './user-baked-asset';
 
 export type {
   AssetEntity,
@@ -193,6 +200,10 @@ export interface SceneApi {
   setViewportHelpers(partial: Partial<ViewportHelpersState>): void;
   getViewportHelpers(): ViewportHelpersState;
   addAsset(assetKind: AssetKind): string;
+  setUserBakedAssetResolver(resolver: UserBakedAssetResolver | null): void;
+  canBakeSelectedEntity(): boolean;
+  buildBakeFabricClothDraft(entityId: string): BakeFabricClothDraft | null;
+  addAssetFromUserBaked(userAsset: UserBakedAsset, spawn?: { x: number; z: number }): string;
   removeEntity(entityId: string): void;
   selectEntity(entityId: string | null): void;
   getSelectedEntityId(): string | null;
@@ -231,7 +242,11 @@ export interface SceneApi {
   setWheelCarParams(entityId: string, partial: Partial<WheelCarParams>): void;
   setPhysicsBodyMode(entityId: string, mode: PhysicsBodyMode): void;
   setPhysicsDensityKgPerM3(entityId: string, densityKgPerM3: number): void;
+  /** Border, `physics` (Verlet tuning), `sim` (pins, restPose) — partial merge with clamp. */
   setFabricClothParams(entityId: string, partial: Partial<FabricClothParams>): void;
+  /** Ephemeral UI state — active pin corner 0–3 for gizmo during world physics. */
+  setFabricClothActivePinCorner(entityId: string, cornerIndex: number): void;
+  getFabricClothActivePinCorner(entityId: string): number;
   setBookParams(entityId: string, partial: Partial<BookParams>): void;
   setBookBackCoverImageId(entityId: string, imageId: string | null): void;
   setBookSpineImageId(entityId: string, imageId: string | null): void;
@@ -246,6 +261,8 @@ export interface SceneApi {
     partial: Partial<WineBottleParams>,
   ): void;
   setPenParams(entityId: string, partial: Partial<PenParams>): void;
+  setTrianglePatchParams(entityId: string, partial: Partial<TrianglePatchParams>): void;
+  selectPatchHandle(entityId: string, nodeIndex: number, targetKey: PatchHandleTarget): void;
   loadBuiltinView(id: BuiltinCameraViewId): void;
   captureSlot(index: CameraSlotIndex): void;
   loadSlot(index: CameraSlotIndex): void;

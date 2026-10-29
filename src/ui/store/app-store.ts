@@ -18,6 +18,7 @@ export {
   setPhysicsBodyMode,
   setPhysicsDensityKgPerM3,
   setFabricClothParams,
+  setFabricClothActivePinCorner,
   setBookParams,
   setBookBackCoverImageId,
   setBookSpineImageId,
@@ -30,6 +31,8 @@ export {
   setWallpaperPattern,
   setWineBottleParams,
   setPenParams,
+  setTrianglePatchParams,
+  selectPatchHandle,
 } from './app-store-asset-params';
 
 export {
@@ -37,6 +40,14 @@ export {
   removeImage,
   selectImage,
 } from './app-store-images';
+
+export {
+  addAssetFromUserBaked,
+  bakeSelectedToUserAsset,
+  canBakeSelectedEntity,
+  removeUserBakedAsset,
+  renameUserBakedAsset,
+} from './app-store-user-baked-assets';
 
 export {
   addAssetFromCatalog,
@@ -197,6 +208,10 @@ export function setSceneApi(api: SceneApi | null): void {
         name: image.name,
       };
     });
+
+    api.setUserBakedAssetResolver((userBakedAssetId) =>
+      store.state.userBakedAssets.find((entry) => entry.id === userBakedAssetId) ?? null,
+    );
 
     api.setMaterialPresetResolver((materialId) => {
       const resolvedId = migrateMaterialId(materialId);

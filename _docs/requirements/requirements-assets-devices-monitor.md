@@ -1,8 +1,8 @@
-# Assets — Monitor (Desktop Display mit Stand)
+# Assets — Device Desktop (`monitor`)
 
 Parametrischer **Monitor-Baustein** — Display (Handheld-Bauweise) + **Standfläche** + **Standfuß**, Neigung und Montagehöhe einstellbar. Bild auf dem Screen aus der **Images-Bibliothek** → [`requirements-images.md`](./requirements-images.md). Katalog, Entity-Modell, image-driven sizing, Panel-Grundlagen → [`requirements-assets.md`](./requirements-assets.md). Display-Stack (Bezel, Glas, Backplate, CSG-Tasten) → [`requirements-assets-devices-handheld.md`](./requirements-assets-devices-handheld.md). Material-Slots → [`requirements-materials.md`](./requirements-materials.md). Schatten → [`requirements-shadows.md`](./requirements-shadows.md).
 
-**Abgrenzung:** Dieses Doc beschreibt **nur** `assetKind: monitor`. Smartphone & Tablet → Handheld-Doc. **Kein** separates flaches Monitor-Asset ohne Stand in v1 — dieser Stand-Monitor **ist** der Monitor-Baustein.
+**Abgrenzung:** Dieses Doc beschreibt **nur** `assetKind: monitor` (UI **Device Desktop**). Device Smartphone & Device Tablet → Handheld-Doc. **Kein** separates flaches Display ohne Stand in v1 — dieser Baustein **ist** Desktop mit Stand.
 
 **Status:** v1 **teilweise implementiert** — `monitor` im Katalog + Default-Szene; Display-Stack (Handheld-Engine), Stand (`monitor-stand.ts`), Artikulation (`displayTiltDeg`, `displayMountHeightMm`), Panel Geometries + Device-Felder. **Offen:** Stand-mm im Panel; präzise Footprint-Höhe bei Tilt; dedizierte Monitor-CSG-Tests.
 
@@ -259,13 +259,11 @@ Loch/CSG/Button-Geometrie: siehe Handheld-Doc. Kein Power-Button v1.
 **Description:** Right Sub, Entity-Block für `monitor`:
 
 1. **Screen / Image** — `ImageSurfaceFields`
-2. **Corner radius (mm)** — `screenCornerRadiusMm`
-3. **Bezel width (mm)** — `bezelWidthMm`
-4. **Glazing** — Checkbox
-5. **Display tilt (deg)** — `displayTiltDeg`
-6. **Display mount height (mm)** — `displayMountHeightMm`
-7. **Materials** — Frame, Backplates, Side button, Stand base, Stand foot (Dropdowns)
-8. **Transform** + **Size** — wie andere Assets
+2. **Geometries** — Sichtbarkeit + Material-Slots (Frame, Display glass, Backplates, Side button, Stand base, Stand foot); Glazing-Checkbox in Geometries
+3. **Dimensions** — **Width (m)** und **Height (m)** (Screen, bildgetrieben, gekoppelt; kein Size-Feld); **Corner radius**, **Bezel width**, **Edge roundness**; **Display tilt** (`displayTiltDeg`); **Mount height** (`displayMountHeightMm`)
+4. **Position** — Pos / Rot (kein Transform-Block)
+
+Footer-Muster → [`improve-04-asset-settings.md`](../../improve/improve-04-asset-settings.md).
 
 Stand-Footprint-/Fuß-mm v1: Defaults im Code; UI-Felder optional später (oder Advanced-Section).
 
@@ -277,7 +275,7 @@ Stand-Footprint-/Fuß-mm v1: Defaults im Code; UI-Felder optional später (oder 
 
 | ID | `assetKind` | Anzeigename |
 |---|---|---|
-| `asset-monitor` | `monitor` | Monitor |
+| `asset-monitor` | `monitor` | Device Desktop |
 
 Icon/Thumbnail: Vorschau mit Default-Params. Mehrfach-Instanzen unbegrenzt → [`requirements-assets.md`](./requirements-assets.md).
 

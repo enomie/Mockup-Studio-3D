@@ -16,7 +16,7 @@ Zentrale **Bildliste** im Projekt — Upload, Starter-Assets, Metadaten. Alles w
 
 **Category:** Images  
 **Title:** Panel-Platzierung (UI)  
-**Description:** **Left Main** Nav: **Images** (`image`-Icon). **Left Sub:** scrollbare **Liste** aller Bilder + **Footer „Add image"** (+). Kompakte Dichte → [`requirements-look-and-feel.md`](./requirements-look-and-feel.md). Kein separates Upload-Panel in Main-Nav.
+**Description:** **Left Main** Nav: **Images** (`image`-Icon). **Left Sub:** scrollbare **Liste** aller Bilder + **Footer „Add image"** (+). Liste und Image-Dropdowns **alphabetisch A–Z** nach `name` → [`requirements-look-and-feel.md`](./requirements-look-and-feel.md). Kompakte Dichte → [`requirements-look-and-feel.md`](./requirements-look-and-feel.md). Kein separates Upload-Panel in Main-Nav.
 
 ---
 
@@ -155,7 +155,7 @@ Zentral: `src/engine/image-surface-alpha.ts`. Emissive (wenn Intensity > 0): mit
 
 | Ordner | Zweck | URL-Präfix |
 |---|---|---|
-| **`profiles/lathe/`** | Halbprofil → Drehung um **Y** (Pen, Dose, Weinflasche, …) | `/profiles/lathe/{datei}.svg` |
+| **`profiles/lathe/`** | Halbprofil → Drehung um **Y** (Pen, Dose, Weinflasche, …); **Pfadkoordinaten in mm** → [`requirements-assets-lathe.md`](./requirements-assets-lathe.md) | `/profiles/lathe/lathe-{y\|x\|z}-{name}.svg` |
 | **`profiles/extrude/`** | Reserviert für **Extrude**-Pfade (v1 leer) | `/profiles/extrude/…` |
 
 **Code:** URLs zentral über `builtinLatheProfileUrl()` in [`builtin-profile-paths.ts`](../../src/constants/builtin-profile-paths.ts); Asset-Helfer `penSvgUrl`, `beverageCanSvgUrl`, `wineBottleSvgUrl`. Kurzbeschreibung: [`public/profiles/README.md`](../../public/profiles/README.md).

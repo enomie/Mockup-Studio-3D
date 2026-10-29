@@ -13,7 +13,7 @@ Zentrale Projektbeschreibung. Detail-Requirements in den verlinkten Kategorie-Da
 | [`requirements-lighting-presets.md`](./requirements-lighting-presets.md) | Light rigs (Left): Lighting-Presets, User-Save — v1 live |
 | [`requirements-shadows.md`](./requirements-shadows.md) | Szene-Schatten: Qualität, mm-Kontakt, Cast/Receive, Engine |
 | [`requirements-antialiasing.md`](./requirements-antialiasing.md) | Viewport MSAA + SMAA, Mirror-Samples |
-| [`requirements-physics.md`](./requirements-physics.md) | Rapier: Start/Freeze; Block Fixed/Dynamic + Dichte; Stoff (Plane-MVP → Cloth-Mesh); `fabricClothSimQuality`; Drape aus Material; Collider-Margin 5 mm; Gravity scale 0,01–2 |
+| [`requirements-physics.md`](./requirements-physics.md) | Rapier: Start/Freeze; Block Fixed/Dynamic + Dichte; Stoff **SoftBody**-Cloth (festes Subdivision-Grid); Drape aus Material; Collider-Margin 5 mm; Gravity scale 0,01–2 |
 | [`requirements-physics-test.md`](./requirements-physics-test.md) | Physics-Panel: rigid Fall-Test (0,1 m Würfel, Start/Stop) |
 | [`requirements-scene-placement.md`](./requirements-scene-placement.md) | Entities, Select, Move, Rotate, Scale, Viewport-Input |
 | [`requirements-gimbals.md`](./requirements-gimbals.md) | Transform-Gizmo: Translate, Rotate, Scale (uniform), Input |
@@ -25,24 +25,27 @@ Zentrale Projektbeschreibung. Detail-Requirements in den verlinkten Kategorie-Da
 | [`requirements-ground.md`](./requirements-ground.md) | Ground Panel: Materials Library, Schatten, Mirror; procedural tiling; Bild/Mapping später |
 | [`requirements-scenes.md`](./requirements-scenes.md) | Scene-Presets: Built-ins, User-Save, Load |
 | [`requirements-images.md`](./requirements-images.md) | Images-Bibliothek, Upload, Starter, min. 10 |
+| [`requirements-planar-editor.md`](./requirements-planar-editor.md) | **Profiles** (Left): Built-in/User, Duplicate; **Planar Editor** im Viewport; Lathe/Extrude-Pfade |
+| [`requirements-history.md`](./requirements-history.md) | Undo/Redo (kontextuell); Workspace-Persistenz (IndexedDB), Browser-Neustart |
 | [`requirements-image-surfaces.md`](./requirements-image-surfaces.md) | Bild-Flächen: Finish, Emissive, Passepartout (Zwei-Mesh-Engine) |
 | [`requirements-colors.md`](./requirements-colors.md) | Colors-Bibliothek, benannte RGB-Swatches, ColorPicker-Integration |
 | [`requirements-materials.md`](./requirements-materials.md) | Materials-Bibliothek, PBR-Presets, Built-ins, Zuweisung |
-| [`requirements-assets.md`](./requirements-assets.md) | Bausteine-Katalog, Drop, Screen-Bild, image-driven sizing |
-| [`requirements-assets-book.md`](./requirements-assets-book.md) | Book: Softcover & Hardcover, Papierblock, Deckel, Rücken, Spine-Bild |
-| [`requirements-assets-picture-framed.md`](./requirements-assets-picture-framed.md) | Picture framed: Rahmen, Z-Stack, Glas, Geometries-Panel |
-| [`requirements-assets-wall.md`](./requirements-assets-wall.md) | Wall & Wall with Door: Maße, Tapetenmuster, Tür-CSG |
-| [`requirements-assets-block.md`](./requirements-assets-block.md) | Block: Quader, ein Material, Corner radius, Fixed/Dynamic |
-| [`requirements-assets-cylinder.md`](./requirements-assets-cylinder.md) | Cylinder: Radius/Höhe, Fillet an 2 Kreiskanten, wie Block |
-| [`requirements-assets-sphere.md`](./requirements-assets-sphere.md) | Sphere: Radius, Rigid Fixed/Dynamic wie Block |
+| [`requirements-assets.md`](./requirements-assets.md) | Bausteine-Katalog, Drop, Screen-Bild, image-driven sizing; **Bake → User Assets** (Selektion, Registry) |
+| [`requirements-assets-lathe.md`](./requirements-assets-lathe.md) | Lathe-SVG: Pfad-mm, uniform scale, Szene-Panel Dimensions/Position |
+| [`requirements-assets-book.md`](./requirements-assets-book.md) | Book Softcover & Book Hardcover, Papierblock, Deckel, Rücken, Spine-Bild |
+| [`requirements-assets-picture-framed.md`](./requirements-assets-picture-framed.md) | Picture Frame: Rahmen, Z-Stack, Glas, Geometries-Panel |
+| [`requirements-assets-wall.md`](./requirements-assets-wall.md) | Wall & Wall Doorway: Maße, Tapetenmuster, Tür-CSG |
+| [`requirements-assets-block.md`](./requirements-assets-block.md) | Object Block (`block`): Quader, ein Material, Corner radius, Fixed/Dynamic |
+| [`requirements-assets-cylinder.md`](./requirements-assets-cylinder.md) | Object Cylinder (`cylinder`): Radius/Höhe, Fillet an 2 Kreiskanten |
+| [`requirements-assets-sphere.md`](./requirements-assets-sphere.md) | Object Sphere (`sphere`): Radius, Rigid Fixed/Dynamic |
 | [`requirements-assets-fabric-cloth.md`](./requirements-assets-fabric-cloth.md) | Fabric cloth: Flatlay, Bild oben+unten, Border, Rapier-Simulation |
-| [`requirements-assets-beverage-can.md`](./requirements-assets-beverage-can.md) | Beverage can (330 ml): SVG-Lathe Alu-Körper + Label-UV auf Mantel (`public/profiles/lathe/330ml-*.svg`), Endring |
-| [`requirements-assets-tin-can.md`](./requirements-assets-tin-can.md) | Tin can (Blechdose): Radius + Höhe parametrisch, Beads mittlere 80 % Mantel, Label folgt Wellung |
-| [`requirements-assets-wine-bottle.md`](./requirements-assets-wine-bottle.md) | Wine bottle: offene Außen-SVG (`profiles/lathe`), Glas + Stirnringe, Korken, Kapsel, Etikett |
-| [`requirements-assets-pen.md`](./requirements-assets-pen.md) | Pen: Marker & fountain pen — SVG-Lathe Cap/Ring/Body, Bild-Wrap auf Schaft (`public/profiles/lathe/pen-*.svg`) |
+| [`requirements-assets-beverage-can.md`](./requirements-assets-beverage-can.md) | Can Beverage (330 ml): SVG-Lathe Alu-Körper + Label-UV auf Mantel (`public/profiles/lathe/lathe-y-can-330ml-*.svg`), Endring |
+| [`requirements-assets-tin-can.md`](./requirements-assets-tin-can.md) | Can Tin (Blechdose): Radius + Höhe parametrisch, Beads mittlere 80 % Mantel, Label folgt Wellung |
+| [`requirements-assets-wine-bottle.md`](./requirements-assets-wine-bottle.md) | Bottle Wine (`wine-bottle`): offene Außen-SVG (`profiles/lathe`), Glas + Stirnringe, Korken, Kapsel, Etikett |
+| [`requirements-assets-pen.md`](./requirements-assets-pen.md) | Pen: Marker & fountain pen — SVG-Lathe Cap/Ring/Body, Bild-Wrap auf Schaft (`public/profiles/lathe/lathe-y-pen-*.svg`) |
 | [`requirements-assets-wheel-car.md`](./requirements-assets-wheel-car.md) | Wheel Car (`wheel-car`): SVG-Lathe (255/30 R20), Felgen-Stirn + 5 Speichen |
-| [`requirements-assets-devices-handheld.md`](./requirements-assets-devices-handheld.md) | Smartphone & Tablet: Screen, Bezel, Glas, Backplate, Seitentasten (CSG) |
-| [`requirements-assets-devices-monitor.md`](./requirements-assets-devices-monitor.md) | Monitor: Desktop-Display, Stand, Neigung, Montagehöhe |
+| [`requirements-assets-devices-handheld.md`](./requirements-assets-devices-handheld.md) | Device Smartphone & Device Tablet: Screen, Bezel, Glas, Backplate, Seitentasten (CSG) |
+| [`requirements-assets-devices-monitor.md`](./requirements-assets-devices-monitor.md) | Device Desktop (`monitor`): Display, Stand, Neigung, Montagehöhe |
 | [`requirements-color-picker.md`](./requirements-color-picker.md) | Wiederverwendbarer Figma-like Color Picker |
 | [`requirements-range-slider.md`](./requirements-range-slider.md) | RangeSlider / DualRangeSlider (Fog, Intensity, …) |
 | [`requirements-look-and-feel.md`](./requirements-look-and-feel.md) | UI, UX, Lucide Icons, Scrollbars |
@@ -78,7 +81,7 @@ Details → [`requirements-development-workflow.md`](./requirements-development-
 
 **Category:** Project  
 **Title:** Photorealistische Mockups  
-**Description:** Mockup Studio 3D erzeugt photorealistische Mockups für Webshops, Flyer, Mobilgeräte, Tapeten, Böden, Arrangements, Stilleben und ähnliche Präsentationsszenen. Fokus: überzeugende Darstellungsbilder — kein Game, kein CAD, kein generischer 3D-Editor. Workflow: Szene aufbauen → Assets platzieren → Export/Render. **Hochqualitative Schatten** sind Pflicht (mm-Kontakt, 4096², enges Frustum) — Assets casten + empfangen; Ausnahmen Ground/Glazing → [`requirements-shadows.md`](./requirements-shadows.md).
+**Description:** Mockup Studio 3D erzeugt photorealistische Mockups für Webshops, Flyer, Mobilgeräte, Tapeten, Böden, Arrangements, Stilleben und ähnliche Präsentationsszenen. Fokus: überzeugende Darstellungsbilder — kein Game, kein CAD, kein generischer 3D-Editor. Workflow: Szene aufbauen → Assets platzieren → Export/Render. **Hochqualitative Schatten** sind Pflicht (mm-Kontakt, Viewport **4096²**, Export-Capture **8192²**, adaptives Frustum) — Assets casten + empfangen; Ausnahmen Ground/Glazing → [`requirements-shadows.md`](./requirements-shadows.md).
 
 ---
 

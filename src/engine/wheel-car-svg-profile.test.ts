@@ -18,8 +18,8 @@ const FIXTURE_DIR = join(
 );
 
 describe('wheel-car-svg-profile', () => {
-  it('extracts tire, rim outer, and rim inner paths from wheel-car.svg', () => {
-    const svgText = readFileSync(join(FIXTURE_DIR, 'wheel-car.svg'), 'utf8');
+  it('extracts tire, rim outer, and rim inner paths from lathe-x-wheel-car.svg', () => {
+    const svgText = readFileSync(join(FIXTURE_DIR, 'lathe-x-wheel-car.svg'), 'utf8');
     const raw = extractWheelCarPathsFromSvgText(svgText);
     expect(raw.tire.length).toBeGreaterThan(3);
     expect(raw.rimOuter.length).toBeGreaterThan(3);
@@ -27,7 +27,7 @@ describe('wheel-car-svg-profile', () => {
   });
 
   it('scales lathe profiles uniformly to outerRadiusM', () => {
-    const svgText = readFileSync(join(FIXTURE_DIR, 'wheel-car.svg'), 'utf8');
+    const svgText = readFileSync(join(FIXTURE_DIR, 'lathe-x-wheel-car.svg'), 'utf8');
     const raw = extractWheelCarPathsFromSvgText(svgText);
     const outerRadiusM = defaultWheelCarParams().outerRadiusM;
     const lathe = normalizeWheelCarPaths(raw, outerRadiusM);
@@ -38,7 +38,7 @@ describe('wheel-car-svg-profile', () => {
 
   it('loadWheelCarLatheProfiles uses cache', async () => {
     clearRawWheelCarPathsCache();
-    const svgText = readFileSync(join(FIXTURE_DIR, 'wheel-car.svg'), 'utf8');
+    const svgText = readFileSync(join(FIXTURE_DIR, 'lathe-x-wheel-car.svg'), 'utf8');
     const raw = extractWheelCarPathsFromSvgText(svgText);
     setRawWheelCarPathsCache(raw);
 

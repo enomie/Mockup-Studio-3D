@@ -38,8 +38,11 @@ import {
   clampFabricClothParams,
   cloneFabricClothParams,
   defaultFabricClothParams,
+  fabricClothFootprintFromSizes,
+  migrateFabricClothParams,
   type FabricClothParams,
 } from './asset-fabric-cloth';
+import { computeFaceSize } from './asset-sizing';
 import {
   clampBookParams,
   cloneBookParams,
@@ -65,6 +68,11 @@ import {
   defaultPrintParams,
   type PrintDeviceParams,
 } from './asset-print';
+import {
+  cloneTrianglePatchParams,
+  defaultTrianglePatchParams,
+  type TrianglePatchParams,
+} from './asset-triangle-patch';
 import {
   clampTinCanParams,
   cloneTinCanParams,
@@ -145,6 +153,7 @@ export type AssetKindDefaultEntitySlice = Partial<
     | 'bookParams'
     | 'bookBackCoverImageId'
     | 'bookSpineImageId'
+    | 'trianglePatchParams'
     | 'physicsBodyMode'
     | 'physicsDensityKgPerM3'
   >
@@ -222,6 +231,36 @@ function withSharedHooks(
       geometryVisibilityFromPartDescriptors(geometryParts),
     getDefaultMaterials: () => defaultMaterialsForKind(kind),
     ...hooks,
+  };
+}
+
+function fabricClothFootprintForEntity(entity: AssetEntity): {
+  widthM: number;
+  heightM: number;
+} {
+  if (entity.bakedClothFootprint) {
+    return entity.bakedClothFootprint;
+  }
+  const face = computeFaceSize(
+    entity.assetKind,
+    undefined,
+    undefined,
+    entity.sizeScale,
+    entity.wallParams ?? defaultWallParams(),
+    entity.blockParams ?? defaultBlockParams(),
+    entity,
+  );
+  return fabricClothFootprintFromSizes(face.width, face.height);
+}
+
+function mergeFabricClothParamsPatch(
+  entity: AssetEntity,
+  partial: Partial<FabricClothParams>,
+): { fabricClothParams: FabricClothParams } {
+  const footprint = fabricClothFootprintForEntity(entity);
+  const current = migrateFabricClothParams(entity.fabricClothParams, footprint);
+  return {
+    fabricClothParams: clampFabricClothParams(partial, current, footprint),
   };
 }
 
@@ -435,19 +474,40 @@ const ASSET_KIND_DEFINITIONS = {
       getDefaultEntitySlice: () => ({
         fabricClothParams: defaultFabricClothParams(),
       }),
-      mergeParamPatch: (entity, partial) => {
-        const current = entity.fabricClothParams ?? defaultFabricClothParams();
-        return {
-          fabricClothParams: clampFabricClothParams(
-            partial as Partial<FabricClothParams>,
-            current,
-          ),
-        };
-      },
+      mergeParamPatch: (entity, partial) =>
+        mergeFabricClothParamsPatch(entity, partial as Partial<FabricClothParams>),
       cloneParamsFromEntity: (entity) =>
         entity.fabricClothParams
           ? { fabricClothParams: cloneFabricClothParams(entity.fabricClothParams) }
           : {},
+    },
+  ),
+  'fabric-cloth-baked': withSharedHooks(
+    {
+      kind: 'fabric-cloth-baked',
+      family: 'fabric',
+      rebuildStrategy: 'sync-populateAssetGroup',
+      screenImageRole: 'front',
+      geometryParts: GEOMETRY_PARTS_NONE,
+    },
+    {
+      getDefaultEntitySlice: () => ({
+        fabricClothParams: defaultFabricClothParams(),
+      }),
+      mergeParamPatch: (entity, partial) =>
+        mergeFabricClothParamsPatch(entity, partial as Partial<FabricClothParams>),
+      cloneParamsFromEntity: (entity) => ({
+        fabricClothParams: cloneFabricClothParams(
+          migrateFabricClothParams(
+            entity.fabricClothParams,
+            fabricClothFootprintForEntity(entity),
+          ),
+        ),
+        userBakedAssetId: entity.userBakedAssetId,
+        bakedClothFootprint: entity.bakedClothFootprint
+          ? { ...entity.bakedClothFootprint }
+          : undefined,
+      }),
     },
   ),
   'book-softcover': withSharedHooks(
@@ -568,6 +628,33 @@ const ASSET_KIND_DEFINITIONS = {
       },
       cloneParamsFromEntity: (entity) =>
         entity.penParams ? { penParams: clonePenParams(entity.penParams) } : {},
+    },
+  ),
+  'triangle-patch': withSharedHooks(
+    {
+      kind: 'triangle-patch',
+      family: 'block',
+      rebuildStrategy: 'sync-populateAssetGroup',
+      screenImageRole: 'front',
+      geometryParts: GEOMETRY_PARTS_NONE,
+    },
+    {
+      getDefaultEntitySlice: () => ({
+        trianglePatchParams: defaultTrianglePatchParams(),
+      }),
+      mergeParamPatch: (entity, partial) => {
+        const current = entity.trianglePatchParams ?? defaultTrianglePatchParams();
+        return {
+          trianglePatchParams: {
+            ...current,
+            ...(partial as Partial<TrianglePatchParams>),
+          },
+        };
+      },
+      cloneParamsFromEntity: (entity) =>
+        entity.trianglePatchParams
+          ? { trianglePatchParams: cloneTrianglePatchParams(entity.trianglePatchParams) }
+          : {},
     },
   ),
 } satisfies Record<AssetKind, AssetKindDefinition>;

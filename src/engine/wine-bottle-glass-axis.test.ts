@@ -69,7 +69,7 @@ function inwardChordCount(profile: { x: number; y: number }[]): number {
 
 describe('wine-bottle axis sheet probe', () => {
   it('merged glass mesh has no triangles spanning the rotation axis', () => {
-    const svg = readFileSync(join(PUBLIC_LATHE, 'bottle-bordeaux-open.svg'), 'utf8');
+    const svg = readFileSync(join(PUBLIC_LATHE, 'lathe-y-bottle-bordeaux-open.svg'), 'utf8');
     const profile = trimLatheProfileToAscendingOuterMantle(
       prepareWineBottleGlassLatheProfile(
         normalizeOpenWallSvgToLathePoints(extractOpenPathPointsFromSvgText(svg, 48), 0.29),

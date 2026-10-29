@@ -1,4 +1,4 @@
-import { type Mesh, Scene, type WebGPURenderer } from 'three/webgpu';
+import { type Mesh, type Object3D, Scene, type WebGPURenderer } from 'three/webgpu';
 import type { Rgb } from '@/colors/rgb';
 import { SCENE_DEFAULTS } from '@/config/scene-defaults';
 import { FIXTURE_DISC_LAYER, GROUND_PLANE_SIZE } from '@/constants';
@@ -10,8 +10,9 @@ import { createWebGpuRenderer } from '@/render/renderer-setup';
 import { ViewportRenderPipeline } from '@/render/viewport-render-pipeline';
 import { syncPhysicsBindings } from './physics-sync';
 import { RigidPrimitivePhysicsColliders } from './rigid-primitive-physics-colliders';
-import { FabricClothPhysicsColliders } from './fabric-cloth-physics-colliders';
+import { FabricClothSimulationParticipant } from './fabric-cloth-simulation-participant';
 import { PhysicsWorld } from '@/physics/physics-world';
+import { readFabricClothPlaneSegments } from './fabric-cloth-geometry';
 import {
   resolvePhysicsBodyMode,
   type PhysicsBodyMode,
@@ -60,18 +61,37 @@ import type {
   WheelCarParams,
   FabricClothParams,
   BookParams,
+  TrianglePatchParams,
+  PatchHandleTarget,
   WallParams,
   WallpaperPattern,
   Vec3,
 } from '@/scene/entity-types';
 import { isWallAssetKind } from '@/scene/asset-wall';
+import {
+  cloneFabricClothParams,
+  defaultFabricClothParams,
+  isFabricClothAssetKind,
+} from '@/scene/asset-fabric-cloth';
+import { canBakeEntity } from '@/scene/bake-registry';
+import { bakeFabricClothMeshFromVerletBinding } from './fabric-cloth-bake';
+import {
+  fabricClothPinCornerIndex,
+  fabricClothPinEntityId,
+} from './fabric-cloth-pins';
+import { getAssetKindDefinition } from '@/scene/asset-kind-registry';
+import type {
+  BakeFabricClothDraft,
+  UserBakedAsset,
+  UserBakedAssetResolver,
+} from '@/scene/user-baked-asset';
 import type { BookMaterialTintPart } from '@/scene/book-material-tints';
 import type {
   AssetImageSurfaceId,
   ImageSurfaceSettings,
 } from '@/scene/image-surface';
 import { resolveBuiltinMaterialPreset } from '@/data/material-presets';
-import type { MaterialPresetResolver } from '@/scene/material-types';
+import { cloneAssetMaterials, type MaterialPresetResolver } from '@/scene/material-types';
 import { applyAtmosphereSnapshot as applyAtmosphereSnapshotToApi } from '@/scene/atmosphere-snapshot';
 import type { CaptureViewportImageOptions } from '@/scene/export-image';
 import type { AtmosphereSnapshot } from '@/scene/environment-preset-types';
@@ -86,6 +106,9 @@ import { EntityRegistry } from './entity-registry';
 import { AssetSystem } from './asset-system';
 import { ImageTextureLoader } from './image-texture-loader';
 import { GizmoController } from './gizmo-controller';
+import {
+  TrianglePatchGizmoController,
+} from './triangle-patch-gizmo-controller';
 import { SelectionController } from './selection-controller';
 import { SelectionHighlight } from './selection-highlight';
 import { ViewportInputController } from './viewport-input-controller';
@@ -107,7 +130,7 @@ export class MockupEngine implements SceneApi {
   private readonly lighting: LightingSystem;
   private readonly physics: PhysicsWorld;
   private readonly rigidPrimitivePhysics: RigidPrimitivePhysicsColliders;
-  private readonly fabricClothPhysics: FabricClothPhysicsColliders;
+  private readonly fabricClothSimulation: FabricClothSimulationParticipant;
   private readonly rigidTest: PhysicsRigidTestController;
   private readonly worldPhysics: WorldPhysicsSessionController;
   private readonly ground: Mesh;
@@ -116,6 +139,7 @@ export class MockupEngine implements SceneApi {
   private readonly registry: EntityRegistry;
   private readonly textureLoader: ImageTextureLoader;
   private readonly assets: AssetSystem;
+  private readonly patchGizmo: TrianglePatchGizmoController;
   private readonly gizmo: GizmoController;
   private readonly selection: SelectionController;
   private readonly selectionHighlight: SelectionHighlight;
@@ -132,6 +156,7 @@ export class MockupEngine implements SceneApi {
   private scaleDragBase = 1;
   private scaleCommitPending = false;
   private physicsSettings: PhysicsSettings = defaultPhysicsSettings();
+  private readonly fabricClothActivePinCorner = new Map<string, number>();
 
   private constructor(
     container: HTMLElement,
@@ -143,7 +168,7 @@ export class MockupEngine implements SceneApi {
     lighting: LightingSystem,
     physics: PhysicsWorld,
     rigidPrimitivePhysics: RigidPrimitivePhysicsColliders,
-    fabricClothPhysics: FabricClothPhysicsColliders,
+    fabricClothSimulation: FabricClothSimulationParticipant,
     rigidTest: PhysicsRigidTestController,
     worldPhysics: WorldPhysicsSessionController,
     ground: Mesh,
@@ -167,7 +192,7 @@ export class MockupEngine implements SceneApi {
     this.lighting = lighting;
     this.physics = physics;
     this.rigidPrimitivePhysics = rigidPrimitivePhysics;
-    this.fabricClothPhysics = fabricClothPhysics;
+    this.fabricClothSimulation = fabricClothSimulation;
     this.rigidTest = rigidTest;
     this.worldPhysics = worldPhysics;
     this.ground = ground;
@@ -175,6 +200,7 @@ export class MockupEngine implements SceneApi {
     this.registry = registry;
     this.textureLoader = textureLoader;
     this.assets = assets;
+    this.patchGizmo = new TrianglePatchGizmoController(scene, registry);
     this.gizmo = gizmo;
     this.selection = selection;
     this.selectionHighlight = selectionHighlight;
@@ -185,8 +211,14 @@ export class MockupEngine implements SceneApi {
     );
     this.assets.setViewportInvalidation(this.viewportInvalidation);
     this.assets.setRigidPrimitivePhysicsColliders(this.rigidPrimitivePhysics);
-    this.assets.setFabricClothPhysicsColliders(this.fabricClothPhysics);
+    this.assets.setFabricClothSimulationParticipant(this.fabricClothSimulation);
     this.environment.setViewportInvalidation(this.viewportInvalidation);
+
+    this.patchGizmo.setPatchChangeListener((entityId) => {
+      void this.assets.rebuildEntity(entityId);
+      this.invalidateViewport();
+      this.emit();
+    });
 
     this.gizmo.setCallbacks({
       onTransform: () => {
@@ -196,6 +228,21 @@ export class MockupEngine implements SceneApi {
           this.lighting.updateFrame();
           this.emit();
           return;
+        }
+
+        const attached = this.gizmo.getAttachedObject();
+        if (attached && this.handleFabricClothPinTransform(attached)) {
+          return;
+        }
+
+        if (this.patchGizmo.getActiveTarget()) {
+          const mode = this.appMode === 'rotate' ? 'rotate' : 'translate';
+          const handled = this.patchGizmo.applyHandleTransform(mode);
+          if (handled) {
+            this.emit();
+            this.invalidateViewport();
+            return;
+          }
         }
 
         const selected = this.registry.getSelectedRuntime();
@@ -299,7 +346,7 @@ export class MockupEngine implements SceneApi {
     const textureLoader = new ImageTextureLoader();
     textureLoader.setMaxAnisotropy(renderer.getMaxAnisotropy());
     const assets = new AssetSystem(scene, registry, textureLoader);
-    const fabricClothPhysics = new FabricClothPhysicsColliders(physics, registry);
+    const fabricClothSimulation = new FabricClothSimulationParticipant(registry, scene);
     assets
       .getMaterialResolver()
       .setPresetResolver((materialId) => resolveBuiltinMaterialPreset(materialId));
@@ -326,7 +373,7 @@ export class MockupEngine implements SceneApi {
     const worldPhysics = new WorldPhysicsSessionController({
       registry,
       rigidPrimitivePhysics,
-      dynamicParticipants: [rigidPrimitivePhysics, fabricClothPhysics],
+      dynamicParticipants: [rigidPrimitivePhysics, fabricClothSimulation],
     });
 
     const lightingSystem = new LightingSystem(scene, registry, SCENE_DEFAULTS.lighting);
@@ -352,7 +399,7 @@ export class MockupEngine implements SceneApi {
       lightingSystem,
       physics,
       rigidPrimitivePhysics,
-      fabricClothPhysics,
+      fabricClothSimulation,
       rigidTest,
       worldPhysics,
       ground,
@@ -375,6 +422,23 @@ export class MockupEngine implements SceneApi {
 
     selection.setCameraProvider(() => cameras.camera);
     selection.setLightPickablesProvider(() => lightingSystem.getPickables());
+    selection.setPatchPickablesProvider(
+      () => engine.patchGizmo.getPickables(),
+      (handleMesh) => {
+        const target = engine.patchGizmo.selectHandleByMesh(handleMesh as Mesh);
+        if (target) {
+          engine.applyGizmoMode(engine.appMode);
+          engine.emit();
+          return true;
+        }
+        return false;
+      },
+    );
+    selection.setPatchLengthDragHandlers({
+      begin: (ray) => engine.patchGizmo.beginLengthDrag(ray),
+      update: (ray) => { engine.patchGizmo.updateLengthDrag(ray); },
+      end: () => { engine.patchGizmo.endLengthDrag(); },
+    });
     selection.setSelectHandler((entityId) => { engine.handleSelect(entityId); });
     selection.setDeleteHandler(() => {
       const selectedAssetId = registry.getSelectedEntityId();
@@ -431,6 +495,65 @@ export class MockupEngine implements SceneApi {
   addAsset(assetKind: AssetKind): string {
     const entityId = this.assets.addAsset(assetKind);
     this.selectEntity(entityId);
+    return entityId;
+  }
+
+  setUserBakedAssetResolver(resolver: UserBakedAssetResolver | null): void {
+    this.assets.setUserBakedAssetResolver(resolver);
+  }
+
+  canBakeSelectedEntity(): boolean {
+    const entityId = this.registry.getSelectedEntityId();
+    if (!entityId) {return false;}
+    const runtime = this.registry.getRuntime(entityId);
+    if (!runtime) {return false;}
+    return canBakeEntity(runtime.entity, this.worldPhysics.getPhase(), {
+      hasFabricClothSession: this.fabricClothSimulation.hasBinding(entityId),
+    });
+  }
+
+  buildBakeFabricClothDraft(entityId: string): BakeFabricClothDraft | null {
+    const runtime = this.registry.getRuntime(entityId);
+    if (
+      !runtime ||
+      !canBakeEntity(runtime.entity, this.worldPhysics.getPhase(), {
+        hasFabricClothSession: this.fabricClothSimulation.hasBinding(entityId),
+      })
+    ) {
+      return null;
+    }
+    const binding = this.fabricClothSimulation.getBindingForBake(entityId);
+    if (!binding) {return null;}
+    const clothMesh = binding.clothMesh;
+
+    const definition = getAssetKindDefinition(runtime.entity.assetKind);
+    const materials = cloneAssetMaterials(
+      runtime.entity.materials ?? definition.getDefaultMaterials(),
+    );
+    const fabricClothParams = cloneFabricClothParams(
+      runtime.entity.fabricClothParams ?? defaultFabricClothParams(),
+    );
+    const sourceSegments = readFabricClothPlaneSegments(clothMesh);
+
+    return {
+      mesh: bakeFabricClothMeshFromVerletBinding(binding, runtime.object),
+      sourceSegmentsW: sourceSegments.segmentsW,
+      sourceSegmentsH: sourceSegments.segmentsH,
+      defaults: {
+        screenImageId: runtime.entity.screenImageId,
+        materials,
+        fabricClothParams,
+      },
+    };
+  }
+
+  addAssetFromUserBaked(
+    userAsset: UserBakedAsset,
+    spawn?: { x: number; z: number },
+  ): string {
+    const entityId = this.assets.addAssetFromUserBaked(userAsset, spawn);
+    this.selectEntity(entityId);
+    this.emit();
     return entityId;
   }
 
@@ -587,6 +710,25 @@ export class MockupEngine implements SceneApi {
     );
   }
 
+  setFabricClothActivePinCorner(entityId: string, cornerIndex: number): void {
+    const runtime = this.registry.getRuntime(entityId);
+    if (!runtime || !isFabricClothAssetKind(runtime.entity.assetKind)) {return;}
+    const count =
+      runtime.entity.fabricClothParams?.sim.pinnedCornersCount ?? 0;
+    if (count <= 0) {return;}
+    const clamped = Math.max(0, Math.min(3, Math.floor(cornerIndex)));
+    if (clamped >= count) {return;}
+    this.fabricClothActivePinCorner.set(entityId, clamped);
+    this.applyGizmoMode(this.appMode);
+    this.emit();
+  }
+
+  getFabricClothActivePinCorner(entityId: string): number {
+    const stored = this.fabricClothActivePinCorner.get(entityId);
+    if (stored !== undefined) {return stored;}
+    return 0;
+  }
+
   setBookParams(entityId: string, partial: Partial<BookParams>): void {
     this.applyAssetMutation(() => this.assets.setBookParams(entityId, partial));
   }
@@ -637,6 +779,21 @@ export class MockupEngine implements SceneApi {
     this.applyAssetMutation(() => this.assets.setPenParams(entityId, partial));
   }
 
+  setTrianglePatchParams(entityId: string, partial: Partial<TrianglePatchParams>): void {
+    this.applyAssetMutation(async () => {
+      await this.assets.setTrianglePatchParams(entityId, partial);
+      this.patchGizmo.syncHelpersFromEntity();
+    });
+  }
+
+  selectPatchHandle(entityId: string, nodeIndex: number, targetKey: PatchHandleTarget): void {
+    this.patchGizmo.setActiveEntity(entityId);
+    this.patchGizmo.selectTarget({ entityId, nodeIndex, targetKey });
+    this.applyGizmoMode(this.appMode);
+    this.emit();
+    this.invalidateViewport();
+  }
+
   setWallpaperPattern(entityId: string, partial: Partial<WallpaperPattern>): void {
     this.applyAssetMutation(() =>
       this.assets.setWallpaperPattern(entityId, partial),
@@ -671,6 +828,7 @@ export class MockupEngine implements SceneApi {
     delete rest.rigidTestPhase;
     delete rest.worldPhysicsPhase;
     delete rest.worldPhysicsHasSnapshot;
+    delete rest.lastFabricClothBakeSummary;
     this.physicsSettings = mergePhysicsSettings(this.physicsSettings, rest);
     this.physics.setGravityScale(this.physicsSettings.gravityScale);
     this.notifySceneApiListeners();
@@ -698,6 +856,7 @@ export class MockupEngine implements SceneApi {
 
   resetWorldPhysics(): void {
     this.worldPhysics.reset();
+    this.invalidateViewport();
     this.emit();
   }
 
@@ -929,6 +1088,8 @@ export class MockupEngine implements SceneApi {
         updateViewportHelpersFrame: () => { this.viewportHelpers.updateFrame(this.lighting); },
         pushExportHidePhysicsTest: () => { this.rigidTest.pushExportHide(); },
         popExportHidePhysicsTest: () => { this.rigidTest.popExportHide(); },
+        pushExportShadowQuality: () => { this.lighting.pushExportShadowQuality(); },
+        popExportShadowQuality: () => { this.lighting.popExportShadowQuality(); },
         renderViewportFrame: (overrides) => { this.renderViewportFrame(overrides); },
       },
       options,
@@ -955,7 +1116,7 @@ export class MockupEngine implements SceneApi {
     void this.renderer.dispose();
 
     this.rigidTest.dispose();
-    this.fabricClothPhysics.dispose();
+    this.fabricClothSimulation.dispose();
     this.physics.dispose();
     this.environment.dispose();
 
@@ -975,8 +1136,49 @@ export class MockupEngine implements SceneApi {
         this.lighting.setSelectedLightId(null);
         this.registry.setSelectedEntityId(entityId);
       }
+      this.patchGizmo.setActiveEntity(entityId);
+      if (entityId) {
+        this.clampFabricClothActivePinForEntity(entityId);
+      }
       this.applyGizmoMode(this.appMode);
     });
+  }
+
+  private clampFabricClothActivePinForEntity(entityId: string): void {
+    const runtime = this.registry.getRuntime(entityId);
+    if (!runtime || !isFabricClothAssetKind(runtime.entity.assetKind)) {return;}
+    const count =
+      runtime.entity.fabricClothParams?.sim.pinnedCornersCount ?? 0;
+    if (count <= 0) {
+      this.fabricClothActivePinCorner.delete(entityId);
+      return;
+    }
+    const current = this.getFabricClothActivePinCorner(entityId);
+    this.fabricClothActivePinCorner.set(
+      entityId,
+      Math.min(current, count - 1),
+    );
+  }
+
+  private handleFabricClothPinTransform(attached: Object3D): boolean {
+    const entityId = fabricClothPinEntityId(attached);
+    const cornerIndex = fabricClothPinCornerIndex(attached);
+    if (entityId === null || cornerIndex === null) {return false;}
+
+    const phase = this.worldPhysics.getPhase();
+    if (phase === 'simulating') {
+      this.fabricClothSimulation.applyPinDrag(entityId, cornerIndex, attached);
+    } else if (phase === 'paused') {
+      this.fabricClothSimulation.previewPinDragWhenPaused(
+        entityId,
+        cornerIndex,
+        attached,
+      );
+    } else {
+      return false;
+    }
+    this.invalidateViewport();
+    return true;
   }
 
   private applyGizmoMode(mode: AppMode): void {
@@ -984,9 +1186,43 @@ export class MockupEngine implements SceneApi {
     const selectedAsset = this.registry.getSelectedRuntime();
     const selectedAssetObject =
       selectedAsset?.entity.visible !== false ? selectedAsset?.object ?? null : null;
+    const activePatchHandle = this.patchGizmo.getActiveHandleMesh();
     const gizmoTarget =
-      (selectedLightId ? this.lighting.getHelperObject(selectedLightId) : null) ??
-      selectedAssetObject;
+      activePatchHandle ??
+      ((selectedLightId ? this.lighting.getHelperObject(selectedLightId) : null) ??
+      selectedAssetObject);
+
+    const worldPhase = this.worldPhysics.getPhase();
+    const clothSimLocked =
+      selectedAsset != null &&
+      isFabricClothAssetKind(selectedAsset.entity.assetKind) &&
+      (worldPhase === 'simulating' || worldPhase === 'paused');
+
+    if (clothSimLocked) {
+      const pinned =
+        selectedAsset.entity.fabricClothParams?.sim.pinnedCornersCount ?? 0;
+      if (
+        mode === 'translate' &&
+        pinned > 0 &&
+        this.fabricClothSimulation.hasBinding(selectedAsset.entity.id)
+      ) {
+        const corner = this.getFabricClothActivePinCorner(selectedAsset.entity.id);
+        const activeCorner = Math.min(corner, pinned - 1);
+        const pinMesh = this.fabricClothSimulation.getPinMesh(
+          selectedAsset.entity.id,
+          activeCorner,
+        );
+        if (pinMesh) {
+          this.gizmo.setTransformMode('translate');
+          this.gizmo.attach(pinMesh);
+          this.gizmo.setEnabled(true);
+          return;
+        }
+      }
+      this.gizmo.setEnabled(false);
+      this.gizmo.attach(null);
+      return;
+    }
 
     if (mode === 'translate') {
       this.gizmo.setTransformMode('translate');

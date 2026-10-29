@@ -78,7 +78,7 @@ describe('wine-bottle-geometry', () => {
   });
 
   it('builds glass from real bordeaux-open SVG', async () => {
-    const svgText = readFileSync(join(PUBLIC_LATHE, 'bottle-bordeaux-open.svg'), 'utf8');
+    const svgText = readFileSync(join(PUBLIC_LATHE, 'lathe-y-bottle-bordeaux-open.svg'), 'utf8');
     const raw = extractOpenPathPointsFromSvgText(svgText, 48);
     setRawWineBottleSvgPointsCache('bordeaux', raw);
     const result = await buildWineBottleMeshes({

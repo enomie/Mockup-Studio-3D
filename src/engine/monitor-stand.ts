@@ -1,5 +1,6 @@
 import { BoxGeometry, ExtrudeGeometry, type BufferGeometry } from 'three/webgpu';
 import { createRoundedRectShape } from './handheld-geometry';
+import { ensureGeometryTangents } from '@/engine/geometry-tangents';
 
 /** Rounded stand plate in XZ; extruded along +Y; bottom face at y = 0. */
 export function createStandBaseGeometry(
@@ -24,6 +25,7 @@ export function createStandBaseGeometry(
   if (box) {
     geometry.translate(0, -box.min.y, 0);
   }
+  ensureGeometryTangents(geometry);
   return geometry;
 }
 
@@ -32,5 +34,7 @@ export function createStandFootGeometry(
   depthM: number,
   heightM: number,
 ): BoxGeometry {
-  return new BoxGeometry(widthM, heightM, depthM);
+  const geometry = new BoxGeometry(widthM, heightM, depthM);
+  ensureGeometryTangents(geometry);
+  return geometry;
 }

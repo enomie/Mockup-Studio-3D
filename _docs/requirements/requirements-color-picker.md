@@ -28,7 +28,7 @@ Bezüge: [`requirements-look-and-feel.md`](./requirements-look-and-feel.md), [`r
 
 **Category:** Color Picker  
 **Title:** UX-Details  
-**Description:** **Library swatches:** alle Presets aus der **Colors-Bibliothek** — [`requirements-colors.md`](./requirements-colors.md) — als Mini-Swatches oberhalb von Recent; Klick wählt Farbe + aktualisiert Recent. Namen nur per `title`/`aria-label`, nicht als sichtbarer Text. **Recent colors:** letzte **8** User-Farben als Mini-Swatches darunter (Session-only). **Copy hex** on click optional. **Invalid hex:** roter Rand, kein `onChange` bis gültig. **Alpha** später optional (v1: **opaque only**, kein Alpha-Slider). Keyboard: Hex-Feld normal; Popover fokussierbar.
+**Description:** **Library swatches:** alle Presets aus der **Colors-Bibliothek** — [`requirements-colors.md`](./requirements-colors.md) — als Mini-Swatches oberhalb von Recent; Klick wählt Farbe live (`onChange`), **ohne** Recent-Eintrag bis Schließen. Namen nur per `title`/`aria-label`, nicht als sichtbarer Text. **Recent colors:** letzte **8** User-Farben als Mini-Swatches darunter (Session-only). Recent **Commit-on-close** nur beim Schließen des Popovers (**Escape**, Klick außerhalb) — höchstens **ein** Eintrag pro Öffnung; **kein** Recent bei SV/Hue-Pointer-Up, RGB-Typing, Hex-Blur oder Swatch-Klicks allein. Recent nur wenn sich die Farbe gegenüber dem Wert **beim Öffnen** geändert hat (Hex-Vergleich). **Copy hex** on click optional. **Invalid hex:** roter Rand, kein `onChange` bis gültig. **Alpha** später optional (v1: **opaque only**, kein Alpha-Slider). Keyboard: Hex-Feld normal; Popover fokussierbar.
 
 ---
 
@@ -59,5 +59,11 @@ Bezüge: [`requirements-look-and-feel.md`](./requirements-look-and-feel.md), [`r
 **Category:** Color Picker  
 **Title:** Panel-Zeile — Layout (aktualisiert)  
 **Description:** Nutzt **`panel-field-row`** + **`panel-field-label`** + **`panel-field-controls`** (gemeinsam mit `SliderValueField` — [`requirements-look-and-feel.md`](./requirements-look-and-feel.md)). Swatch + Hex-Input rechtsbündig; Hex über **`panel-field-input`** (72×22px, Radius 4px). Zeilenhöhe ~24px in kompakter Sub-Panel-Dichte. Kein separates `color-picker__hex`-Styling mehr.
+
+---
+
+**Category:** Color Picker  
+**Title:** Current color preview (Popover)  
+**Description:** Unterhalb von Library und Recent: **Vorschau-Streifen** der aktuell gewählten Farbe — **100%** Inhaltsbreite des Popovers, **~50px** Höhe, live während Drag/Hex/RGB/Swatches. Checkerboard-Hintergrund wie Inline-Swatch (helle Farben sichtbar). `aria-label` z. B. „Selected color #RRGGBB“. Kein separater Apply-Button — Vorschau spiegelt denselben Wert wie `onChange`.
 
 ---

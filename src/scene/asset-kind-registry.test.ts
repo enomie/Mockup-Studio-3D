@@ -44,8 +44,10 @@ const ALL_ASSET_KINDS: Record<AssetKind, true> = {
   'wine-bottle': true,
   pen: true,
   'fabric-cloth': true,
+  'fabric-cloth-baked': true,
   'book-softcover': true,
   'book-hardcover': true,
+  'triangle-patch': true,
 };
 
 const EXPECTED_METADATA: Record<
@@ -136,6 +138,11 @@ const EXPECTED_METADATA: Record<
     rebuildStrategy: 'sync-populateAssetGroup',
     screenImageRole: 'front',
   },
+  'fabric-cloth-baked': {
+    family: 'fabric',
+    rebuildStrategy: 'sync-populateAssetGroup',
+    screenImageRole: 'front',
+  },
   'book-softcover': {
     family: 'book',
     rebuildStrategy: 'sync-populateAssetGroup',
@@ -143,6 +150,11 @@ const EXPECTED_METADATA: Record<
   },
   'book-hardcover': {
     family: 'book',
+    rebuildStrategy: 'sync-populateAssetGroup',
+    screenImageRole: 'front',
+  },
+  'triangle-patch': {
+    family: 'block',
     rebuildStrategy: 'sync-populateAssetGroup',
     screenImageRole: 'front',
   },
@@ -165,8 +177,10 @@ const EXPECTED_DEFAULT_SLICE_KEYS: Record<AssetKind, string[]> = {
   'wine-bottle': ['wineBottleParams'],
   pen: ['penParams'],
   'fabric-cloth': ['fabricClothParams'],
+  'fabric-cloth-baked': ['fabricClothParams'],
   'book-softcover': ['bookParams', 'bookBackCoverImageId', 'bookSpineImageId'],
   'book-hardcover': ['bookParams', 'bookBackCoverImageId', 'bookSpineImageId'],
+  'triangle-patch': ['trianglePatchParams'],
 };
 
 function minimalEntity(kind: AssetKind): AssetEntity {

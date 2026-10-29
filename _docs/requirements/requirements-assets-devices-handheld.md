@@ -1,8 +1,8 @@
-# Assets — Handheld Devices (Smartphone & Tablet)
+# Assets — Handheld Devices (Device Smartphone & Device Tablet)
 
-Parametrische **Smartphone-** und **Tablet-Bausteine** — gleiche Bauweise, unterschiedliche Referenzmaße. Bild auf dem Screen aus der **Images-Bibliothek** → [`requirements-images.md`](./requirements-images.md). Katalog, Entity-Modell, image-driven sizing, Panel-Grundlagen → [`requirements-assets.md`](./requirements-assets.md). Material-Slots → [`requirements-materials.md`](./requirements-materials.md). Schatten → [`requirements-shadows.md`](./requirements-shadows.md).
+Parametrische **Device Smartphone** / **Device Tablet** — gleiche Bauweise, unterschiedliche Referenzmaße (`smartphone`, `tablet`). Bild auf dem Screen aus der **Images-Bibliothek** → [`requirements-images.md`](./requirements-images.md). Katalog, Entity-Modell, image-driven sizing, Panel-Grundlagen → [`requirements-assets.md`](./requirements-assets.md). Material-Slots → [`requirements-materials.md`](./requirements-materials.md). Schatten → [`requirements-shadows.md`](./requirements-shadows.md).
 
-**Abgrenzung:** Dieses Doc beschreibt **nur** `assetKind: smartphone` und `assetKind: tablet`. **`monitor`** (Desktop Display mit Stand) → [`requirements-assets-devices-monitor.md`](./requirements-assets-devices-monitor.md). **Picture framed** → [`requirements-assets-picture-framed.md`](./requirements-assets-picture-framed.md). Browser-Frame, Print → [`requirements-assets.md`](./requirements-assets.md).
+**Abgrenzung:** Dieses Doc beschreibt **nur** `assetKind: smartphone` und `assetKind: tablet`. **Device Desktop** (`monitor`) → [`requirements-assets-devices-monitor.md`](./requirements-assets-devices-monitor.md). **Picture framed** → [`requirements-assets-picture-framed.md`](./requirements-assets-picture-framed.md). Browser-Frame, Print → [`requirements-assets.md`](./requirements-assets.md).
 
 **Status:** v1 **teilweise implementiert** — `smartphone`, `tablet` im Katalog; parametrischer Z-Stack (Bezel-Ring mit **durchgehendem** Screen-Loch, Multi-Material Glas/Screen, dual Backplate, CSG-Recesses); **Seitentasten** (2× Volume); Panel: Corner radius, Bezel width, Materials, Glazing. **Offen:** Squircle, Notch, asymmetrischer Bezel, Power-Button, Drag Image → Viewport.
 
@@ -208,11 +208,11 @@ Nach Rebuild: `applyAssetShadowFlags(group)`; Screen-Cap `FrontSide` + `polygonO
 **Description:** Right Sub, Entity-Block für `smartphone` / `tablet`:
 
 1. **Screen / Image** — `ImageSurfaceFields` (Image, Finish Matt/Glossy, Emissive); leer = Platzhalter auf abgerundeter Fläche
-2. **Corner radius (mm)** — `screenCornerRadiusMm`; Range mit Clamp (s. Image-driven sizing)
-3. **Bezel width (mm)** — `bezelWidthMm`
-4. **Glazing** — Checkbox
-5. **Frame material** / **Outer backplate** / **Base backplate** / **Side button material** — Dropdown ([`requirements-materials.md`](./requirements-materials.md))
-6. **Transform** + **Size** — wie bestehende Assets
+2. **Geometries** — Sichtbarkeit + Material-Slots (Frame, Glazing, Backplates, Side buttons); Glazing-Checkbox in Geometries
+3. **Dimensions** — **Width (m)** und **Height (m)** (Screen-Öffnung, bildgetrieben, gekoppelt; kein Size-Feld); **Corner radius**, **Bezel width**, **Edge roundness** (`screenCornerRadiusMm`, `bezelWidthMm`, `outerEdgeRadiusMm`)
+4. **Position** — Pos / Rot (kein Transform-Block)
+
+Footer-Muster → [`improve-04-asset-settings.md`](../../improve/improve-04-asset-settings.md).
 
 `bodyDepthMm` v1: nur Default pro Kind, kein UI-Feld (später optional).
 
@@ -224,8 +224,8 @@ Nach Rebuild: `applyAssetShadowFlags(group)`; Screen-Cap `FrontSide` + `polygonO
 
 | ID | `assetKind` | Anzeigename |
 |---|---|---|
-| `asset-smartphone` | `smartphone` | Smartphone |
-| `asset-tablet` | `tablet` | Tablet |
+| `asset-smartphone` | `smartphone` | Device Smartphone |
+| `asset-tablet` | `tablet` | Device Tablet |
 
 Icon/Thumbnail: gerenderte Vorschau mit Default-Params. Mehrfach-Instanzen unbegrenzt → [`requirements-assets.md`](./requirements-assets.md).
 

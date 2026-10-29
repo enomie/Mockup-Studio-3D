@@ -4,9 +4,9 @@ Fertige **3D-Bausteine** zum Reindroppen in die Arbeitsfläche — Geräte, Prin
 
 **Abgrenzung:** **Assets** = *was* in der Szene steht (Box, Buch, Flyer, Smartphone, Monitor, Bilderrahmen, …). **Images** = *welches 2D-Bild* auf Screen, Flyer, Rahmen, Ground, … referenziert wird (`imageId`). Kein versteckter Upload in Assets.
 
-**Status:** v1 **teilweise implementiert** — `print`, **`picture`**, **`block`**, **`fabric-cloth`**, Handheld, **`monitor`**, **`wall` / `wall-door`**; EntityRegistry, AssetSystem, Selection-Outline, Gizmo, Materials-Slots, Szene-Panel. **`beverage-can`** — Standard + Sleek (SVG-Lathe, Label auf Mantel) → [`requirements-assets-beverage-can.md`](./requirements-assets-beverage-can.md). **`tin-can`** — Radius/Höhe, Beads, Label-Wellung → [`requirements-assets-tin-can.md`](./requirements-assets-tin-can.md). **`pen`** — **v1 fertig** (Marker/Fountain, Cap/Ring/Body-Lathe, Body-Wrap + PNG-Underlay) → [`requirements-assets-pen.md`](./requirements-assets-pen.md). **`fabric-cloth`** Rapier-Physik (MVP) → [`requirements-assets-fabric-cloth.md`](./requirements-assets-fabric-cloth.md). **Offen:** Drag-to-viewport, Scene Save, Katalog-UI Polish.
+**Status:** v1 **Kern implementiert** — alle Built-in-Bausteine im Katalog platzierbar; EntityRegistry, Gizmo, Materials, **Szene-Panel Footer Runde 1** (Dimensions + Position, kein Transform-Block) → [`improve-04-asset-settings.md`](../improve/improve-04-asset-settings.md). Packaging/Lathe: **`beverage-can`**, **`tin-can`**, **`wine-bottle`** (UI **Bottle Wine**), **`pen`** → jeweilige Asset-Docs. **Offen (kein Panel-Thema):** Drag Image → Viewport, Scene Save, Katalog-Polish.
 
-**v1-Scope:** Katalog (Built-in), Drop/Add in Szene, Selection (Outline), Transform (Move/Rotate/**uniform Scale** — Gizmo + Panel), Screen-Bild per Picker, **image-driven sizing** + **`sizeScale`** (kein Stretch). App-Start: **Picture framed**, **Print (A5)**, **Smartphone**, **Tablet**, **Monitor** als Default-Szene (Portfolio-Layout). **Später:** Drag Image → Screen im Viewport, User-Assets, Kategorien-Filter, Layers-Panel, erweiterte Params (Bezel, Material).
+**v1-Scope:** Katalog (Built-in), Drop/Add in Szene, Selection (Outline), Transform (Move/Rotate/**uniform Scale** — Gizmo + Panel), Screen-Bild per Picker, **image-driven sizing** + **`sizeScale`** (kein Stretch). App-Start: **Picture Frame**, **Print (A5)**, **Device Smartphone**, **Device Tablet**, **Device Desktop** als Default-Szene (Portfolio-Layout). **Gebaktes Fabric cloth** als **User-Asset** in derselben Assets-Liste (nach Freeze + Bake, steif) → [`requirements-assets-fabric-cloth.md`](./requirements-assets-fabric-cloth.md). **Später:** Drag Image → Screen im Viewport, weitere User-Asset-Typen, Kategorien-Filter, Layers-Panel, erweiterte Params (Bezel, Material).
 
 ---
 
@@ -28,10 +28,10 @@ Fertige **3D-Bausteine** zum Reindroppen in die Arbeitsfläche — Geräte, Prin
 
 | Kategorie | Bausteine (v1-Ziel) |
 |---|---|
-| **Devices** | Smartphone, Tablet → [`requirements-assets-devices-handheld.md`](./requirements-assets-devices-handheld.md); Monitor → [`requirements-assets-devices-monitor.md`](./requirements-assets-devices-monitor.md); Browser-Frame (später) |
-| **Print** | Print (Flyer, Verpackung, …); **Book** (softcover / hardcover) → [`requirements-assets-book.md`](./requirements-assets-book.md) |
-| **Objects** | Picture framed → [`requirements-assets-picture-framed.md`](./requirements-assets-picture-framed.md); **Block** → [`requirements-assets-block.md`](./requirements-assets-block.md); **Cylinder** → [`requirements-assets-cylinder.md`](./requirements-assets-cylinder.md); **Sphere** → [`requirements-assets-sphere.md`](./requirements-assets-sphere.md); **Fabric cloth** → [`requirements-assets-fabric-cloth.md`](./requirements-assets-fabric-cloth.md); **Beverage can** → [`requirements-assets-beverage-can.md`](./requirements-assets-beverage-can.md); **Tin can** → [`requirements-assets-tin-can.md`](./requirements-assets-tin-can.md); **Pen** → [`requirements-assets-pen.md`](./requirements-assets-pen.md); **Wheel Car** → [`requirements-assets-wheel-car.md`](./requirements-assets-wheel-car.md) |
-| **Architecture** | Wall, Wall with Door → [`requirements-assets-wall.md`](./requirements-assets-wall.md) |
+| **Devices** | Device Smartphone, Device Tablet → [`requirements-assets-devices-handheld.md`](./requirements-assets-devices-handheld.md); Device Desktop (`monitor`) → [`requirements-assets-devices-monitor.md`](./requirements-assets-devices-monitor.md); Browser-Frame (später) |
+| **Print** | Print (Flyer, Verpackung, …); **Picture Frame** → [`requirements-assets-picture-framed.md`](./requirements-assets-picture-framed.md); **Book Softcover** / **Book Hardcover** → [`requirements-assets-book.md`](./requirements-assets-book.md) |
+| **Objects** | **Object Block** → [`requirements-assets-block.md`](./requirements-assets-block.md); **Object Cylinder** → [`requirements-assets-cylinder.md`](./requirements-assets-cylinder.md); **Object Sphere** → [`requirements-assets-sphere.md`](./requirements-assets-sphere.md); **Fabric cloth** → [`requirements-assets-fabric-cloth.md`](./requirements-assets-fabric-cloth.md); **Can Beverage** → [`requirements-assets-beverage-can.md`](./requirements-assets-beverage-can.md); **Can Tin** → [`requirements-assets-tin-can.md`](./requirements-assets-tin-can.md); **Bottle Wine** (`wine-bottle`) → [`requirements-assets-wine-bottle.md`](./requirements-assets-wine-bottle.md); **Pen** → [`requirements-assets-pen.md`](./requirements-assets-pen.md); **Wheel Car** → [`requirements-assets-wheel-car.md`](./requirements-assets-wheel-car.md) |
+| **Architecture** | Wall, Wall Doorway → [`requirements-assets-wall.md`](./requirements-assets-wall.md) |
 
 Später: Poster, Visitenkarte, Tapeten-Rolle, Stilleben-Props, … IDs stabil (`asset-smartphone`, `asset-flyer`, …). Pro Baustein: **Icon/Thumbnail**, **Anzeigename**, **`assetKind`**. Kein Upload eigener 3D-Modelle in v1.
 
@@ -57,7 +57,9 @@ Später: Poster, Visitenkarte, Tapeten-Rolle, Stilleben-Props, … IDs stabil (`
 
 **Ausnahme — `tin-can`:** Format aus **`bodyRadiusMm`** + **`bodyHeightMm`** (`tinCanParams`); Bild nur Textur auf **gewelltem** Label-Mantel (Cover/Crop). Skalierung = **`sizeScale`** auf die ganze Dose → [`requirements-assets-tin-can.md`](./requirements-assets-tin-can.md).
 
-**Ausnahme — `pen`:** **Stiftformat fix** (`penBodyProfile` + **`maxRadiusM`** / `penParams`). Bild nur auf **Body** (Cover/Crop um den Schaft). Skalierung = **`sizeScale`** auf den **gesamten** Stift → [`requirements-assets-pen.md`](./requirements-assets-pen.md).
+**Ausnahme — `pen`:** **Stiftformat fix** (`penBodyProfile` + **SVG-mm-Profil**). Bild nur auf **Body** (Cover/Crop). Skalierung = **`sizeScale`** uniform auf den **gesamten** Stift — **kein** User-„Max radius“; Lathe-Regeln → [`requirements-assets-lathe.md`](./requirements-assets-lathe.md), [`requirements-assets-pen.md`](./requirements-assets-pen.md).
+
+**Ausnahme — `wine-bottle` (Bottle Wine):** Flaschenformat fix (`wineBottleBodyProfile` + `wineBottleParams.heightM` / SVG). Bild nur **Etikett** auf Mantel. Skalierung = **`sizeScale`** auf die ganze Flasche → [`requirements-assets-wine-bottle.md`](./requirements-assets-wine-bottle.md).
 
 ---
 
@@ -68,13 +70,14 @@ Später: Poster, Visitenkarte, Tapeten-Rolle, Stilleben-Props, … IDs stabil (`
 | assetKind | Referenz | Berechnung |
 |---|---|---|
 | Print | Breite `0.148` m (A5) | **Ohne Bild:** Hochformat A5 (148 × 210 mm); mit Bild: Höhe aus Front-Bild-Ratio; **Tiefe** separat (Default `0.002` m, UI einstellbar — z. B. `0.120` m für Verpackung) |
-| Picture framed (`picture`) | Breite `0.500` m (50 cm) | Details → [`requirements-assets-picture-framed.md`](./requirements-assets-picture-framed.md) |
+| Picture Frame (`picture`) | Breite `0.500` m (50 cm) | Details → [`requirements-assets-picture-framed.md`](./requirements-assets-picture-framed.md) |
 | Fabric cloth (`fabric-cloth`) | Breite `0.450` m (45 cm) | Höhe aus Bild-Ratio; Platzhalter **45 × 45 cm**; Details → [`requirements-assets-fabric-cloth.md`](./requirements-assets-fabric-cloth.md) |
-| Smartphone | Screen-Höhe `0.160` m | Breite aus Ratio; Bezel additiv — Geometrie → [`requirements-assets-devices-handheld.md`](./requirements-assets-devices-handheld.md) |
-| Tablet | Screen-Höhe `0.250` m | Breite aus Ratio — s. Handheld-Doc |
-| Monitor | Screen-Breite `0.480` m | Höhe aus Ratio; Bezel/Stand/Artikulation → [`requirements-assets-devices-monitor.md`](./requirements-assets-devices-monitor.md) |
-| Beverage can (`beverage-can`) | Gesamthöhe profilabhängig (330 ml) | **Fix** pro Profil — **nicht** aus Bild-Ratio; **Standard** 0,1152 m × Ø 0,0660 m; **Sleek** 0,14605 m × Ø 0,0574 m; `sizeScale` skaliert **gesamte** Dose → [`requirements-assets-beverage-can.md`](./requirements-assets-beverage-can.md) |
-| Pen (`pen`) | **`maxRadiusM`** (Default **0,0065 m**, Mantel **Ø 13 mm**) | Höhe **abgeleitet** aus SVG — **nicht** aus Bild-Ratio; ≈ **0,141 m** Länge bei Default; `sizeScale` skaliert **gesamten** Stift → [`requirements-assets-pen.md`](./requirements-assets-pen.md) |
+| Device Smartphone (`smartphone`) | Screen-Höhe `0.160` m | Breite aus Ratio; Bezel additiv — Geometrie → [`requirements-assets-devices-handheld.md`](./requirements-assets-devices-handheld.md) |
+| Device Tablet (`tablet`) | Screen-Höhe `0.250` m | Breite aus Ratio — s. Handheld-Doc |
+| Device Desktop (`monitor`) | Screen-Breite `0.480` m | Höhe aus Ratio; Bezel/Stand/Artikulation → [`requirements-assets-devices-monitor.md`](./requirements-assets-devices-monitor.md) |
+| Can Beverage (`beverage-can`) | Gesamthöhe profilabhängig (330 ml) | **Fix** pro Profil — **nicht** aus Bild-Ratio; **Standard** 0,1152 m × Ø 0,0660 m; **Sleek** 0,14605 m × Ø 0,0574 m; `sizeScale` skaliert **gesamte** Dose → [`requirements-assets-beverage-can.md`](./requirements-assets-beverage-can.md) |
+| Pen (`pen`) | Aus **SVG-mm-Profil** bei `sizeScale = 1` | Höhe/Breite **abgeleitet** aus Pfad — **nicht** aus Bild-Ratio; `sizeScale` skaliert **gesamten** Stift uniform → [`requirements-assets-pen.md`](./requirements-assets-pen.md), [`requirements-assets-lathe.md`](./requirements-assets-lathe.md) |
+| Bottle Wine (`wine-bottle`) | Bauch-Durchmesser × **`heightM`** (Default **0,29 m**) | Profilabhängig (Bordeaux/Alsace/Sparkling); **nicht** aus Bild-Ratio; `sizeScale` skaliert **gesamte** Flasche → [`requirements-assets-wine-bottle.md`](./requirements-assets-wine-bottle.md) |
 | Wheel Car (`wheel-car`) | **`outerRadiusM`** (Default **0,3305 m**, Referenz **255/30 R20**) | Niederquerschnitt-Sport; Maße in `wheelCarParams` (Panel + Gizmo-Scale baked); **kein** Bild, **kein** `entity.sizeScale` → [`requirements-assets-wheel-car.md`](./requirements-assets-wheel-car.md) |
 
 **Hinweis:** Referenzmaße bewusst größer als Realmaß (A4 ≈ 0,21 m) — Mockups sollen im Viewport gut lesbar sein. „Real scale“-Toggle später optional.
@@ -85,19 +88,24 @@ Einheitlicher Maßstab über Szene — Agentur-Layouts wirken zusammengehörig.
 
 **Category:** Assets  
 **Title:** Bildtragende vs. reine Props  
-**Description:** **Bildtragend** (haben `screenImageId` / `imageId`): Smartphone, Tablet, Monitor, **Print**, Buch (Cover), Bilderrahmen, **Pen** (nur **Schaft** / `penBody` → [`requirements-assets-pen.md`](./requirements-assets-pen.md)), **Fabric cloth** (Vorder- **und** Rückseite gleiches Bild → [`requirements-assets-fabric-cloth.md`](./requirements-assets-fabric-cloth.md)), **Wall / Wall with Door** (nur **Front**, Tapetenmuster → [`requirements-assets-wall.md`](./requirements-assets-wall.md)). **`print`** = ein Baustein für Flyer, Verpackung, Karten, … — **`faces`-Prisma** (6 Planes): Breite/Höhe aus Front-Bild; **Tiefe** (`depth`) unabhängig einstellbar. Front Bild; Back Farbe oder Bild; Seiten near-white. Später alle Seiten optional mit Bild — gleiches `AssetFaceContent` (`mode: 'color' | 'image'`). Klare Liste pro `assetKind` welche Flächen `imageId` akzeptieren.
+**Description:** **Bildtragend** (haben `screenImageId` / `imageId`): Smartphone, Tablet, Monitor, **Print**, Buch (Cover), Bilderrahmen, **Pen** (nur **Schaft** / `penBody` → [`requirements-assets-pen.md`](./requirements-assets-pen.md)), **Fabric cloth** (Vorder- **und** Rückseite gleiches Bild → [`requirements-assets-fabric-cloth.md`](./requirements-assets-fabric-cloth.md)), **Wall / Wall Doorway** (nur **Front**, Tapetenmuster → [`requirements-assets-wall.md`](./requirements-assets-wall.md)). **`print`** = ein Baustein für Flyer, Verpackung, Karten, … — **`faces`-Prisma** (6 Planes): Breite/Höhe aus Front-Bild; **Tiefe** (`depth`) unabhängig einstellbar. Front Bild; Back Farbe oder Bild; Seiten near-white. Später alle Seiten optional mit Bild — gleiches `AssetFaceContent` (`mode: 'color' | 'image'`). Klare Liste pro `assetKind` welche Flächen `imageId` akzeptieren.
 
 ---
 
 **Category:** Assets  
-**Title:** Szene-Panel (v1) — Right Main + Sub  
-**Description:** **Right Main** Nav-Eintrag **Szene** (`Boxes`-Icon). **Right Sub** listet **alle** platzierten Asset-Entities untereinander — je Entity ein Block mit Name-Header + Einstellungen:
+**Title:** Szene-Panel — Footer Dimensions + Position (Ist)  
+**Description:** **Right Main → Szene.** Pro Entity: Header (Name, Collapse, Remove) + **typ-spezifische Sektionen** (Image, Geometries, Physics, Profil, …) + **Footer**:
 
-1. **Screen / Image** — `ImageSurfaceFields` (Image, Finish Matt/Glossy, Emissive) bei `picture` / Handheld; leer = Platzhalter.
-2. **Faces** (**Print**) — Front/Back via `ImageSurfaceFields` (Bild) oder ColorPicker (Farbe); Seiten ColorPicker (Default near-white); **Depth** (m) einstellbar.
-3. **Transform** — Position X/Y/Z, Rotation (bidirektional mit Gizmo) → [`requirements-scene-placement.md`](./requirements-scene-placement.md).
+| Footer | Inhalt |
+|---|---|
+| **Dimensions** | Maß/Scale — je `assetKind`: z. B. gekoppeltes **Width/Height** (mit oder ohne **Size**-Feld), oder **Radius/Height** in `*Params` (Block, Cylinder, Wheel, …) |
+| **Position** | **Pos** X/Y/Z, **Rot** — bidirektional mit Gizmo → [`requirements-scene-placement.md`](./requirements-scene-placement.md). **Kein** Scale im `transform`; uniforme Größe über `sizeScale` oder kind-spezifische Params |
 
-**Viewport-Selection** bleibt aktiv: Klick im Viewport selektiert Entity (Gizmo + Highlight); aktiver Block in der Szene-Liste wird hervorgehoben und per `scrollIntoView` sichtbar. **Header-Klick** auf Entity-Namen in der Liste = **Selection-Toggle** (bereits selektiert → Deselect via `selectEntity(null)`). **Chevron** links im Header = **Collapse/Expand** der Einstellungen — UI-only, unabhängig von Selection; Collapse-State wird **nicht** serialisiert. **Remove** (`trash-2`) rechts im Header — eigener Button mit Trennlinie (wie Chevron); ruft `removeEntity(id)`. **Delete / Backspace** entfernt die **selektierte Asset-Entity** (nicht Studio-Lichter); ignoriert wenn Fokus in Input/Textarea. Bei neuer Selection (Viewport oder Liste) wird der Block **automatisch aufgeklappt**. Leere Szene: Placeholder-Hinweis. Environment/Ground/Camera/Lighting bleiben eigene Right-Main-Einträge — kein Selection-Overlay mehr.
+**Kein** Panel-Abschnitt **Transform** mehr (alle Built-in-Kinds). Reihenfolge und Ausnahmen pro Kind → [`improve-04-asset-settings.md`](../improve/improve-04-asset-settings.md). Lathe/Packaging: **Size** + gekoppeltes W/H, Aspect aus Profil — [`requirements-assets-lathe.md`](./requirements-assets-lathe.md).
+
+**Category:** Assets  
+**Title:** Szene-Panel — Liste & Selection  
+**Description:** **Right Sub** listet platzierte Asset-Entities. **Viewport-Selection** bleibt aktiv: Klick im Viewport selektiert Entity (Gizmo + Highlight); aktiver Block in der Szene-Liste wird hervorgehoben und per `scrollIntoView` sichtbar. **Header-Klick** auf Entity-Namen in der Liste = **Selection-Toggle** (bereits selektiert → Deselect via `selectEntity(null)`). **Chevron** links im Header = **Collapse/Expand** der Einstellungen — UI-only, unabhängig von Selection; Collapse-State wird **nicht** serialisiert. **Remove** (`trash-2`) rechts im Header — eigener Button mit Trennlinie (wie Chevron); ruft `removeEntity(id)`. **Delete / Backspace** entfernt die **selektierte Asset-Entity** (nicht Studio-Lichter); ignoriert wenn Fokus in Input/Textarea. Bei neuer Selection (Viewport oder Liste) wird der Block **automatisch aufgeklappt**. Leere Szene: Placeholder-Hinweis. Environment/Ground/Camera/Lighting bleiben eigene Right-Main-Einträge — kein Selection-Overlay mehr.
 
 ---
 
@@ -118,7 +126,7 @@ Einheitlicher Maßstab über Szene — Agentur-Layouts wirken zusammengehörig.
 - **`imageSurfaces`:** Pro Bild-Fläche Finish, Emissive, Passepartout (Farbe, Offset, Finish) — → [`requirements-image-surfaces.md`](./requirements-image-surfaces.md).
 - **`transform`:** position, rotation (Euler, rad) — **kein** `scale` in `transform` (verhindert non-uniform).
 - **`sizeScale`:** uniformer Größenfaktor (Default `1`); Front-Maße = Referenzkante × `sizeScale`, zweite Kante aus Bild-Ratio. Panel: **Size**, **Width (m)** und **Height (m)** — Eingabe in einem Meter-Feld berechnet `sizeScale` zurück (kein separates Width/Height-Feld in der Entity).
-- **`name`:** Default aus Katalog („Smartphone 1“); User-Rename später.
+- **`name`:** Default aus Katalog (z. B. „Device Smartphone 1“); User-Rename später.
 
 Lights und Ground bleiben separate Entity-Typen bzw. fixed Ground. Save/Load: Entity-Liste inkl. `assetKind` + `screenImageId` → [`requirements-architecture.md`](./requirements-architecture.md).
 
@@ -177,7 +185,7 @@ Texture-Load: `resolveImageTexture(imageId)` intern → [`requirements-images.md
 
 **Category:** Assets  
 **Title:** Print — Corner radius  
-**Description:** `assetKind: print`: Panel-Feld **Corner radius (mm)**, Default **0,5 mm** (`0,0005` m in UI). Bei Radius > 0: Front-/Rücksilhouette = **Rounded Rectangle** (Kreisbögen wie Handheld); Seiten = verkürzte Streifen + 4 Eck-Viertelzylinder entlang Tiefe. `printParams.cornerRadiusMm` auf Entity; API `setPrintParams`. Passepartout auf Bild-Faces: bei Offset > 0 Innenradius `max(0, R − offset)` aus diesem Radius — → [`requirements-image-surfaces.md`](./requirements-image-surfaces.md). Picture framed **ohne** Corner-Radius → [`requirements-assets-picture-framed.md`](./requirements-assets-picture-framed.md). UI-Längen global **4 Dezimalstellen** (0,0001 m).
+**Description:** `assetKind: print`: Panel-Feld **Corner radius (mm)**, Default **0,5 mm** (`0,0005` m in UI). Bei Radius > 0: Front-/Rücksilhouette = **Rounded Rectangle** (Kreisbögen wie Handheld); Seiten = verkürzte Streifen + 4 Eck-Viertelzylinder entlang Tiefe. `printParams.cornerRadiusMm` auf Entity; API `setPrintParams`. Passepartout auf Bild-Faces: bei Offset > 0 Innenradius `max(0, R − offset)` aus diesem Radius — → [`requirements-image-surfaces.md`](./requirements-image-surfaces.md). Picture framed **ohne** Corner-Radius → [`requirements-assets-picture-framed.md`](./requirements-assets-picture-framed.md). UI-Längen global **4 Dezimalstellen** (0,0001 m). **Szene-Panel:** **Faces** → **Dimensions** (Width/Height gekoppelt, kein Size; Corner radius; Depth) → **Position** — [`improve-04-asset-settings.md`](../improve/improve-04-asset-settings.md).
 
 ---
 
@@ -201,7 +209,7 @@ Texture-Load: `resolveImageTexture(imageId)` intern → [`requirements-images.md
 
 **Category:** Assets  
 **Title:** Pen (Marker & Fountain pen)  
-**Description:** Vollständige Anforderungen für `assetKind: pen` — SVG-Lathe **Cap / Ring / Body**, Bild-Wrap auf Schaft, Material-Slots, `maxRadiusM` → [`requirements-assets-pen.md`](./requirements-assets-pen.md).
+**Description:** Vollständige Anforderungen für `assetKind: pen` — SVG-Lathe **Cap / Ring / Body**, Bild-Wrap auf Schaft, Material-Slots, **mm-Pfade** + **`sizeScale`** → [`requirements-assets-pen.md`](./requirements-assets-pen.md), [`requirements-assets-lathe.md`](./requirements-assets-lathe.md).
 
 ---
 
@@ -214,5 +222,26 @@ Texture-Load: `resolveImageTexture(imageId)` intern → [`requirements-images.md
 **Category:** Assets  
 **Title:** Scene-API — `applyRigidPrimitiveUniformScale` (Engine)  
 **Description:** Ergänzung zu **Scene-API (Entwurf)** oben: Gizmo-Scale-Commit für rigid primitives ruft **`AssetSystem.applyRigidPrimitiveUniformScale(entityId, factor)`** auf (Faktor pro Drag, Range wie `clampSizeScale`). UI-Store exponiert das **nicht** separat — nur Engine-Pfad aus `MockupEngine` nach Gizmo-Drag. Panel-Edits weiter über `setBlockParams` / `setCylinderParams` / `setSphereParams` / `setWheelCarParams`.
+
+---
+
+**Category:** Assets  
+**Title:** Bake — User Assets (Querschnitt, Auswahl & Zukunft)  
+**Description:** **Bake** = aus einer **konkreten Szene-Entity** einen **persistierten User-Asset-Katalogeintrag** erzeugen (steife Wiederverwendung per Drop/Add). **Nicht** „die ganze Szene“, **nicht** implizit alle simulierbaren Objekte. Domänen-Details pro bake-fähigem `assetKind` in der jeweiligen Asset-Datei (v1: nur Stoff → [`requirements-assets-fabric-cloth.md`](./requirements-assets-fabric-cloth.md)).
+
+| Thema | Regel |
+|---|---|
+| **Was wird gebacken?** | Die **ausgewählte Entity** — deren **aktueller Render-Zustand** (Meshes, Material-/Image-**Defaults** für neue Instanzen, asset-spezifische Params). Payload-Typ hängt vom **Quell-`assetKind`** ab (`bakedFromKind` im Katalog-Eintrag). |
+| **Auswahl (v1)** | **Genau eine** Entity: **Szene-Selektion** (`selectedEntityId`) zum Zeitpunkt von **Bake**. Kein Multi-Bake, kein „alle Tücher“. Button **disabled** + kurzer Hinweis, wenn Selektion fehlt oder nicht bake-fähig. |
+| **Bake-fähig (v1)** | Nur **`fabric-cloth`** mit World-Physics **`paused`**, aktive Cloth-Session auf dieser Instanz, deformiertes Mesh. |
+| **Bake-fähig (später)** | Weitere Kinds nur nach Eintrag in einer zentralen **Bake-Registry** (Predicate + Payload-Encoder + Katalog-`placementKind`); z. B. deformierbare Props, Rig-Ergebnisse — **pro Kind** eigener Requirements-Block, **kein** generisches „alles mit Mesh“. |
+| **UI-Ort** | **Bake** nahe Physics (World-Freeze-Kontext) **und** kontextuell im **Szene-Panel** der selektierten Entity — **gleiche** Aktion, gleiches Ziel-`entityId`. |
+| **Katalog-Zeile** | User-Asset hat eigenen **`userAssetId`**, Anzeigename (editierbar), Thumbnail aus Bake, **`source: 'user'`**, **`bakedFromKind`** (z. B. `fabric-cloth` → platziert als `fabric-cloth-baked`). Kategorie/Icon aus Ziel-Kind, nicht aus Built-in-Liste duplizieren. |
+| **Mehrere Instanzen** | Zwei `fabric-cloth` in der Szene → User wählt **welches** Tuch (Selektion), dann Bake → **ein** neuer Katalog-Eintrag pro Bake-Klick. |
+| **Freeze vs. Bake** | **Freeze** = globale World-Phase; **Bake** = **per Entity** mit expliziter Auswahl. |
+
+**Engine (Ziel):** `canBakeEntity(entity, worldPhysicsPhase, sessionHints) → boolean`; `bakeEntityToUserAsset(entityId) → userAssetId` — Scene-API; Implementierung delegiert an Kind-Handler (`fabricClothBake`, …).
+
+**Nicht v1:** Batch-Bake; Bake ohne Selektion; ein User-Asset-Typ für heterogene Multi-Mesh-Szenen.
 
 ---

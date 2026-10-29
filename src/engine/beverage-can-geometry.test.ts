@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { Vector2 } from 'three/webgpu';
 import { describe, expect, it } from 'vitest';
 import { defaultBeverageCanParams } from '@/scene/asset-beverage-can';
+import { MM_TO_M } from '@/units/length';
 import { computeLabelUnfoldForProfile } from './beverage-can-label-unfold';
 import {
   buildBeverageCanLabelMantleGeometry,
@@ -55,7 +56,7 @@ describe('beverage-can-svg-profile', () => {
   });
 
   it('loads cached raw points for integration (file present)', () => {
-    const svgText = readFileSync(join(PUBLIC_LATHE, '330ml-classic.svg'), 'utf8');
+    const svgText = readFileSync(join(PUBLIC_LATHE, 'lathe-y-can-330ml-classic.svg'), 'utf8');
     expect(svgText.includes('<path')).toBe(true);
     setRawSvgProfilePointsCache('standard', syntheticCanSilhouette());
     expect(syntheticCanSilhouette().length).toBeGreaterThan(2);
@@ -119,7 +120,7 @@ describe('beverage-can-geometry', () => {
 
   it('lathe seam is placed at −Z (back), not on front +Z', () => {
     const params = defaultBeverageCanParams('standard');
-    const ring = buildTopRingGeometry(syntheticCylinderProfile(params), params);
+    const ring = buildTopRingGeometry(params);
     const pos = ring.getAttribute('position');
     let maxZ = -Infinity;
     let minZ = Infinity;
@@ -146,18 +147,9 @@ describe('beverage-can-geometry', () => {
     expect(Math.abs(seamZ + maxZ)).toBeLessThan(0.02);
   });
 
-  it('top ring inner radius follows mantle profile (not fixed BOD)', () => {
+  it('top ring is a lathe rectangle around center radius', () => {
     const params = defaultBeverageCanParams('standard');
-    const rBod = params.diameterM / 2;
-    const neckR = rBod * 0.88;
-    const yNeck = params.heightM - params.topRingHeightM * 0.5;
-    const mantleProfile = [
-      new Vector2(0, 0),
-      new Vector2(rBod, 0),
-      new Vector2(rBod, yNeck),
-      new Vector2(neckR, params.heightM),
-    ];
-    const ring = buildTopRingGeometry(mantleProfile, params);
+    const ring = buildTopRingGeometry(params);
     ring.computeBoundingBox();
     const box = ring.boundingBox!;
     expect(box.min.y).toBeCloseTo(0, 4);
@@ -168,8 +160,9 @@ describe('beverage-can-geometry', () => {
       Math.abs(box.max.z),
       Math.abs(box.min.z),
     );
-    expect(maxR).toBeGreaterThan(neckR + params.topRingThicknessM * 0.9);
-    expect(maxR).toBeLessThan(rBod + params.topRingThicknessM * 1.1);
+    const centerM = params.topRingCenterRadiusMm * MM_TO_M;
+    const halfT = params.topRingThicknessM * 0.5;
+    expect(maxR).toBeCloseTo(centerM + halfT, 3);
   });
 
   it('label unfold aspect matches profile table', () => {

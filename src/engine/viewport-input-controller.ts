@@ -19,6 +19,7 @@ export class ViewportInputController {
   private dragMode: DragMode | null = null;
   private pendingHitId: string | null | undefined = undefined;
   private gizmoConsumedPointer = false;
+  private patchLengthDragging = false;
 
   private readonly onPointerDown = (event: PointerEvent): void => {
     this.pointers.set(event.pointerId, new Vector2(event.clientX, event.clientY));
@@ -45,6 +46,15 @@ export class ViewportInputController {
 
     if (event.button !== 0) {return;}
 
+    if (this.selection.beginPatchLengthDragAt(event.clientX, event.clientY)) {
+      event.preventDefault();
+      this.activePointerId = event.pointerId;
+      this.activeButton = 0;
+      this.patchLengthDragging = true;
+      this.domElement.setPointerCapture(event.pointerId);
+      return;
+    }
+
     if (this.gizmo.isPointerOverHandle()) {
       this.gizmoConsumedPointer = true;
       return;
@@ -70,6 +80,10 @@ export class ViewportInputController {
     }
 
     if (this.activePointerId !== event.pointerId) {return;}
+    if (this.patchLengthDragging) {
+      this.selection.updatePatchLengthDragAt(event.clientX, event.clientY);
+      return;
+    }
     if (this.gizmoConsumedPointer || this.gizmo.isDragging()) {return;}
 
     const dx = event.clientX - this.pointerDownPos.x;
@@ -120,6 +134,15 @@ export class ViewportInputController {
 
     if (this.activePointerId !== event.pointerId) {return;}
 
+    if (this.patchLengthDragging) {
+      this.selection.endPatchLengthDrag();
+      if (this.domElement.hasPointerCapture(event.pointerId)) {
+        this.domElement.releasePointerCapture(event.pointerId);
+      }
+      this.resetPointerState();
+      return;
+    }
+
     const wasClick =
       !this.dragStarted &&
       !this.gizmoConsumedPointer &&
@@ -128,7 +151,9 @@ export class ViewportInputController {
       this.pendingHitId !== undefined;
 
     if (wasClick) {
-      if (this.pendingHitId) {
+      if (this.pendingHitId === '__PATCH_HANDLE_SELECTED__') {
+        // Point handle was selected directly in pickAt
+      } else if (this.pendingHitId) {
         this.selection.selectEntity(this.pendingHitId);
       } else {
         this.selection.deselect();
@@ -185,5 +210,6 @@ export class ViewportInputController {
     this.dragMode = null;
     this.pendingHitId = undefined;
     this.gizmoConsumedPointer = false;
+    this.patchLengthDragging = false;
   }
 }

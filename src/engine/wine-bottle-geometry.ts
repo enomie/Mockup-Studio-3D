@@ -32,6 +32,7 @@ import {
   loadWineBottleOpenWallProfile,
   sampleWineBottleRadiusAtY,
 } from './wine-bottle-svg-profile';
+import { ensureGeometryTangents } from '@/engine/geometry-tangents';
 const MANTLE_RADIAL_SEGMENTS = 64;
 const LABEL_RADIAL_STANDOFF_M = 0.001;
 const CAPSULE_RENDER_STANDOFF_M = 0.001;
@@ -80,6 +81,7 @@ export interface WineBottleMeshBuildResult {
 function buildCorkCylinderGeometry(radiusM: number, heightM: number): BufferGeometry {
   const geometry = new CylinderGeometry(radiusM, radiusM, heightM, 32);
   geometry.translate(0, heightM * 0.5, 0);
+  ensureGeometryTangents(geometry);
   return geometry;
 }
 

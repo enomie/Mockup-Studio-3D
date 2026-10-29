@@ -17,6 +17,7 @@ import { PanelTextField } from '@/ui/components/PanelTextField';
 import { RangeSlider } from '@/ui/components/RangeSlider';
 import { SubPanel } from '@/ui/components/SubPanel';
 import { SubPanelSection } from '@/ui/components/SubPanelSection';
+import { sortByDisplayName } from '@/ui/utils/library-list-order';
 import {
   addMaterial,
   duplicateMaterial,
@@ -68,9 +69,9 @@ function profileLabel(profile: MaterialPreset['proceduralProfile']): string {
     case 'concrete-porous':
       return 'Concrete porous';
     case 'fabric-linen':
-      return 'Fabric linen';
+      return 'Fabric Linen';
     case 'silk-fine':
-      return 'Silk fine';
+      return 'Fabric Silk';
     case 'coated-gloss':
       return 'Coated gloss';
     case 'plastic-matte':
@@ -471,6 +472,7 @@ function MaterialEditor({ preset }: MaterialEditorProps) {
 
 export function MaterialsPanel() {
   const materials = useAppStore((s) => s.materials);
+  const sortedMaterials = sortByDisplayName(materials, (material) => material.name);
   const selectedMaterialId = useAppStore((s) => s.selectedMaterialId);
   const selected = materials.find((material) => material.id === selectedMaterialId);
   const [detailCollapsed, setDetailCollapsed] = useState(false);
@@ -494,7 +496,7 @@ export function MaterialsPanel() {
       detailTitle="Editor"
       primary={
         <ul className="material-list">
-          {materials.map((material) => (
+          {sortedMaterials.map((material) => (
             <li key={material.id}>
               <button
                 type="button"

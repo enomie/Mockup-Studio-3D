@@ -6,9 +6,11 @@ Parametrischer **Autorad**-Baustein für Stilleben und Fahrzeug-Mockups — **Gu
 
 **Status:** **implementiert (v1)** — SVG-Lathe + prozedurale Speichen.
 
-**v1-Scope:** Built-in `wheel-car`; **Default-Maße = Sportwagen-Niederquerschnitt** (Referenz **255/30 R20**, s. Abmessungen); **Silhouette** aus [`wheel-car.svg`](../../public/profiles/lathe/wheel-car.svg) (Reifen + Felgenband + Nabe); **5 Speichen** engine-seitig; zwei Material-Slots (**Tire**, **Rim**); Achse **+X**; Foot-Pivot **y = 0**; Panel skaliert über `wheelCarParams` (u. a. `outerRadiusM`); Uniform-Scale-Gizmo **baked** in alle linearen `wheelCarParams`; async SVG-Load beim Rebuild; Physik: Zylinder-Collider (Außenradius + Reifenbreite). **Kein** `entity.sizeScale`.
+**v1-Scope:** Built-in `wheel-car`; **Default-Maße = Sportwagen-Niederquerschnitt** (Referenz **255/30 R20**, s. Abmessungen); **Silhouette** aus [`lathe-x-wheel-car.svg`](../../public/profiles/lathe/lathe-x-wheel-car.svg) (Reifen + Felgenband + Nabe); **5 Speichen** engine-seitig; zwei Material-Slots (**Tire**, **Rim**); Achse **+X**; Foot-Pivot **y = 0**; Panel skaliert über `wheelCarParams` (u. a. `outerRadiusM`); Uniform-Scale-Gizmo **baked** in alle linearen `wheelCarParams`; async SVG-Load beim Rebuild; Physik: Zylinder-Collider (Außenradius + Reifenbreite). **Kein** `entity.sizeScale`.
 
 **Referenz (nicht normativ):** Demo-HTML `createPrettyWheel` — **verworfen** für Engine; normativ ist das mm-SVG.
+
+**Lathe (Querschnitt):** mm-Pfade, uniform scale (hier: `wheelCarParams` + Gizmo bake) → [`requirements-assets-lathe.md`](./requirements-assets-lathe.md).
 
 ---
 
@@ -79,7 +81,7 @@ Flankenhöhe (radial): `sidewallM = outerRadiusM − rimRadiusM` — bei Default
 
 **Category:** Assets — Wheel Car  
 **Title:** Geometrie — Reifen (Gummi, SVG-Lathe)  
-**Description:** **Ist v1:** Pfad **schwarz** in [`wheel-car.svg`](../../public/profiles/lathe/wheel-car.svg) → `LatheGeometry` (`wheelTire`), Material **`tireMaterialId`**. Schulter-Rundungen und Bead sind im **Authoring-SVG** — **kein** parametrisches `tireCornerRadiusMm` am Mesh.
+**Description:** **Ist v1:** Slot **`path_red`** (Reifen) in [`lathe-x-wheel-car.svg`](../../public/profiles/lathe/lathe-x-wheel-car.svg) → `LatheGeometry` (`wheelTire`), Material **`tireMaterialId`**. **`path_green`** / **`path_blue`** = Felgenband / Nabe. Schulter-Rundungen und Bead im **Authoring-SVG** — **kein** parametrisches `tireCornerRadiusMm` am Mesh.
 
 **Mesh-Rolle:** `wheelTire`.
 
@@ -166,7 +168,7 @@ type WheelCarParams = {
 
 **API (Ziel):** `addAsset('wheel-car')`, `setWheelCarParams`, `setEntityMaterial` (pro Slot), `setPhysicsBodyMode`, `setPhysicsDensity`.
 
-**Szene-Panel:** **Dimensions** — `outerRadiusM`, **Tire width (from SVG)** read-only, `rimInsetM`, `hubRadiusM`, `hubDepthM`; **Materials** (Tire, Rim); **Physics** (Mode, Density, Weight read-only).
+**Szene-Panel:** **Materials** (Tire, Rim) → **Physics** (Mode, Density, Weight read-only) → **Dimensions** (`outerRadiusM`, **Tire width (from SVG)** read-only, `rimInsetM`, `hubRadiusM`, `hubDepthM`) → **Position** (Pos/Rot). Footer-Muster → [`improve-04-asset-settings.md`](../../improve/improve-04-asset-settings.md).
 
 ---
 
@@ -212,8 +214,8 @@ type WheelCarParams = {
 **Title:** Geometrie v1 — SVG-Lathe + Stirn + Speichen (Norm)  
 **Description:**
 
-- **SVG:** [`public/profiles/lathe/wheel-car.svg`](../../public/profiles/lathe/wheel-car.svg) — viewBox mm; Achse **y = 330,5**; Pfade `.tire` / `.rim-outer` / `.rim-inner` (Stroke #000 / #f00 / #00f). Graue `.guide`-Linie ignorieren. **Speichen nicht** im SVG.
+- **SVG:** [`public/profiles/lathe/lathe-x-wheel-car.svg`](../../public/profiles/lathe/lathe-x-wheel-car.svg) — viewBox mm; Achse **y = 330,5**; Slots `path_red` / `path_green` / `path_blue` (Reifen / Felgenband / Nabe). Graue `.guide`-Linie ignorieren. **Speichen nicht** im SVG.
 - **Mapping:** `radiusM = (330.5 − svgY) × scale / 1000`, `axialM = (svgX − 127.5) × scale / 1000`, `scale = outerRadiusM / 0.3305`. Lathe-Punkt `Vector2(radiusM, axialM)`; Revolution um **Y**, Mesh `rotation.z = π/2` → Achse **+X**.
 - **Felge:** Lathe-Bänder + **zwei Stirnringe** pro Band (axial min/max) aus `latheProfileBandBounds` + `RingGeometry`.
 - **Speichen:** 5 Boxen; Position/Radius aus SVG-Bounds (`rimOuter` / `rimInner`), siehe Felge-Tabelle.
-- **Load:** `builtinLatheProfileUrl('wheel-car.svg')`, Cache in `wheel-car-svg-profile.ts`; `addAsset` leere Group → `rebuildEntity` → `addWheelCar` async.
+- **Load:** `builtinLatheProfileUrl('lathe-x-wheel-car.svg')`, Cache in `wheel-car-svg-profile.ts`; `addAsset` leere Group → `rebuildEntity` → `addWheelCar` async.

@@ -20,6 +20,7 @@ import { PanelCheckbox } from '@/ui/components/PanelCheckbox';
 import { PanelSelect } from '@/ui/components/PanelSelect';
 import { RangeSlider } from '@/ui/components/RangeSlider';
 import { SubPanelSection } from '@/ui/components/SubPanelSection';
+import { sortByDisplayName } from '@/ui/utils/library-list-order';
 import { setImageSurface } from '@/ui/store/app-store';
 import { useAppStore } from '@/ui/store/use-app-store';
 
@@ -55,7 +56,7 @@ export function ImageSelect({
       id={fieldId}
       value={value ?? ''}
       placeholder="—"
-      options={images.map((image) => ({
+      options={sortByDisplayName(images, (image) => image.name).map((image) => ({
         value: image.id,
         label: image.name,
       }))}

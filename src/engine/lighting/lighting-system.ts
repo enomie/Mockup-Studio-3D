@@ -6,7 +6,17 @@ import {
   type Scene,
   Vector3,
 } from 'three/webgpu';
-import { applySpotShadowCast, updateSpotShadowCamera } from '@/render/shadow-setup';
+import { computeSceneShadowCoverageRadius } from '@/render/scene-shadow-coverage';
+import {
+  applyShadowMapSize,
+  applySpotShadowCast,
+  updateSpotShadowCamera,
+} from '@/render/shadow-setup';
+import {
+  SHADOW_COVERAGE_RADIUS,
+  SHADOW_MAP_SIZE,
+  SHADOW_MAP_SIZE_EXPORT,
+} from '@/constants';
 import { rgbToColor, type Rgb } from '@/colors/rgb';
 import { cloneTransform, defaultTransform, type Vec3 } from '@/scene/entity-types';
 import { LIGHT_FILL_ID, LIGHT_KEY_ID, type StudioLightId } from '@/scene/light-ids';
@@ -72,6 +82,7 @@ function applyPoseToRig(
   pose: StudioPose,
   targetPosition: Vector3,
   updateShadowCamera: boolean,
+  shadowCoverageRadius: number,
 ): void {
   rig.helper.position.set(pose.position.x, pose.position.y, pose.position.z);
   rig.helper.rotation.set(0, 0, 0);
@@ -87,7 +98,7 @@ function applyPoseToRig(
   }
 
   if (updateShadowCamera) {
-    updateSpotShadowCamera(rig.light);
+    updateSpotShadowCamera(rig.light, shadowCoverageRadius);
   }
 }
 
@@ -109,6 +120,8 @@ export class LightingSystem {
   private lightHandlesVisible = false;
   private planarReflection: PlanarReflectionPass | null = null;
   private readonly referenceCenter: Vec3 = { x: 0, y: 0, z: 0 };
+  private shadowCoverageRadius = SHADOW_COVERAGE_RADIUS;
+  private exportShadowQualityDepth = 0;
 
   constructor(scene: Scene, registry: EntityRegistry, initial: LightingSettings) {
     this.scene = scene;
@@ -191,8 +204,28 @@ export class LightingSystem {
     return cloneLightingSettings(this.settings);
   }
 
+  pushExportShadowQuality(): void {
+    this.exportShadowQualityDepth += 1;
+    if (this.exportShadowQualityDepth === 1) {
+      this.applyShadowMapSizeToCasters(SHADOW_MAP_SIZE_EXPORT);
+    }
+  }
+
+  popExportShadowQuality(): void {
+    if (this.exportShadowQualityDepth <= 0) {
+      return;
+    }
+    this.exportShadowQualityDepth -= 1;
+    if (this.exportShadowQualityDepth === 0) {
+      this.applyShadowMapSizeToCasters(SHADOW_MAP_SIZE);
+    }
+  }
+
   /** Keep shadow matrices current — call once per frame from the render loop. */
   updateFrame(): void {
+    this.syncReferenceCenterFromEntities();
+    this.refreshShadowCoverageRadius();
+
     const rigs: SpotLightRig[] = [];
     if (this.settings.key.enabled) {rigs.push(this.getKeyRig());}
     if (this.settings.fill.enabled) {rigs.push(this.getFillRig());}
@@ -210,7 +243,7 @@ export class LightingSystem {
           ? this.settings.key.enabled && this.settings.key.castShadow
           : this.settings.fill.enabled && this.settings.fill.castShadow;
       if (castsShadow) {
-        updateSpotShadowCamera(rig.light);
+        updateSpotShadowCamera(rig.light, this.shadowCoverageRadius);
       }
       this.refreshSpotBeam(rig);
     }
@@ -349,6 +382,7 @@ export class LightingSystem {
   private updateRigTransforms(): void {
     const centerAnchor = this.refreshReferenceCenter();
     _targetPosition.copy(centerAnchor.position);
+    this.refreshShadowCoverageRadius();
 
     const keyPose = this.getWorldPose(LIGHT_KEY_ID, centerAnchor);
     applyPoseToRig(
@@ -356,6 +390,7 @@ export class LightingSystem {
       keyPose,
       _targetPosition,
       this.settings.key.enabled && this.settings.key.castShadow,
+      this.shadowCoverageRadius,
     );
 
     const fillPose = this.getWorldPose(LIGHT_FILL_ID, centerAnchor);
@@ -364,6 +399,7 @@ export class LightingSystem {
       fillPose,
       _targetPosition,
       this.settings.fill.enabled && this.settings.fill.castShadow,
+      this.shadowCoverageRadius,
     );
   }
 
@@ -407,7 +443,7 @@ export class LightingSystem {
     }
     this.updatePickColor(rig, KEY_PICK_COLOR);
     if (key.enabled && key.castShadow) {
-      updateSpotShadowCamera(rig.light);
+      updateSpotShadowCamera(rig.light, this.shadowCoverageRadius);
     }
   }
 
@@ -432,7 +468,53 @@ export class LightingSystem {
     }
     this.updatePickColor(rig, FILL_PICK_COLOR);
     if (fillCastsShadow) {
-      updateSpotShadowCamera(rig.light);
+      updateSpotShadowCamera(rig.light, this.shadowCoverageRadius);
+    }
+  }
+
+  private syncReferenceCenterFromEntities(): void {
+    const center = computeSceneCenter(
+      this.registry.getEntities().map((entity) => entity.transform.position),
+    );
+    this.referenceCenter.x = center.x;
+    this.referenceCenter.y = center.y;
+    this.referenceCenter.z = center.z;
+  }
+
+  private refreshShadowCoverageRadius(): void {
+    this.shadowCoverageRadius = computeSceneShadowCoverageRadius(
+      this.registry.getVisibleEntityRoots(),
+      this.referenceCenter,
+    );
+  }
+
+  private applyShadowMapSizeToCasters(mapSize: number): void {
+    applyShadowMapSize(
+      this.getKeyRig().light.shadow,
+      mapSize,
+      this.settings.key.shadowSoftness,
+    );
+    applyShadowMapSize(
+      this.getFillRig().light.shadow,
+      mapSize,
+      this.settings.fill.shadowSoftness,
+    );
+    this.refreshShadowCoverageRadius();
+    this.updateCasterShadowCameras();
+  }
+
+  private updateCasterShadowCameras(): void {
+    if (this.settings.key.enabled && this.settings.key.castShadow) {
+      updateSpotShadowCamera(
+        this.getKeyRig().light,
+        this.shadowCoverageRadius,
+      );
+    }
+    if (this.settings.fill.enabled && this.settings.fill.castShadow) {
+      updateSpotShadowCamera(
+        this.getFillRig().light,
+        this.shadowCoverageRadius,
+      );
     }
   }
 

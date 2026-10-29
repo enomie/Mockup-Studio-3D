@@ -20,6 +20,17 @@ export function CylinderFields({ entity }: CylinderFieldsProps) {
 
   return (
     <>
+      <SubPanelSection title="Material">
+        <MaterialSelect
+          entityId={entity.id}
+          slot="cylinderMaterialId"
+          materials={materials}
+          value={slots?.cylinderMaterialId ?? MATERIAL_PAPER_ID}
+        />
+      </SubPanelSection>
+
+      <RigidBodyPhysicsFields entity={entity} />
+
       <SubPanelSection title="Dimensions">
         <PanelAxisField
           label="Radius"
@@ -50,17 +61,6 @@ export function CylinderFields({ entity }: CylinderFieldsProps) {
           onChange={(value) => {
             if (value >= 0) {setCylinderParams(entity.id, { cornerRadiusMm: value });}
           }}
-        />
-      </SubPanelSection>
-
-      <RigidBodyPhysicsFields entity={entity} />
-
-      <SubPanelSection title="Material">
-        <MaterialSelect
-          entityId={entity.id}
-          slot="cylinderMaterialId"
-          materials={materials}
-          value={slots?.cylinderMaterialId ?? MATERIAL_PAPER_ID}
         />
       </SubPanelSection>
     </>

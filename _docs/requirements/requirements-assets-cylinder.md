@@ -1,4 +1,4 @@
-# Assets — Cylinder (parametrischer Zylinder)
+# Assets — Object Cylinder (`cylinder`)
 
 **Zylinder** für Stilleben und Props — **ohne Bild**, **ein Material**, gleiches Konzept wie **Block** → [`requirements-assets-block.md`](./requirements-assets-block.md). Katalog, Placement → [`requirements-assets.md`](./requirements-assets.md). Schatten → [`requirements-shadows.md`](./requirements-shadows.md). Material → [`requirements-materials.md`](./requirements-materials.md). **Fixed / Dynamic** und World-Start → [`requirements-physics.md`](./requirements-physics.md).
 
@@ -16,7 +16,7 @@
 
 | `assetKind` | UI-Label | Kategorie |
 |---|---|---|
-| `cylinder` | Cylinder | **Objects** (Lucide z. B. `cylinder`) |
+| `cylinder` | Object Cylinder | **Objects** (Lucide z. B. `cylinder`) |
 
 Mehrfach-Instanzen unbegrenzt.
 
@@ -111,7 +111,7 @@ type PhysicsBodyMode = 'fixed' | 'dynamic';
 
 **API (Ziel):** `addAsset('cylinder')`, `setCylinderParams`, `setEntityMaterial`, `setPhysicsBodyMode`, `setPhysicsDensity`.
 
-**Szene-Panel:** **Dimensions**; **Material**; **Physics** (Mode, Density kg/m³, Weight kg read-only).
+**Szene-Panel:** **Material** → **Physics** (Mode, Density kg/m³, Weight kg read-only) → **Dimensions** (Radius, Height, Corner radius) → **Position** (Pos/Rot). Footer-Muster → [`improve-04-asset-settings.md`](../../improve/improve-04-asset-settings.md).
 
 ---
 

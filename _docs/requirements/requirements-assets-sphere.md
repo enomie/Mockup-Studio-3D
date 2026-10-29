@@ -1,4 +1,4 @@
-# Assets — Sphere (parametrische Kugel)
+# Assets — Object Sphere (`sphere`)
 
 **Kugel** für Stilleben und Props — **ohne Bild**, **ein Material**, gleiches Rigid-Physik-Konzept wie **Block** / **Cylinder** → [`requirements-assets-block.md`](./requirements-assets-block.md). Katalog, Placement → [`requirements-assets.md`](./requirements-assets.md). Schatten → [`requirements-shadows.md`](./requirements-shadows.md). **Fixed / Dynamic** → [`requirements-physics.md`](./requirements-physics.md).
 
@@ -16,7 +16,7 @@
 
 | `assetKind` | UI-Label | Kategorie |
 |---|---|---|
-| `sphere` | Sphere | **Objects** (Lucide z. B. `circle`) |
+| `sphere` | Object Sphere | **Objects** (Lucide z. B. `circle`) |
 
 Mehrfach-Instanzen unbegrenzt.
 
@@ -92,6 +92,8 @@ type SphereParams = {
 ```
 
 **API:** `addAsset('sphere')`, `setSphereParams`, `setEntityMaterial`, `setPhysicsBodyMode`, `setPhysicsDensityKgPerM3`.
+
+**Szene-Panel:** **Material** → **Physics** (Mode, Density, Weight read-only) → **Dimensions** (Radius) → **Position** (Pos/Rot). Footer-Muster → [`improve-04-asset-settings.md`](../../improve/improve-04-asset-settings.md).
 
 ---
 

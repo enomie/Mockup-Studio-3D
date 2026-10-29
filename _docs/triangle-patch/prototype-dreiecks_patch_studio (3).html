@@ -1,0 +1,1355 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dreiecks-Patch Studio (CAD Modus)</title>
+    <!-- Tailwind CSS nur für Layout-Grid/Struktur -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Three.js + Controls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/TransformControls.js"></script>
+
+    <style>
+        * { box-sizing: border-box; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #111418; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, monospace; }
+        #canvas-viewport { width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
+        
+        /* CAD Utility UI (Kein unnötiger Blur, feste Kanten, hohe Lesbarkeit) */
+        .cad-panel {
+            background: #181d24;
+            border: 1px solid #2e3846;
+            color: #d1d5db;
+        }
+        .cad-btn {
+            background: #242c38;
+            border: 1px solid #374151;
+            color: #e5e7eb;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .cad-btn:hover { background: #323d4e; color: #fff; }
+        .cad-btn.active {
+            background: #0284c7;
+            border-color: #38bdf8;
+            color: #fff;
+        }
+        .cad-input {
+            background: #0c0f13;
+            border: 1px solid #374151;
+            color: #f3f4f6;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 12px;
+            padding: 3px 6px;
+            border-radius: 3px;
+            width: 100%;
+        }
+        .cad-input:focus {
+            outline: none;
+            border-color: #38bdf8;
+            background: #000;
+        }
+        /* Chrome, Safari, Edge, Opera: Pfeile in Number Inputs sichtbar & nutzbar halten */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 3D Viewport -->
+    <div id="canvas-viewport"></div>
+
+    <!-- Obere Arbeitsleiste: Feste CAD-Menüs -->
+    <header class="absolute top-2 left-2 right-2 z-20 flex items-center justify-between p-2 cad-panel rounded shadow-md">
+        <div class="flex items-center gap-2">
+            <span class="text-xs font-bold text-sky-400 font-mono tracking-wider">PATCH_STUDIO // CAD_KERNEL</span>
+            <span class="text-slate-600">|</span>
+
+            <!-- Gizmo Koordinatensystem -->
+            <div class="flex items-center gap-1">
+                <span class="text-[10px] text-slate-400 uppercase font-mono mr-1">Gizmo:</span>
+                <button id="btn-mode-translate" class="cad-btn active" title="Verschieben (W)">Pos [W]</button>
+                <button id="btn-mode-rotate" class="cad-btn" title="Rotieren (E)">Rot [E]</button>
+                <button id="btn-space-world" class="cad-btn active ml-1" title="Welt-Achsen">Welt</button>
+                <button id="btn-space-local" class="cad-btn" title="Lokale Tangentenachse">Lokal/Tangente</button>
+            </div>
+
+            <span class="text-slate-600">|</span>
+
+            <!-- Bauteil-Aktionen -->
+            <button id="btn-add-part" class="cad-btn">+ Bauteil</button>
+            <button id="btn-add-point" class="cad-btn">+ Kantenpunkt [P]</button>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <!-- Shading -->
+            <div class="flex items-center gap-1">
+                <button id="btn-shade-studio" class="cad-btn active">Lack</button>
+                <button id="btn-shade-zebra" class="cad-btn">Zebra</button>
+                <button id="btn-shade-wire" class="cad-btn">Drahtgitter</button>
+            </div>
+            <span class="text-slate-600">|</span>
+            <button id="btn-symmetry" class="cad-btn active">Symmetrie (X=0): An</button>
+            <button id="btn-wheels" class="cad-btn active">Fahrwerk: An</button>
+            <button id="btn-deselect" class="cad-btn" title="Auswahl aufheben [ESC]">Deselect [Esc]</button>
+        </div>
+    </header>
+
+    <!-- Rechtes CAD-Inspektor-Panel: Exakte Zahlen & Parameter-Eingaben -->
+    <aside id="inspector-panel" class="absolute top-14 right-2 z-20 w-80 cad-panel rounded p-3 shadow-xl">
+        <div class="flex items-center justify-between pb-2 border-b border-slate-700 mb-3">
+            <div>
+                <h3 id="panel-title" class="text-xs font-bold text-white font-mono">Keine Auswahl</h3>
+                <span id="panel-subtitle" class="text-[10px] text-slate-400">Klicke Punkt oder Hebel</span>
+            </div>
+            <span id="panel-part-badge" class="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-[10px] font-mono text-slate-300">--</span>
+        </div>
+
+        <!-- 1. Absolute Koordinaten (Echte Inputs, Schrittweite 0.01 oder frei tippbar) -->
+        <div class="mb-3">
+            <span class="text-[10px] font-mono text-slate-400 block mb-1 uppercase font-semibold">1. Absolute Position (XYZ [m]):</span>
+            <div class="grid grid-cols-3 gap-1">
+                <div>
+                    <label class="text-[9px] text-rose-400 block font-mono">X</label>
+                    <input id="input-x" type="number" step="0.005" class="cad-input">
+                </div>
+                <div>
+                    <label class="text-[9px] text-emerald-400 block font-mono">Y</label>
+                    <input id="input-y" type="number" step="0.005" class="cad-input">
+                </div>
+                <div>
+                    <label class="text-[9px] text-sky-400 block font-mono">Z</label>
+                    <input id="input-z" type="number" step="0.005" class="cad-input">
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Spezifische Hebel-Parameter (Länge / Gewichtung & Richtung) -->
+        <div id="handle-parameters-box" class="mb-3 p-2 bg-slate-900 rounded border border-slate-700 hidden">
+            <span class="text-[10px] font-mono text-amber-400 block mb-1 uppercase font-semibold">2. Tangenten-Parameter:</span>
+            
+            <div class="mb-2">
+                <label class="text-[10px] text-slate-300 block mb-0.5">Hebel-Länge / Stärke (m):</label>
+                <div class="flex items-center gap-1">
+                    <input id="input-handle-len" type="number" step="0.005" min="0.001" max="5.0" class="cad-input font-bold text-amber-300">
+                    <button id="btn-scale-down" class="cad-btn px-2" title="-10%">-10%</button>
+                    <button id="btn-scale-up" class="cad-btn px-2" title="+10%">+10%</button>
+                </div>
+                <span class="text-[9px] text-slate-500 block mt-1">Ändert strikt die Länge, friert die 3D-Richtung zu 100% ein.</span>
+            </div>
+
+            <!-- Relativer Vektor zum Anker -->
+            <label class="text-[9px] text-slate-400 block mb-0.5 font-mono">Relativer Vektor (dX, dY, dZ):</label>
+            <div class="grid grid-cols-3 gap-1">
+                <input id="input-dx" type="number" step="0.005" class="cad-input text-[11px]">
+                <input id="input-dy" type="number" step="0.005" class="cad-input text-[11px]">
+                <input id="input-dz" type="number" step="0.005" class="cad-input text-[11px]">
+            </div>
+        </div>
+
+        <!-- 3. Schnellausrichtung & Constraints -->
+        <div class="mb-3 p-2 bg-slate-900 rounded border border-slate-700">
+            <span class="text-[10px] font-mono text-slate-400 block mb-1 uppercase font-semibold">3. Constraints & Ausrichtung:</span>
+            <div class="grid grid-cols-3 gap-1 mb-1">
+                <button id="btn-zero-x" class="cad-btn text-[10px]" title="X exakt auf 0 setzen (Mittelebene)">X = 0.00</button>
+                <button id="btn-level-y" class="cad-btn text-[10px]" title="Horizontal ausrichten">Y nivellieren</button>
+                <button id="btn-invert-h" class="cad-btn text-[10px]" title="Hebel invertieren">Hebel umkehren</button>
+            </div>
+        </div>
+
+        <!-- 4. G1/G2 Tangenten-Speicher (Copy / Paste) -->
+        <div class="p-2 bg-slate-900 rounded border border-slate-700">
+            <div class="flex items-center justify-between mb-1">
+                <span class="text-[10px] font-mono text-slate-400 uppercase font-semibold">4. Tangenten-Kopplung:</span>
+                <span id="clip-status" class="text-[9px] font-mono text-slate-500">Leer</span>
+            </div>
+            <div class="grid grid-cols-2 gap-1 mb-1">
+                <button id="btn-copy" class="cad-btn" disabled>Copy Tangenten</button>
+                <button id="btn-paste" class="cad-btn" disabled>Paste Winkel</button>
+            </div>
+            <button id="btn-snap" class="cad-btn w-full text-indigo-300 border-indigo-900" disabled>Snap auf Zielpunkt (G0+G1)</button>
+        </div>
+    </aside>
+
+    <!-- Statuszeile unten -->
+    <footer class="absolute bottom-2 left-2 right-2 z-20 flex items-center justify-between px-3 py-1.5 cad-panel rounded text-[11px] font-mono text-slate-400 shadow">
+        <div class="flex items-center gap-3">
+            <span>MODUS: <b id="status-mode" class="text-sky-400">TRANSLATE</b></span>
+            <span>SPACE: <b id="status-space" class="text-sky-400">WORLD</b></span>
+            <span>TEILE: <b id="status-parts" class="text-slate-200">1</b></span>
+        </div>
+        <div class="flex items-center gap-4 text-[10px]">
+            <span>LMB: Orbit | RMB: Pan | Scroll: Zoom</span>
+            <span>[W] Move | [E] Rotate | [P] Add Edge Point | [ESC] Deselect</span>
+        </div>
+    </footer>
+
+    <script>
+        // --- 1. SETUP THREE.JS SZENE ---
+        const container = document.getElementById('canvas-viewport');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x111418);
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.05, 50);
+        camera.position.set(2.2, 1.8, 2.5);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        container.appendChild(renderer.domElement);
+
+        // OrbitControls
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.target.set(0, 0.25, 0);
+        controls.mouseButtons = {
+            LEFT: THREE.MOUSE.ROTATE,
+            MIDDLE: THREE.MOUSE.DOLLY,
+            RIGHT: THREE.MOUSE.PAN
+        };
+
+        // TransformControls (Gizmo)
+        const transformControl = new THREE.TransformControls(camera, renderer.domElement);
+        transformControl.size = 0.75;
+        scene.add(transformControl);
+
+        let isDraggingGizmo = false;
+        let wasDragging = false;
+        let currentGizmoMode = 'translate';
+        let currentGizmoSpace = 'world'; // 'world' | 'local'
+
+        transformControl.addEventListener('dragging-changed', (e) => {
+            isDraggingGizmo = e.value;
+            if (e.value) wasDragging = true;
+            controls.enabled = !e.value;
+        });
+
+        // Beleuchtung
+        scene.add(new THREE.HemisphereLight(0xffffff, 0x1e293b, 1.2));
+        const dir1 = new THREE.DirectionalLight(0xffffff, 1.6);
+        dir1.position.set(-3, 5, 4);
+        scene.add(dir1);
+        const dir2 = new THREE.DirectionalLight(0x38bdf8, 0.7);
+        dir2.position.set(4, 2, -3);
+        scene.add(dir2);
+
+        // Technisches CAD Raster
+        const grid = new THREE.GridHelper(6, 24, 0x38bdf8, 0x2e3846);
+        grid.position.y = -0.4;
+        scene.add(grid);
+
+        // Mittelachse Rot (Symmetrie-Ebene X=0)
+        const centerLineGeom = new THREE.BufferGeometry().setFromPoints([
+            new THREE.Vector3(0, -0.399, -4),
+            new THREE.Vector3(0, -0.399, 4)
+        ]);
+        const centerLine = new THREE.Line(centerLineGeom, new THREE.LineBasicMaterial({ color: 0xef4444, linewidth: 2 }));
+        scene.add(centerLine);
+
+        // --- 2. FAHRWERKS-REFERENZ (RÄDER) ---
+        const wheelsGroup = new THREE.Group();
+        let wheelsVisible = true;
+        const CHASSIS = { radius: 0.31, width: 0.22, track: 1.54, frontZ: 0.2, rearZ: -2.3, groundY: -0.4 };
+        const wheelY = CHASSIS.groundY + CHASSIS.radius;
+
+        function buildWheelMesh() {
+            const wGroup = new THREE.Group();
+            const tire = new THREE.Mesh(
+                new THREE.CylinderGeometry(CHASSIS.radius, CHASSIS.radius, CHASSIS.width, 24),
+                new THREE.MeshStandardMaterial({ color: 0x1e242c, roughness: 0.85 })
+            );
+            tire.rotation.z = Math.PI / 2;
+            wGroup.add(tire);
+
+            const rim = new THREE.Mesh(
+                new THREE.CylinderGeometry(CHASSIS.radius * 0.65, CHASSIS.radius * 0.65, CHASSIS.width + 0.005, 18),
+                new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.25, metalness: 0.8 })
+            );
+            rim.rotation.z = Math.PI / 2;
+            wGroup.add(rim);
+            return wGroup;
+        }
+
+        const halfTrack = CHASSIS.track / 2;
+        [
+            [halfTrack, CHASSIS.frontZ], [-halfTrack, CHASSIS.frontZ],
+            [halfTrack, CHASSIS.rearZ], [-halfTrack, CHASSIS.rearZ]
+        ].forEach(([x, z]) => {
+            const w = buildWheelMesh();
+            w.position.set(x, wheelY, z);
+            wheelsGroup.add(w);
+        });
+        scene.add(wheelsGroup);
+
+        // --- 3. MATERIALIEN & SHADER ---
+        const studioMat = new THREE.MeshStandardMaterial({
+            color: 0x0284c7,
+            roughness: 0.16,
+            metalness: 0.8,
+            side: THREE.DoubleSide
+        });
+
+        const zebraMat = new THREE.ShaderMaterial({
+            side: THREE.DoubleSide,
+            uniforms: { scale: { value: 18.0 } },
+            vertexShader: `
+                varying vec3 vNormal, vView;
+                void main() {
+                    vNormal = normalize(normalMatrix * normal);
+                    vec4 mv = modelViewMatrix * vec4(position, 1.0);
+                    vView = normalize(-mv.xyz);
+                    gl_Position = projectionMatrix * mv;
+                }
+            `,
+            fragmentShader: `
+                uniform float scale;
+                varying vec3 vNormal, vView;
+                void main() {
+                    vec3 r = reflect(-vView, normalize(vNormal));
+                    float s = step(0.0, sin(r.y * scale));
+                    gl_FragColor = vec4(mix(vec3(0.05), vec3(0.95), s), 1.0);
+                }
+            `
+        });
+
+        const wireMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, wireframe: true, side: THREE.DoubleSide });
+        let currentMaterial = studioMat;
+        let symmetryEnabled = true;
+
+        // --- 4. GEOMETRIE & BÉZIER-FLÄCHEN-KERN ---
+        class CADNode {
+            constructor(name, x, y, z, hNextOff, hPrevOff, hCrossInOff, hCrossOutOff) {
+                this.name = name;
+                this.pos = new THREE.Vector3(x, y, z);
+                this.handleNext = this.pos.clone().add(hNextOff);
+                this.handlePrev = this.pos.clone().add(hPrevOff);
+                this.handleCrossIn = this.pos.clone().add(hCrossInOff);
+                this.handleCrossOut = this.pos.clone().add(hCrossOutOff);
+
+                this.meshAnchor = null;
+                this.meshHandleNext = null;
+                this.meshHandlePrev = null;
+                this.meshCrossIn = null;
+                this.meshCrossOut = null;
+                this.lineNext = null;
+                this.linePrev = null;
+                this.lineCross = null;
+            }
+        }
+
+        const _pA = new THREE.Vector3(), _pB = new THREE.Vector3(), _pC = new THREE.Vector3();
+        const _bA = new THREE.Vector3(), _bB = new THREE.Vector3(), _bC = new THREE.Vector3();
+
+        function evalPatchSurface(part, u, v, w, out) {
+            const A = part.corners[0].pos, B = part.corners[1].pos, C = part.corners[2].pos;
+            const lx = u * A.x + v * B.x + w * C.x;
+            const ly = u * A.y + v * B.y + w * C.y;
+            const lz = u * A.z + v * B.z + w * C.z;
+
+            let dx = 0, dy = 0, dz = 0;
+            if (u + v > 0.0001) {
+                const tAB = v / (u + v);
+                part.evalEdge(0, tAB, _pA);
+                dx += (u + v) * (_pA.x - ((1 - tAB) * A.x + tAB * B.x));
+                dy += (u + v) * (_pA.y - ((1 - tAB) * A.y + tAB * B.y));
+                dz += (u + v) * (_pA.z - ((1 - tAB) * A.z + tAB * B.z));
+            }
+            if (v + w > 0.0001) {
+                const tBC = w / (v + w);
+                part.evalEdge(1, tBC, _pB);
+                dx += (v + w) * (_pB.x - ((1 - tBC) * B.x + tBC * C.x));
+                dy += (v + w) * (_pB.y - ((1 - tBC) * B.y + tBC * C.y));
+                dz += (v + w) * (_pB.z - ((1 - tBC) * B.z + tBC * C.z));
+            }
+            if (w + u > 0.0001) {
+                const tCA = u / (w + u);
+                part.evalEdge(2, tCA, _pC);
+                dx += (w + u) * (_pC.x - ((1 - tCA) * C.x + tCA * A.x));
+                dy += (w + u) * (_pC.y - ((1 - tCA) * C.y + tCA * A.y));
+                dz += (w + u) * (_pC.z - ((1 - tCA) * C.z + tCA * A.z));
+            }
+
+            const centerBulge = 27.0 * u * v * w * 0.65;
+            _bA.subVectors(part.corners[0].handleCrossIn, A).multiplyScalar(u);
+            _bB.subVectors(part.corners[1].handleCrossIn, B).multiplyScalar(v);
+            _bC.subVectors(part.corners[2].handleCrossIn, C).multiplyScalar(w);
+
+            out.x = lx + dx + (_bA.x + _bB.x + _bC.x) * centerBulge;
+            out.y = ly + dy + (_bA.y + _bB.y + _bC.y) * centerBulge;
+            out.z = lz + dz + (_bA.z + _bB.z + _bC.z) * centerBulge;
+        }
+
+        const divisions = 24;
+        const totalVerts = ((divisions + 1) * (divisions + 2)) / 2;
+        const lineSamples = 40;
+        let parts = [];
+        let activePart = null;
+
+        class CADPart {
+            constructor(name, cornerConfigs) {
+                this.name = name;
+                this.corners = cornerConfigs.map(c => new CADNode(
+                    c.name, c.x, c.y, c.z, c.hNext, c.hPrev, c.hCrossIn, c.hCrossOut
+                ));
+
+                this.edges = [
+                    { nodes: [this.corners[0], this.corners[1]] },
+                    { nodes: [this.corners[1], this.corners[2]] },
+                    { nodes: [this.corners[2], this.corners[0]] }
+                ];
+
+                this.posArray = new Float32Array(totalVerts * 3);
+                this.mirPosArray = new Float32Array(totalVerts * 3);
+
+                this.patchGeom = new THREE.BufferGeometry();
+                this.posAttr = new THREE.BufferAttribute(this.posArray, 3);
+                this.patchGeom.setAttribute('position', this.posAttr);
+
+                this.mirroredGeom = new THREE.BufferGeometry();
+                this.mirPosAttr = new THREE.BufferAttribute(this.mirPosArray, 3);
+                this.mirroredGeom.setAttribute('position', this.mirPosAttr);
+
+                const indices = [];
+                const mirroredIndices = [];
+                const gridIndex = [];
+                let vCounter = 0;
+                for (let i = 0; i <= divisions; i++) {
+                    gridIndex[i] = [];
+                    for (let j = 0; j <= divisions - i; j++) gridIndex[i][j] = vCounter++;
+                }
+                for (let i = 0; i < divisions; i++) {
+                    for (let j = 0; j <= divisions - i; j++) {
+                        const p1 = gridIndex[i][j];
+                        const p2 = gridIndex[i + 1][j];
+                        const p3 = gridIndex[i][j + 1];
+                        indices.push(p1, p2, p3);
+                        mirroredIndices.push(p1, p3, p2);
+                        if (j < divisions - i - 1) {
+                            const p4 = gridIndex[i + 1][j + 1];
+                            indices.push(p2, p4, p3);
+                            mirroredIndices.push(p2, p3, p4);
+                        }
+                    }
+                }
+                this.patchGeom.setIndex(indices);
+                this.mirroredGeom.setIndex(mirroredIndices);
+
+                this.patchMesh = new THREE.Mesh(this.patchGeom, currentMaterial);
+                this.patchMesh.userData = { part: this, isMirror: false };
+                scene.add(this.patchMesh);
+
+                this.mirroredPatchMesh = new THREE.Mesh(this.mirroredGeom, currentMaterial);
+                this.mirroredPatchMesh.userData = { part: this, isMirror: true };
+                scene.add(this.mirroredPatchMesh);
+
+                this.edgeLines = [];
+                this.mirroredEdgeLines = [];
+                for (let e = 0; e < 3; e++) {
+                    const geom = new THREE.BufferGeometry();
+                    geom.setAttribute('position', new THREE.BufferAttribute(new Float32Array((lineSamples + 1) * 3), 3));
+                    const line = new THREE.Line(geom, new THREE.LineBasicMaterial({ color: 0x38bdf8, linewidth: 2 }));
+                    this.edgeLines.push(line);
+                    scene.add(line);
+
+                    const mGeom = new THREE.BufferGeometry();
+                    mGeom.setAttribute('position', new THREE.BufferAttribute(new Float32Array((lineSamples + 1) * 3), 3));
+                    const mLine = new THREE.Line(mGeom, new THREE.LineBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.4 }));
+                    this.mirroredEdgeLines.push(mLine);
+                    scene.add(mLine);
+                }
+
+                this.visualGroup = new THREE.Group();
+                scene.add(this.visualGroup);
+
+                this.corners.forEach((corner) => this.initVisualNode(corner));
+            }
+
+            initVisualNode(node) {
+                const isCorner = this.corners.includes(node);
+                const anchorColor = isCorner ? 0x0284c7 : 0xa855f7;
+
+                // Anker
+                const anchor = new THREE.Mesh(
+                    new THREE.SphereGeometry(isCorner ? 0.045 : 0.038, 16, 16),
+                    new THREE.MeshStandardMaterial({ color: anchorColor, roughness: 0.3 })
+                );
+                anchor.position.copy(node.pos);
+                anchor.userData = { part: this, node, target: 'pos', isAnchor: true };
+                this.visualGroup.add(anchor);
+                node.meshAnchor = anchor;
+
+                const createHandle = (color, targetKey) => {
+                    const h = new THREE.Mesh(
+                        new THREE.OctahedronGeometry(0.03),
+                        new THREE.MeshStandardMaterial({ color, roughness: 0.2 })
+                    );
+                    h.userData = { part: this, node, target: targetKey, isAnchor: false };
+                    this.visualGroup.add(h);
+                    return h;
+                };
+
+                node.meshHandleNext = createHandle(0xec4899, 'handleNext');
+                node.meshHandleNext.position.copy(node.handleNext);
+
+                node.meshHandlePrev = createHandle(0xec4899, 'handlePrev');
+                node.meshHandlePrev.position.copy(node.handlePrev);
+
+                node.meshCrossIn = createHandle(0xf59e0b, 'handleCrossIn');
+                node.meshCrossIn.position.copy(node.handleCrossIn);
+
+                node.meshCrossOut = createHandle(0xeab308, 'handleCrossOut');
+                node.meshCrossOut.position.copy(node.handleCrossOut);
+
+                const lineNextMat = new THREE.LineBasicMaterial({ color: 0xec4899, transparent: true, opacity: 0.8 });
+                node.lineNext = new THREE.Line(new THREE.BufferGeometry().setFromPoints([node.pos, node.handleNext]), lineNextMat);
+                this.visualGroup.add(node.lineNext);
+
+                node.linePrev = new THREE.Line(new THREE.BufferGeometry().setFromPoints([node.pos, node.handlePrev]), lineNextMat);
+                this.visualGroup.add(node.linePrev);
+
+                node.lineCross = new THREE.Line(
+                    new THREE.BufferGeometry().setFromPoints([node.handleCrossIn, node.pos, node.handleCrossOut]),
+                    new THREE.LineBasicMaterial({ color: 0xf59e0b, transparent: true, opacity: 0.85 })
+                );
+                this.visualGroup.add(node.lineCross);
+            }
+
+            getAllNodes() {
+                const set = new Set();
+                this.edges.forEach(e => e.nodes.forEach(n => set.add(n)));
+                return Array.from(set);
+            }
+
+            updateVisualLines() {
+                this.getAllNodes().forEach(n => {
+                    if (n.lineNext) n.lineNext.geometry.setFromPoints([n.pos, n.handleNext]);
+                    if (n.linePrev) n.linePrev.geometry.setFromPoints([n.pos, n.handlePrev]);
+                    if (n.lineCross) n.lineCross.geometry.setFromPoints([n.handleCrossIn, n.pos, n.handleCrossOut]);
+                });
+            }
+
+            evalEdge(edgeIdx, t, out = new THREE.Vector3()) {
+                const nodes = this.edges[edgeIdx].nodes;
+                const numSegs = nodes.length - 1;
+                if (numSegs <= 0) return out.copy(nodes[0].pos);
+
+                const clampedT = Math.max(0, Math.min(0.999999, t));
+                const s = clampedT * numSegs;
+                const segIdx = Math.floor(s);
+                const u = s - segIdx;
+
+                const nA = nodes[segIdx], nB = nodes[segIdx + 1];
+                const p0 = nA.pos, p1 = nA.handleNext, p2 = nB.handlePrev, p3 = nB.pos;
+                const mt = 1 - u;
+
+                out.x = mt*mt*mt*p0.x + 3*mt*mt*u*p1.x + 3*mt*u*u*p2.x + u*u*u*p3.x;
+                out.y = mt*mt*mt*p0.y + 3*mt*mt*u*p1.y + 3*mt*u*u*p2.y + u*u*u*p3.y;
+                out.z = mt*mt*mt*p0.z + 3*mt*mt*u*p1.z + 3*mt*u*u*p2.z + u*u*u*p3.z;
+                return out;
+            }
+
+            addPointOnEdge(edgeIdx, t) {
+                const edge = this.edges[edgeIdx];
+                const numSegs = edge.nodes.length - 1;
+                const s = Math.max(0.05, Math.min(0.95, t)) * numSegs;
+                const segIdx = Math.floor(s);
+                const u = s - segIdx;
+
+                const nA = edge.nodes[segIdx], nB = edge.nodes[segIdx + 1];
+                const p0 = nA.pos.clone(), p1 = nA.handleNext.clone();
+                const p2 = nB.handlePrev.clone(), p3 = nB.pos.clone();
+
+                const p01 = new THREE.Vector3().lerpVectors(p0, p1, u);
+                const p12 = new THREE.Vector3().lerpVectors(p1, p2, u);
+                const p23 = new THREE.Vector3().lerpVectors(p2, p3, u);
+                const p012 = new THREE.Vector3().lerpVectors(p01, p12, u);
+                const p123 = new THREE.Vector3().lerpVectors(p12, p23, u);
+                const pSplit = new THREE.Vector3().lerpVectors(p012, p123, u);
+
+                nA.handleNext.copy(p01);
+                nA.meshHandleNext.position.copy(nA.handleNext);
+
+                nB.handlePrev.copy(p23);
+                nB.meshHandlePrev.position.copy(nB.handlePrev);
+
+                const cIn = new THREE.Vector3().lerpVectors(nA.handleCrossIn.clone().sub(nA.pos), nB.handleCrossIn.clone().sub(nB.pos), u);
+                const cOut = new THREE.Vector3().lerpVectors(nA.handleCrossOut.clone().sub(nA.pos), nB.handleCrossOut.clone().sub(nB.pos), u);
+
+                const newNode = new CADNode(
+                    `Pfadpunkt (${edgeIdx+1}.${segIdx+1})`,
+                    pSplit.x, pSplit.y, pSplit.z,
+                    p123.clone().sub(pSplit),
+                    p012.clone().sub(pSplit),
+                    cIn, cOut
+                );
+
+                this.initVisualNode(newNode);
+                edge.nodes.splice(segIdx + 1, 0, newNode);
+                this.updateVisualLines();
+                this.rebuild();
+                return newNode;
+            }
+
+            setHelpersVisible(visible) {
+                this.visualGroup.visible = visible;
+                this.edgeLines.forEach(l => l.visible = visible);
+                this.mirroredEdgeLines.forEach(l => l.visible = visible && symmetryEnabled);
+            }
+
+            setMaterial(mat) {
+                this.patchMesh.material = mat;
+                this.mirroredPatchMesh.material = mat;
+            }
+
+            rebuild() {
+                const _pt = new THREE.Vector3();
+                let idx = 0;
+                for (let i = 0; i <= divisions; i++) {
+                    for (let j = 0; j <= divisions - i; j++) {
+                        const k = divisions - i - j;
+                        evalPatchSurface(this, i / divisions, j / divisions, k / divisions, _pt);
+                        this.posArray[idx] = _pt.x;
+                        this.posArray[idx+1] = _pt.y;
+                        this.posArray[idx+2] = _pt.z;
+
+                        this.mirPosArray[idx] = -_pt.x;
+                        this.mirPosArray[idx+1] = _pt.y;
+                        this.mirPosArray[idx+2] = _pt.z;
+                        idx += 3;
+                    }
+                }
+                this.posAttr.needsUpdate = true;
+                this.patchGeom.computeVertexNormals();
+
+                for (let e = 0; e < 3; e++) {
+                    const lPos = this.edgeLines[e].geometry.attributes.position.array;
+                    const mlPos = this.mirroredEdgeLines[e].geometry.attributes.position.array;
+                    let lIdx = 0;
+                    for (let s = 0; s <= lineSamples; s++) {
+                        this.evalEdge(e, s / lineSamples, _pt);
+                        lPos[lIdx] = _pt.x;
+                        lPos[lIdx+1] = _pt.y;
+                        lPos[lIdx+2] = _pt.z;
+
+                        mlPos[lIdx] = -_pt.x;
+                        mlPos[lIdx+1] = _pt.y;
+                        mlPos[lIdx+2] = _pt.z;
+                        lIdx += 3;
+                    }
+                    this.edgeLines[e].geometry.attributes.position.needsUpdate = true;
+                    this.mirroredEdgeLines[e].geometry.attributes.position.needsUpdate = true;
+                }
+
+                if (symmetryEnabled) {
+                    this.mirroredPatchMesh.visible = true;
+                    this.mirPosAttr.needsUpdate = true;
+                    this.mirroredGeom.computeVertexNormals();
+                    this.mirroredEdgeLines.forEach(l => l.visible = this.visualGroup.visible);
+                } else {
+                    this.mirroredPatchMesh.visible = false;
+                    this.mirroredEdgeLines.forEach(l => l.visible = false);
+                }
+            }
+        }
+
+        function createDefaultPart(name, offsetZ = 0, offsetX = 0) {
+            const configs = [
+                {
+                    name: "Punkt A (Mitte Vorne)",
+                    x: 0.0 + offsetX, y: 0.22, z: 0.65 + offsetZ,
+                    hNext: new THREE.Vector3(0.0, 0.12, -0.45),
+                    hPrev: new THREE.Vector3(0.35, 0.08, -0.2),
+                    hCrossIn: new THREE.Vector3(0.25, 0.18, -0.15),
+                    hCrossOut: new THREE.Vector3(-0.25, -0.18, 0.15)
+                },
+                {
+                    name: "Punkt B (Mitte Hinten)",
+                    x: 0.0 + offsetX, y: 0.48, z: -0.55 + offsetZ,
+                    hNext: new THREE.Vector3(0.32, -0.06, 0.25),
+                    hPrev: new THREE.Vector3(0.0, -0.1, 0.45),
+                    hCrossIn: new THREE.Vector3(0.2, 0.15, 0.12),
+                    hCrossOut: new THREE.Vector3(-0.2, -0.15, -0.12)
+                },
+                {
+                    name: "Punkt C (Außenschulter)",
+                    x: 0.75 + offsetX, y: 0.28, z: 0.05 + offsetZ,
+                    hNext: new THREE.Vector3(-0.32, -0.04, 0.25),
+                    hPrev: new THREE.Vector3(-0.35, 0.06, -0.25),
+                    hCrossIn: new THREE.Vector3(-0.25, 0.22, 0.0),
+                    hCrossOut: new THREE.Vector3(0.25, -0.22, 0.0)
+                }
+            ];
+            const p = new CADPart(name, configs);
+            p.rebuild();
+            parts.push(p);
+            document.getElementById('status-parts').textContent = parts.length;
+            return p;
+        }
+
+        // --- 5. CAD INTERAKTIONS- UND PARAMETERLOGIK ---
+        let activeSelection = null;
+        let pointClipboard = null;
+        let isAddPointToolActive = false;
+        let hoverEdgeCandidate = null;
+
+        const raycaster = new THREE.Raycaster();
+        raycaster.params.Line = { threshold: 0.08 };
+        const pointer = new THREE.Vector2();
+        const pointerDownPos = new THREE.Vector2();
+
+        // UI DOM Referenzen
+        const panelTitle = document.getElementById('panel-title');
+        const panelSubtitle = document.getElementById('panel-subtitle');
+        const panelBadge = document.getElementById('panel-part-badge');
+        const inputX = document.getElementById('input-x');
+        const inputY = document.getElementById('input-y');
+        const inputZ = document.getElementById('input-z');
+        const handleBox = document.getElementById('handle-parameters-box');
+        const inputLen = document.getElementById('input-handle-len');
+        const inputDX = document.getElementById('input-dx');
+        const inputDY = document.getElementById('input-dy');
+        const inputDZ = document.getElementById('input-dz');
+        const btnCopy = document.getElementById('btn-copy');
+        const btnPaste = document.getElementById('btn-paste');
+        const btnSnap = document.getElementById('btn-snap');
+        const clipStatus = document.getElementById('clip-status');
+
+        function updateGizmoOrientation() {
+            if (!activeSelection) return;
+
+            if (currentGizmoSpace === 'local' && !activeSelection.isAnchor && activeSelection.node) {
+                // Hebel: Ausrichtung starr entlang der Tangentenachse
+                const node = activeSelection.node;
+                const handlePos = node[activeSelection.target];
+                const dir = new THREE.Vector3().subVectors(handlePos, node.pos).normalize();
+
+                // Mesh lokal rotieren, damit Gizmo im Local-Modus exakt entlang der Achse liegt
+                const quat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), dir);
+                activeSelection.mesh.quaternion.copy(quat);
+                transformControl.setSpace('local');
+            } else {
+                activeSelection.mesh.quaternion.identity();
+                transformControl.setSpace('world');
+            }
+        }
+
+        function setGizmoMode(mode) {
+            currentGizmoMode = mode;
+            document.getElementById('btn-mode-translate').classList.toggle('active', mode === 'translate');
+            document.getElementById('btn-mode-rotate').classList.toggle('active', mode === 'rotate');
+            document.getElementById('status-mode').textContent = mode.toUpperCase();
+
+            if (mode === 'rotate') {
+                if (activeSelection && !activeSelection.isAnchor) {
+                    selectItem(activeSelection.node.meshAnchor);
+                }
+            }
+            transformControl.setMode(mode);
+        }
+
+        function setGizmoSpace(space) {
+            currentGizmoSpace = space;
+            document.getElementById('btn-space-world').classList.toggle('active', space === 'world');
+            document.getElementById('btn-space-local').classList.toggle('active', space === 'local');
+            document.getElementById('status-space').textContent = space.toUpperCase();
+            updateGizmoOrientation();
+        }
+
+        function selectItem(mesh) {
+            if (!mesh) {
+                deselectAll();
+                return;
+            }
+
+            activeSelection = {
+                mesh,
+                part: mesh.userData.part,
+                node: mesh.userData.node,
+                target: mesh.userData.target,
+                isAnchor: mesh.userData.isAnchor
+            };
+
+            if (!activeSelection.isAnchor && currentGizmoMode === 'rotate') {
+                setGizmoMode('translate');
+            }
+
+            transformControl.attach(mesh);
+            transformControl.setMode(currentGizmoMode);
+
+            panelTitle.textContent = activeSelection.node.name;
+            panelBadge.textContent = activeSelection.part.name;
+
+            const targetTitles = {
+                pos: 'Ankerpunkt (Knoten)',
+                handleNext: 'Kantenhebel Vor (Pink)',
+                handlePrev: 'Kantenhebel Rück (Pink)',
+                handleCrossIn: 'Quertangente Innen (Bauch)',
+                handleCrossOut: 'Quertangente Außen (Sturz)'
+            };
+            panelSubtitle.textContent = targetTitles[activeSelection.target] || 'Element';
+
+            // UI mit echten Zahlenwerten befüllen
+            syncInputsFromGeometry();
+
+            // Tangentenbox ein/ausblenden
+            if (!activeSelection.isAnchor) {
+                handleBox.classList.remove('hidden');
+            } else {
+                handleBox.classList.add('hidden');
+            }
+
+            updateGizmoOrientation();
+            updateClipboardUI();
+        }
+
+        function deselectAll() {
+            activeSelection = null;
+            transformControl.detach();
+            parts.forEach(p => p.setHelpersVisible(false));
+            setAddPointTool(false);
+            panelTitle.textContent = "Keine Auswahl";
+            panelSubtitle.textContent = "Klicke Punkt oder Hebel";
+            panelBadge.textContent = "--";
+            handleBox.classList.add('hidden');
+
+            inputX.value = "";
+            inputY.value = "";
+            inputZ.value = "";
+            updateClipboardUI();
+        }
+
+        function setActivePart(part, meshToSelect = null) {
+            activePart = part;
+            parts.forEach(p => p.setHelpersVisible(p === activePart));
+            if (meshToSelect) {
+                selectItem(meshToSelect);
+            } else if (part.corners[0]) {
+                selectItem(part.corners[0].meshAnchor);
+            }
+        }
+
+        // Synchronisiert die Inputfelder exakt mit den 3D-Koordinaten
+        function syncInputsFromGeometry() {
+            if (!activeSelection) return;
+            const pos = activeSelection.mesh.position;
+            inputX.value = pos.x.toFixed(4);
+            inputY.value = pos.y.toFixed(4);
+            inputZ.value = pos.z.toFixed(4);
+
+            if (!activeSelection.isAnchor && activeSelection.node) {
+                const node = activeSelection.node;
+                const d = new THREE.Vector3().subVectors(pos, node.pos);
+                const len = d.length();
+                inputLen.value = len.toFixed(4);
+                inputDX.value = d.x.toFixed(4);
+                inputDY.value = d.y.toFixed(4);
+                inputDZ.value = d.z.toFixed(4);
+            }
+        }
+
+        // DIREKTE EINGABE: Anker oder Hebel über XYZ Inputfelder verändern
+        function applyXYZInputs() {
+            if (!activeSelection) return;
+            const nx = parseFloat(inputX.value) || 0;
+            const ny = parseFloat(inputY.value) || 0;
+            const nz = parseFloat(inputZ.value) || 0;
+
+            const newPos = new THREE.Vector3(nx, ny, nz);
+            const p = activeSelection.part;
+            const node = activeSelection.node;
+            const target = activeSelection.target;
+
+            if (p === parts[0] && (node === p.corners[0] || node === p.corners[1]) && target === 'pos') {
+                newPos.x = 0;
+                inputX.value = "0.0000";
+            }
+
+            if (target === 'pos') {
+                const delta = newPos.clone().sub(node.pos);
+                node.pos.copy(newPos);
+                ['handleNext', 'handlePrev', 'handleCrossIn', 'handleCrossOut'].forEach(k => node[k].add(delta));
+                node.meshHandleNext.position.copy(node.handleNext);
+                node.meshHandlePrev.position.copy(node.handlePrev);
+                node.meshCrossIn.position.copy(node.handleCrossIn);
+                node.meshCrossOut.position.copy(node.handleCrossOut);
+            } else {
+                node[target].copy(newPos);
+                // Quertangenten Wippe berücksichtigen
+                if (target === 'handleCrossIn' || target === 'handleCrossOut') {
+                    const isCrossIn = (target === 'handleCrossIn');
+                    const activeH = isCrossIn ? node.handleCrossIn : node.handleCrossOut;
+                    const partnerH = isCrossIn ? node.handleCrossOut : node.handleCrossIn;
+                    const partnerM = isCrossIn ? node.meshCrossOut : node.meshCrossIn;
+
+                    const vOffset = new THREE.Vector3().subVectors(activeH, node.pos);
+                    if (vOffset.length() > 0.0001) {
+                        const lenOpp = partnerH.distanceTo(node.pos);
+                        partnerH.copy(node.pos).addScaledVector(vOffset.normalize(), -lenOpp);
+                        partnerM.position.copy(partnerH);
+                    }
+                }
+            }
+
+            activeSelection.mesh.position.copy(newPos);
+            p.updateVisualLines();
+            p.rebuild();
+            syncInputsFromGeometry();
+            updateGizmoOrientation();
+        }
+
+        [inputX, inputY, inputZ].forEach(inp => {
+            inp.addEventListener('change', applyXYZInputs);
+            inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') applyXYZInputs(); });
+        });
+
+        // DIREKTE EINGABE: Exakte Hebel-Länge
+        function setExactHandleLength(newLen) {
+            if (!activeSelection || activeSelection.isAnchor || !activeSelection.node) return;
+            const node = activeSelection.node;
+            const p = activeSelection.part;
+            const target = activeSelection.target;
+
+            const dir = new THREE.Vector3().subVectors(node[target], node.pos);
+            if (dir.length() < 0.0001) return;
+            dir.normalize();
+
+            const clampedLen = Math.max(0.001, newLen);
+            node[target].copy(node.pos).addScaledVector(dir, clampedLen);
+            activeSelection.mesh.position.copy(node[target]);
+
+            if (target === 'handleCrossIn' || target === 'handleCrossOut') {
+                const partnerKey = (target === 'handleCrossIn') ? 'handleCrossOut' : 'handleCrossIn';
+                const partnerMesh = (target === 'handleCrossIn') ? node.meshCrossOut : node.meshCrossIn;
+                const partnerLen = node[partnerKey].distanceTo(node.pos);
+                node[partnerKey].copy(node.pos).addScaledVector(dir, -partnerLen);
+                partnerMesh.position.copy(node[partnerKey]);
+            }
+
+            p.updateVisualLines();
+            p.rebuild();
+            syncInputsFromGeometry();
+        }
+
+        inputLen.addEventListener('change', () => setExactHandleLength(parseFloat(inputLen.value) || 0.1));
+        inputLen.addEventListener('keydown', (e) => { if (e.key === 'Enter') setExactHandleLength(parseFloat(inputLen.value) || 0.1); });
+
+        document.getElementById('btn-scale-down').addEventListener('click', () => {
+            const cur = parseFloat(inputLen.value) || 0.2;
+            setExactHandleLength(cur * 0.9);
+        });
+        document.getElementById('btn-scale-up').addEventListener('click', () => {
+            const cur = parseFloat(inputLen.value) || 0.2;
+            setExactHandleLength(cur * 1.1);
+        });
+
+        // Relativer Vektor (dX, dY, dZ) Eingabe
+        function applyRelativeVectorInputs() {
+            if (!activeSelection || activeSelection.isAnchor || !activeSelection.node) return;
+            const node = activeSelection.node;
+            const dx = parseFloat(inputDX.value) || 0;
+            const dy = parseFloat(inputDY.value) || 0;
+            const dz = parseFloat(inputDZ.value) || 0;
+
+            const newAbs = new THREE.Vector3().copy(node.pos).add(new THREE.Vector3(dx, dy, dz));
+            inputX.value = newAbs.x;
+            inputY.value = newAbs.y;
+            inputZ.value = newAbs.z;
+            applyXYZInputs();
+        }
+
+        [inputDX, inputDY, inputDZ].forEach(inp => {
+            inp.addEventListener('change', applyRelativeVectorInputs);
+            inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') applyRelativeVectorInputs(); });
+        });
+
+        // CAD Constraints & Quick Actions
+        document.getElementById('btn-zero-x').addEventListener('click', () => {
+            inputX.value = "0.0000";
+            applyXYZInputs();
+        });
+        document.getElementById('btn-level-y').addEventListener('click', () => {
+            if (!activeSelection) return;
+            if (!activeSelection.isAnchor && activeSelection.node) {
+                // Hebel auf gleiche Höhe wie Anker setzen
+                inputY.value = activeSelection.node.pos.y.toFixed(4);
+            } else {
+                inputY.value = "0.2500";
+            }
+            applyXYZInputs();
+        });
+        document.getElementById('btn-invert-h').addEventListener('click', () => {
+            if (!activeSelection || activeSelection.isAnchor || !activeSelection.node) return;
+            const node = activeSelection.node;
+            const target = activeSelection.target;
+            const rel = node[target].clone().sub(node.pos).negate();
+            node[target].copy(node.pos).add(rel);
+            activeSelection.mesh.position.copy(node[target]);
+            activeSelection.part.updateVisualLines();
+            activeSelection.part.rebuild();
+            syncInputsFromGeometry();
+            updateGizmoOrientation();
+        });
+
+        // Gizmo Interaktion
+        transformControl.addEventListener('objectChange', () => {
+            if (!activeSelection) return;
+            const p = activeSelection.part;
+            const node = activeSelection.node;
+            const target = activeSelection.target;
+
+            if (currentGizmoMode === 'rotate' && activeSelection.isAnchor) {
+                const deltaQ = node.meshAnchor.quaternion.clone();
+                node.meshAnchor.quaternion.identity();
+
+                ['handleNext', 'handlePrev', 'handleCrossIn', 'handleCrossOut'].forEach(k => {
+                    const rel = node[k].clone().sub(node.pos).applyQuaternion(deltaQ);
+                    node[k].copy(node.pos).add(rel);
+                });
+
+                node.meshHandleNext.position.copy(node.handleNext);
+                node.meshHandlePrev.position.copy(node.handlePrev);
+                node.meshCrossIn.position.copy(node.handleCrossIn);
+                node.meshCrossOut.position.copy(node.handleCrossOut);
+
+                p.updateVisualLines();
+                p.rebuild();
+                syncInputsFromGeometry();
+                return;
+            }
+
+            const newPos = activeSelection.mesh.position.clone();
+            if (p === parts[0] && (node === p.corners[0] || node === p.corners[1]) && target === 'pos') {
+                newPos.x = 0;
+                activeSelection.mesh.position.x = 0;
+            }
+
+            if (target !== 'pos') {
+                node[target].copy(newPos);
+                if (target === 'handleCrossIn' || target === 'handleCrossOut') {
+                    const isCrossIn = (target === 'handleCrossIn');
+                    const activeH = isCrossIn ? node.handleCrossIn : node.handleCrossOut;
+                    const partnerH = isCrossIn ? node.handleCrossOut : node.handleCrossIn;
+                    const partnerM = isCrossIn ? node.meshCrossOut : node.meshCrossIn;
+
+                    const vOffset = new THREE.Vector3().subVectors(activeH, node.pos);
+                    if (vOffset.length() > 0.0001) {
+                        const lenOpp = partnerH.distanceTo(node.pos);
+                        partnerH.copy(node.pos).addScaledVector(vOffset.normalize(), -lenOpp);
+                        partnerM.position.copy(partnerH);
+                    }
+                }
+            } else {
+                const delta = newPos.clone().sub(node.pos);
+                node.pos.copy(newPos);
+                ['handleNext', 'handlePrev', 'handleCrossIn', 'handleCrossOut'].forEach(k => node[k].add(delta));
+                node.meshHandleNext.position.copy(node.handleNext);
+                node.meshHandlePrev.position.copy(node.handlePrev);
+                node.meshCrossIn.position.copy(node.handleCrossIn);
+                node.meshCrossOut.position.copy(node.handleCrossOut);
+            }
+
+            p.updateVisualLines();
+            p.rebuild();
+            syncInputsFromGeometry();
+            updateGizmoOrientation();
+        });
+
+        // Zwischenablage & Tangentenübertragung
+        function updateClipboardUI() {
+            const hasClip = pointClipboard !== null;
+            const hasSel = activeSelection !== null && activeSelection.node !== null;
+            btnCopy.disabled = !hasSel;
+            btnPaste.disabled = !(hasClip && hasSel);
+            btnSnap.disabled = !(hasClip && hasSel);
+            clipStatus.textContent = hasClip ? pointClipboard.name : 'Leer';
+        }
+
+        btnCopy.addEventListener('click', () => {
+            if (!activeSelection || !activeSelection.node) return;
+            const n = activeSelection.node;
+            pointClipboard = {
+                name: `${activeSelection.part.name} [${n.name}]`,
+                pos: n.pos.clone(),
+                hNextRel: n.handleNext.clone().sub(n.pos),
+                hPrevRel: n.handlePrev.clone().sub(n.pos),
+                hCrossInRel: n.handleCrossIn.clone().sub(n.pos),
+                hCrossOutRel: n.handleCrossOut.clone().sub(n.pos)
+            };
+            updateClipboardUI();
+        });
+
+        function pasteTangents(snapPosition = false) {
+            if (!pointClipboard || !activeSelection || !activeSelection.node) return;
+            const n = activeSelection.node;
+            const p = activeSelection.part;
+
+            if (snapPosition) {
+                const targetPos = pointClipboard.pos.clone();
+                if (p === parts[0] && (n === p.corners[0] || n === p.corners[1])) targetPos.x = 0;
+                n.pos.copy(targetPos);
+                n.meshAnchor.position.copy(n.pos);
+            }
+
+            n.handleNext.copy(n.pos).add(pointClipboard.hNextRel);
+            n.meshHandleNext.position.copy(n.handleNext);
+            n.handlePrev.copy(n.pos).add(pointClipboard.hPrevRel);
+            n.meshHandlePrev.position.copy(n.handlePrev);
+            n.handleCrossIn.copy(n.pos).add(pointClipboard.hCrossInRel);
+            n.meshCrossIn.position.copy(n.handleCrossIn);
+            n.handleCrossOut.copy(n.pos).add(pointClipboard.hCrossOutRel);
+            n.meshCrossOut.position.copy(n.handleCrossOut);
+
+            p.updateVisualLines();
+            p.rebuild();
+            syncInputsFromGeometry();
+            updateGizmoOrientation();
+        }
+
+        btnPaste.addEventListener('click', () => pasteTangents(false));
+        btnSnap.addEventListener('click', () => pasteTangents(true));
+
+        // Kantenpunkt Werkzeug
+        const addPointPreview = new THREE.Mesh(
+            new THREE.SphereGeometry(0.04, 16, 16),
+            new THREE.MeshStandardMaterial({ color: 0xc084fc, roughness: 0.2 })
+        );
+        addPointPreview.visible = false;
+        scene.add(addPointPreview);
+
+        function findEdgeCandidate(ray) {
+            if (!activePart) return null;
+            let bestCandidate = null;
+            let minRayDist = Infinity;
+            const samplePt = new THREE.Vector3();
+
+            for (let e = 0; e < 3; e++) {
+                const samples = 60;
+                for (let i = 0; i <= samples; i++) {
+                    const t = i / samples;
+                    activePart.evalEdge(e, t, samplePt);
+                    const distToRay = ray.distanceToPoint(samplePt);
+
+                    if (distToRay < 0.12 && distToRay < minRayDist) {
+                        minRayDist = distToRay;
+                        bestCandidate = { edgeIdx: e, t: t, point: samplePt.clone() };
+                    }
+                }
+            }
+            return bestCandidate;
+        }
+
+        function setAddPointTool(active) {
+            isAddPointToolActive = active;
+            const btn = document.getElementById('btn-add-point');
+            if (!btn) return;
+            btn.classList.toggle('active', isAddPointToolActive);
+            if (isAddPointToolActive) {
+                transformControl.detach();
+            } else {
+                addPointPreview.visible = false;
+                hoverEdgeCandidate = null;
+            }
+        }
+
+        // Raycasting & Klick-Interaktion
+        window.addEventListener('pointerdown', (e) => {
+            pointerDownPos.set(e.clientX, e.clientY);
+        });
+
+        window.addEventListener('pointermove', (e) => {
+            if (isDraggingGizmo) return;
+            pointer.x = (e.clientX / window.innerWidth) * 2 - 1;
+            pointer.y = -(e.clientY / window.innerHeight) * 2 + 1;
+            raycaster.setFromCamera(pointer, camera);
+
+            if (isAddPointToolActive && activePart) {
+                const candidate = findEdgeCandidate(raycaster.ray);
+                if (candidate) {
+                    hoverEdgeCandidate = candidate;
+                    addPointPreview.position.copy(candidate.point);
+                    addPointPreview.visible = true;
+                    renderer.domElement.style.cursor = 'crosshair';
+                    return;
+                } else {
+                    hoverEdgeCandidate = null;
+                    addPointPreview.visible = false;
+                    renderer.domElement.style.cursor = 'default';
+                }
+            }
+
+            if (activePart && activePart.visualGroup.visible) {
+                const activeMeshes = [];
+                activePart.getAllNodes().forEach(n => {
+                    activeMeshes.push(n.meshAnchor, n.meshHandleNext, n.meshHandlePrev, n.meshCrossIn, n.meshCrossOut);
+                });
+                if (raycaster.intersectObjects(activeMeshes).length > 0) {
+                    renderer.domElement.style.cursor = 'pointer';
+                    return;
+                }
+            }
+            renderer.domElement.style.cursor = 'default';
+        });
+
+        window.addEventListener('pointerup', (e) => {
+            if (isDraggingGizmo || wasDragging) {
+                wasDragging = false;
+                return;
+            }
+            if (Math.hypot(e.clientX - pointerDownPos.x, e.clientY - pointerDownPos.y) > 6) return;
+            if (e.target !== renderer.domElement || e.button !== 0) return;
+
+            pointer.x = (e.clientX / window.innerWidth) * 2 - 1;
+            pointer.y = -(e.clientY / window.innerHeight) * 2 + 1;
+            raycaster.setFromCamera(pointer, camera);
+
+            if (isAddPointToolActive && activePart && hoverEdgeCandidate) {
+                const newNode = activePart.addPointOnEdge(hoverEdgeCandidate.edgeIdx, hoverEdgeCandidate.t);
+                setAddPointTool(false);
+                selectItem(newNode.meshAnchor);
+                return;
+            }
+
+            // Klick auf Anker oder Hebel
+            if (activePart && activePart.visualGroup.visible) {
+                const activeHandles = [];
+                activePart.getAllNodes().forEach(n => {
+                    activeHandles.push(n.meshAnchor, n.meshHandleNext, n.meshHandlePrev, n.meshCrossIn, n.meshCrossOut);
+                });
+                const hits = raycaster.intersectObjects(activeHandles);
+                if (hits.length > 0) {
+                    selectItem(hits[0].object);
+                    return;
+                }
+            }
+
+            if (transformControl.visible && transformControl.axis !== null) return;
+
+            // Klick auf Blechfläche
+            const allMeshes = [];
+            parts.forEach(p => {
+                allMeshes.push(p.patchMesh);
+                if (symmetryEnabled && p.mirroredPatchMesh.visible) allMeshes.push(p.mirroredPatchMesh);
+            });
+            const hits = raycaster.intersectObjects(allMeshes);
+            if (hits.length > 0) {
+                const clickedPart = hits[0].object.userData.part;
+                const isMir = hits[0].object.userData.isMirror;
+                const hitPt = hits[0].point.clone();
+                if (isMir) hitPt.x = -hitPt.x;
+
+                let nearest = clickedPart.getAllNodes()[0].meshAnchor;
+                let minDist = Infinity;
+                clickedPart.getAllNodes().forEach(n => {
+                    const d = n.pos.distanceTo(hitPt);
+                    if (d < minDist) { minDist = d; nearest = n.meshAnchor; }
+                });
+
+                setActivePart(clickedPart, nearest);
+                return;
+            }
+
+            deselectAll();
+        });
+
+        // --- 6. HEADER-ACTIONS & KEYBOARD SHORTCUTS ---
+        document.getElementById('btn-mode-translate').addEventListener('click', () => setGizmoMode('translate'));
+        document.getElementById('btn-mode-rotate').addEventListener('click', () => setGizmoMode('rotate'));
+        document.getElementById('btn-space-world').addEventListener('click', () => setGizmoSpace('world'));
+        document.getElementById('btn-space-local').addEventListener('click', () => setGizmoSpace('local'));
+
+        document.getElementById('btn-add-part').addEventListener('click', () => {
+            const count = parts.length + 1;
+            const newP = createDefaultPart(`Bauteil ${count}`, -(count - 1) * 0.9, 0.15);
+            setActivePart(newP);
+        });
+
+        document.getElementById('btn-add-point').addEventListener('click', () => {
+            if (!activePart && parts.length > 0) setActivePart(parts[0]);
+            setAddPointTool(!isAddPointToolActive);
+        });
+
+        const btnSym = document.getElementById('btn-symmetry');
+        btnSym.addEventListener('click', () => {
+            symmetryEnabled = !symmetryEnabled;
+            btnSym.classList.toggle('active', symmetryEnabled);
+            btnSym.textContent = `Symmetrie (X=0): ${symmetryEnabled ? 'An' : 'Aus'}`;
+            parts.forEach(p => p.rebuild());
+        });
+
+        const btnWhl = document.getElementById('btn-wheels');
+        btnWhl.addEventListener('click', () => {
+            wheelsVisible = !wheelsVisible;
+            wheelsGroup.visible = wheelsVisible;
+            btnWhl.classList.toggle('active', wheelsVisible);
+            btnWhl.textContent = `Fahrwerk: ${wheelsVisible ? 'An' : 'Aus'}`;
+        });
+
+        const btnStudio = document.getElementById('btn-shade-studio');
+        const btnZebra = document.getElementById('btn-shade-zebra');
+        const btnWire = document.getElementById('btn-shade-wire');
+
+        function setShadingMode(mode) {
+            [btnStudio, btnZebra, btnWire].forEach(b => b.classList.remove('active'));
+            if (mode === 'studio') {
+                btnStudio.classList.add('active');
+                currentMaterial = studioMat;
+            } else if (mode === 'zebra') {
+                btnZebra.classList.add('active');
+                currentMaterial = zebraMat;
+            } else if (mode === 'wire') {
+                btnWire.classList.add('active');
+                currentMaterial = wireMat;
+            }
+            parts.forEach(p => p.setMaterial(currentMaterial));
+        }
+
+        btnStudio.addEventListener('click', () => setShadingMode('studio'));
+        btnZebra.addEventListener('click', () => setShadingMode('zebra'));
+        btnWire.addEventListener('click', () => setShadingMode('wire'));
+
+        document.getElementById('btn-deselect').addEventListener('click', deselectAll);
+
+        // Shortcuts
+        window.addEventListener('keydown', (e) => {
+            // Keine Shortcuts ausführen, wenn man gerade in einem Inputfeld tippt
+            if (['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+
+            if (e.key === 'Escape') deselectAll();
+            if (e.key.toLowerCase() === 'w') setGizmoMode('translate');
+            if (e.key.toLowerCase() === 'e') setGizmoMode('rotate');
+            if (e.key.toLowerCase() === 'p') {
+                if (!activePart && parts.length > 0) setActivePart(parts[0]);
+                setAddPointTool(!isAddPointToolActive);
+            }
+        });
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Startbauteil anlegen
+        const initPart = createDefaultPart("Bauteil 1");
+        setActivePart(initPart);
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        window.onload = function() {
+            animate();
+        };
+    </script>
+</body>
+</html>

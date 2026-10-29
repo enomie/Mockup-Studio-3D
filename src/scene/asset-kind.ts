@@ -14,6 +14,8 @@ export type AssetKind =
   | 'wine-bottle'
   | 'pen'
   | 'fabric-cloth'
+  | 'fabric-cloth-baked'
   | 'wheel-car'
   | 'book-softcover'
-  | 'book-hardcover';
+  | 'book-hardcover'
+  | 'triangle-patch';

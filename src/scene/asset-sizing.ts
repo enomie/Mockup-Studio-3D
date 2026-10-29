@@ -27,13 +27,14 @@ import {
   defaultWineBottleParams,
   isWineBottleAssetKind,
   wineBottleFootprintAspect,
+  wineBottleMaxOuterDiameterM,
 } from './asset-wine-bottle';
 import {
-  computePenHeightM,
   defaultPenParams,
   isPenAssetKind,
+  penFootprintAspect,
+  penNominalFootprintM,
 } from './asset-pen';
-import { penBodyWrapAspectNominal } from '@/engine/pen-body-wrap-unfold';
 import { defaultBlockParams, isBlockAssetKind } from './asset-block';
 import { defaultCylinderParams, isCylinderAssetKind } from './asset-cylinder';
 import { defaultSphereParams, isSphereAssetKind } from './asset-sphere';
@@ -42,6 +43,7 @@ import {
   FABRIC_CLOTH_MESH_THICKNESS_M,
   FABRIC_CLOTH_PLACEHOLDER_ASPECT,
   FABRIC_CLOTH_REF_WIDTH_M,
+  isFabricClothBakedAssetKind,
 } from './asset-fabric-cloth';
 import { BOOK_PLACEHOLDER_ASPECT, BOOK_REF_COVER_WIDTH_M } from './asset-book';
 import {
@@ -119,12 +121,15 @@ export function referenceFaceWidth(assetKind: AssetKind): number {
     case 'wine-bottle':
       return defaultWineBottleParams('sparkling').heightM * (88 / 290);
     case 'pen':
-      return defaultPenParams('marker').maxRadiusM * 2;
+      return penNominalFootprintM('marker').widthM;
     case 'fabric-cloth':
+    case 'fabric-cloth-baked':
       return FABRIC_CLOTH_REF_WIDTH_M;
     case 'book-softcover':
     case 'book-hardcover':
       return BOOK_REF_COVER_WIDTH_M;
+    case 'triangle-patch':
+      return 1.0;
   }
 }
 
@@ -141,7 +146,7 @@ export function referenceFaceHeight(assetKind: AssetKind): number {
     case 'wine-bottle':
       return defaultWineBottleParams('bordeaux').heightM;
     case 'pen':
-      return computePenHeightM(defaultPenParams('marker').maxRadiusM);
+      return penNominalFootprintM('marker').heightM;
     default:
       return referenceFaceWidth(assetKind);
   }
@@ -156,6 +161,29 @@ function beverageCanReferenceHeight(entity?: AssetEntity): number {
     entity?.beverageCanParams?.canBodyProfile ??
     defaultBeverageCanParams('standard').canBodyProfile;
   return defaultBeverageCanParams(profile).heightM;
+}
+
+function wineBottleReferenceHeight(entity?: AssetEntity): number {
+  return (
+    entity?.wineBottleParams?.heightM ?? defaultWineBottleParams('bordeaux').heightM
+  );
+}
+
+function packagingReferenceHeight(
+  assetKind: AssetKind,
+  entity?: AssetEntity,
+): number {
+  if (isBeverageCanAssetKind(assetKind)) {
+    return beverageCanReferenceHeight(entity);
+  }
+  if (isWineBottleAssetKind(assetKind)) {
+    return wineBottleReferenceHeight(entity);
+  }
+  if (isTinCanAssetKind(assetKind)) {
+    const params = entity?.tinCanParams ?? defaultTinCanParams();
+    return tinCanMeshHeightM(params);
+  }
+  return referenceFaceHeight(assetKind);
 }
 
 export function resolveAssetAspectRatio(
@@ -182,9 +210,9 @@ export function resolveAssetAspectRatio(
   }
 
   if (isPenAssetKind(assetKind)) {
-    const maxRadiusM =
-      entity?.penParams?.maxRadiusM ?? defaultPenParams('marker').maxRadiusM;
-    return penBodyWrapAspectNominal(maxRadiusM);
+    const profile =
+      entity?.penParams?.penBodyProfile ?? defaultPenParams('marker').penBodyProfile;
+    return penFootprintAspect(profile);
   }
 
   if (imageWidth && imageHeight && imageWidth > 0 && imageHeight > 0) {
@@ -232,12 +260,14 @@ function isSizeScaleInRange(sizeScale: number): boolean {
 export function sizeScaleFromFaceWidth(
   assetKind: AssetKind,
   widthM: number,
+  aspect: number,
+  entity?: AssetEntity,
 ): number | null {
   if (widthM <= 0) {return null;}
 
   if (usesHeightReference(assetKind)) {
-    const aspect = HANDHELD_PLACEHOLDER_ASPECT;
-    const refHeight = referenceFaceHeight(assetKind);
+    if (aspect <= 0) {return null;}
+    const refHeight = packagingReferenceHeight(assetKind, entity);
     const sizeScale = widthM / (refHeight * aspect);
     if (!isSizeScaleInRange(sizeScale)) {return null;}
     return sizeScale;
@@ -254,11 +284,12 @@ export function sizeScaleFromFaceHeight(
   assetKind: AssetKind,
   heightM: number,
   aspect: number,
+  entity?: AssetEntity,
 ): number | null {
   if (heightM <= 0 || aspect <= 0) {return null;}
 
   if (usesHeightReference(assetKind)) {
-    const refHeight = referenceFaceHeight(assetKind);
+    const refHeight = packagingReferenceHeight(assetKind, entity);
     const sizeScale = heightM / refHeight;
     if (!isSizeScaleInRange(sizeScale)) {return null;}
     return sizeScale;
@@ -318,6 +349,26 @@ export function computeFaceSize(
     };
   }
 
+  if (isPenAssetKind(assetKind)) {
+    const profile =
+      entity?.penParams?.penBodyProfile ?? defaultPenParams('marker').penBodyProfile;
+    const footprint = penNominalFootprintM(profile);
+    const scale = clampSizeScale(sizeScale);
+    return {
+      width: footprint.widthM * scale,
+      height: footprint.heightM * scale,
+    };
+  }
+
+  if (isWineBottleAssetKind(assetKind)) {
+    const params = entity?.wineBottleParams ?? defaultWineBottleParams('bordeaux');
+    const scale = clampSizeScale(sizeScale);
+    return {
+      width: wineBottleMaxOuterDiameterM(params.wineBottleBodyProfile) * scale,
+      height: params.heightM * scale,
+    };
+  }
+
   if (isBlockAssetKind(assetKind)) {
     return {
       width: blockParams.widthM,
@@ -345,6 +396,14 @@ export function computeFaceSize(
     return { width: d, height: d };
   }
 
+  if (isFabricClothBakedAssetKind(assetKind) && entity?.bakedClothFootprint) {
+    const scale = clampSizeScale(sizeScale);
+    return {
+      width: entity.bakedClothFootprint.widthM * scale,
+      height: entity.bakedClothFootprint.heightM * scale,
+    };
+  }
+
   if (isWallAssetKind(assetKind)) {
     return {
       width: wallParams.widthM,
@@ -356,16 +415,7 @@ export function computeFaceSize(
   const aspect = resolveAssetAspectRatio(assetKind, imageWidth, imageHeight, entity);
 
   if (usesHeightReference(assetKind)) {
-    const refHeight = isBeverageCanAssetKind(assetKind)
-      ? beverageCanReferenceHeight(entity)
-      : isWineBottleAssetKind(assetKind)
-        ? (entity?.wineBottleParams?.heightM ??
-          defaultWineBottleParams('bordeaux').heightM)
-        : isPenAssetKind(assetKind)
-          ? computePenHeightM(
-              entity?.penParams?.maxRadiusM ?? defaultPenParams('marker').maxRadiusM,
-            )
-          : referenceFaceHeight(assetKind);
+    const refHeight = packagingReferenceHeight(assetKind, entity);
     const height = refHeight * scale;
     return { width: height * aspect, height };
   }
@@ -430,15 +480,18 @@ export function assetFootprintHeight(
       );
     }
     case 'pen': {
-      const maxRadiusM =
-        entity?.penParams?.maxRadiusM ?? defaultPenParams('marker').maxRadiusM;
-      return computePenHeightM(maxRadiusM) * scale;
+      const profile =
+        entity?.penParams?.penBodyProfile ?? defaultPenParams('marker').penBodyProfile;
+      return penNominalFootprintM(profile).heightM * scale;
     }
     case 'fabric-cloth':
+    case 'fabric-cloth-baked':
       return FABRIC_CLOTH_MESH_THICKNESS_M;
     case 'book-softcover':
     case 'book-hardcover':
       return face.height;
+    case 'triangle-patch':
+      return 0.5;
   }
 }
 

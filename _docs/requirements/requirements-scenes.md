@@ -30,11 +30,11 @@
 **Title:** Built-in Scenes (Werkseitig)  
 **Description:** Drei **nicht löschbare** Vorlagen beim App-Start verfügbar. Reihenfolge in der Liste **von oben nach unten**:
 
-1. **Default** — Staging für Physik/Stoff (oberster Eintrag). Entities in `DEFAULT_SCENE_ASSETS`: **Block** (Boden, x/z 0); **Fabric cloth** (Seide `material-silk`, Foot **`y = 0,5` m`, x/z 0). Environment, Ground, Lighting, Kamera = `SCENE_DEFAULTS`. Keine Wine-Bottle / Portfolio-Geräte mehr im Start-Layout.
+1. **Default** — Staging für Physik/Stoff (oberster Eintrag). Entities in `DEFAULT_SCENE_ASSETS`: **Block** (Boden, x/z 0); **Fabric cloth** (Material **Fabric Silk** — `material-silk`, Foot **`y = 0,5` m`, x/z 0). Environment, Ground, Lighting, Kamera = `SCENE_DEFAULTS`. Keine Wine-Bottle / Portfolio-Geräte mehr im Start-Layout.
 
-2. **Phone only** — nur **ein Smartphone** in der Szene, zentriert vor der Kamera (z. B. x 0, z 0). Keine weiteren Assets. Übrige Einstellungen = `SCENE_DEFAULTS` (Environment, Ground, Lighting, Kamera-Default-View).
+2. **Phone only** — nur **ein Device Smartphone** in der Szene, zentriert vor der Kamera (z. B. x 0, z 0). Keine weiteren Assets. Übrige Einstellungen = `SCENE_DEFAULTS` (Environment, Ground, Lighting, Kamera-Default-View).
 
-3. **Phone in front of tablet** — **Smartphone** leicht **vor** dem **Tablet** (näher zur Kamera, +Z), leicht **versetzt** in X für überlappende Geräte-Mockup-Optik. Richtwerte (Scene-Einheit m, final bei Implementierung feinjustieren): `tablet` z. B. x 0,35 · z 0; `smartphone` z. B. x 0,28 · z 0,06 (vor dem Tablet). Kein Picture, kein Print. Übrige Einstellungen = `SCENE_DEFAULTS`.
+3. **Phone in front of tablet** — **Device Smartphone** leicht **vor** dem **Device Tablet** (näher zur Kamera, +Z), leicht **versetzt** in X für überlappende Geräte-Mockup-Optik. Richtwerte (Scene-Einheit m, final bei Implementierung feinjustieren): `tablet` z. B. x 0,35 · z 0; `smartphone` z. B. x 0,28 · z 0,06 (vor dem Tablet). Kein Picture, kein Print. Übrige Einstellungen = `SCENE_DEFAULTS`.
 
 Built-ins sind **ladbar** (Apply), **nicht überschreibbar** durch den User. „Save as scene" erzeugt immer eine **neue User-Scene**, nie ein Built-in-Update.
 

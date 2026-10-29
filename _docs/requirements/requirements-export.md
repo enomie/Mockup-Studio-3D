@@ -64,7 +64,7 @@
 
 **Category:** Export  
 **Title:** Pipeline — eine Kette, Capture-Parameter  
-**Description:** Scene-API `captureViewportImage({ format, jpegQuality?, groundSurface? })`; Engine `MockupEngine.captureViewportImage`. **Kein** separater Export-Renderer. Module: `src/render/viewport-render-pipeline.ts`, `src/render/renderer-setup.ts`, `src/engine/mockup-engine.ts`, `src/materials/groundMaterial.ts`. **MSAA:** wie Viewport (`VIEWPORT_MSAA_SAMPLES`) auf Composite-RT. **PNG transparent:** Composite-RT **`RGBAFormat`**; WebGPU-Renderer **`alpha: true`** (Framebuffer für `canvas.toBlob`); für diesen Frame **SMAA aus** (`pipelineDirect`), Canvas vor Output mit Alpha-0 clearen — Live-Loop behält SMAA → [`requirements-antialiasing.md`](./requirements-antialiasing.md). **Schatten:** dieselben Shadow Maps / Receive wie Viewport — Export ändert **keine** Shadow-Settings → [`requirements-shadows.md`](./requirements-shadows.md). **Light fixtures:** Key/Fill-Discs sind **kein separater Layer** — bei `groundSurface: viewport` wie im Live-Viewport (sichtbar wenn im Frame); v0 **kein** Fixture-Stripping → [`requirements-lighting.md`](./requirements-lighting.md) (Light fixtures v0 — Sichtbarkeit & Reflexionen).
+**Description:** Scene-API `captureViewportImage({ format, jpegQuality?, groundSurface? })`; Engine `MockupEngine.captureViewportImage`. **Kein** separater Export-Renderer. Module: `src/render/viewport-render-pipeline.ts`, `src/render/renderer-setup.ts`, `src/engine/mockup-engine.ts`, `src/materials/groundMaterial.ts`. **MSAA:** wie Viewport (`VIEWPORT_MSAA_SAMPLES`) auf Composite-RT. **PNG transparent:** Composite-RT **`RGBAFormat`**; WebGPU-Renderer **`alpha: true`** (Framebuffer für `canvas.toBlob`); für diesen Frame **SMAA aus** (`pipelineDirect`), Canvas vor Output mit Alpha-0 clearen — Live-Loop behält SMAA → [`requirements-antialiasing.md`](./requirements-antialiasing.md). **Schatten:** gleiche Cast/Receive-Flags und Licht-Setup wie Viewport; **Capture** erhöht temporär die Shadow-Map-Auflösung auf **`SHADOW_MAP_SIZE_EXPORT`** (8192²) für Key/Fill-Caster, danach Restore auf Viewport-**4096²** → [`requirements-shadows.md`](./requirements-shadows.md) (Abschnitt *Export — Shadow-Map-Auflösung*). **Light fixtures:** Key/Fill-Discs sind **kein separater Layer** — bei `groundSurface: viewport` wie im Live-Viewport (sichtbar wenn im Frame); v0 **kein** Fixture-Stripping → [`requirements-lighting.md`](./requirements-lighting.md) (Light fixtures v0 — Sichtbarkeit & Reflexionen).
 
 ---
 
@@ -87,21 +87,28 @@
 ---
 
 **Category:** Export  
+**Title:** Export — Shadow-Map-Auflösung (Capture)  
+**Description:** Beim Bild-Export (`captureViewportImage` / `exportViewportImage`) **ein Frame** mit höherer Shadow-Map-Auflösung: **`SHADOW_MAP_SIZE_EXPORT`** = **8192²** auf allen **aktiven** Key-/Fill-Spot-Shadows (`castShadow` + Licht enabled). Live-Viewport bleibt **`SHADOW_MAP_SIZE`** = **4096²**. Implementierung: `LightingSystem.pushExportShadowQuality()` / `popExportShadowQuality()` im Capture-`try/finally` ([`mockup-engine-capture.ts`](../../src/engine/mockup-engine-capture.ts)); nach Resize `updateSpotShadowCamera` für Caster. **Kein** UI-Schalter v1; keine Scene-Save-Felder.
+
+---
+
+**Category:** Export  
 **Title:** Nicht v1  
-**Description:** Höhere Export-Auflösung (temporäres Pipeline-Resize). Batch-Export. Export nur aus Kamera-Preset ohne Live-View. JPEG-Hintergrundfarbe. Separater Export-Button im Panel. Scene-Save für Export-Einstellungen. Optionale CPU-Matte-Pfade (`src/render/export-shadow-matte.ts`) — **nicht** Produktpfad; Produkt = GroundMaterial-Catcher oben.
+**Description:** Höhere **Canvas**-Export-Auflösung (temporäres Pipeline-Resize, unabhängig von Shadow Maps). Batch-Export. Export nur aus Kamera-Preset ohne Live-View. JPEG-Hintergrundfarbe. Separater Export-Button im Panel. Scene-Save für Export-Einstellungen. Optionale CPU-Matte-Pfade (`src/render/export-shadow-matte.ts`) — **nicht** Produktpfad; Produkt = GroundMaterial-Catcher oben.
 
 ---
 
 **Category:** Export — Physics / Fabric cloth  
-**Title:** Deformiertes Tuch — WYSIWYG (kein Bake-Schritt v1)  
-**Description:** **World-Freeze** = Pause — hält letzten Mesh-Zustand sichtbar, **kein** separater Export-Bake → [`requirements-physics.md`](./requirements-physics.md).
+**Title:** Deformiertes Tuch — WYSIWYG  
+**Description:** **World-Freeze** = Pause — hält letzten Mesh-Zustand in der Szene. **Bake** = User-Asset in der Assets-Bibliothek (steif, ggf. geglättetes Mesh) — **nicht** Export-Schritt → [`requirements-assets-fabric-cloth.md`](./requirements-assets-fabric-cloth.md), [`requirements-physics.md`](./requirements-physics.md).
 
 | Thema | Regel |
 |---|---|
-| **Plane-MVP (heute)** | Normales Viewport-Capture — Mesh ist **flach**; **kein** Cloth-Sonderfall |
-| **Cloth-Mesh (Ziel)** | **WYSIWYG:** `captureViewportImage` rendert das **aktuelle** Stoff-`BufferGeometry` (deformierte `position` wie im Viewport) |
-| **`paused` (Freeze)** | Export zeigt **eingefrorene** Falten — gleiches Mesh wie zuletzt in `simulating` |
-| **Kein Bake-Button v1** | Kein expliziter „Bake cloth“-Schritt; **kein** `SharedArrayBuffer` |
+| **Deformiertes Tuch** | **WYSIWYG:** `captureViewportImage` rendert das **aktuelle** Stoff-`BufferGeometry` — **kein** separater Cloth-Export-Pfad |
+| **Ruhe (idle)** | Mesh flach wie vor Physics Start |
+| **`paused` (Freeze)** | Export zeigt **eingefrorene** Falten — gleiches (grobes) Mesh wie zuletzt in `simulating` |
+| **User-Asset (gebaked)** | Export wie jede andere Entity — statisches deformiertes Mesh |
+| **Kein Export-Bake** | Glättung beim **Bake in Assets**, nicht beim PNG/JPG-Klick; **kein** `SharedArrayBuffer` |
 | Export startet **keine** Simulation | unverändert |
 | **Scene Save** | Deformierte Vertices **nicht** serialisieren v1 — nach Load: Ruhe-Quad; User startet Physik neu |
 

@@ -1,5 +1,5 @@
 /**
- * Regenerate public/profiles/lathe/bottle-*-open.svg as closed glass-wall loops (outer + inner + lip/foot).
+ * Regenerate public/profiles/lathe/lathe-y-bottle-*-open.svg as closed glass-wall loops (outer + inner + lip/foot).
  * Optional authoring helper — writes closed wall loops to disk (review before commit).
  * Run: npx vite-node scripts/generate-wine-bottle-wall-svgs.ts
  */
@@ -26,9 +26,9 @@ const HEIGHT_M = 0.29;
 const PUBLIC_LATHE = join(process.cwd(), 'public', 'profiles', 'lathe');
 
 const FILES: { profile: WineBottleBodyProfile; file: string }[] = [
-  { profile: 'bordeaux', file: 'bottle-bordeaux-open.svg' },
-  { profile: 'alsace', file: 'bottle-alsace-open.svg' },
-  { profile: 'sparkling', file: 'bottle-sparkling-open.svg' },
+  { profile: 'bordeaux', file: 'lathe-y-bottle-bordeaux-open.svg' },
+  { profile: 'alsace', file: 'lathe-y-bottle-alsace-open.svg' },
+  { profile: 'sparkling', file: 'lathe-y-bottle-sparkling-open.svg' },
 ];
 
 function latheToSvgPoints(
@@ -75,7 +75,7 @@ function viewBoxFromRaw(raw: WineBottleSvgPoint2[]): string {
 function buildSvg(pathD: string, viewBox: string): string {
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="${viewBox}">
-  <path fill="none" stroke="#39b54a" stroke-miterlimit="10" d="${pathD}"/>
+  <path class="path_red" fill="none" stroke="#ff0000" stroke-miterlimit="10" d="${pathD}"/>
 </svg>
 `;
 }

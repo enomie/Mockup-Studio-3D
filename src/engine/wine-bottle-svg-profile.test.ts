@@ -91,9 +91,9 @@ describe('wine-bottle-svg-profile', () => {
 
   it('parses open outer bottle SVGs with expected belly radius', () => {
     const cases: { file: string; maxRadius: number }[] = [
-      { file: 'bottle-bordeaux-open.svg', maxRadius: 0.038 },
-      { file: 'bottle-alsace-open.svg', maxRadius: 0.038 },
-      { file: 'bottle-sparkling-open.svg', maxRadius: 0.044 },
+      { file: 'lathe-y-bottle-bordeaux-open.svg', maxRadius: 0.038 },
+      { file: 'lathe-y-bottle-alsace-open.svg', maxRadius: 0.038 },
+      { file: 'lathe-y-bottle-sparkling-open.svg', maxRadius: 0.044 },
     ];
     const heightM = 0.29;
 
@@ -117,9 +117,9 @@ describe('wine-bottle-svg-profile', () => {
   it('each profile SVG is parsed independently (no runtime reshape)', () => {
     const heightM = 0.29;
     const files = [
-      'bottle-bordeaux-open.svg',
-      'bottle-alsace-open.svg',
-      'bottle-sparkling-open.svg',
+      'lathe-y-bottle-bordeaux-open.svg',
+      'lathe-y-bottle-alsace-open.svg',
+      'lathe-y-bottle-sparkling-open.svg',
     ] as const;
     const maxRadii: number[] = [];
     for (const file of files) {

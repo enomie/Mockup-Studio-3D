@@ -11,6 +11,7 @@ import {
   removeImage,
   selectImage,
 } from '@/ui/store/app-store';
+import { sortByDisplayName } from '@/ui/utils/library-list-order';
 import { useAppStore } from '@/ui/store/use-app-store';
 
 interface ImageEditorProps {
@@ -49,6 +50,7 @@ function ImageEditor({ image }: ImageEditorProps) {
 export function ImagesPanel() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const images = useAppStore((s) => s.images);
+  const sortedImages = sortByDisplayName(images, (image) => image.name);
   const selectedImageId = useAppStore((s) => s.selectedImageId);
   const selected = images.find((image) => image.id === selectedImageId);
 
@@ -92,7 +94,7 @@ export function ImagesPanel() {
       }
     >
       <ul className="image-list">
-        {images.map((image) => (
+        {sortedImages.map((image) => (
           <li key={image.id}>
             <button
               type="button"

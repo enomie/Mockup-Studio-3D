@@ -7,7 +7,7 @@ function wineEntity(profile: 'bordeaux' | 'alsace' | 'sparkling'): AssetEntity {
   return {
     id: 'w1',
     type: 'asset',
-    name: 'Wine bottle 1',
+    name: 'Bottle Wine 1',
     assetKind: 'wine-bottle',
     screenImageId: null,
     sizeScale: DEFAULT_SIZE_SCALE,

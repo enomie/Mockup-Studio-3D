@@ -150,10 +150,11 @@ Verknüpfte Feature-Docs: [`requirements-scenes.md`](./requirements-scenes.md), 
 **Title:** Rapier Sim-State vs. Render-Mesh (kein SAB)  
 **Description:** Deformierbares `fabric-cloth` hält **Simulation** und **Anzeige** getrennt, **ohne** `SharedArrayBuffer`:
 
-1. **Live sim** — Rapier (MVP: Dynamic-Plane-Proxy; Ziel: Partikel+Joints) + deformed `BufferGeometry` während **`simulating`**; **`paused` (Freeze)** = letzte Deformation **sichtbar**, kein Pose-/Vertex-Sync aus `tick`.
-2. **Export v1** — **WYSIWYG:** `captureViewportImage` liest das **aktuelle** Render-Mesh (deformierte Vertices); **kein** separater Export-Bake-Schritt. Scene-Save serialisiert deformierte Vertices **nicht** v1.
+1. **Live sim** — Rapier **SoftBody** + deformed `BufferGeometry` während **`simulating`**; **`paused` (Freeze)** = letzte Deformation **sichtbar**, kein Vertex-Sync aus `tick`.
+2. **Bake (User-Asset)** — Nach Freeze: User wählt **eine** bake-fähige Entity (Selektion), **Bake** schreibt Katalog-Eintrag (`fabric-cloth-baked` in v1) → Project Save. Querschnitt Auswahl/Registry → [`requirements-assets.md`](./requirements-assets.md); Stoff → [`requirements-assets-fabric-cloth.md`](./requirements-assets-fabric-cloth.md).
+3. **Export** — **WYSIWYG** aus aktuellem Mesh; kein PNG-Bake-Schritt.
 
-**Optional später:** statisches Bake-Mesh (Performance, Scene-Save) — nicht Pflicht für v1. **World physics session** (Snapshot, Start/Reset) ≠ Export. → [`requirements-physics.md`](./requirements-physics.md), [`requirements-export.md`](./requirements-export.md), [`requirements-assets-fabric-cloth.md`](./requirements-assets-fabric-cloth.md).
+**World physics session** (Snapshot, Start/Reset) ≠ **Bake** ≠ Export. → [`requirements-physics.md`](./requirements-physics.md), [`requirements-export.md`](./requirements-export.md).
 
 ---
 
@@ -164,14 +165,14 @@ Verknüpfte Feature-Docs: [`requirements-scenes.md`](./requirements-scenes.md), 
 | Rolle | Asset-Kinds | Idle (vor Start) | Nach **Start** |
 |---|---|---|---|
 | **Rigid primitives** | `block`, `cylinder`, `sphere` | **Fixed:** Rapier Fixed-Collider; **Dynamic:** kein Body | **Dynamic:** Rapier Dynamic-Body; **Fixed:** bleibt Fixed |
-| **Fabric cloth** | `fabric-cloth` | Kein Cloth-Body (Plane-MVP) | Dynamic Plane (MVP) |
+| **Fabric cloth** | `fabric-cloth` | Kein SoftBody | Rapier **SoftBody** (`FabricClothPhysicsColliders`) |
 
 **Engine:** Ein Service **`RigidPrimitivePhysicsColliders`** (ehem. nur Block) implementiert `WorldPhysicsDynamicParticipant` — `spawnSessionDynamics`, `clearSessionDynamics`, `syncEntityTransformsFromPhysics`, `reconcileEntity` pro Entity. **Fabric:** `FabricClothPhysicsColliders` als zweiter Dynamic-Participant. **Scene-Layer:** Zähler/Hilfen in [`physics-participants.ts`](../../src/scene/physics-participants.ts) (kein Session-Phase-State — Phase lebt in der Engine).
 
 **Rapier Body-IDs:**
 
 - Rigid primitives: **`physics:${assetKind}:${entityId}`** (z. B. `physics:block:…`).
-- Fabric: **`fabric-physics:${entityId}`** (eigener Namespace, unverändert).
+- Fabric: **`fabric-soft:${entityId}`** (SoftBody, eigener Namespace).
 - Ground: feste ID in `PhysicsWorld` (kein Asset).
 
 **Shared helpers:** [`physics-rigid-body.ts`](../../src/scene/physics-rigid-body.ts) — `physicsBodyMode`, Dichte-Clamps, Masse aus Volumen; Collider-Formen unter `src/physics/*-collider-shape.ts`. Details Margin / Damping → [`requirements-physics.md`](./requirements-physics.md). Assets → Block [`requirements-assets-block.md`](./requirements-assets-block.md), Cylinder [`requirements-assets-cylinder.md`](./requirements-assets-cylinder.md), Sphere [`requirements-assets-sphere.md`](./requirements-assets-sphere.md).
@@ -181,4 +182,10 @@ Verknüpfte Feature-Docs: [`requirements-scenes.md`](./requirements-scenes.md), 
 **Category:** Architecture  
 **Title:** Werkseitig vs. User-Inhalt (Bibliotheken)  
 **Description:** Projektweite Regel: **mitgelieferte** Presets/Starter/Katalog = **nicht löschbar**; **vom User angelegte** Einträge = **immer entfernbar** (`source: 'user'` / Upload), mit Referenz-Fallbacks. Einheitliches UI-Muster (Built-in-Badge, Remove nur User, Duplicate von Built-ins). Domänen-Tabelle und Store-Konvention → [`requirements-builtin-and-user-content.md`](./requirements-builtin-and-user-content.md). Kategorie-Dateien (Images, Colors, Materials, Environments, Light rigs, Scenes) spezifizieren Details; neue Bibliotheken müssen dieselbe Ownership-Linie mitbringen.
+
+---
+
+**Category:** Architecture  
+**Title:** Fabric cloth — simulation state (CPU Verlet, Ziel)  
+**Description:** Stoff-Simulation lebt **nicht** in Rapier. Persistente Konfiguration: `AssetEntity.fabricClothParams` (`physics`, `sim`, Border). Laufzeit-State (Centerline-Buffer, Constraints, Session) in Engine-Participant (Ziel: Ersatz für `FabricClothPhysicsColliders`) — UI nur via Scene-API. Rigide Physik bleibt `PhysicsWorld` + `RigidPrimitivePhysicsColliders`. Plan: [`new-implementation.md`](../fabric-physics/new-implementation.md).
 

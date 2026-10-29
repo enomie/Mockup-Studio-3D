@@ -1,8 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { SIZE_SCALE_MAX, SIZE_SCALE_MIN } from '@/constants';
-import { defaultHandheldParams } from './asset-handheld';
+import { FABRIC_CLOTH_REF_WIDTH_M } from './asset-fabric-cloth';
+import {
+  defaultHandheldParams,
+  HANDHELD_PLACEHOLDER_ASPECT,
+  SMARTPHONE_REF_SCREEN_HEIGHT_M,
+  TABLET_REF_SCREEN_HEIGHT_M,
+} from './asset-handheld';
 import { defaultMonitorParams, MONITOR_REF_SCREEN_WIDTH_M } from './asset-monitor';
-import type { AssetEntity } from './entity-types';
+import { defaultTinCanParams } from './asset-tin-can';
+import { defaultWineBottleParams } from './asset-wine-bottle';
+import { DEFAULT_SIZE_SCALE, defaultTransform, type AssetEntity } from './entity-types';
 import {
   assetFootprintHeight,
   assetGroundCenterY,
@@ -58,6 +66,13 @@ describe('computeFaceSize portrait placeholder defaults', () => {
     expect(print.height).toBeGreaterThan(print.width);
   });
 
+  it('uses A5 portrait for book without image', () => {
+    const book = computeFaceSize('book-softcover', undefined, undefined, 1);
+    expect(book.width).toBeCloseTo(0.148);
+    expect(book.height).toBeCloseTo(0.21);
+    expect(book.height).toBeGreaterThan(book.width);
+  });
+
   it('uses portrait placeholder for handheld without image', () => {
     const phone = computeFaceSize('smartphone', undefined, undefined, 1);
     expect(phone.height).toBeGreaterThan(phone.width);
@@ -74,10 +89,106 @@ describe('sizeScaleFromFaceWidth', () => {
     const imageHeight = imageWidth / aspect;
     const targetWidth = 0.3;
 
-    const sizeScale = sizeScaleFromFaceWidth('print', targetWidth);
+    const sizeScale = sizeScaleFromFaceWidth('print', targetWidth, aspect);
     expect(sizeScale).not.toBeNull();
 
     const face = computeFaceSize('print', imageWidth, imageHeight, sizeScale!);
+    expect(face.width).toBeCloseTo(targetWidth);
+    expect(face.height).toBeCloseTo(targetWidth / aspect);
+  });
+
+  it('roundtrips with computeFaceSize for pen footprint', () => {
+    const aspect = resolveAssetAspectRatio('pen');
+    const targetWidth = 0.012;
+    const sizeScale = sizeScaleFromFaceWidth('pen', targetWidth, aspect);
+    expect(sizeScale).not.toBeNull();
+
+    const face = computeFaceSize('pen', undefined, undefined, sizeScale!);
+    expect(face.width).toBeCloseTo(targetWidth);
+    expect(face.height).toBeCloseTo(targetWidth / aspect);
+  });
+
+  it('computeFaceSize for tin-can uses radius and height times sizeScale', () => {
+    const params = defaultTinCanParams();
+    const entity: AssetEntity = {
+      id: 'tin-1',
+      type: 'asset',
+      name: 'Can Tin',
+      assetKind: 'tin-can',
+      screenImageId: null,
+      visible: true,
+      transform: defaultTransform(),
+      sizeScale: 2,
+      tinCanParams: params,
+    };
+    const face = computeFaceSize(
+      'tin-can',
+      undefined,
+      undefined,
+      2,
+      undefined,
+      undefined,
+      entity,
+    );
+    expect(face.width).toBeCloseTo(params.bodyRadiusM * 2 * 2);
+    expect(face.height).toBeCloseTo(params.bodyHeightM * 2);
+  });
+
+  it('roundtrips with computeFaceSize for wine-bottle footprint', () => {
+    const entity: AssetEntity = {
+      id: 'wb-1',
+      type: 'asset',
+      name: 'Bottle Wine',
+      assetKind: 'wine-bottle',
+      screenImageId: null,
+      visible: true,
+      transform: defaultTransform(),
+      sizeScale: DEFAULT_SIZE_SCALE,
+      wineBottleParams: defaultWineBottleParams('sparkling'),
+    };
+    const aspect = resolveAssetAspectRatio(
+      'wine-bottle',
+      undefined,
+      undefined,
+      entity,
+    );
+    const targetHeight = 0.25;
+    const sizeScale = sizeScaleFromFaceHeight(
+      'wine-bottle',
+      targetHeight,
+      aspect,
+      entity,
+    );
+    expect(sizeScale).not.toBeNull();
+
+    const face = computeFaceSize(
+      'wine-bottle',
+      undefined,
+      undefined,
+      sizeScale!,
+      undefined,
+      undefined,
+      entity,
+    );
+    expect(face.height).toBeCloseTo(targetHeight);
+    expect(face.width).toBeCloseTo(targetHeight * aspect);
+  });
+
+  it('roundtrips with computeFaceSize for book-softcover', () => {
+    const aspect = 4 / 3;
+    const imageWidth = 800;
+    const imageHeight = imageWidth / aspect;
+    const targetWidth = 0.25;
+
+    const sizeScale = sizeScaleFromFaceWidth('book-softcover', targetWidth, aspect);
+    expect(sizeScale).not.toBeNull();
+
+    const face = computeFaceSize(
+      'book-softcover',
+      imageWidth,
+      imageHeight,
+      sizeScale!,
+    );
     expect(face.width).toBeCloseTo(targetWidth);
     expect(face.height).toBeCloseTo(targetWidth / aspect);
   });
@@ -88,7 +199,7 @@ describe('sizeScaleFromFaceWidth', () => {
     const imageHeight = imageWidth / aspect;
     const targetWidth = 0.75;
 
-    const sizeScale = sizeScaleFromFaceWidth('picture', targetWidth);
+    const sizeScale = sizeScaleFromFaceWidth('picture', targetWidth, aspect);
     expect(sizeScale).not.toBeNull();
 
     const face = computeFaceSize('picture', imageWidth, imageHeight, sizeScale!);
@@ -97,18 +208,20 @@ describe('sizeScaleFromFaceWidth', () => {
   });
 
   it('rejects non-positive width', () => {
-    expect(sizeScaleFromFaceWidth('print', 0)).toBeNull();
-    expect(sizeScaleFromFaceWidth('print', -0.1)).toBeNull();
+    const aspect = resolveAssetAspectRatio('print');
+    expect(sizeScaleFromFaceWidth('print', 0, aspect)).toBeNull();
+    expect(sizeScaleFromFaceWidth('print', -0.1, aspect)).toBeNull();
   });
 
   it('rejects width outside sizeScale range', () => {
+    const aspect = resolveAssetAspectRatio('print');
     const minWidth = referenceFaceWidth('print') * SIZE_SCALE_MIN;
     const maxWidth = referenceFaceWidth('print') * SIZE_SCALE_MAX;
 
-    expect(sizeScaleFromFaceWidth('print', minWidth * 0.5)).toBeNull();
-    expect(sizeScaleFromFaceWidth('print', maxWidth * 1.1)).toBeNull();
-    expect(sizeScaleFromFaceWidth('print', minWidth)).toBeCloseTo(SIZE_SCALE_MIN);
-    expect(sizeScaleFromFaceWidth('print', maxWidth)).toBeCloseTo(SIZE_SCALE_MAX);
+    expect(sizeScaleFromFaceWidth('print', minWidth * 0.5, aspect)).toBeNull();
+    expect(sizeScaleFromFaceWidth('print', maxWidth * 1.1, aspect)).toBeNull();
+    expect(sizeScaleFromFaceWidth('print', minWidth, aspect)).toBeCloseTo(SIZE_SCALE_MIN);
+    expect(sizeScaleFromFaceWidth('print', maxWidth, aspect)).toBeCloseTo(SIZE_SCALE_MAX);
   });
 });
 
@@ -158,13 +271,89 @@ describe('sizeScaleFromFaceHeight', () => {
   });
 });
 
+describe('handheld face size', () => {
+  const imageW = 900;
+  const imageH = 1600;
+  const aspect = imageW / imageH;
+
+  it('uses portrait placeholder without image for smartphone', () => {
+    const face = computeFaceSize('smartphone');
+    expect(face.height).toBeCloseTo(SMARTPHONE_REF_SCREEN_HEIGHT_M);
+    expect(face.width).toBeCloseTo(SMARTPHONE_REF_SCREEN_HEIGHT_M * HANDHELD_PLACEHOLDER_ASPECT);
+  });
+
+  it('uses portrait placeholder without image for tablet', () => {
+    const face = computeFaceSize('tablet');
+    expect(face.height).toBeCloseTo(TABLET_REF_SCREEN_HEIGHT_M);
+    expect(face.width).toBeCloseTo(TABLET_REF_SCREEN_HEIGHT_M * HANDHELD_PLACEHOLDER_ASPECT);
+  });
+
+  it('couples width and height when editing smartphone width with image aspect', () => {
+    const targetWidth = 0.1;
+    const sizeScale = sizeScaleFromFaceWidth('smartphone', targetWidth, aspect);
+    expect(sizeScale).not.toBeNull();
+
+    const face = computeFaceSize('smartphone', imageW, imageH, sizeScale!);
+    expect(face.width).toBeCloseTo(targetWidth);
+    expect(face.height).toBeCloseTo(targetWidth / aspect);
+  });
+
+  it('couples width and height when editing smartphone height with image aspect', () => {
+    const targetHeight = 0.2;
+    const sizeScale = sizeScaleFromFaceHeight('smartphone', targetHeight, aspect);
+    expect(sizeScale).not.toBeNull();
+
+    const face = computeFaceSize('smartphone', imageW, imageH, sizeScale!);
+    expect(face.height).toBeCloseTo(targetHeight);
+    expect(face.width).toBeCloseTo(targetHeight * aspect);
+  });
+});
+
+describe('fabric-cloth face size', () => {
+  const imageW = 800;
+  const imageH = 1200;
+  const aspect = imageW / imageH;
+
+  it('uses square placeholder without image', () => {
+    const face = computeFaceSize('fabric-cloth');
+    expect(face.width).toBeCloseTo(FABRIC_CLOTH_REF_WIDTH_M);
+    expect(face.height).toBeCloseTo(FABRIC_CLOTH_REF_WIDTH_M);
+  });
+
+  it('derives height from image aspect', () => {
+    const face = computeFaceSize('fabric-cloth', imageW, imageH);
+    expect(face.width).toBeCloseTo(FABRIC_CLOTH_REF_WIDTH_M);
+    expect(face.height).toBeCloseTo(FABRIC_CLOTH_REF_WIDTH_M / aspect);
+  });
+
+  it('couples width and height when editing width via sizeScale', () => {
+    const targetWidth = 0.6;
+    const sizeScale = sizeScaleFromFaceWidth('fabric-cloth', targetWidth, aspect);
+    expect(sizeScale).not.toBeNull();
+
+    const face = computeFaceSize('fabric-cloth', imageW, imageH, sizeScale!);
+    expect(face.width).toBeCloseTo(targetWidth);
+    expect(face.height).toBeCloseTo(targetWidth / aspect);
+  });
+
+  it('couples width and height when editing height via sizeScale', () => {
+    const targetHeight = 0.5;
+    const sizeScale = sizeScaleFromFaceHeight('fabric-cloth', targetHeight, aspect);
+    expect(sizeScale).not.toBeNull();
+
+    const face = computeFaceSize('fabric-cloth', imageW, imageH, sizeScale!);
+    expect(face.height).toBeCloseTo(targetHeight);
+    expect(face.width).toBeCloseTo(targetHeight * aspect);
+  });
+});
+
 describe('assetFootprintHeight', () => {
   it('includes bezel on handheld devices', () => {
     const face = computeFaceSize('smartphone', undefined, undefined, 1);
     const entity: AssetEntity = {
       id: 'test',
       type: 'asset',
-      name: 'Smartphone 1',
+      name: 'Device Smartphone 1',
       assetKind: 'smartphone',
       screenImageId: null,
       sizeScale: 1,
@@ -186,7 +375,7 @@ describe('assetFootprintHeight', () => {
     const entity: AssetEntity = {
       id: 'test',
       type: 'asset',
-      name: 'Monitor 1',
+      name: 'Device Desktop 1',
       assetKind: 'monitor',
       screenImageId: null,
       sizeScale: 1,

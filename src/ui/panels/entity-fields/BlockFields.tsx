@@ -20,6 +20,17 @@ export function BlockFields({ entity }: BlockFieldsProps) {
 
   return (
     <>
+      <SubPanelSection title="Material">
+        <MaterialSelect
+          entityId={entity.id}
+          slot="blockMaterialId"
+          materials={materials}
+          value={slots?.blockMaterialId ?? MATERIAL_PAPER_ID}
+        />
+      </SubPanelSection>
+
+      <RigidBodyPhysicsFields entity={entity} />
+
       <SubPanelSection title="Dimensions">
         <PanelAxisField
           label="Width"
@@ -60,17 +71,6 @@ export function BlockFields({ entity }: BlockFieldsProps) {
           onChange={(value) => {
             if (value >= 0) {setBlockParams(entity.id, { cornerRadiusMm: value });}
           }}
-        />
-      </SubPanelSection>
-
-      <RigidBodyPhysicsFields entity={entity} />
-
-      <SubPanelSection title="Material">
-        <MaterialSelect
-          entityId={entity.id}
-          slot="blockMaterialId"
-          materials={materials}
-          value={slots?.blockMaterialId ?? MATERIAL_PAPER_ID}
         />
       </SubPanelSection>
     </>

@@ -7,7 +7,7 @@
 | Objekt | Setup |
 |--------|--------|
 | **Block** | 0,3 × 0,3 × 0,3 m, Fuß auf **y = 0** (Oberkante **y = 0,3 m**) |
-| **Fabric cloth** | **0,45 × 0,45 m** (Platzhalter-Quadrat), **Silk**-Preset, zentriert auf Block, **`positionY: 0.5`** → Stoff**ebene** (Fuß-Pivot) bei **0,5 m** |
+| **Fabric cloth** | **0,45 × 0,45 m** (Platzhalter-Quadrat), **Fabric Silk**-Preset, zentriert auf Block, **`positionY: 0.5`** → Stoff**ebene** (Fuß-Pivot) bei **0,5 m** |
 
 Nach **World physics → Start** soll es wie eine **kleine Tischdecke** wirken: Tuch liegt auf dem Würfel, an den Seiten nur **wenig** Überhang (ca. **7,5 cm** pro Kante: (0,45 − 0,30) / 2), leicht nach unten — **nicht** eine riesige Plane, die **bis auf den Boden (y = 0)** durchhängt wie **zäher Schleim**.
 
@@ -36,14 +36,13 @@ Vitest-Referenz: `fabric-cloth-default-scene.integration.test.ts` (Silk vs. Lega
 | **Drape / Schleim** | `resolveFabricDrape(materialId)` → `clothAnisotropic`, Masse, `setSurfaceCollider`-Reibung — **nicht** `uniform(1, friction)` |
 | **Border bei Sim** | TSL-Inset über **`restPlaneXY`** (frozen), nicht deformiertes `positionLocal` |
 | **Zittern** | Profil-Damping, `deformationDamping`, `setCanSleep(true)` — Mikro-Oszillation ggf. noch sichtbar |
-| **Grid-Default** | **`high`** → ~1,25 cm Zelle; 0,45 m² ≈ **36×36** → **~1,37k** Partikel |
+| **Grid** | Fest **`FABRIC_CLOTH_SIM_CELL_SIZE_M`** (1,25 cm); 0,45 m² ≈ **36×36** → **~1,37k** Partikel — keine Quality-Stufen |
 | **CPU-Sync FPS** | Positionen **jeden** Tick; **Grid-Normals** [`fabric-cloth-grid-normals.ts`](src/physics/fabric-cloth-grid-normals.ts) statt `computeVertexNormals`; Bounds **jeden 2.** Tick |
 | **Render** | Continuous während `simulating` (User); `invalidateViewport` nach Render nur wenn `needsPhysics && !continuous` |
 | **Totcode** | Plane-Collider-Shape, `FABRIC_CLOTH_PHYSICS_MASS_KG`, Block-Physics-Shims → `_deleted/` |
 
 **Noch offen (Produkt/UI):**
 
-- **`fabricClothSimQuality`** — nur Code-Default, kein Physics-Panel.
 - **Sleep-Gate** (`isSleeping()`-Skip) — bewusst **nicht** umgesetzt (User).
 - **GPU-Normals** / Procedural-Sampling auf `restPlaneXY` während Sim — siehe Audit **C**.
 
@@ -111,16 +110,14 @@ Reihenfolge [`mockup-engine.ts`](src/engine/mockup-engine.ts) `onFrame`:
 |----------|--------|
 | `fabric-cloth-collider-shape`, `FABRIC_CLOTH_PHYSICS_MASS_KG`, Block-Shims | **Erledigt** → `_deleted/` |
 
-### F. Grid / Quality
+### F. Grid (fest)
 
-| Quality | Zelle | 0,45 m → Segmente | Partikel (ca.) |
-|---------|-------|-------------------|----------------|
-| draft | 5 cm | 9×9 | 100 |
-| standard | 2,5 cm | 18×18 | 361 |
-| **high (Default)** | 1,25 cm | **36×36** | **~1 369** |
-| high (1 m Bahn, cap) | 1,25 cm | 64×64 | **~4 225** |
+| Zelle | 0,45 m → Segmente | Partikel (ca.) |
+|-------|-------------------|----------------|
+| **1,25 cm** (`FABRIC_CLOTH_SIM_CELL_SIZE_M`) | **36×36** | **~1 369** |
+| 1 m Bahn (cap 64) | 64×64 | **~4 225** |
 
-Empfehlung offen: `fabricClothSimQuality` im Physics-Panel; Default ggf. wieder `standard` für Alltag.
+Kein User-Toggle — `fabricClothSimQuality` entfernt (Docs + Code).
 
 ### G. Nächste Schritte (priorisiert)
 

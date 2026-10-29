@@ -19,6 +19,17 @@ export function SphereFields({ entity }: SphereFieldsProps) {
 
   return (
     <>
+      <SubPanelSection title="Material">
+        <MaterialSelect
+          entityId={entity.id}
+          slot="sphereMaterialId"
+          materials={materials}
+          value={slots?.sphereMaterialId ?? MATERIAL_PAPER_ID}
+        />
+      </SubPanelSection>
+
+      <RigidBodyPhysicsFields entity={entity} />
+
       <SubPanelSection title="Dimensions">
         <PanelAxisField
           label="Radius"
@@ -29,17 +40,6 @@ export function SphereFields({ entity }: SphereFieldsProps) {
           onChange={(value) => {
             if (value > 0) {setSphereParams(entity.id, { radiusM: value });}
           }}
-        />
-      </SubPanelSection>
-
-      <RigidBodyPhysicsFields entity={entity} />
-
-      <SubPanelSection title="Material">
-        <MaterialSelect
-          entityId={entity.id}
-          slot="sphereMaterialId"
-          materials={materials}
-          value={slots?.sphereMaterialId ?? MATERIAL_PAPER_ID}
         />
       </SubPanelSection>
     </>

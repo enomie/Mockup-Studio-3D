@@ -33,6 +33,7 @@ import type {
   ExportImageFormat,
 } from '@/scene/export-image';
 import type { AssetEntity, MaterialPreset } from '@/scene/entity-types';
+import type { UserBakedAsset } from '@/scene/user-baked-asset';
 import { migrateMaterialId } from '@/scene/material-ids';
 import {
   clonePhysicsSettings,
@@ -79,6 +80,7 @@ export interface AppState {
   lightingPresets: LightingPreset[];
   activeLightingPresetId: string;
   entities: AssetEntity[];
+  userBakedAssets: UserBakedAsset[];
   selectedEntityId: string | null;
   camera: CameraSettings;
   exportImageFormat: ExportImageFormat;
@@ -126,6 +128,7 @@ export let state: AppState = {
   lightingPresets: LIGHTING_PRESETS.map(cloneLightingPreset),
   activeLightingPresetId: BUILTIN_LIGHT_DEFAULT_ID,
   entities: [],
+  userBakedAssets: [],
   selectedEntityId: null,
   camera: cloneCameraSettings(camera.settings),
   exportImageFormat: 'png-transparent',
@@ -262,7 +265,10 @@ export function syncEngineStateFromEngine(): void {
   state = {
     ...state,
     lighting: cloneLightingSettings(sceneApi.getLighting()),
-    physics: clonePhysicsSettings(sceneApi.getPhysicsSettings()),
+    physics: {
+      ...clonePhysicsSettings(sceneApi.getPhysicsSettings()),
+      lastFabricClothBakeSummary: state.physics.lastFabricClothBakeSummary,
+    },
     entities: [...sceneApi.getEntities()],
     selectedEntityId: sceneApi.getSelectedEntityId(),
     camera: cloneCameraSettings(sceneApi.getCameraSettings()),

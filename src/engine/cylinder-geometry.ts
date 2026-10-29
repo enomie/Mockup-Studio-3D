@@ -3,6 +3,7 @@ import {
   effectiveCylinderCornerRadiusM,
   type CylinderParams,
 } from '@/scene/asset-cylinder';
+import { ensureGeometryTangents } from '@/engine/geometry-tangents';
 
 const LATHE_SEGMENTS = 48;
 const FILLET_SEGMENTS = 6;
@@ -60,5 +61,6 @@ export function buildCylinderGeometry(params: CylinderParams): BufferGeometry {
     geometry = buildRoundedCylinderLathe(params);
   }
   translateBottomPivot(geometry, params.heightM);
+  ensureGeometryTangents(geometry);
   return geometry;
 }

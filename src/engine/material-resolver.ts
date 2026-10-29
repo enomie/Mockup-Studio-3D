@@ -23,6 +23,7 @@ import {
 } from 'three/tsl';
 import {
   applyImagePlaneAlpha,
+  applyImagePlaneAlphaCutout,
   imageFormatMayHaveAlpha,
   resolveImageFileName,
 } from './image-surface-alpha';
@@ -30,6 +31,7 @@ import { labelImageUSpan } from './beverage-can-label-unfold';
 import { finishToMaterialId, type ImageSurfaceSettings } from '@/scene/image-surface';
 import { multiplyRgb, type Rgb } from '@/colors/rgb';
 import { createTexturedMaterial } from '@/materials/procedural';
+import type { ProceduralSurfaceRole } from '@/materials/procedural/procedural-params';
 import { applyGlassSurfaceToPhysicalMaterial } from '@/materials/procedural/glass-surface';
 import {
   MATERIAL_ALUMINUM_BRUSHED_ID,
@@ -288,17 +290,24 @@ function buildImagePlaneTextureNodes(
   return { sample, useAlphaChannel };
 }
 
+export type ImagePlaneAlphaMode = 'blend' | 'cutout';
+
 function bindImagePlaneTexture(
   material: MeshStandardNodeMaterial | MeshPhysicalNodeMaterial,
   surface: ImageSurfaceSettings,
   nodes: ImagePlaneTextureNodes,
+  alphaMode: ImagePlaneAlphaMode = 'blend',
 ): void {
   const { sample, useAlphaChannel } = nodes;
 
   if (useAlphaChannel) {
     const rgba = asTextureRgba(sample);
     material.colorNode = rgba.rgb;
-    applyImagePlaneAlpha(material, rgba.a);
+    if (alphaMode === 'cutout') {
+      applyImagePlaneAlphaCutout(material, rgba.a);
+    } else {
+      applyImagePlaneAlpha(material, rgba.a);
+    }
     if (surface.emissiveEnabled) {
       material.emissiveNode = (rgba.rgb as ShaderColorNode)
         .mul(float(surface.emissiveIntensity))
@@ -650,9 +659,10 @@ const FABRIC_PLACEHOLDER_SURFACE: ImageSurfaceSettings = {
 
 function createStructureBaseMaterial(
   preset: MaterialPreset,
+  surfaceRole: ProceduralSurfaceRole = 'default',
 ): MeshStandardNodeMaterial | MeshPhysicalNodeMaterial {
   if (preset.kind === 'textured') {
-    return createTexturedMaterial(preset, TINT_NEUTRAL, { surfaceRole: 'ground' });
+    return createTexturedMaterial(preset, TINT_NEUTRAL, { surfaceRole });
   }
 
   if ((preset.clearcoat ?? 0) > 0) {
@@ -673,6 +683,11 @@ function createStructureBaseMaterial(
 }
 
 /** Image albedo × material preset structure (no preset product color). */
+export interface CreateImageOnPresetMaterialOptions {
+  /** PNG/WebP alpha: cutout keeps `depthWrite` (fabric cloth). Default: alpha blend, no depth write. */
+  imageAlphaMode?: ImagePlaneAlphaMode;
+}
+
 export function createImageOnPresetMaterial(
   resolvePreset: MaterialPresetResolver,
   materialId: string,
@@ -682,6 +697,7 @@ export function createImageOnPresetMaterial(
   imageW?: number,
   imageH?: number,
   imageName?: string,
+  options: CreateImageOnPresetMaterialOptions = {},
 ): MeshStandardNodeMaterial | MeshPhysicalNodeMaterial {
   const resolvedId = migrateMaterialId(materialId);
   const preset = resolvePreset(resolvedId);
@@ -691,10 +707,12 @@ export function createImageOnPresetMaterial(
   }
 
   if (!tex) {
-    return createPassepartoutPbrMaterial(resolvePreset, FABRIC_PLACEHOLDER_SURFACE);
+    const material = createStructureBaseMaterial(preset, 'default');
+    material.side = DoubleSide;
+    return material;
   }
 
-  const material = createStructureBaseMaterial(preset);
+  const material = createStructureBaseMaterial(preset, 'default');
   material.side = DoubleSide;
 
   const hasImageSize =
@@ -714,7 +732,12 @@ export function createImageOnPresetMaterial(
         ),
       };
 
-  bindImagePlaneTexture(material, FABRIC_PLACEHOLDER_SURFACE, nodes);
+  bindImagePlaneTexture(
+    material,
+    FABRIC_PLACEHOLDER_SURFACE,
+    nodes,
+    options.imageAlphaMode ?? 'blend',
+  );
 
   return material;
 }
@@ -785,7 +808,7 @@ export function createBookImageOnPresetMaterialFromNodes(
       metalness: 0,
     }));
 
-  const material = createStructureBaseMaterial(preset);
+  const material = createStructureBaseMaterial(preset, 'ground');
   bindBookImageOverCoverTint(material, tintedBase, nodes);
   return material;
 }

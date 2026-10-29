@@ -31,7 +31,14 @@ import {
 import { defaultPenParams } from '@/scene/asset-pen';
 import { defaultBlockParams, isBlockAssetKind } from '@/scene/asset-block';
 import { defaultCylinderParams, isCylinderAssetKind } from '@/scene/asset-cylinder';
-import { defaultSphereParams, isSphereAssetKind } from '@/scene/asset-sphere';
+import {
+  defaultSphereParams,
+  isSphereAssetKind,
+} from '@/scene/asset-sphere';
+import {
+  defaultTrianglePatchParams,
+  isTrianglePatchAssetKind,
+} from '@/scene/asset-triangle-patch';
 import {
   defaultWheelCarParams,
   isWheelCarAssetKind,
@@ -40,7 +47,9 @@ import { isRigidPrimitiveAssetKind } from '@/scene/rigid-primitive-asset';
 import {
   defaultFabricClothParams,
   isFabricClothAssetKind,
+  isFabricClothBakedAssetKind,
 } from '@/scene/asset-fabric-cloth';
+import type { UserBakedAssetResolver } from '@/scene/user-baked-asset';
 import {
   resolveBookParams,
   isBookAssetKind,
@@ -70,7 +79,7 @@ import type { ImageTextureLoader } from './image-texture-loader';
 import type { MaterialResolver } from './material-resolver';
 import type { ViewportInvalidation } from './viewport-invalidation';
 import type { RigidPrimitivePhysicsColliders } from './rigid-primitive-physics-colliders';
-import type { FabricClothPhysicsColliders } from './fabric-cloth-physics-colliders';
+import type { FabricClothSimulationParticipant } from './fabric-cloth-simulation-participant';
 
 export interface AssetRebuildContext {
   registry: EntityRegistry;
@@ -79,7 +88,8 @@ export interface AssetRebuildContext {
   imageResolver: ImageResolver | null;
   viewportInvalidation: ViewportInvalidation | null;
   rigidPrimitivePhysics: RigidPrimitivePhysicsColliders | null;
-  fabricClothPhysics: FabricClothPhysicsColliders | null;
+  fabricClothSimulation: FabricClothSimulationParticipant | null;
+  userBakedAssetResolver: UserBakedAssetResolver | null;
 }
 
 export async function rebuildEntity(ctx: AssetRebuildContext, entityId: string): Promise<void> {
@@ -128,6 +138,25 @@ export async function rebuildEntity(ctx: AssetRebuildContext, entityId: string):
 
     if (isRigidPrimitiveAssetKind(runtime.entity.assetKind)) {
       await rebuildRigidPrimitive(ctx, runtime.object as Group, runtime.entity);
+      syncEntityYForFoot(ctx, entityId, footY);
+      return;
+    }
+
+    if (isTrianglePatchAssetKind(runtime.entity.assetKind)) {
+      const definition = getAssetKindDefinition(runtime.entity.assetKind);
+      const materials = runtime.entity.materials ?? definition.getDefaultMaterials();
+      populateAssetGroup(runtime.object as Group, 'triangle-patch', {
+        materials,
+        materialResolver: ctx.materialResolver,
+        trianglePatchParams:
+          runtime.entity.trianglePatchParams ?? defaultTrianglePatchParams(),
+      });
+      syncEntityYForFoot(ctx, entityId, footY);
+      return;
+    }
+
+    if (isFabricClothBakedAssetKind(runtime.entity.assetKind)) {
+      await rebuildFabricClothBaked(ctx, runtime.object as Group, runtime.entity);
       syncEntityYForFoot(ctx, entityId, footY);
       return;
     }
@@ -406,7 +435,49 @@ export async function rebuildFabricCloth(
     fabricClothParams:
       entity.fabricClothParams ?? defaultFabricClothParams(),
   });
-  ctx.fabricClothPhysics?.refreshOne(entity.id);
+  ctx.fabricClothSimulation?.refreshOne(entity.id);
+}
+
+export async function rebuildFabricClothBaked(
+  ctx: AssetRebuildContext,
+  root: Group,
+  entity: AssetEntity,
+): Promise<void> {
+  const bakedId = entity.userBakedAssetId;
+  const userAsset = bakedId ? ctx.userBakedAssetResolver?.(bakedId) : null;
+  if (!userAsset) {
+    return;
+  }
+
+  let imageTexture = null;
+  let imageWidth: number | undefined;
+  let imageHeight: number | undefined;
+  let imageName: string | undefined;
+
+  if (entity.screenImageId) {
+    const meta = ctx.imageResolver?.(entity.screenImageId);
+    if (meta) {
+      imageWidth = meta.width;
+      imageHeight = meta.height;
+      imageName = meta.name;
+      imageTexture = await ctx.textureLoader.load(entity.screenImageId);
+    }
+  }
+
+  const definition = getAssetKindDefinition(entity.assetKind);
+  const materials = entity.materials ?? definition.getDefaultMaterials();
+
+  populateAssetGroup(root, 'fabric-cloth-baked', {
+    imageWidth,
+    imageHeight,
+    imageName,
+    imageTexture,
+    materials,
+    materialResolver: ctx.materialResolver,
+    fabricClothParams:
+      entity.fabricClothParams ?? defaultFabricClothParams(),
+    bakedFabricClothMesh: userAsset.mesh,
+  });
 }
 
 export async function rebuildBook(

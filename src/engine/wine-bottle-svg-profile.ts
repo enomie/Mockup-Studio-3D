@@ -1,11 +1,14 @@
-import { SVGLoader } from 'three/addons/loaders/SVGLoader.js';
 import { Vector2 } from 'three/webgpu';
 import {
   type WineBottleBodyProfile,
   wineBottleSvgUrl,
 } from '@/scene/asset-wine-bottle';
+import {
+  extractLatheSubpathPointsBySlot,
+  type LatheSvgPoint2,
+} from './lathe-svg-path-slots';
 
-export interface WineBottleSvgPoint2 { x: number; y: number }
+export type WineBottleSvgPoint2 = LatheSvgPoint2;
 
 const rawPointsCache = new Map<WineBottleBodyProfile, WineBottleSvgPoint2[]>();
 
@@ -14,15 +17,7 @@ export function extractOpenPathPointsFromSvgText(
   svgText: string,
   curveSegments = 48,
 ): WineBottleSvgPoint2[] {
-  const loader = new SVGLoader();
-  const data = loader.parse(svgText);
-  const path = data.paths.at(0);
-  if (path === undefined || path.subPaths.length === 0) {
-    return [];
-  }
-
-  const subPath = path.subPaths[0];
-  return subPath.getPoints(curveSegments).map((p) => ({ x: p.x, y: p.y }));
+  return extractLatheSubpathPointsBySlot(svgText, 0, curveSegments);
 }
 
 /** Scale open-wall SVG polyline to lathe space (radius × height, foot at y ≈ 0). */
@@ -238,7 +233,7 @@ async function loadRawWineBottleSvgPoints(
   return points;
 }
 
-/** Normalized open wall from `public/profiles/lathe/bottle-*-open.svg`. */
+/** Normalized open wall from `public/profiles/lathe/lathe-y-bottle-*-open.svg`. */
 export async function loadWineBottleOpenWallProfile(
   profile: WineBottleBodyProfile,
   heightM: number,

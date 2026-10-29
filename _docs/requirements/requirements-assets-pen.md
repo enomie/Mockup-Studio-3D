@@ -4,9 +4,11 @@ Parametrischer **Stift**-Baustein — **Cap**, **Ring** und **Schaft (body)** au
 
 **Abgrenzung:** Keine Getränkedose (zylindrisches Label-Band) → [`requirements-assets-beverage-can.md`](./requirements-assets-beverage-can.md). Kein `print`-Prisma, keine Flasche. **Block**, **Picture framed** → eigene Docs. Marken-Druck = User-Bilder.
 
-**Status:** **v1 fertig** — Katalog, Szene-Entity, Engine-Rebuild, Body-Wrap (90°-Mapping, PNG-Underlay, Orientierung Kappe links). Code: [`asset-pen.ts`](../../src/scene/asset-pen.ts), [`pen-svg-profile.ts`](../../src/engine/pen-svg-profile.ts), [`pen-geometry.ts`](../../src/engine/pen-geometry.ts), [`pen-body-wrap-unfold.ts`](../../src/engine/pen-body-wrap-unfold.ts), [`material-resolver.ts`](../../src/engine/material-resolver.ts) (`createPenBodyWrapMaterial`), [`populate-packaging.ts`](../../src/engine/asset-meshes/populate-packaging.ts) (`populatePenGroup`), [`PenFields.tsx`](../../src/ui/panels/entity-fields/PenFields.tsx). SVGs: [`profiles/lathe/pen-marker.svg`](../../public/profiles/lathe/pen-marker.svg), [`pen-fountain.svg`](../../public/profiles/lathe/pen-fountain.svg).
+**Status:** **v1 fertig** — Katalog, Szene-Entity, Engine-Rebuild, Body-Wrap (90°-Mapping, PNG-Underlay, Orientierung Kappe links). Code: [`asset-pen.ts`](../../src/scene/asset-pen.ts), [`pen-svg-profile.ts`](../../src/engine/pen-svg-profile.ts), [`pen-geometry.ts`](../../src/engine/pen-geometry.ts), [`pen-body-wrap-unfold.ts`](../../src/engine/pen-body-wrap-unfold.ts), [`material-resolver.ts`](../../src/engine/material-resolver.ts) (`createPenBodyWrapMaterial`), [`populate-packaging.ts`](../../src/engine/asset-meshes/populate-packaging.ts) (`populatePenGroup`), [`PenFields.tsx`](../../src/ui/panels/entity-fields/PenFields.tsx). SVGs: [`profiles/lathe/lathe-y-pen-marker.svg`](../../public/profiles/lathe/lathe-y-pen-marker.svg), [`lathe-y-pen-fountain.svg`](../../public/profiles/lathe/lathe-y-pen-fountain.svg).
 
-**v1-Scope:** Ein Built-in **`pen`**; **zwei Körperprofile** (**Marker**, **Fountain pen**); **real scale** (Nennmaß über **max. Außenradius**); **Stiftformat fix** — Bild bestimmt **nicht** Länge oder Profil (analog Dose → [`requirements-assets.md`](./requirements-assets.md)); **drei Lathe-Teile** pro Profil (Cap, Ring, Body); **Bild nur auf Body**; **Material + Farbe** pro Teil (`cap` / `ring` / `body`); **`sizeScale`** uniform auf **gesamten** Stift; Szene-Panel **Geometries**; **kein** Clip-Mechanismus, **keine** Feder-Spitze als separates Mechanik-Mesh in v1.
+**v1-Scope:** Ein Built-in **`pen`**; **zwei Körperprofile** (**Marker**, **Fountain pen**); **real scale** aus **SVG-mm-Pfaden**; **Stiftformat fix** — Bild bestimmt **nicht** Länge oder Profil (analog Dose → [`requirements-assets.md`](./requirements-assets.md)); **drei Lathe-Teile** pro Profil (Cap, Ring, Body); **Bild nur auf Body**; **Material + Farbe** pro Teil (`cap` / `ring` / `body`); **`sizeScale`** uniform auf **gesamten** Stift; Szene-Panel **Geometries**; **kein** Clip-Mechanismus, **keine** Feder-Spitze als separates Mechanik-Mesh in v1.
+
+**Lathe (Querschnitt):** mm-Pfade, **kein** User-Max-Radius, anderes Modell = SVG → [`requirements-assets-lathe.md`](./requirements-assets-lathe.md).
 
 ---
 
@@ -41,21 +43,17 @@ Stabile Katalog-ID über `kind`. Mehrfach-Instanzen unbegrenzt. Default-Szene: *
 
 **Category:** Assets — Pen  
 **Title:** Gemeinsame Nennmaße & Skalierung  
-**Description:** Beide Profile nutzen **dieselbe** SVG-`viewBox`-Höhe zum Authoring (`0 0 28.35 566.93`); **Maßstab** einheitlich über **max. Außenradius** im Profil (größtes **X** über alle drei Pfade nach Import, Achse **X = 0**).
+**Description:** Beide Profile: **Pfadkoordinaten in mm** (projektweit → [`requirements-assets-lathe.md`](./requirements-assets-lathe.md)). **Drehachse X = 0**. **`viewBox`** ist nur Zeichenrahmen — **Länge und Radien kommen aus den Pfaden**, nicht aus der ViewBox-Fläche.
 
-| Maß | Wert (v1) | Hinweis |
+| Maß | Quelle | Hinweis |
 |---|---|---|
-| **`maxRadiusM`** | **0,0065 m** (6,5 mm) | User-stellbar; skaliert **Cap, Ring, Body** gemeinsam; Default = **Mantel-Außen-Ø 13,0 mm** (typ. Permanentmarker) |
-| **Gesamthöhe** | **≈ 0,1412 m** (141 mm) bei Default | **Abgeleitet:** `heightM = (svgHeight / svgMaxRadius) × maxRadiusM` mit `svgHeight = 566.93`, **`svgMaxRadius = 26.09`** (Ring-Pfad, breitester Querschnitt) |
-| **Pivot** | **Spitze / unterer Kontakt** unten, `y = 0` | Wie Block / Beverage can — Body-Pfad endet unten auf der Achse |
+| **Querschnitt / Länge** | SVG **Cap / Ring / Body** | **`viewBox="0 0 10 200"`** (mm); Gesamthöhe **200 mm**; Engine: `× MM_TO_M` bei `sizeScale = 1`. |
+| **Gesamthöhe / Breite (Footprint)** | Abgeleitet aus Profil | Panel: **Size** + gekoppeltes Width/Height — **kein** separates „Max radius“ |
+| **Pivot** | Spitze unten, `y = 0` | Body-Pfad endet auf der Achse |
 
-**Authoring-Einheiten vs. Meter:** Zeichnung mit **Achse X = 0** (Stiftmitte). Zahlen in `viewBox` / Pfaden sind **Illustrator-Authoring-Einheiten** — **kein** 1:1 „eine SVG-Einheit = eine Engine-mm“. Import mappt **`max(profileMaxX) → maxRadiusM`** (wie Beverage can); `viewBox`-Höhe **566,93** ist **nicht** die Körperlänge in Metern vor Skalierung.
+**`sizeScale`:** **Uniform** auf Cap, Ring, Body und Body-Wrap — **kein** Stretch; **kein** separates Skalieren einzelner Teile.
 
-**Einheiten im Code:** Meter + `sizeScale`; mm nur in Tabellen / UI.
-
-**`sizeScale`:** Multipliziert **`maxRadiusM`** und damit **alle** abgeleiteten Längen proportional — **kein** Stretch; **kein** separates Skalieren von Cap vs. Body.
-
-**Profilwechsel:** SVG neu laden, Geometrie-Rebuild, Platzhalter-Ratio des Body-Wraps neu — **Bild bleibt** zugewiesen, UV passt sich an.
+**Profilwechsel:** anderes `penBodyProfile` oder **revidiertes SVG** — Geometrie-Rebuild; **Bild bleibt** zugewiesen, UV passt sich an.
 
 ---
 
@@ -65,11 +63,11 @@ Stabile Katalog-ID über `kind`. Mehrfach-Instanzen unbegrenzt. Default-Szene: *
 
 | Quelle | Steuert |
 |---|---|
-| **`penBodyProfile`**, **`penParams`** (`maxRadiusM`, …), SVG-Profil | Gesamthöhe, Radien, Cap/Ring/Body-Geometrie |
+| **`penBodyProfile`**, **SVG-mm-Profil**, **`sizeScale`** | Gesamthöhe, Radien, Cap/Ring/Body-Geometrie |
 | **`screenImageId`** / Bild-Pixelmaße | **Nur** Textur auf **Body**-Mesh (Cover, Crop, Finish) |
 | **`sizeScale`** (+ uniform Gizmo) | **Proportionale** Skalierung des **fertigen** Stifts |
 
-**Verboten:** `heightM`, `maxRadiusM` oder Profil aus Bild-Ratio ableiten; non-uniform Scale am Transform. **Platzhalter** ohne Bild: Aspect des **Body-Wrap-Unfolds** des aktiven Profils — **nicht** 16:9.
+**Verboten:** Maße oder Profil aus Bild-Ratio ableiten; User-„Max radius“ oder non-uniform Scale. **Platzhalter** ohne Bild: Aspect des **Body-Wrap-Unfolds** des aktiven Profils — **nicht** 16:9.
 
 ---
 
@@ -94,20 +92,20 @@ Stabile Katalog-ID über `kind`. Mehrfach-Instanzen unbegrenzt. Default-Szene: *
 
 | Datei | URL | `penBodyProfile` |
 |---|---|---|
-| [`pen-marker.svg`](../../public/profiles/lathe/pen-marker.svg) | `/profiles/lathe/pen-marker.svg` | **`marker`** |
-| [`pen-fountain.svg`](../../public/profiles/lathe/pen-fountain.svg) | `/profiles/lathe/pen-fountain.svg` | **`fountain`** |
+| [`lathe-y-pen-marker.svg`](../../public/profiles/lathe/lathe-y-pen-marker.svg) | `/profiles/lathe/lathe-y-pen-marker.svg` | **`marker`** |
+| [`lathe-y-pen-fountain.svg`](../../public/profiles/lathe/lathe-y-pen-fountain.svg) | `/profiles/lathe/lathe-y-pen-fountain.svg` | **`fountain`** |
 
-**Gemeinsame `viewBox`:** `0 0 28.35 566.93` (Authoring-Koordinaten; Import **normalisiert** auf `maxRadiusM` + Fuß-Pivot).
+**Gemeinsame `viewBox`:** `0 0 10 200` (`width="10mm"` `height="200mm"`). Import: `MM_TO_M`, Fuß-Pivot, Y-Spiegelung wie andere Lathe-Assets.
 
-### Teil-Zuordnung (Pflicht) — Stroke-Farbe
+### Teil-Zuordnung (Pflicht) — Lathe path slots
 
-| Teil | Stroke (Pflicht) | `cls-n` in beiden SVGs (Authoring) |
+| Teil | Slot-Klasse | Stroke |
 |---|---|---|
-| **Cap** (`cap`) | **#ff0000** | `cls-1` |
-| **Ring** (`ring`) | **#00ff00** | `cls-2` |
-| **Body** (`penBody`) | **#0000ff** | `cls-3` |
+| **Cap** (`cap`) | `path_red` | **#ff0000** |
+| **Ring** (`ring`) | `path_green` | **#00ff00** |
+| **Body** (`penBody`) | `path_blue` | **#0000ff** |
 
-**Engine:** Pfad → Teil anhand **exakter** Stroke-Hex (Tabelle oben). Optional später: `data-pen-part="cap|ring|penBody"` am `<path>` zusätzlich.
+**Engine:** [`lathe-svg-path-slots.ts`](../../src/engine/lathe-svg-path-slots.ts) → Slots 0/1/2 → cap/ring/body. Normativ auch in [`requirements-assets-lathe.md`](./requirements-assets-lathe.md).
 
 **Zeichenregeln (Pflicht für Revisionen):**
 
@@ -128,7 +126,7 @@ Stabile Katalog-ID über `kind`. Mehrfach-Instanzen unbegrenzt. Default-Szene: *
 
 **Category:** Assets — Pen  
 **Title:** Geometrie — Mesh-Stack (v1)  
-**Description:** **Drei** Meshes (ein `Group` pro Entity). Alle Längen aus normalisiertem SVG × `maxRadiusM` × `sizeScale`.
+**Description:** **Drei** Meshes (ein `Group` pro Entity). Alle Längen aus **mm-SVG** × `sizeScale` (× interner Default-Skalierung bis Engine vollständig auf reine mm-Pfade umgestellt ist).
 
 | # | Teil-ID | Geometrie | Material | Bild |
 |---|---|---|---|---|
@@ -218,10 +216,10 @@ Stabile Katalog-ID über `kind`. Mehrfach-Instanzen unbegrenzt. Default-Szene: *
 | Parameter | Default | UI | Hinweis |
 |---|---|---|---|
 | `penBodyProfile` | **`marker`** | Body profile | `marker` \| `fountain` |
-| `maxRadiusM` | **0,0065** | Max radius (m) | Größter Außenradius im Profil (Default = Ø 13 mm Mantel); skaliert Höhe mit |
-| `heightM` | **abgeleitet** (read-only UI optional) | Height (m) | `≈ 0,1412` bei Default-Radius |
+| `sizeScale` | **1** | Dimensions → Size | Uniform auf gesamten Stift |
+| Width / Height | **abgeleitet** | Dimensions (gekoppelt) | Aus Profil-Footprint; siehe [`requirements-assets-lathe.md`](./requirements-assets-lathe.md) |
 
-Weitere mm-Feinjustierung **einzelner** Teile **nicht** v1 (nur SVG-Revision oder `maxRadiusM`).
+Weitere mm-Feinjustierung **einzelner** Teile **nicht** v1 — nur **SVG-Revision** oder anderes Profil.
 
 ---
 
@@ -245,20 +243,20 @@ Weitere mm-Feinjustierung **einzelner** Teile **nicht** v1 (nur SVG-Revision ode
 
 | Baustein | Status |
 |---|---|
-| SVG `pen-marker.svg`, `pen-fountain.svg` | ✓ |
+| SVG `lathe-y-pen-marker.svg`, `lathe-y-pen-fountain.svg` | ✓ |
 | `pen-svg-profile.ts` (Stroke → Cap/Ring/Body) | ✓ |
 | `pen-geometry.ts` (3× Lathe, zyl. Body-UV) | ✓ |
 | `pen-body-wrap-unfold.ts` + Tests | ✓ |
 | `createPenBodyWrapMaterial` / PNG-Underlay | ✓ |
 | `assetKind: 'pen'`, Katalog, `populatePenGroup` | ✓ |
 | Entity `penParams`, Materials, `screenImageId` | ✓ |
-| `PenFields` (Profil, `maxRadiusM`, Geometries, Label) | ✓ |
+| `PenFields` (Profil, Geometries, Label; **kein** Max radius) | ✓ |
 
 **Entity-Felder (Ist):**
 
 ```ts
 // assetKind: 'pen'
-// penParams: { penBodyProfile, maxRadiusM }
+// penParams: { penBodyProfile } (+ intern maxRadiusM Default bis mm-only Engine)
 // capMaterialId, ringMaterialId, bodyMaterialId
 // screenImageId → nur penBody; imageSurfaces.label
 ```
@@ -267,4 +265,4 @@ Weitere mm-Feinjustierung **einzelner** Teile **nicht** v1 (nur SVG-Revision ode
 
 **Category:** Assets — Pen  
 **Title:** Querverweise  
-**Description:** Katalog-Ausnahmen → [`requirements-assets.md`](./requirements-assets.md) (Platzhalter, image-driven sizing, Referenzkante). Lathe-Konventionen → [`requirements-code.md`](./requirements-code.md). Wine bottle (mehrteiliges SVG, Profilwechsel) → [`requirements-assets-wine-bottle.md`](./requirements-assets-wine-bottle.md).
+**Description:** Katalog-Ausnahmen → [`requirements-assets.md`](./requirements-assets.md) (Platzhalter, image-driven sizing, Referenzkante). Lathe-mm, Panel-Ziel → [`requirements-assets-lathe.md`](./requirements-assets-lathe.md), [`requirements-code.md`](./requirements-code.md). Wine bottle (mehrteiliges SVG, Profilwechsel) → [`requirements-assets-wine-bottle.md`](./requirements-assets-wine-bottle.md).

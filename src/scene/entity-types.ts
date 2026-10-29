@@ -13,6 +13,7 @@ import type { SphereParams } from './asset-sphere';
 import type { WheelCarParams } from './asset-wheel-car';
 import type { FabricClothParams } from './asset-fabric-cloth';
 import type { BookParams } from './asset-book';
+import type { TrianglePatchParams } from './asset-triangle-patch';
 import type { PhysicsBodyMode } from './physics-rigid-body';
 import type { WallParams, WallpaperPattern } from './asset-wall';
 import type { AssetKind } from './asset-kind';
@@ -42,6 +43,7 @@ export type { SphereParams } from './asset-sphere';
 export type { WheelCarParams } from './asset-wheel-car';
 export type { FabricClothParams } from './asset-fabric-cloth';
 export type { BookParams } from './asset-book';
+export type { TrianglePatchParams, PatchNodeData, PatchHandleTarget } from './asset-triangle-patch';
 export type { PhysicsBodyMode } from './physics-rigid-body';
 export type { WallParams, WallpaperPattern } from './asset-wall';
 
@@ -88,7 +90,12 @@ export interface AssetEntity {
   wineBottleParams?: WineBottleParams;
   penParams?: PenParams;
   fabricClothParams?: FabricClothParams;
+  /** Catalog entry for stiff `fabric-cloth-baked` geometry. */
+  userBakedAssetId?: string;
+  /** Footprint frozen at bake / placement — not from image ratio. */
+  bakedClothFootprint?: { widthM: number; heightM: number };
   bookParams?: BookParams;
+  trianglePatchParams?: TrianglePatchParams;
   bookBackCoverImageId?: string | null;
   bookSpineImageId?: string | null;
   /** Rapier fixed vs dynamic (rigid props). Default dynamic when omitted. */

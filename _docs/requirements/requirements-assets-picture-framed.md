@@ -2,7 +2,7 @@
 
 Parametrischer **Bilderrahmen** um eine bildgetriebene Opening — Bild aus der **Images-Bibliothek** → [`requirements-images.md`](./requirements-images.md). Katalog, Entity-Modell, Drop/Add, image-driven sizing, Szene-Panel-Grundlagen → [`requirements-assets.md`](./requirements-assets.md). Material-Slots & Presets → [`requirements-materials.md`](./requirements-materials.md). Bild-Flächen (Matt/Glossy, Emissive) → [`requirements-image-surfaces.md`](./requirements-image-surfaces.md). Schatten → [`requirements-shadows.md`](./requirements-shadows.md). Uniform Scale → [`requirements-gimbals.md`](./requirements-gimbals.md).
 
-**Abgrenzung:** Dieses Doc beschreibt **nur** `assetKind: picture` (UI: **Picture framed**, Katalog-Kategorie **Objects**). Smartphone, Tablet → [`requirements-assets-devices-handheld.md`](./requirements-assets-devices-handheld.md); Monitor → [`requirements-assets-devices-monitor.md`](./requirements-assets-devices-monitor.md); Print → [`requirements-assets.md`](./requirements-assets.md) (Print-Abschnitte).
+**Abgrenzung:** Dieses Doc beschreibt **nur** `assetKind: picture` (UI: **Picture Frame**, Katalog-Kategorie **print**). Device Smartphone / Device Tablet → [`requirements-assets-devices-handheld.md`](./requirements-assets-devices-handheld.md); Device Desktop → [`requirements-assets-devices-monitor.md`](./requirements-assets-devices-monitor.md); Print → [`requirements-assets.md`](./requirements-assets.md) (Print-Abschnitte).
 
 **Status:** v1 **teilweise implementiert** — Katalog-Eintrag, Default-Portfolio-Szene, extrudierter Rahmen (`frame-geometry.ts`), Z-Stack (Bild, Rückwand, optionales Glas), Perimeter-UVs, Geometries-Panel (Sichtbarkeit + Material pro Teil), `screenImageId` + `imageSurfaces`, Material-Resolver vor Default-Spawn. **Offen:** Drag Image → Viewport, Katalog-Polish, Abgleich Glazing-Default (s. unten).
 
@@ -12,13 +12,13 @@ Parametrischer **Bilderrahmen** um eine bildgetriebene Opening — Bild aus der 
 
 **Category:** Assets — Picture framed  
 **Title:** Identität & Katalog  
-**Description:** Built-in Baustein, nicht löschbar. **`assetKind`:** `picture`. **Label:** Picture framed. **Kategorie:** `objects` (Lucide `Image`). Stabile ID im Katalog über `kind` — kein separates Asset pro Orientierung; Portrait/Landscape folgt dem zugewiesenen Bild. App-Start: eine Instanz im Portfolio-Layout (`DEFAULT_SCENE_ASSETS`, Position z. B. x ≈ −0,55 m). Mehrfach-Instanzen unbegrenzt — je Instanz eigene `id`, `transform`, `screenImageId`, Material-Slots.
+**Description:** Built-in Baustein, nicht löschbar. **`assetKind`:** `picture`. **Label:** Picture Frame. **Kategorie:** `print` (Lucide `Image`). Stabile ID im Katalog über `kind` — kein separates Asset pro Orientierung; Portrait/Landscape folgt dem zugewiesenen Bild. App-Start: eine Instanz im Portfolio-Layout (`DEFAULT_SCENE_ASSETS`, Position z. B. x ≈ −0,55 m). Mehrfach-Instanzen unbegrenzt — je Instanz eigene `id`, `transform`, `screenImageId`, Material-Slots.
 
 ---
 
 **Category:** Assets — Picture framed  
 **Title:** Image-driven sizing  
-**Description:** Wie [`requirements-assets.md`](./requirements-assets.md): **Nie Bilder verzerren.** Das zugewiesene Bild (`screenImageId` → `ImageAsset.width` / `height`) definiert **Opening-Seitenverhältnis** und Orientierung. **Referenzkante:** Opening-**Breite** **0,500 m** (50 cm). Höhe = Breite / Aspect-Ratio. **Uniform scale:** `sizeScale` (Default `1`, Range `0.05`–`5`) multipliziert alle mm-Maße und die Referenzbreite proportional — Ratio bleibt bildgetrieben. Panel: **Size**, **Width (m)**, **Height (m)** bidirektional mit Gizmo; `setAssetSizeScale` ändert **nicht** `transform.position.y`.
+**Description:** Wie [`requirements-assets.md`](./requirements-assets.md): **Nie Bilder verzerren.** Das zugewiesene Bild (`screenImageId` → `ImageAsset.width` / `height`) definiert **Opening-Seitenverhältnis** und Orientierung. **Referenzkante:** Opening-**Breite** **0,500 m** (50 cm). Höhe = Breite / Aspect-Ratio. **Uniform scale:** `sizeScale` (Default `1`, Range `0.05`–`5`) multipliziert alle mm-Maße und die Referenzbreite proportional — Ratio bleibt bildgetrieben. Panel **Dimensions:** nur **Width (m)** und **Height (m)** (gekoppelt; **kein** Size-Feld); Gizmo-Scale unverändert; `setAssetSizeScale` ändert **nicht** `transform.position.y`. Szene-Panel-Reihenfolge → [`improve-04-asset-settings.md`](../improve/improve-04-asset-settings.md).
 
 | Zustand | Aspect-Ratio |
 |---|---|

@@ -4,9 +4,9 @@ Schatten in der **3D-Szene** (nicht UI-Chrome). Ziel: **photorealistische, weich
 
 Bezüge: [`requirements-lighting.md`](./requirements-lighting.md) (Lichtquellen, Rig), [`requirements-assets.md`](./requirements-assets.md) (Asset-Meshes), [`requirements-ground.md`](./requirements-ground.md) (Boden empfängt), [`requirements-code.md`](./requirements-code.md) (WebGPU/Three), [`requirements-architecture.md`](./requirements-architecture.md) (offene Querschnittsfragen).
 
-**Bestand (Inventur):** `src/render/shadow-setup.ts`, Konstanten in `src/constants.ts`, Key+Fill-Spot-Shadow in `src/engine/lighting/light-rig.ts` + `lighting-system.ts` (`updateFrame`, Solo-Caster-Logik in `applyFill`), Asset-Flags in `src/engine/asset-meshes.ts` (`applyAssetShadowFlags`).
+**Bestand (Inventur):** `src/render/shadow-setup.ts`, `src/render/scene-shadow-coverage.ts`, Konstanten in `src/constants.ts`, Key+Fill-Spot-Shadow in `src/engine/lighting/light-rig.ts` + `lighting-system.ts` (`updateFrame`, `pushExportShadowQuality` / `popExportShadowQuality`, Solo-Caster-Logik in `applyFill`), Capture in `src/engine/mockup-engine-capture.ts`, Asset-Flags in `src/engine/asset-meshes.ts` (`applyAssetShadowFlags`).
 
-**Status:** v1 **implementiert** — Key+Fill Spot, Cast-Checkbox + **Softness pro Rolle** (`key.shadowSoftness` / `fill.shadowSoftness`), PCF **4096²**, Frustum **5 m** (`shadow.focus`), Asset `shadowSide = DoubleSide`, Ground nur receive, Glazing nur receive. **Bias:** `SHADOW_DEPTH_BIAS` / `SHADOW_NORMAL_BIAS` = **0** (Boden-Kontakt). **Weinflasche-Glas:** `customDepthMaterial` (`MeshDepthMaterial`, FrontSide) — Shadow-Silhouette aus Geometrie, nicht Transmission-Shader. **Offen:** Shadow-Settings in Scene Save, v2 Multi-Caster-Tuning.
+**Status:** v1 **implementiert** — Key+Fill Spot, Cast-Checkbox + **Softness pro Rolle** (`key.shadowSoftness` / `fill.shadowSoftness`), PCF **4096²** Viewport / **8192²** Bild-Export-Capture, Spot-Coverage **adaptiv** (Entity-AABB, Cap **5 m**), Asset `shadowSide = DoubleSide`, Ground nur receive, Glazing nur receive. **Bias:** `SHADOW_DEPTH_BIAS` / `SHADOW_NORMAL_BIAS` = **0** (Boden-Kontakt). **Weinflasche-Glas:** `customDepthMaterial` (`MeshDepthMaterial`, FrontSide) — Shadow-Silhouette aus Geometrie, nicht Transmission-Shader. **Offen:** Shadow-Settings in Scene Save, v2 Multi-Caster-Tuning.
 
 ---
 
@@ -79,7 +79,7 @@ UI: **Cast shadows** Checkbox in Key- und Fill-Block (`LightingSubPanel`). `Ligh
 
 **Three.js (normal):** Pro Licht mit `castShadow` eine **eigene Shadow Map** (Depth-Pass), im Haupt-Shader pro Licht multipliziert — **kein** gemeinsamer Shadow-Pass für alle Lichter.
 
-**Bild-Export (Kontaktschatten auf Boden):** [`requirements-export.md`](./requirements-export.md) — gleiche Shadow Maps / Receive wie Viewport.
+**Bild-Export:** [`requirements-export.md`](./requirements-export.md) — gleiche Cast/Receive und Licht-Setup; Capture **8192²** Shadow Maps (ein Frame), danach Restore Viewport **4096²**. Contact-shadows-only nutzt dieselbe lit-Pipeline.
 
 **v2:** Extra-Lights optional `castShadow`; Engine prüft `LightPool.canEnableShadow()` — max. **2** gleichzeitige Shadow-Caster (`LIGHT_POOL_MAX_SHADOW_CASTERS`). Details → Abschnitt „Performance & Limits".
 
@@ -105,6 +105,7 @@ UI: **Cast shadows** Checkbox in Key- und Fill-Block (`LightingSubPanel`). `Ligh
 | Kontext | Map-Größe | Begründung |
 |---|---|---|
 | **Viewport / Arbeit** | **4096×4096** | `SHADOW_MAP_SIZE = 4096` — mm-Kontaktschatten, kein Korn |
+| **Bild-Export (Capture)** | **8192×8192** | `SHADOW_MAP_SIZE_EXPORT` — ein Frame, weniger Texelgitter in weichen Schatten (Boden + Assets); danach Restore → [`requirements-export.md`](./requirements-export.md) |
 | **Minimum** | **2048×2048** | Darunter körnig, unprofessionell — nicht unter 2048 fallen |
 
 **Typische Fehler:** 512/1024 Maps → sichtbare Pixelierung an Schattenkanten. Shadow-Frustum zu groß → effektiv niedrige Auflösung trotz 4096².
@@ -117,7 +118,9 @@ UI: **Cast shadows** Checkbox in Key- und Fill-Block (`LightingSubPanel`). `Ligh
 **Title:** Shadow Camera — Frustum & Fit  
 **Description:** Shadow-Map-Auflösung gilt nur **innerhalb** des Shadow-Frustums. Frustum **eng** auf relevante Szene legen — nicht „ganze Welt".
 
-**Reichweite:** Schatten nur **bis 5 m** um die Szenenmitte nötig — kein 44-m-Frustum. Konstanten: `SHADOW_CAMERA_HALF_EXTENT = 2.5` (Directional Ortho), `SHADOW_COVERAGE_RADIUS = 2.5` (Spot — 5 m Durchmesser am Target).
+**Reichweite:** Schatten nur **bis 5 m** um die Szenenmitte nötig — kein 44-m-Frustum. Konstanten: `SHADOW_CAMERA_HALF_EXTENT = 2.5` (Directional Ortho), `SHADOW_COVERAGE_RADIUS = 2.5` (Spot — **max.** 5 m Durchmesser am Target).
+
+**Spot — adaptive Coverage (Viewport + Export):** `updateSpotShadowCamera` nutzt einen **effektiven** Radius `min(SHADOW_COVERAGE_RADIUS, max(SHADOW_COVERAGE_RADIUS_MIN, entity-AABB-Horizontalausdehnung + Padding))` um das Licht-Target (Szenenmitte / Reference Center) — mehr Texel pro Meter auf kompakten Mockups; Minimum **`SHADOW_COVERAGE_RADIUS_MIN`** (Default **1,25 m**), Padding **`SHADOW_COVERAGE_CONTENT_PADDING_M`**. Leere Szene → volles **2,5 m**-Cap. Code: `computeSceneShadowCoverageRadius` in `src/render/scene-shadow-coverage.ts`, Aufruf aus `LightingSystem.updateFrame`.
 
 **Directional (Pool):** Ortho-Frustum ± `2.5 m`, `near = 0.1`, `far ≈ 7 m`. Target auf Szenenmitte.
 
@@ -181,7 +184,7 @@ Ohne Licht mit `castShadow = true` bleiben Mesh-Flags wirkungslos für dynamisch
 - v2: zweiter Caster (z. B. Directional-Sonne) nur wenn `canEnableShadow()` true
 - **Light-Pool:** Lichter vorkonfiguriert, kein Runtime-`new Light()` — [`requirements-lighting.md`](./requirements-lighting.md)
 
-Bei Export 4096²: optional höheres Budget oder nur für Export-Pass — TBD.
+Export-Capture: **8192²** — siehe Map-Größe-Tabelle und [`requirements-export.md`](./requirements-export.md) (*Export — Shadow-Map-Auflösung*).
 
 ---
 
@@ -194,8 +197,8 @@ Bei Export 4096²: optional höheres Budget oder nur für Export-Pass — TBD.
 | **`shadow.radius`** (PCF Vogel-Disk) | Penumbra / Kantenweichzeichnung | niedrig → hart, höher → weicher | **ja** — Haupt-Slider |
 | **Fill ratio + Ambient** | Schatten **aufhellen** (nicht geometrisch weicher) | niedrig ↔ hoch | ja — Fill + Ambient Slider |
 | **Spot `penumbra`** | Lichtkegel-Rand (Key `0.9`) | leichter Einfluss auf Schattenkante | optional, Expert |
-| **Frustum / Coverage** | Größer = weicher aber unschärfer | Tradeoff vs. mm-Detail | **nein** (Engine-Konstante) |
-| **Map-Size 4096²** | Schärfe / Korn | Qualität, nicht Weichheit | **nein** (Engine-Konstante) |
+| **Frustum / Coverage** | Größer = weicher aber unschärfer | Tradeoff vs. mm-Detail | **nein** — adaptiv aus Entity-AABB (`scene-shadow-coverage.ts`) |
+| **Map-Size 4096² / Export 8192²** | Schärfe / Korn | Qualität, nicht Weichheit | **nein** — Export-Capture automatisch höher |
 | **VSM + blurSamples** | Sehr weiche Penumbra | — | **nein** (Studio-Boden-Risiko) |
 
 **Zielbild:** Kontaktschatten (Rahmen→Print) **scharf** halten; **Boden-Schatten** und äußere Kanten **einstellbar weich** über `shadow.radius`.
@@ -228,8 +231,10 @@ Store: `key.shadowSoftness` / `fill.shadowSoftness` → Scene-API → `applyKey(
 | Bereich | Pfad / Symbol |
 |---|---|
 | Setup & Flags | `src/render/shadow-setup.ts` |
-| Konstanten | `src/constants.ts` — `SHADOW_MAP_SIZE`, `SHADOW_COVERAGE_RADIUS`, `SHADOW_SOFTNESS_*`, `SHADOW_DEPTH_BIAS`, `SHADOW_NORMAL_BIAS`, `LIGHT_POOL_MAX_SHADOW_CASTERS` |
-| Spot Config (Key + Fill) | `configureSpotShadowLight`, `updateSpotShadowCamera` |
+| Konstanten | `src/constants.ts` — `SHADOW_MAP_SIZE`, `SHADOW_MAP_SIZE_EXPORT`, `SHADOW_COVERAGE_RADIUS`, `SHADOW_COVERAGE_RADIUS_MIN`, `SHADOW_COVERAGE_CONTENT_PADDING_M`, `SHADOW_SOFTNESS_*`, `SHADOW_DEPTH_BIAS`, `SHADOW_NORMAL_BIAS`, `LIGHT_POOL_MAX_SHADOW_CASTERS` |
+| Adaptive Coverage | `src/render/scene-shadow-coverage.ts` — `computeSceneShadowCoverageRadius` |
+| Spot Config (Key + Fill) | `configureSpotShadowLight`, `updateSpotShadowCamera` (optional `coverageRadius`) |
+| Export Map-Size | `LightingSystem.pushExportShadowQuality` / `popExportShadowQuality`; `mockup-engine-capture.ts` |
 | Directional (Pool) | `configureDirectionalShadowLight` |
 | Renderer Init | `configureShadowRenderer` in `mockup-engine.ts` |
 | Per-Frame | `LightingSystem.updateFrame()` |

@@ -9,6 +9,7 @@ import {
   setGroundMirrorOpacity,
   setGroundReceiveShadow,
 } from '@/ui/store/app-store';
+import { sortPanelSelectOptions } from '@/ui/utils/library-list-order';
 import { useAppStore } from '@/ui/store/use-app-store';
 
 interface GroundSettingsSectionProps {
@@ -19,10 +20,12 @@ export function GroundSettingsSection({ disabled = false }: GroundSettingsSectio
   const ground = useAppStore((s) => s.ground);
   const materials = useAppStore((s) => s.materials);
 
-  const materialOptions = materials.map((material) => ({
-    value: material.id,
-    label: material.name,
-  }));
+  const materialOptions = sortPanelSelectOptions(
+    materials.map((material) => ({
+      value: material.id,
+      label: material.name,
+    })),
+  );
 
   return (
     <>

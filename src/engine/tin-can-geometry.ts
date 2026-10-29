@@ -24,6 +24,7 @@ import {
 import { cylindricalLabelUv } from './cylindrical-label-uv';
 import { LATHE_SEAM_PHI_START } from './lathe-asset-common';
 import { buildOpenMantleGeometry } from './open-mantle-geometry';
+import { ensureGeometryTangents } from '@/engine/geometry-tangents';
 
 const MANTLE_RADIAL_SEGMENTS = 80;
 const MANTLE_HEIGHT_SEGMENTS = 48;
@@ -64,6 +65,7 @@ export function tinCanOuterRadiusAtY(y: number, params: TinCanParams): number {
 
 function finalizeMantleGeometry(geometry: BufferGeometry): void {
   geometry.computeVertexNormals();
+  ensureGeometryTangents(geometry);
 }
 
 function buildSideMantleGeometry(
@@ -106,6 +108,7 @@ function buildEndRingGeometry(
 
   const geometry = new LatheGeometry(profile, MANTLE_RADIAL_SEGMENTS, LATHE_SEAM_PHI_START);
   geometry.computeVertexNormals();
+  ensureGeometryTangents(geometry);
   return geometry;
 }
 
@@ -119,6 +122,7 @@ function buildDiskGeometry(
   geometry.rotateX(normal === 'positiveY' ? -Math.PI / 2 : Math.PI / 2);
   geometry.translate(0, y, 0);
   geometry.computeVertexNormals();
+  ensureGeometryTangents(geometry);
   return geometry;
 }
 
@@ -213,6 +217,7 @@ export function buildTinCanBodyGeometry(
   );
   merged.computeVertexNormals();
   applyTinCanFootPivot(merged, params);
+  ensureGeometryTangents(merged);
   bottomRing.dispose();
   topRing.dispose();
   bottomOuter.dispose();

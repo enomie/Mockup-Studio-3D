@@ -19,7 +19,7 @@ const FIXTURE_DIR = join(
 );
 
 function loadFixtureProfiles(outerRadiusM: number) {
-  const svgText = readFileSync(join(FIXTURE_DIR, 'wheel-car.svg'), 'utf8');
+  const svgText = readFileSync(join(FIXTURE_DIR, 'lathe-x-wheel-car.svg'), 'utf8');
   const raw = extractWheelCarPathsFromSvgText(svgText);
   return normalizeWheelCarPaths(raw, outerRadiusM);
 }

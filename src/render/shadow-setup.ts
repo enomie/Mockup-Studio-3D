@@ -71,11 +71,24 @@ export function applyAssetShadowFlags(group: Object3D): void {
 export function applyShadowMapQuality(
   shadow: LightShadow,
   radius = SHADOW_SOFTNESS_DEFAULT,
+  mapSize = SHADOW_MAP_SIZE,
 ): void {
-  shadow.mapSize.set(SHADOW_MAP_SIZE, SHADOW_MAP_SIZE);
+  if (shadow.mapSize.x !== mapSize || shadow.mapSize.y !== mapSize) {
+    shadow.map?.dispose();
+    shadow.map = null;
+    shadow.mapSize.set(mapSize, mapSize);
+  }
   shadow.radius = radius;
   shadow.bias = SHADOW_DEPTH_BIAS;
   shadow.normalBias = SHADOW_NORMAL_BIAS;
+}
+
+export function applyShadowMapSize(
+  shadow: LightShadow,
+  mapSize: number,
+  radius = SHADOW_SOFTNESS_DEFAULT,
+): void {
+  applyShadowMapQuality(shadow, radius, mapSize);
 }
 
 export function configureShadowRenderer(renderer: WebGPURenderer): void {
@@ -140,7 +153,10 @@ export function applySpotShadowCast(
  * Tighten spot shadow frustum via shadow.focus (updateMatrices overwrites camera.fov).
  * Call after pose changes and once per render frame.
  */
-export function updateSpotShadowCamera(light: SpotLight): void {
+export function updateSpotShadowCamera(
+  light: SpotLight,
+  coverageRadius = SHADOW_COVERAGE_RADIUS,
+): void {
   light.updateMatrixWorld(true);
   light.target.updateMatrixWorld(true);
 
@@ -148,7 +164,7 @@ export function updateSpotShadowCamera(light: SpotLight): void {
   light.target.getWorldPosition(_targetWorldPos);
   const targetDistance = Math.max(_lightWorldPos.distanceTo(_targetWorldPos), 0.01);
 
-  const coverageHalfAngle = Math.atan(SHADOW_COVERAGE_RADIUS / targetDistance);
+  const coverageHalfAngle = Math.atan(coverageRadius / targetDistance);
   light.shadow.focus = Math.min(1, coverageHalfAngle / light.angle);
   light.shadow.camera.near = SHADOW_CAMERA_NEAR;
   light.shadow.camera.far = targetDistance + SHADOW_CAMERA_FAR_MARGIN;

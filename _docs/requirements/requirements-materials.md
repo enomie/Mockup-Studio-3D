@@ -62,8 +62,8 @@ type MaterialPreset = {
 | `material-paper` | Paper | solid-pbr | — | Matt, warmweiß | Print-Seiten, Rückwand Picture |
 | `material-gold` | Gold | solid-pbr | — | Metallisch, glänzend | Picture framed — Rahmen |
 | `material-silver` | Silver | solid-pbr | — | Metallisch, kühl | Picture framed — Rahmen |
-| `material-fabric` | Fabric | solid-pbr | — | Matt, strukturiert | Print-Seiten, Props |
-| `material-silk` | Silk | solid-pbr | — | Weicher Glanz | Print-Seiten, Deko |
+| `material-fabric` | Fabric Linen | solid-pbr | — | Matt, strukturiert | Print-Seiten, Props |
+| `material-silk` | Fabric Silk | solid-pbr | — | Weicher Glanz | Print-Seiten, Deko |
 | `material-wood` | Wood | solid-pbr | — | Warmes Braun | Rahmen, Props |
 | `material-concrete` | Concrete | solid-pbr | — | Grau, sehr rau | Ground, Props |
 | `material-glossy-print` | Glossy Print | solid-pbr | — | Glänzendes Druckpapier | Print Front/Back |
@@ -77,8 +77,8 @@ type MaterialPreset = {
 | Paper | 0.96 / 0.95 / 0.92 | 0.92 | 0.00 |
 | Gold | 1.00 / 0.77 / 0.33 | 0.25 | 1.00 |
 | Silver | 0.95 / 0.95 / 0.96 | 0.20 | 1.00 |
-| Fabric | 0.75 / 0.73 / 0.70 | 0.88 | 0.00 |
-| Silk | 0.92 / 0.90 / 0.88 | 0.45 | 0.00 |
+| Fabric Linen | 0.75 / 0.73 / 0.70 | 0.88 | 0.00 |
+| Fabric Silk | 0.92 / 0.90 / 0.88 | 0.45 | 0.00 |
 | Wood | 0.55 / 0.38 / 0.24 | 0.65 | 0.00 |
 | Concrete | 0.62 / 0.60 / 0.58 | 0.95 | 0.00 |
 | Glossy Print | 0.95 / 0.93 / 0.91 | 0.15 | 0.00 |
@@ -92,7 +92,7 @@ type MaterialPreset = {
 
 **Geometrie vs. Material:** Scheibe **2 mm** und Rahmen **12 mm** tief sind **Mesh-Maße** in [`requirements-assets.md`](./requirements-assets.md) — fest im Asset. Das Material sagt nur: *so soll Glas aussehen* (IOR, Roughness, Tint). **`glassVariant: pane`** = dünne Scheibe; **`solid`** = volumetrisches Glas (Rahmenbalken, Blöcke). Engine mappt `solid` + Mesh-Tiefe intern für Transmission — User stellt **keine** Millimeter im Glass-Material ein.
 
-**Hinweis:** Gold/Silber nutzen **Metalness-PBR** + IBL — bei [`requirements-reflections.md`](./requirements-reflections.md) Environment aktiv. Fabric/Silk/Concrete wirken in v1 **approximiert** ohne Textur; v2 textured-Kind mit Repeat/Tile → [`requirements-images.md`](./requirements-images.md).
+**Hinweis:** Gold/Silber nutzen **Metalness-PBR** + IBL — bei [`requirements-reflections.md`](./requirements-reflections.md) Environment aktiv. Fabric Linen / Fabric Silk / Concrete wirken in v1 **approximiert** ohne Textur; v2 textured-Kind mit Repeat/Tile → [`requirements-images.md`](./requirements-images.md).
 
 ---
 
@@ -102,7 +102,7 @@ type MaterialPreset = {
 
 - **Paper** — kein „Bildpapier“-Shader; mattes PBR für Kanten/Seiten/Rückwände. Bild bleibt **Image** (Cover auf Plane), nicht Material-Preset.
 - **Gold / Silver** — primär **Rahmen** Picture framed; auch Print-Kanten denkbar. Kein eigener Gold-Shader — Standard `MeshStandardNodeMaterial` + hohe Metalness.
-- **Fabric / Silk** — Unterscheidung: Fabric = matter, Silk = glatter (niedrigere Roughness). Anisotropie (echter Seidenglanz) **später**, nicht v1.
+- **Fabric Linen / Fabric Silk** — Unterscheidung: Linen = matter, Silk = glatter (niedrigere Roughness). Anisotropie (echter Seidenglanz) **später**, nicht v1.
 - **Wood** — v1 einfarbig; Maserung = textured + `albedoImageId` in v2.
 - **Concrete** — für Boden/Props; Ground kann später `groundMaterialId` statt nur Farbe setzen.
 - **Glass (pane) vs. Glass (solid)** — zwei Presets, ein optischer Look, zwei Shader-Zweige. **Nicht** ein Preset mit „12 mm / 2 mm“ in der Tabelle. Scheibe → `material-glass-pane` auf Glazing-Mesh; Glasrahmen → `material-glass-solid` auf Rahmen-Balken. User kann eigene Glas-Presets duplizieren (z. B. leicht milchig) — jeweils als pane oder solid anlegen.
@@ -163,7 +163,7 @@ Subscribe wie Entities — UI Panels aktualisieren. Built-ins beim App-Start aus
 
 **Category:** Materials  
 **Title:** Engine — Material-Resolver  
-**Description:** **`MaterialResolver`** (analog `ImageResolver`): `materialId` → Engine-internes `MeshStandardNodeMaterial` (oder Physical für transmission). **Cache** pro `materialId`; bei `updateMaterial` Cache invalidieren und betroffene Meshes neu binden. Owner disposen bei Remove. TSL / `MeshStandardNodeMaterial` → [`requirements-code.md`](./requirements-code.md). IBL von `scene.environment` — Gold/Silber/Silk profitieren ohne Extra-Code.
+**Description:** **`MaterialResolver`** (analog `ImageResolver`): `materialId` → Engine-internes `MeshStandardNodeMaterial` (oder Physical für transmission). **Cache** pro `materialId`; bei `updateMaterial` Cache invalidieren und betroffene Meshes neu binden. Owner disposen bei Remove. TSL / `MeshStandardNodeMaterial` → [`requirements-code.md`](./requirements-code.md). IBL von `scene.environment` — Gold/Silber/Fabric Silk profitieren ohne Extra-Code.
 
 ---
 
@@ -199,7 +199,7 @@ Print-**Front** = **Image** (Cover). Print-**Seite** = **Material** (Paper/Fabri
 6. Built-ins **Glass (pane)** + **Glass (solid)** + `MaterialResolver` (transmission-Zweige)  
 7. Picture framed: Glasrahmen (`glass-solid`) + optional Glazing (`glass-pane`)  
 8. Ground `materialId` (optional, Ground-Farbe bleibt bis dahin)  
-9. textured-Kind + Wood/Fabric/Concrete mit Bild; Frosted glass Preset (später)
+9. textured-Kind + Wood/Fabric Linen/Concrete mit Bild; Frosted glass Preset (später)
 
 **Nicht im Code raten** — Diary bei Architektur-Freigabe.
 
@@ -213,7 +213,7 @@ Print-**Front** = **Image** (Cover). Print-**Seite** = **Material** (Paper/Fabri
 
 **Category:** Materials  
 **Title:** v2 — Textured Materials (Überblick) — *Planungsgeschichte*  
-**Description:** **Historisch** — Ist-Stand → *Stand Implementierung 2026-10-13*. **Ziel:** Oberflächen mit **sichtbarer Struktur**, die **über Licht** (Directional, Multi-Light, IBL) erlebbar sind — nicht nur eingefärbte Flächen. Betrifft Built-ins **Paper, Wood, Fabric, Silk, Concrete, Gold, Silver** (+ **Gold brushed**, **Silver brushed**) sowie **Glas** (Surface-Detail). v1 **`solid-pbr`** bleibt nur für **Glossy Print** und einfache User-Farb-Presets. v2 führt **`textured`** als eigenes `MaterialKind` ein. **Maps werden generativ on-the-fly** im Shader (TSL) erzeugt — **keine** Material-Texturen in der Images-Bibliothek, **kein** User-Upload von Normal/Albedo-Maps. Images bleibt für **Fotos** (Print-Front, Ground-Foto, …). Kein separates „Bump Map"-Feld — PBR-Standard: **Normal** (+ optional **Roughness-Variation**) aus Procedural. Abhängigkeit: IBL aktiv → [`requirements-reflections.md`](./requirements-reflections.md). Tile über UV, **kein Stretch** → [`image-aspect-ratio.mdc`](../.cursor/rules/image-aspect-ratio.mdc).
+**Description:** **Historisch** — Ist-Stand → *Stand Implementierung 2026-10-13*. **Ziel:** Oberflächen mit **sichtbarer Struktur**, die **über Licht** (Directional, Multi-Light, IBL) erlebbar sind — nicht nur eingefärbte Flächen. Betrifft Built-ins **Paper, Wood, Fabric Linen, Fabric Silk, Concrete, Gold, Silver** (+ **Gold brushed**, **Silver brushed**) sowie **Glas** (Surface-Detail). v1 **`solid-pbr`** bleibt nur für **Glossy Print** und einfache User-Farb-Presets. v2 führt **`textured`** als eigenes `MaterialKind` ein. **Maps werden generativ on-the-fly** im Shader (TSL) erzeugt — **keine** Material-Texturen in der Images-Bibliothek, **kein** User-Upload von Normal/Albedo-Maps. Images bleibt für **Fotos** (Print-Front, Ground-Foto, …). Kein separates „Bump Map"-Feld — PBR-Standard: **Normal** (+ optional **Roughness-Variation**) aus Procedural. Abhängigkeit: IBL aktiv → [`requirements-reflections.md`](./requirements-reflections.md). Tile über UV, **kein Stretch** → [`image-aspect-ratio.mdc`](../.cursor/rules/image-aspect-ratio.mdc).
 
 ---
 
@@ -285,7 +285,7 @@ Built-in Presets: festes `proceduralProfile` (nicht editierbar). User-Presets: *
 | `material-paper` | `paper-grain` | **Papiermaserung** — feine Faserstruktur, sehr subtil; Print-Seiten, Rückwände | 0 |
 | `material-wood` | `wood-mahogany` | Mahagoni-Maserung — warme Bänder, Poren; `tileScale` ~4–8 auf Rahmen | 0 |
 | `material-fabric` | `fabric-linen` | Sichtbares Webmuster (Leinen); Normal moderat | 0 |
-| `material-silk` | `silk-fine` | Feineres Muster als Fabric; niedrigere Normal-Stärke | **0.6–0.85** |
+| `material-silk` | `silk-fine` | Feineres Muster als Fabric Linen; niedrigere Normal-Stärke | **0.6–0.85** |
 | `material-concrete` | `concrete-porous` | Porös, uneben; Ground/Props | 0 |
 | `material-gold` | `metal-polished` | Poliert — Mikro-Kratzer; Farbe aus Preset-`color` | 0 |
 | `material-gold-brushed` | `metal-brushed` | Gebürstetes Gold — Streifenglanz | **~0.7** |
@@ -334,8 +334,8 @@ Built-in Presets: festes `proceduralProfile` (nicht editierbar). User-Presets: *
 - Procedural Albedo × Preset-`color` × Entity-`tint` → diffuse Basis
 - Procedural Normal → `normalNode`, Skala `normalScale`
 - Procedural Roughness-Modulation + Preset-`roughness` als Basis
-- Anisotropie → Physical-Material (`anisotropy`, `anisotropyRotation`) — Silk, gold-brushed, silver-brushed
-- IBL (`scene.environment`) automatisch — Gold/Silber/Silk/Paper ohne Extra-Code
+- Anisotropie → Physical-Material (`anisotropy`, `anisotropyRotation`) — Fabric Silk, gold-brushed, silver-brushed
+- IBL (`scene.environment`) automatisch — Gold/Silber/Fabric Silk/Paper ohne Extra-Code
 
 **Transmission:** `createTransmissionMaterial` + procedural `glass-surface` Normal (Skala `surfaceNormalScale`). `glassVariant` unverändert.
 
@@ -359,8 +359,8 @@ Tint auf Entity-Slots (`faceTints`) multipliziert weiterhin Preset-Farbe — wie
 4. Generator **`paper-grain`** + Built-in `material-paper` migrieren
 5. Weitere Generatoren: fabric-linen, silk-fine, concrete-porous, metal-polished, metal-brushed
 6. Neue Built-ins: `material-gold-brushed`, `material-silver-brushed`
-7. Built-ins migrieren: Wood, Fabric, Silk, Concrete, Gold, Silver → `textured`
-8. Anisotropie — Silk + gold-brushed + silver-brushed
+7. Built-ins migrieren: Wood, Fabric Linen, Fabric Silk, Concrete, Gold, Silver → `textured`
+8. Anisotropie — Fabric Silk + gold-brushed + silver-brushed
 9. Transmission — procedural `glass-surface` für Glass pane/solid
 10. Materials Panel — Editor (ohne Map-Picker) + procedural Swatch-Preview
 11. Ground `materialId` mit textured Concrete (optional parallel zu 7)
@@ -388,8 +388,8 @@ Tint auf Entity-Slots (`faceTints`) multipliziert weiterhin Preset-Farbe — wie
 ---
 
 **Category:** Materials  
-**Title:** Built-in-Namen & Listen-Reihenfolge (Print-Gruppe)  
-**Description:** UI-Namen (IDs stabil): **`material-paper`** → **Print Matt**; **`material-glossy-print`** → **Print Glossy**. Beide bilden die **Print-Gruppe** — in der Materials-Liste **zuerst** (Matt, dann Glossy), danach Rahmen/Flächen (Gold, Silver, Wood, …), Glas zuletzt. Print Matt = matte Druck-/Kantenoberfläche (Seiten, Rückwände); Print Glossy = glänzende Druckfläche (Front/Back). Kein separates „Paper"-Preset mehr in der UI.
+**Title:** Built-in-Namen (Print-Gruppe)  
+**Description:** UI-Namen (IDs stabil): **`material-paper`** → **Print Matt**; **`material-glossy-print`** → **Print Glossy**. Print Matt = matte Druck-/Kantenoberfläche (Seiten, Rückwände); Print Glossy = glänzende Druckfläche (Front/Back). Kein separates „Paper"-Preset mehr in der UI. **Listen-/Dropdown-Reihenfolge** in der UI: alphabetisch nach `name` → [`requirements-look-and-feel.md`](./requirements-look-and-feel.md); `material-presets.ts` definiert nur Daten/IDs, keine UI-Sortierung.
 
 ---
 
@@ -401,13 +401,13 @@ Tint auf Entity-Slots (`faceTints`) multipliziert weiterhin Preset-Farbe — wie
 
 **Category:** Materials  
 **Title:** Metall-Built-ins — Chrome, poliert, gebürstet  
-**Description:** **`material-silver`** entfernt → **`material-chrome`** (Load-Migration). Polierte Metalle: **Gold**, **Chrome** — `textured` + `metal-polished`, Roughness **0.05–0.10**, metalness **1.0**, Preset-**`clearcoat`** ~0.35, subtile Mikro-Normal (TSL). Gebürstet: **Gold Brushed** (`material-gold-brushed`), **Aluminum Brushed** (`material-aluminium-brushed`, UI US) — `metal-brushed` + Anisotropie **~0.35** (Rotation aus Tangent-U am Rahmen). Listen-Reihenfolge nach Print-Gruppe: Gold, Chrome, Gold Brushed, Aluminum Brushed, dann Wood, Fabric, … IBL Pflicht für photorealistischen Glanz.
+**Description:** **`material-silver`** entfernt → **`material-chrome`** (Load-Migration). Polierte Metalle: **Gold**, **Chrome** — `textured` + `metal-polished`, Roughness **0.05–0.10**, metalness **1.0**, Preset-**`clearcoat`** ~0.35, subtile Mikro-Normal (TSL). Gebürstet: **Gold Brushed** (`material-gold-brushed`), **Aluminum Brushed** (`material-aluminium-brushed`, UI US) — `metal-brushed` + Anisotropie **~0.35** (Rotation aus Tangent-U am Rahmen). Materials-Listen/Dropdowns alphabetisch nach Name (s. Look & Feel). IBL Pflicht für photorealistischen Glanz.
 
 ---
 
 **Category:** Materials  
 **Title:** Stand Implementierung 2026-10-13 — Built-ins (aktuell)  
-**Description:** **Single source of truth** — Reihenfolge wie `src/data/material-presets.ts`.
+**Description:** **Single source of truth** für IDs und Default-Felder — `src/data/material-presets.ts`. UI-Sortierung alphabetisch nach `name`.
 
 | ID | UI-Name | kind | `proceduralProfile` | Anisotropie |
 |---|---|---|---|---|
@@ -421,8 +421,8 @@ Tint auf Entity-Slots (`faceTints`) multipliziert weiterhin Preset-Farbe — wie
 | `material-aluminium-brushed` | Aluminum Brushed | textured | `metal-brushed` | ~0.25 |
 | `material-plastic-matte` | Plastic Matte | textured | `plastic-matte` | — |
 | `material-plastic-smooth` | Plastic Smooth | textured | `plastic-smooth` | — |
-| `material-fabric` | Fabric | textured | `fabric-linen` | — |
-| `material-silk` | Silk | textured | `silk-fine` | ~0.65 |
+| `material-fabric` | Fabric Linen | textured | `fabric-linen` | — |
+| `material-silk` | Fabric Silk | textured | `silk-fine` | ~0.65 |
 | `material-wood` | Wood Soft | textured | `wood-soft` | — |
 | `material-wood-porous` | Wood Porous | textured | `wood-porous` | — |
 | `material-concrete` | **Concrete Stained** | textured | **`concrete-stained`** | — |
@@ -454,6 +454,18 @@ fabricDrape?: {
 | `heavy` / `stiff` Presets | IDs beim Implementieren — Profile `heavy` / `stiff` |
 
 **User-Material** ohne `fabricDrape`: Resolver-Fallback **`linen`**. **Duplicate** eines Built-ins: `fabricDrape` mitkopieren wenn gesetzt. Sim-Konstanten-Tabelle → [`requirements-physics.md`](./requirements-physics.md) (Fabric cloth — Cloth-Mesh). Preset-`color` bleibt auf der Stoff-**Motivbahn** ignoriert → [`requirements-assets-fabric-cloth.md`](./requirements-assets-fabric-cloth.md).
+
+---
+
+**Category:** Materials  
+**Title:** Fabric drape profile — superseded for simulation (Phase A)  
+**Description:** **`fabricDrape` auf Material-Presets steuert die Stoff-Simulation nicht mehr** (Ziel: CPU Verlet). Simulation nutzt **`fabricClothParams.physics`** am Entity → [`requirements-assets-fabric-cloth.md`](./requirements-assets-fabric-cloth.md).
+
+| Thema | Regel |
+|---|---|
+| **Legacy** | Feld `fabricDrape` in Preset-JSON darf bleiben für alte Duplikate; **kein** laufender `resolveFabricDrape(materialId)` als Sim-Quelle (Entfernung Phase G) |
+| **`addAsset('fabric-cloth')`** | **Einmalig** initiale `physics`-Preset-Zuordnung aus `fabricClothMaterialId` (z. B. `material-silk` → `silk`, `material-fabric` → `linen`) — danach unabhängig vom Material |
+| **Look** | `fabricClothMaterialId` unverändert für PBR/Procedural |
 
 ---
 
@@ -533,7 +545,7 @@ Opake Materialien **blockieren** Licht im Sinne von Shadow Mapping. Glazing bloc
 
 **Abgrenzung:** Clear ≠ Frosted — bewusst getrennte Presets, nicht User-Duplicate-Pflicht. Entity-Defaults unverändert (`material-glass-pane` = klar). Frosted manuell oder per Dropdown (`filterKind: transmission`). v2 **`glass-surface`** Procedural (Mikro-Kratzer) bleibt separater Schritt — nicht Ersatz für Frosted.
 
-**Listen-Reihenfolge:** … Glass (pane), Glass (solid), Glass (wine bottle), Glass Frosted (pane), Glass Frosted (solid).
+**UI-Listen:** alphabetisch nach `name` (s. Look & Feel) — inkl. Glas-Presets.
 
 **Glass (wine bottle):** Built-in **`material-glass-wine-bottle`** — **implementiert** in [`material-presets.ts`](../../src/data/material-presets.ts). Resolve: **`meshDepthM = wallThicknessM × WINE_BOTTLE_GLASS_TRANSMISSION_MESH_DEPTH_FACTOR`** (0,4 × Default 2,5 mm). Details → [`requirements-assets-wine-bottle.md`](./requirements-assets-wine-bottle.md).
 
@@ -594,7 +606,7 @@ Opake Materialien **blockieren** Licht im Sinne von Shadow Mapping. Glazing bloc
 | `grid-paper-*` | Grid Paper / Lines | `grid-paper.ts` |
 | `paper-grain` | Print Matt | `paper-grain.ts` |
 | `coated-gloss` | Print Glossy | `coated-gloss.ts` |
-| `fabric-linen` / `silk-fine` | Fabric / Silk | `fabric-linen.ts`, `silk-fine.ts` |
+| `fabric-linen` / `silk-fine` | Fabric Linen / Fabric Silk | `fabric-linen.ts`, `silk-fine.ts` |
 | `concrete-stained` / `concrete-porous` | Concrete Stained / Porous | `concrete-stained.ts`, `concrete-porous.ts` |
 | `metal-polished` / `metal-brushed` | Gold, Chrome, Brushed | `metal-polished.ts`, `metal-brushed.ts` |
 | `plastic-matte` / `plastic-smooth` | Plastic Matte / Smooth | `plastic-surface.ts` |
@@ -669,7 +681,7 @@ Beide: `textured`, `metalness` 0, **kein** Clearcoat-Pflicht (optional wie ander
 
 **Sampling:** → Tabelle *Procedural — Sampling (normativ)* — Stained unverändert `meter-3d` auf Solids; Porous wie Wood Porous auf Solids **`triplanar-meters`**, damit Blasen auf allen Box-/Zylinder-Faces lesbar sind.
 
-**Listen-Reihenfolge:** … Wood Soft, Wood Porous, **Concrete Stained**, **Concrete Porous**, dann Fabric / …
+**UI-Listen:** alphabetisch nach `name` (s. Look & Feel).
 
 **Load-Migration (Pflicht):** Vor Implementierung hieß das Profil `concrete-porous` fälschlich „porös". Beim Projekt-Load: jedes Preset mit `proceduralProfile === 'concrete-porous'`, dessen **`id` ≠ `material-concrete-porous`**, wird auf **`concrete-stained`** umgeschrieben (User-Duplikate behalten den alten Look). Built-in `material-concrete` im Code: `concrete-stained`. **Kein** globales `normalizeProceduralProfile('concrete-porous' → stained)` zur Resolve-Zeit — sonst würde das neue Porous-Preset nie den neuen Generator erreichen.
 

@@ -15,8 +15,6 @@ import { setAssetScreenImage, setPenParams } from '@/ui/store/app-store';
 import { useAppStore } from '@/ui/store/use-app-store';
 import { MaterialSelect } from '@/ui/panels/MaterialSelect';
 import { PanelSelect } from '@/ui/components/PanelSelect';
-import { PanelAxisField } from '@/ui/components/PanelAxisField/PanelAxisField';
-import { formatLengthMeters, LENGTH_DECIMALS, parseLengthMetersInput } from '@/units/length';
 import type { PictureFieldsProps } from './entity-fields-types';
 
 export function PenFields({
@@ -65,16 +63,6 @@ export function PenFields({
               penBodyProfile: value as PenBodyProfile,
             }); }
           }
-        />
-        <PanelAxisField
-          label="Max radius"
-          unit="m"
-          value={params.maxRadiusM}
-          format={(value) => formatLengthMeters(value, LENGTH_DECIMALS)}
-          parse={parseLengthMetersInput}
-          onChange={(value) => {
-            if (value > 0) {setPenParams(entity.id, { maxRadiusM: value });}
-          }}
         />
       </SubPanelSection>
 

@@ -7,6 +7,7 @@ import {
   ShapeGeometry,
   type BufferGeometry,
 } from 'three/webgpu';
+import { ensureGeometryTangents } from '@/engine/geometry-tangents';
 
 /** CSG pad to avoid coplanar caps on frame faces (screen opening, button holes). */
 export const HANDHELD_CSG_EPSILON_M = 0.0001;
@@ -150,6 +151,7 @@ export function createRoundedScreenGeometry(
   const shape = createRoundedRectShape(width, height, cornerRadius);
   const geometry = new ShapeGeometry(shape, HANDHELD_FRAME_CURVE_SEGMENTS);
   assignPlanarUvs(geometry);
+  ensureGeometryTangents(geometry);
   return geometry;
 }
 
@@ -191,6 +193,7 @@ function extrudeShapeAlongZ(
     alignExtrusionFrontToZZero(geometry);
   }
   toCreasedNormals(geometry, Math.PI / 2);
+  ensureGeometryTangents(geometry);
   return geometry;
 }
 
@@ -325,6 +328,7 @@ function extrudePillAlongNegativeX(
   geometry.translate(0, 0, -depthX);
   geometry.rotateY(Math.PI / 2);
   toCreasedNormals(geometry, Math.PI / 2);
+  ensureGeometryTangents(geometry);
   return geometry;
 }
 

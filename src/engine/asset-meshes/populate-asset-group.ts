@@ -20,12 +20,15 @@ import {
   addCylinder,
   addSphere,
   addFabricCloth,
+  addBakedFabricCloth,
   addFacetedPrism,
   addPicture,
   addWall,
 } from './populate-primitives';
 import { addBook } from './populate-book';
 import { resolveBookParams } from '@/scene/asset-book';
+import { addTrianglePatch } from './populate-triangle-patch';
+import { defaultTrianglePatchParams } from '@/scene/asset-triangle-patch';
 
 export function populateAssetGroup(
   group: Group,
@@ -178,6 +181,28 @@ export function populateAssetGroup(
         context.imageHeight,
         context.imageName,
         context.fabricClothParams ?? defaultFabricClothParams(),
+      );
+      break;
+    case 'fabric-cloth-baked':
+      if (!resolver || !context.bakedFabricClothMesh) {return;}
+      addBakedFabricCloth(
+        group,
+        context.bakedFabricClothMesh,
+        resolver,
+        context.imageTexture ?? null,
+        materials,
+        context.imageWidth,
+        context.imageHeight,
+        context.imageName,
+        context.fabricClothParams ?? defaultFabricClothParams(),
+      );
+      break;
+    case 'triangle-patch':
+      addTrianglePatch(
+        group,
+        resolver,
+        materials,
+        context.trianglePatchParams ?? defaultTrianglePatchParams(),
       );
       break;
     case 'book-softcover':

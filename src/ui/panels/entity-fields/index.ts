@@ -15,3 +15,4 @@ export { PenFields } from './PenFields';
 export { PictureFields } from './PictureFields';
 export { HandheldFields } from './HandheldFields';
 export { MonitorFields } from './MonitorFields';
+export { TrianglePatchFields } from './TrianglePatchFields';

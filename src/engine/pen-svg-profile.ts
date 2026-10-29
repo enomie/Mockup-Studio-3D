@@ -1,17 +1,15 @@
 import { Vector2 } from 'three/webgpu';
-import { SVGLoader } from 'three/addons/loaders/SVGLoader.js';
 import { penSvgUrl, type PenBodyProfile } from '@/scene/asset-pen';
+import { MM_TO_M } from '@/units/length';
 import { orientLatheProfileBottomToTop } from './beverage-can-svg-profile';
+import {
+  extractLathePathPointsBySlot,
+  type LatheSvgPoint2,
+} from './lathe-svg-path-slots';
 
-export interface SvgPoint2 { x: number; y: number }
+export type { LatheSvgPoint2 as SvgPoint2 };
 
 export type PenSvgPartId = 'cap' | 'ring' | 'body';
-
-const STROKE_TO_PART: Record<string, PenSvgPartId> = {
-  '#ff0000': 'cap',
-  '#00ff00': 'ring',
-  '#0000ff': 'body',
-};
 
 export interface PenLatheProfiles {
   cap: Vector2[];
@@ -19,99 +17,20 @@ export interface PenLatheProfiles {
   body: Vector2[];
 }
 
-type RawPenPaths = Record<PenSvgPartId, SvgPoint2[]>;
+type RawPenPaths = Record<PenSvgPartId, LatheSvgPoint2[]>;
 
 const rawPathsCache = new Map<PenBodyProfile, RawPenPaths>();
-
-function normalizeStrokeHex(stroke: string | undefined): string | null {
-  if (!stroke) {
-    return null;
-  }
-  const trimmed = stroke.trim().toLowerCase();
-  if (trimmed.startsWith('#')) {
-    return trimmed.length === 4
-      ? `#${trimmed[1]}${trimmed[1]}${trimmed[2]}${trimmed[2]}${trimmed[3]}${trimmed[3]}`
-      : trimmed;
-  }
-  return null;
-}
-
-function pathStrokeHex(path: {
-  userData?: { style?: { stroke?: string }; node?: Element };
-  color?: { getHexString?: () => string };
-}): string | null {
-  const stroke = path.userData?.style?.stroke;
-  const fromStyle = normalizeStrokeHex(typeof stroke === 'string' ? stroke : undefined);
-  if (fromStyle) {
-    return fromStyle;
-  }
-  const hex = path.color?.getHexString?.();
-  if (hex) {
-    return normalizeStrokeHex(`#${hex}`);
-  }
-  return null;
-}
-
-function parseClassStrokeMap(svgText: string): Map<string, string> {
-  const map = new Map<string, string>();
-  const ruleRe = /\.(cls-\d+)\s*\{[^}]*stroke:\s*(#[0-9a-fA-F]{3,8})/gi;
-  let match: RegExpExecArray | null;
-  while ((match = ruleRe.exec(svgText)) !== null) {
-    const normalized = normalizeStrokeHex(match[2]);
-    if (normalized) {
-      map.set(match[1], normalized);
-    }
-  }
-  return map;
-}
-
-function partIdForPath(
-  path: { userData?: { node?: Element }; color?: { getHexString?: () => string } },
-  classStroke: Map<string, string>,
-): PenSvgPartId | undefined {
-  const inline = pathStrokeHex(path);
-  if (inline !== null && inline in STROKE_TO_PART) {
-    return STROKE_TO_PART[inline];
-  }
-
-  const node = path.userData?.node;
-  const classAttr = node?.getAttribute('class') ?? '';
-  for (const token of classAttr.split(/\s+/)) {
-    const hex = classStroke.get(token);
-    if (hex !== undefined && hex in STROKE_TO_PART) {
-      return STROKE_TO_PART[hex];
-    }
-  }
-
-  return undefined;
-}
 
 export function extractPenPathsFromSvgText(
   svgText: string,
   curveSegments = 24,
 ): RawPenPaths {
-  const loader = new SVGLoader();
-  const data = loader.parse(svgText);
-  const classStroke = parseClassStrokeMap(svgText);
-  const result: RawPenPaths = { cap: [], ring: [], body: [] };
-
-  for (const path of data.paths) {
-    const part = partIdForPath(path, classStroke);
-    if (!part) {
-      continue;
-    }
-    const shapes = path.toShapes();
-    const shape = shapes.at(0);
-    if (shape === undefined) {
-      continue;
-    }
-    const points = shape.getPoints(curveSegments).map((p) => ({ x: p.x, y: p.y }));
-    if (points.length > 0) {
-      result[part] = points;
-    }
-  }
-
-  return result;
+  const slots = extractLathePathPointsBySlot(svgText, curveSegments);
+  return {
+    cap: slots[0],
+    ring: slots[1],
+    body: slots[2],
+  };
 }
 
 export function globalBoundsFromRawPaths(paths: RawPenPaths): {
@@ -138,34 +57,46 @@ export function globalBoundsFromRawPaths(paths: RawPenPaths): {
 }
 
 export function normalizePenPartPoints(
-  raw: SvgPoint2[],
-  bounds: { maxX: number; maxY: number },
-  maxRadiusM: number,
+  raw: LatheSvgPoint2[],
+  bounds: { maxY: number },
 ): Vector2[] {
-  if (raw.length < 2 || bounds.maxX <= 0 || maxRadiusM <= 0) {
+  if (raw.length < 2) {
     return [];
   }
 
-  const scale = maxRadiusM / bounds.maxX;
   const normalized: Vector2[] = [];
   for (const p of raw) {
-    const x = p.x * scale;
-    const y = (bounds.maxY - p.y) * scale;
+    const x = p.x * MM_TO_M;
+    const y = (bounds.maxY - p.y) * MM_TO_M;
     normalized.push(new Vector2(x, y));
   }
 
   return orientLatheProfileBottomToTop(normalized);
 }
 
-export function normalizePenPaths(
-  raw: RawPenPaths,
-  maxRadiusM: number,
+export function scalePenLatheProfiles(
+  profiles: PenLatheProfiles,
+  sizeScale: number,
 ): PenLatheProfiles {
+  if (sizeScale === 1) {
+    return profiles;
+  }
+  const scalePart = (points: Vector2[]): Vector2[] =>
+    points.map((p) => new Vector2(p.x * sizeScale, p.y * sizeScale));
+
+  return {
+    cap: scalePart(profiles.cap),
+    ring: scalePart(profiles.ring),
+    body: scalePart(profiles.body),
+  };
+}
+
+export function normalizePenPaths(raw: RawPenPaths): PenLatheProfiles {
   const bounds = globalBoundsFromRawPaths(raw);
   return {
-    cap: normalizePenPartPoints(raw.cap, bounds, maxRadiusM),
-    ring: normalizePenPartPoints(raw.ring, bounds, maxRadiusM),
-    body: normalizePenPartPoints(raw.body, bounds, maxRadiusM),
+    cap: normalizePenPartPoints(raw.cap, bounds),
+    ring: normalizePenPartPoints(raw.ring, bounds),
+    body: normalizePenPartPoints(raw.body, bounds),
   };
 }
 
@@ -198,8 +129,9 @@ export function clearRawPenPathsCache(): void {
 
 export async function loadPenLatheProfiles(
   profile: PenBodyProfile,
-  maxRadiusM: number,
+  sizeScale = 1,
 ): Promise<PenLatheProfiles> {
   const raw = await loadRawPenPaths(profile);
-  return normalizePenPaths(raw, maxRadiusM);
+  const normalized = normalizePenPaths(raw);
+  return scalePenLatheProfiles(normalized, sizeScale);
 }

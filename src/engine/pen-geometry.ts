@@ -6,7 +6,7 @@ import {
   type Material,
   type Vector2,
 } from 'three/webgpu';
-import { scaledPenMaxRadiusM, type PenParams } from '@/scene/asset-pen';
+import type { PenParams } from '@/scene/asset-pen';
 import {
   isGeometryVisible,
   type AssetGeometryVisibility,
@@ -19,6 +19,7 @@ import {
 import { penBodyYBounds, penBodyWrapCoverPlaneM } from './pen-body-wrap-unfold';
 import { loadPenLatheProfiles, type PenLatheProfiles } from './pen-svg-profile';
 import { weldLathePhiSeam } from './lathe-seam-normals';
+import { ensureGeometryTangents } from '@/engine/geometry-tangents';
 
 const LATHE_SEGMENTS = 80;
 
@@ -31,6 +32,7 @@ export function buildPenLatheGeometry(points: Vector2[]): BufferGeometry {
   );
   weldLathePhiSeam(geometry, LATHE_SEGMENTS, points.length);
   geometry.computeVertexNormals();
+  ensureGeometryTangents(geometry);
   return geometry;
 }
 
@@ -73,13 +75,9 @@ export interface PenMeshBuildResult {
 export async function buildPenMeshes(
   input: PenMeshBuildInput,
 ): Promise<PenMeshBuildResult> {
-  const maxRadiusM = scaledPenMaxRadiusM(
-    input.penParams.maxRadiusM,
-    input.sizeScale,
-  );
   const profiles = await loadPenLatheProfiles(
     input.penParams.penBodyProfile,
-    maxRadiusM,
+    input.sizeScale,
   );
 
   if (profiles.body.length < 2) {
@@ -119,8 +117,6 @@ export async function buildPenMeshes(
 
 export function penBodyCoverPlaneFromProfiles(
   profiles: PenLatheProfiles,
-  _penParams: PenParams,
-  _sizeScale: number,
 ): { planeW: number; planeH: number } {
-  return penBodyWrapCoverPlaneM(profiles.body, 0, 1);
+  return penBodyWrapCoverPlaneM(profiles.body);
 }

@@ -3,6 +3,7 @@ import type { BlockColliderShape } from './block-collider-shape';
 import type { CylinderColliderShape } from './cylinder-collider-shape';
 import type { SphereColliderShape } from './sphere-collider-shape';
 import type { WheelCarColliderShape } from './wheel-car-collider-shape';
+import { WHEEL_COLLIDER_AXLE_QUATERNION } from './wheel-collider-frame';
 
 export type RigidColliderShape =
   | { kind: 'block'; shape: BlockColliderShape }
@@ -45,13 +46,10 @@ function sphereColliderDesc(shape: SphereColliderShape): RAPIER.ColliderDesc {
   return colliderDesc;
 }
 
-const HALF_PI = Math.PI / 2;
-const AXLE_Z_ROTATION = { x: 0, y: 0, z: Math.sin(HALF_PI / 2), w: Math.cos(HALF_PI / 2) };
-
 function wheelCarColliderDesc(shape: WheelCarColliderShape): RAPIER.ColliderDesc {
   const colliderDesc = RAPIER.ColliderDesc.cylinder(shape.halfHeightM, shape.radiusM);
   colliderDesc.setTranslation(0, shape.centerOffsetY, 0);
-  colliderDesc.setRotation(AXLE_Z_ROTATION);
+  colliderDesc.setRotation(WHEEL_COLLIDER_AXLE_QUATERNION);
   return colliderDesc;
 }
 

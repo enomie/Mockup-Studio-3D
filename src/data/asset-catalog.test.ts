@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import type { AssetKind } from '@/scene/asset-kind';
 import { ASSET_CATALOG } from './asset-catalog';
 
-const ALL_ASSET_KINDS: Record<AssetKind, true> = {
+/** Built-in catalog kinds only — `fabric-cloth-baked` is user-library placement, not in ASSET_CATALOG. */
+const BUILTIN_CATALOG_KINDS: Record<Exclude<AssetKind, 'fabric-cloth-baked'>, true> = {
   print: true,
   picture: true,
   smartphone: true,
@@ -21,12 +22,13 @@ const ALL_ASSET_KINDS: Record<AssetKind, true> = {
   'fabric-cloth': true,
   'book-softcover': true,
   'book-hardcover': true,
+  'triangle-patch': true,
 };
 
 describe('asset catalog', () => {
   it('covers every AssetKind exactly once', () => {
     const catalogKinds = ASSET_CATALOG.map((entry) => entry.kind);
-    const expectedKinds = Object.keys(ALL_ASSET_KINDS) as AssetKind[];
+    const expectedKinds = Object.keys(BUILTIN_CATALOG_KINDS) as AssetKind[];
 
     expect(catalogKinds.length).toBe(expectedKinds.length);
     for (const kind of expectedKinds) {

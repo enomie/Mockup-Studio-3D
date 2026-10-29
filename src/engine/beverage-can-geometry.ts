@@ -7,9 +7,11 @@ import {
   type Material,
 } from 'three/webgpu';
 import {
+  beverageCanTopRingYBounds,
   scaledBeverageCanParams,
   type BeverageCanParams,
 } from '@/scene/asset-beverage-can';
+import { MM_TO_M } from '@/units/length';
 import {
   isGeometryVisible,
   type AssetGeometryVisibility,
@@ -25,6 +27,7 @@ import {
   LATHE_SEAM_PHI_START,
 } from './lathe-asset-common';
 import { buildOpenMantleGeometry } from './open-mantle-geometry';
+import { ensureGeometryTangents } from '@/engine/geometry-tangents';
 
 const LATHE_SEGMENTS = 80;
 const LABEL_MANTLE_RADIAL_SEGMENTS = 80;
@@ -59,9 +62,10 @@ export function labelBandYBounds(params: BeverageCanParams): {
   labelY0: number;
   labelY1: number;
 } {
+  const topHalf = params.topRingHeightM * 0.5;
   return {
     labelY0: params.labelBottomOffsetM,
-    labelY1: params.heightM - params.topRingHeightM,
+    labelY1: params.heightM - topHalf,
   };
 }
 
@@ -166,6 +170,7 @@ export function buildCanHullLatheGeometry(
     omitLabelBandFromHull(geometry, options.params, profilePoints);
   }
   geometry.computeVertexNormals();
+  ensureGeometryTangents(geometry);
   return geometry;
 }
 
@@ -191,37 +196,26 @@ export function buildBeverageCanLabelMantleGeometry(
   });
 }
 
-export function buildTopRingGeometry(
-  mantleProfile: Vector2[],
-  params: BeverageCanParams,
-): BufferGeometry {
-  const yBot = params.heightM - params.topRingHeightM;
-  const yTop = params.heightM;
-
-  let r0Bot = sampleProfileRadiusAtY(mantleProfile, yBot);
-  let r0Top = sampleProfileRadiusAtY(mantleProfile, yTop);
-  const bodFallback = params.diameterM / 2;
-  if (r0Bot <= 0) {
-    r0Bot = bodFallback;
-  }
-  if (r0Top <= 0) {
-    r0Top = bodFallback;
-  }
-
-  const r1Bot = r0Bot + params.topRingThicknessM;
-  const r1Top = r0Top + params.topRingThicknessM;
+/** Axisymmetric lip: lathe a radial×vertical rectangle; `topRingCenterRadiusMm` is the ring mid-radius. */
+export function buildTopRingGeometry(params: BeverageCanParams): BufferGeometry {
+  const { y0, y1 } = beverageCanTopRingYBounds(params);
+  const centerM = params.topRingCenterRadiusMm * MM_TO_M;
+  const halfThicknessM = params.topRingThicknessM * 0.5;
+  const rInnerM = Math.max(centerM - halfThicknessM, 1e-6);
+  const rOuterM = centerM + halfThicknessM;
 
   const profile = [
-    new Vector2(r0Bot, yBot),
-    new Vector2(r1Bot, yBot),
-    new Vector2(r1Top, yTop),
-    new Vector2(r0Top, yTop),
-    new Vector2(r0Bot, yBot),
+    new Vector2(rInnerM, y0),
+    new Vector2(rOuterM, y0),
+    new Vector2(rOuterM, y1),
+    new Vector2(rInnerM, y1),
+    new Vector2(rInnerM, y0),
   ];
 
   const geometry = new LatheGeometry(profile, LATHE_SEGMENTS, LATHE_SEAM_PHI_START);
   applyLatheGeometryFootToY0(geometry);
   geometry.computeVertexNormals();
+  ensureGeometryTangents(geometry);
   return geometry;
 }
 
@@ -248,7 +242,7 @@ export async function buildBeverageCanMeshes(
     params: scaled,
     omitLabelBand: showLabelPrint,
   });
-  const ringGeometry = buildTopRingGeometry(profilePoints, scaled);
+  const ringGeometry = buildTopRingGeometry(scaled);
 
   const bodyVisible = isGeometryVisible(input.geometryVisibility, 'body');
   const topRingVisible = isGeometryVisible(input.geometryVisibility, 'topRing');
@@ -270,7 +264,7 @@ export async function buildBeverageCanMeshes(
   const topRingMesh = new Mesh(ringGeometry, input.topRingMetalMaterial);
   topRingMesh.name = 'beverage-can-top-ring';
   topRingMesh.userData.assetMeshRole = 'topRing';
-  topRingMesh.position.y = scaled.heightM - scaled.topRingHeightM;
+  topRingMesh.position.y = beverageCanTopRingYBounds(scaled).y0;
   topRingMesh.visible = topRingVisible;
 
   return { bodyMesh, labelMesh, topRingMesh };

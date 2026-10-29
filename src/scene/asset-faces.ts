@@ -15,6 +15,10 @@ export function isPrintAssetKind(kind: AssetKind): boolean {
   return kind === 'print';
 }
 
+export function isPictureAssetKind(kind: AssetKind): boolean {
+  return kind === 'picture';
+}
+
 function sideColor(): AssetFaceContent {
   return {
     mode: 'color',

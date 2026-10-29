@@ -1,4 +1,5 @@
 import { BufferAttribute, BufferGeometry } from 'three/webgpu';
+import { ensureGeometryTangents } from '@/engine/geometry-tangents';
 
 export interface OpenMantleBuildInput {
   y0: number;
@@ -63,5 +64,6 @@ export function buildOpenMantleGeometry(input: OpenMantleBuildInput): BufferGeom
   geometry.setAttribute('normal', new BufferAttribute(new Float32Array(normals), 3));
   geometry.setAttribute('uv', new BufferAttribute(new Float32Array(uvs), 2));
   geometry.setIndex(indices);
+  ensureGeometryTangents(geometry);
   return geometry;
 }

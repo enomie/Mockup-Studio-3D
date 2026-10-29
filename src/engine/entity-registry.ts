@@ -23,10 +23,12 @@ import {
   type PhysicsBodyMode,
 } from '@/scene/physics-rigid-body';
 import {
-  isFabricClothAssetKind,
+  cloneFabricClothParams,
+  isFabricClothFamilyAssetKind,
   type FabricClothParams,
 } from '@/scene/asset-fabric-cloth';
 import { isBookAssetKind, type BookParams } from '@/scene/asset-book';
+import type { TrianglePatchParams } from '@/scene/asset-triangle-patch';
 import type { BookMaterialTintPart } from '@/scene/book-material-tints';
 import {
   cloneHandheldParams,
@@ -128,6 +130,17 @@ export class EntityRegistry {
     return () => this.selectionListeners.delete(listener);
   }
 
+  /** World roots for visible placed assets (shadow coverage, bounds). */
+  getVisibleEntityRoots(): Object3D[] {
+    const roots: Object3D[] = [];
+    for (const { entity, object } of this.entities.values()) {
+      if (entity.visible) {
+        roots.push(object);
+      }
+    }
+    return roots;
+  }
+
   getEntities(): readonly AssetEntity[] {
     return [...this.entities.values()].map((entry) => ({
       ...entry.entity,
@@ -177,6 +190,9 @@ export class EntityRegistry {
         : undefined,
       penParams: entry.entity.penParams
         ? clonePenParams(entry.entity.penParams)
+        : undefined,
+      fabricClothParams: entry.entity.fabricClothParams
+        ? cloneFabricClothParams(entry.entity.fabricClothParams)
         : undefined,
       visible: entry.entity.visible,
     }));
@@ -479,9 +495,16 @@ export class EntityRegistry {
     this.emitEntities();
   }
 
+  patchEntityFields(entityId: string, partial: Partial<AssetEntity>): void {
+    const runtime = this.entities.get(entityId);
+    if (!runtime) {return;}
+    Object.assign(runtime.entity, partial);
+    this.emitEntities();
+  }
+
   setFabricClothParams(entityId: string, partial: Partial<FabricClothParams>): void {
     const runtime = this.entities.get(entityId);
-    if (!runtime || !isFabricClothAssetKind(runtime.entity.assetKind)) {return;}
+    if (!runtime || !isFabricClothFamilyAssetKind(runtime.entity.assetKind)) {return;}
 
     Object.assign(
       runtime.entity,
@@ -571,6 +594,17 @@ export class EntityRegistry {
   setPenParams(entityId: string, partial: Partial<PenParams>): void {
     const runtime = this.entities.get(entityId);
     if (!runtime || !isPenAssetKind(runtime.entity.assetKind)) {return;}
+
+    Object.assign(
+      runtime.entity,
+      mergeKindParamPatch(runtime.entity.assetKind, runtime.entity, partial),
+    );
+    this.emitEntities();
+  }
+
+  setTrianglePatchParams(entityId: string, partial: Partial<TrianglePatchParams>): void {
+    const runtime = this.entities.get(entityId);
+    if (!runtime || runtime.entity.assetKind !== 'triangle-patch') {return;}
 
     Object.assign(
       runtime.entity,

@@ -26,10 +26,8 @@ export const PHYSICS_DYNAMIC_ANGULAR_DAMPING = 0.55;
 
 export const FABRIC_PLANE_DYNAMIC_FRICTION = 0.85;
 
-/** Target cell size per axis for fabric cloth sim mesh (requirements-physics.md). */
-export const FABRIC_CLOTH_SIM_CELL_SIZE_DRAFT_M = 0.05;
-export const FABRIC_CLOTH_SIM_CELL_SIZE_STANDARD_M = 0.025;
-export const FABRIC_CLOTH_SIM_CELL_SIZE_HIGH_M = 0.0125;
+/** Fixed grid cell size for fabric cloth sim mesh (~1.25 cm); not user-tunable. */
+export const FABRIC_CLOTH_SIM_CELL_SIZE_M = 0.0125;
 
 /** PlaneGeometry segment counts (cells per axis). */
 export const FABRIC_CLOTH_SIM_MIN_SEGMENTS_PER_AXIS = 2;
@@ -39,3 +37,10 @@ export const FABRIC_CLOTH_SIM_MAX_SEGMENTS_PER_AXIS = 64;
 /** World-physics cloth sync: recompute normals every N simulation ticks (positions every tick). */
 export const FABRIC_CLOTH_SYNC_NORMALS_EVERY_N_FRAMES = 1;
 export const FABRIC_CLOTH_SYNC_BOUNDS_EVERY_N_FRAMES = 2;
+
+/** Dense grid multiplier when baking fabric cloth to a user asset (per sim axis). */
+export const FABRIC_CLOTH_BAKE_SUBDIV_FACTOR = 4;
+/** Target bake cell size (~3.1 mm) — quarter of sim cell for visible fold smoothing. */
+export const FABRIC_CLOTH_BAKE_CELL_SIZE_M = FABRIC_CLOTH_SIM_CELL_SIZE_M / 4;
+/** Cap baked cloth vertices ((segmentsW+1) * (segmentsH+1)). */
+export const FABRIC_CLOTH_BAKE_MAX_VERTICES = 65536;

@@ -168,7 +168,7 @@ export const MATERIAL_PRESETS: MaterialPreset[] = [
   },
   {
     id: 'material-fabric',
-    name: 'Fabric',
+    name: 'Fabric Linen',
     source: 'builtin',
     kind: 'textured',
     fabricDrape: { profile: 'linen' },
@@ -182,17 +182,17 @@ export const MATERIAL_PRESETS: MaterialPreset[] = [
   },
   {
     id: 'material-silk',
-    name: 'Silk',
+    name: 'Fabric Silk',
     source: 'builtin',
     kind: 'textured',
     fabricDrape: { profile: 'silk' },
-    proceduralProfile: 'silk-fine',
+    proceduralProfile: 'metal-brushed',
     color: { r: 0.92, g: 0.9, b: 0.88 },
-    roughness: 0.45,
-    metalness: 0,
-    anisotropy: 0.65,
-    normalScale: 0.5,
-    tileScale: 6,
+    roughness: 0.32,
+    metalness: 1,
+    anisotropy: 0.25,
+    normalScale: 0.6,
+    tileScale: 28,
     seed: 0,
   },
   {
@@ -403,6 +403,12 @@ function defaultWheelCarMaterials(): AssetMaterialSlots {
   };
 }
 
+function defaultTrianglePatchMaterials(): AssetMaterialSlots {
+  return {
+    patchMaterialId: MATERIAL_ALUMINUM_BRUSHED_ID,
+  };
+}
+
 function defaultMonitorMaterials(): AssetMaterialSlots {
   return {
     frameMaterialId: MATERIAL_ALUMINUM_BRUSHED_ID,
@@ -434,6 +440,7 @@ export function defaultMaterialsForKind(assetKind: AssetKind): AssetMaterialSlot
   if (assetKind === 'tin-can') {return defaultBeverageCanMaterials();}
   if (assetKind === 'wine-bottle') {return defaultWineBottleMaterials();}
   if (assetKind === 'pen') {return defaultPenMaterials();}
+  if (assetKind === 'triangle-patch') {return defaultTrianglePatchMaterials();}
   return {};
 }
 
@@ -486,6 +493,7 @@ export function migrateMaterialSlots(slots: AssetMaterialSlots): AssetMaterialSl
     bookPagesTint: slots.bookPagesTint ? { ...slots.bookPagesTint } : undefined,
     bookCoverTint: slots.bookCoverTint ? { ...slots.bookCoverTint } : undefined,
     metalMaterialId: migrateId(slots.metalMaterialId),
+    patchMaterialId: migrateId(slots.patchMaterialId),
     faceTints: slots.faceTints,
   };
 }

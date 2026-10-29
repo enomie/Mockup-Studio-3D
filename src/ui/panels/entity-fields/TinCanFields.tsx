@@ -5,15 +5,23 @@ import {
   TIN_CAN_BEAD_COUNT_MIN,
 } from '@/scene/asset-tin-can';
 import { MATERIAL_ALUMINUM_BRUSHED_ID } from '@/scene/material-ids';
-import { formatMmAsMeters } from '@/units/length';
+import {
+  formatLengthMeters,
+  LENGTH_DECIMALS,
+  parseLengthMetersInput,
+} from '@/units/length';
 import { PanelAxisField } from '@/ui/components/PanelAxisField/PanelAxisField';
 import { SubPanelSection } from '@/ui/components/SubPanelSection';
 import { ImageSurfaceFields } from '@/ui/panels/ImageSurfaceFields';
 import { GeometryPartsSection } from '@/ui/panels/GeometryPartsSection';
-import { setAssetScreenImage, setTinCanParams } from '@/ui/store/app-store';
+import {
+  setAssetScreenImage,
+  setAssetSizeScale,
+  setTinCanParams,
+} from '@/ui/store/app-store';
 import { useAppStore } from '@/ui/store/use-app-store';
 import { MaterialSelect } from '@/ui/panels/MaterialSelect';
-import { parseMmInput } from './field-input-helpers';
+import { formatSizeScale, parseSizeScaleInput } from './field-input-helpers';
 import type { PictureFieldsProps } from './entity-fields-types';
 
 export function TinCanFields({
@@ -27,8 +35,6 @@ export function TinCanFields({
     ...defaultTinCanParams(),
     ...entity.tinCanParams,
   };
-  const radiusMm = params.bodyRadiusM * 1000;
-  const heightMm = params.bodyHeightM * 1000;
 
   return (
     <>
@@ -45,30 +51,6 @@ export function TinCanFields({
       </SubPanelSection>
 
       <SubPanelSection title="Geometries">
-        <PanelAxisField
-          label="Radius"
-          unit="mm"
-          value={radiusMm}
-          format={formatMmAsMeters}
-          parse={parseMmInput}
-          onChange={(value) => {
-            if (value > 0) {
-              setTinCanParams(entity.id, { bodyRadiusM: value / 1000 });
-            }
-          }}
-        />
-        <PanelAxisField
-          label="Height"
-          unit="mm"
-          value={heightMm}
-          format={formatMmAsMeters}
-          parse={parseMmInput}
-          onChange={(value) => {
-            if (value > 0) {
-              setTinCanParams(entity.id, { bodyHeightM: value / 1000 });
-            }
-          }}
-        />
         <PanelAxisField
           label="Waves"
           value={params.beadCount}
@@ -102,6 +84,40 @@ export function TinCanFields({
           label="Metal"
           value={slots?.metalMaterialId ?? MATERIAL_ALUMINUM_BRUSHED_ID}
           materials={materials}
+        />
+      </SubPanelSection>
+
+      <SubPanelSection title="Dimensions">
+        <PanelAxisField
+          label="Size"
+          value={entity.sizeScale}
+          format={formatSizeScale}
+          parse={parseSizeScaleInput}
+          onChange={(value) => { setAssetSizeScale(entity.id, value); }}
+        />
+        <PanelAxisField
+          label="Radius"
+          unit="m"
+          value={params.bodyRadiusM}
+          format={(value) => formatLengthMeters(value, LENGTH_DECIMALS)}
+          parse={parseLengthMetersInput}
+          onChange={(value) => {
+            if (value > 0) {
+              setTinCanParams(entity.id, { bodyRadiusM: value });
+            }
+          }}
+        />
+        <PanelAxisField
+          label="Height"
+          unit="m"
+          value={params.bodyHeightM}
+          format={(value) => formatLengthMeters(value, LENGTH_DECIMALS)}
+          parse={parseLengthMetersInput}
+          onChange={(value) => {
+            if (value > 0) {
+              setTinCanParams(entity.id, { bodyHeightM: value });
+            }
+          }}
         />
       </SubPanelSection>
     </>

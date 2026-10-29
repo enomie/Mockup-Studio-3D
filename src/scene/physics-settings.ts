@@ -12,6 +12,16 @@ export type PhysicsRigidTestPhase = 'idle' | 'running';
 
 export type WorldPhysicsPhase = 'idle' | 'simulating' | 'paused';
 
+/** UI-only feedback after fabric cloth bake — not persisted or synced from engine. */
+export interface FabricClothBakeSummary {
+  assetName: string;
+  sourceSegmentsW: number;
+  sourceSegmentsH: number;
+  bakedSegmentsW: number;
+  bakedSegmentsH: number;
+  triangleCount: number;
+}
+
 export interface PhysicsSettings {
   gravityScale: number;
   /** Mirror of engine rigid-test state — not user-patchable via setPhysicsSettings. */
@@ -19,6 +29,8 @@ export interface PhysicsSettings {
   /** World physics session — engine-owned. */
   worldPhysicsPhase: WorldPhysicsPhase;
   worldPhysicsHasSnapshot: boolean;
+  /** Ephemeral — preserved across engine sync in the UI store. */
+  lastFabricClothBakeSummary: FabricClothBakeSummary | null;
 }
 
 export function defaultPhysicsSettings(): PhysicsSettings {
@@ -27,6 +39,7 @@ export function defaultPhysicsSettings(): PhysicsSettings {
     rigidTestPhase: 'idle',
     worldPhysicsPhase: 'idle',
     worldPhysicsHasSnapshot: false,
+    lastFabricClothBakeSummary: null,
   };
 }
 
@@ -53,5 +66,9 @@ export function mergePhysicsSettings(
     worldPhysicsPhase: partial.worldPhysicsPhase ?? base.worldPhysicsPhase,
     worldPhysicsHasSnapshot:
       partial.worldPhysicsHasSnapshot ?? base.worldPhysicsHasSnapshot,
+    lastFabricClothBakeSummary:
+      partial.lastFabricClothBakeSummary !== undefined
+        ? partial.lastFabricClothBakeSummary
+        : base.lastFabricClothBakeSummary,
   };
 }

@@ -15,6 +15,8 @@ export interface MockupEngineCaptureHost {
   updateViewportHelpersFrame: () => void;
   pushExportHidePhysicsTest: () => void;
   popExportHidePhysicsTest: () => void;
+  pushExportShadowQuality: () => void;
+  popExportShadowQuality: () => void;
   renderViewportFrame: (overrides?: {
     skyEnabled?: boolean;
     transparentBackground?: boolean;
@@ -49,6 +51,8 @@ export async function captureViewportImageFromEngine(
     host.environment.pushGroundExportCaptureMode('contact-shadows-only');
   }
   host.pushExportHidePhysicsTest();
+  host.pushExportShadowQuality();
+  host.lighting.updateFrame();
 
   try {
     host.renderViewportFrame({ skyEnabled: includeSky, transparentBackground });
@@ -74,6 +78,7 @@ export async function captureViewportImageFromEngine(
       );
     });
   } finally {
+    host.popExportShadowQuality();
     host.popExportHidePhysicsTest();
     if (useShadowCatcher) {
       host.environment.popGroundExportCaptureMode();

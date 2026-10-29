@@ -6,16 +6,23 @@ import {
   isCylinderAssetKind,
   isSphereAssetKind,
   isWheelCarAssetKind,
-  isFabricClothAssetKind,
+  isFabricClothBakedAssetKind,
+  isFabricClothFamilyAssetKind,
   isBookAssetKind,
   isHandheldAssetKind,
   isMonitorAssetKind,
+  isPictureAssetKind,
   isPrintAssetKind,
   isTinCanAssetKind,
   isWallAssetKind,
   isWineBottleAssetKind,
   isPenAssetKind,
+  isTrianglePatchAssetKind,
 } from '@/scene/asset-kind-predicates';
+import {
+  usesPackagingDimensionsPositionFooter,
+  usesScenePositionFooter,
+} from '@/scene/asset-scene-panel';
 import { defaultWallParams } from '@/scene/asset-wall';
 import {
   computeFaceSize,
@@ -23,6 +30,8 @@ import {
   resolveEntityImagePixels,
 } from '@/scene/asset-ui-helpers';
 import type { AssetEntity } from '@/scene/entity-types';
+import type { AssetKind } from '@/scene/asset-kind';
+import { isRigidPrimitiveAssetKind } from '@/scene/rigid-primitive-asset';
 import {
   BeverageCanFields,
   BlockFields,
@@ -39,8 +48,25 @@ import {
   WallFields,
   WineBottleFields,
   PenFields,
+  TrianglePatchFields,
 } from './entity-fields';
+import { EntityDimensionsSection } from './entity-fields/EntityDimensionsSection';
+import { EntityPositionSection } from './entity-fields/EntityPositionSection';
 import { EntityTransformSection } from './entity-fields/EntityTransformSection';
+
+function usesDimensionsPositionFooter(kind: AssetKind): boolean {
+  return (
+    isRigidPrimitiveAssetKind(kind) ||
+    isFabricClothFamilyAssetKind(kind) ||
+    isWallAssetKind(kind) ||
+    isHandheldAssetKind(kind) ||
+    isMonitorAssetKind(kind) ||
+    isPrintAssetKind(kind) ||
+    isPictureAssetKind(kind) ||
+    isBookAssetKind(kind) ||
+    isTinCanAssetKind(kind)
+  );
+}
 
 interface EntityPropertyFieldsProps {
   entity: AssetEntity;
@@ -69,6 +95,13 @@ export function EntityPropertyFields({
     entity.blockParams ?? defaultBlockParams(),
     entity,
   );
+
+  const showPackagingDimensions = usesPackagingDimensionsPositionFooter(
+    entity.assetKind,
+  );
+  const showPositionFooter = usesScenePositionFooter(entity.assetKind);
+  const showMigratedFooter =
+    usesDimensionsPositionFooter(entity.assetKind) || showPositionFooter;
 
   return (
     <div className="scene-entity-block__body panel-stack">
@@ -104,11 +137,12 @@ export function EntityPropertyFields({
         <SphereFields entity={entity} />
       ) : isWheelCarAssetKind(entity.assetKind) ? (
         <WheelCarFields entity={entity} />
-      ) : isFabricClothAssetKind(entity.assetKind) ? (
+      ) : isFabricClothFamilyAssetKind(entity.assetKind) ? (
         <FabricClothFields
           entity={entity}
           images={images}
           screenImageFieldId={screenImageFieldId}
+          dimensionsReadOnly={isFabricClothBakedAssetKind(entity.assetKind)}
         />
       ) : isBookAssetKind(entity.assetKind) ? (
         <BookFields
@@ -140,6 +174,8 @@ export function EntityPropertyFields({
           images={images}
           screenImageFieldId={screenImageFieldId}
         />
+      ) : isTrianglePatchAssetKind(entity.assetKind) ? (
+        <TrianglePatchFields entity={entity} />
       ) : (
         <PictureFields
           entity={entity}
@@ -148,7 +184,20 @@ export function EntityPropertyFields({
         />
       )}
 
-      <EntityTransformSection entity={entity} faceSize={faceSize} aspect={aspect} />
+      {showPackagingDimensions ? (
+        <EntityDimensionsSection
+          entity={entity}
+          faceSize={faceSize}
+          aspect={aspect}
+          mode="sizeScaleAndFace"
+        />
+      ) : null}
+
+      {showMigratedFooter ? (
+        <EntityPositionSection entity={entity} />
+      ) : (
+        <EntityTransformSection entity={entity} faceSize={faceSize} aspect={aspect} />
+      )}
     </div>
   );
 }

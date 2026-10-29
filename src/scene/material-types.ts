@@ -80,6 +80,7 @@ export interface AssetMaterialSlots {
   blockMaterialId?: string;
   cylinderMaterialId?: string;
   sphereMaterialId?: string;
+  patchMaterialId?: string;
   fabricClothMaterialId?: string;
   bookPagesMaterialId?: string;
   bookCoverMaterialId?: string;
@@ -113,6 +114,7 @@ export type MaterialEntitySlot =
   | 'blockMaterialId'
   | 'cylinderMaterialId'
   | 'sphereMaterialId'
+  | 'patchMaterialId'
   | 'fabricClothMaterialId'
   | 'bookPagesMaterialId'
   | 'bookCoverMaterialId'

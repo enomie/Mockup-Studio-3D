@@ -1,27 +1,34 @@
 import {
   BufferAttribute,
+  BufferGeometry,
   DynamicDrawUsage,
   Mesh,
-  PlaneGeometry,
   StaticDrawUsage,
   type Material,
 } from 'three/webgpu';
 import { FABRIC_CLOTH_REST_PLANE_XY_ATTR } from '@/scene/asset-fabric-cloth';
+import { ensureGeometryTangents } from '@/engine/geometry-tangents';
 import {
-  DEFAULT_FABRIC_CLOTH_SIM_QUALITY,
   fabricClothGridSegments,
   type FabricClothGridSegments,
-  type FabricClothSimQuality,
 } from '@/physics/fabric-cloth-grid';
-import { writeFabricClothGridNormalsFromPositions } from '@/physics/fabric-cloth-grid-normals';
 
 export interface BuildFabricClothMeshOptions {
   faceWidth: number;
   faceHeight: number;
   material: Material;
-  simQuality?: FabricClothSimQuality;
   /** Override segment counts (tests). */
   segments?: FabricClothGridSegments;
+}
+
+export interface FabricClothMeshGridInfo {
+  segmentsW: number;
+  segmentsH: number;
+  segX: number;
+  segY: number;
+  nx: number;
+  ny: number;
+  planeVertexCount: number;
 }
 
 function resolveSegments(
@@ -30,47 +37,101 @@ function resolveSegments(
   options: BuildFabricClothMeshOptions,
 ): FabricClothGridSegments {
   if (options.segments) {return options.segments;}
-  return fabricClothGridSegments(
-    faceWidth,
-    faceHeight,
-    options.simQuality ?? DEFAULT_FABRIC_CLOTH_SIM_QUALITY,
-  );
+  return fabricClothGridSegments(faceWidth, faceHeight);
 }
 
-function horizontalPlane(
+/**
+ * Single-sided grid (idx = y * nx + x, row 0 at -Y), rendered DoubleSide.
+ * Print side is +Z before mesh X-rotation (becomes entity +Y normal); triangles wind CCW
+ * seen from +Z so front faces match the normals — same orientation as the baked PlaneGeometry.
+ */
+function buildClothPlaneGeometry(
   width: number,
   depth: number,
-  segmentsW: number,
-  segmentsH: number,
-  material: Material,
-  userData: Record<string, unknown>,
-): Mesh {
-  const geometry = new PlaneGeometry(width, depth, segmentsW, segmentsH);
-  const position = geometry.getAttribute('position') as BufferAttribute;
-  position.usage = DynamicDrawUsage;
+  segX: number,
+  segY: number,
+): { geometry: BufferGeometry; grid: FabricClothMeshGridInfo } {
+  const nx = segX + 1;
+  const ny = segY + 1;
+  const planeVerts = nx * ny;
 
-  const restPlane = new Float32Array(position.count * 2);
-  for (let i = 0; i < position.count; i++) {
-    restPlane[i * 2] = position.getX(i);
-    restPlane[i * 2 + 1] = position.getY(i);
+  const geometry = new BufferGeometry();
+  const posArray = new Float32Array(planeVerts * 3);
+  const normalArray = new Float32Array(planeVerts * 3);
+  const uvsArray = new Float32Array(planeVerts * 2);
+  const restPlane = new Float32Array(planeVerts * 2);
+  const indices: number[] = [];
+
+  for (let y = 0; y < ny; y++) {
+    for (let x = 0; x < nx; x++) {
+      const idx = y * nx + x;
+      const u = x / segX;
+      const v = y / segY;
+      const px = (u - 0.5) * width;
+      const py = (v - 0.5) * depth;
+
+      posArray[idx * 3] = px;
+      posArray[idx * 3 + 1] = py;
+      normalArray[idx * 3 + 2] = 1;
+      uvsArray[idx * 2] = u;
+      uvsArray[idx * 2 + 1] = v;
+      restPlane[idx * 2] = px;
+      restPlane[idx * 2 + 1] = py;
+    }
   }
+
+  for (let y = 0; y < segY; y++) {
+    for (let x = 0; x < segX; x++) {
+      const a = y * nx + x;
+      const b = y * nx + (x + 1);
+      const c = (y + 1) * nx + x;
+      const d = (y + 1) * nx + (x + 1);
+      indices.push(a, b, d);
+      indices.push(a, d, c);
+    }
+  }
+
+  const positionAttr = new BufferAttribute(posArray, 3);
+  positionAttr.usage = DynamicDrawUsage;
+  geometry.setAttribute('position', positionAttr);
+  const normalAttr = new BufferAttribute(normalArray, 3);
+  normalAttr.usage = DynamicDrawUsage;
+  geometry.setAttribute('normal', normalAttr);
+  geometry.setAttribute('uv', new BufferAttribute(uvsArray, 2));
   const restAttr = new BufferAttribute(restPlane, 2);
   restAttr.usage = StaticDrawUsage;
   geometry.setAttribute(FABRIC_CLOTH_REST_PLANE_XY_ATTR, restAttr);
+  geometry.setIndex(indices);
+  ensureGeometryTangents(geometry);
+  geometry.computeBoundingSphere();
+  geometry.computeBoundingBox();
 
-  const nu = segmentsW + 1;
-  const nv = segmentsH + 1;
-  const normalAttr = geometry.getAttribute('normal') as BufferAttribute;
-  writeFabricClothGridNormalsFromPositions(
-    position.array as Float32Array,
-    normalAttr.array as Float32Array,
-    nu,
-    nv,
-  );
-  const mesh = new Mesh(geometry, material);
-  mesh.rotation.x = -Math.PI / 2;
-  Object.assign(mesh.userData, userData);
-  return mesh;
+  return {
+    geometry,
+    grid: {
+      segmentsW: segX,
+      segmentsH: segY,
+      segX,
+      segY,
+      nx,
+      ny,
+      planeVertexCount: planeVerts,
+    },
+  };
+}
+
+export function readFabricClothMeshGrid(mesh: Mesh): FabricClothMeshGridInfo {
+  const userData = mesh.userData as { fabricClothGrid?: FabricClothMeshGridInfo };
+  const grid = userData.fabricClothGrid;
+  if (!grid) {
+    throw new Error('fabric cloth mesh missing fabricClothGrid userData');
+  }
+  return grid;
+}
+
+export function readFabricClothPlaneSegments(mesh: Mesh): FabricClothGridSegments {
+  const { segmentsW, segmentsH } = readFabricClothMeshGrid(mesh);
+  return { segmentsW, segmentsH };
 }
 
 export function buildFabricClothMeshFromOptions(
@@ -78,10 +139,20 @@ export function buildFabricClothMeshFromOptions(
 ): Mesh {
   const { faceWidth, faceHeight, material } = options;
   const { segmentsW, segmentsH } = resolveSegments(faceWidth, faceHeight, options);
-  return horizontalPlane(faceWidth, faceHeight, segmentsW, segmentsH, material, {
+  const { geometry, grid } = buildClothPlaneGeometry(
+    faceWidth,
+    faceHeight,
+    segmentsW,
+    segmentsH,
+  );
+  const mesh = new Mesh(geometry, material);
+  mesh.rotation.x = -Math.PI / 2;
+  Object.assign(mesh.userData, {
     isAssetScreen: true,
     assetMeshRole: 'fabricCloth',
+    fabricClothGrid: grid,
   });
+  return mesh;
 }
 
 export function buildFabricClothMesh(

@@ -1,14 +1,17 @@
 import { Vector2 } from 'three/webgpu';
-import { SVGLoader } from 'three/addons/loaders/SVGLoader.js';
 import type { BeverageCanBodyProfile } from './beverage-can-label-unfold';
 import { beverageCanSvgUrl } from '@/scene/asset-beverage-can';
+import {
+  extractLathePathPointsBySlot,
+  type LatheSvgPoint2,
+} from './lathe-svg-path-slots';
 
-export interface SvgPoint2 { x: number; y: number }
+export type { LatheSvgPoint2 as SvgPoint2 };
 
-const rawPointsCache = new Map<BeverageCanBodyProfile, SvgPoint2[]>();
+const rawPointsCache = new Map<BeverageCanBodyProfile, LatheSvgPoint2[]>();
 
 export function normalizeSvgProfileToLathePoints(
-  rawPoints: SvgPoint2[],
+  rawPoints: LatheSvgPoint2[],
   heightM: number,
   diameterM: number,
 ): Vector2[] {
@@ -70,21 +73,9 @@ export function orientLatheProfileBottomToTop(points: Vector2[]): Vector2[] {
   return points;
 }
 
-export function extractPointsFromSvgText(svgText: string, curveSegments = 24): SvgPoint2[] {
-  const loader = new SVGLoader();
-  const data = loader.parse(svgText);
-  const path = data.paths.at(0);
-  if (path === undefined) {
-    return [];
-  }
-
-  const shapes = path.toShapes();
-  const shape = shapes.at(0);
-  if (shape === undefined) {
-    return [];
-  }
-
-  return shape.getPoints(curveSegments).map((p) => ({ x: p.x, y: p.y }));
+export function extractPointsFromSvgText(svgText: string, curveSegments = 24): LatheSvgPoint2[] {
+  const slots = extractLathePathPointsBySlot(svgText, curveSegments);
+  return slots[0];
 }
 
 export async function fetchSvgText(url: string): Promise<string> {
@@ -97,7 +88,7 @@ export async function fetchSvgText(url: string): Promise<string> {
 
 export async function loadRawSvgProfilePoints(
   profile: BeverageCanBodyProfile,
-): Promise<SvgPoint2[]> {
+): Promise<LatheSvgPoint2[]> {
   const cached = rawPointsCache.get(profile);
   if (cached) {
     return cached;
@@ -111,7 +102,7 @@ export async function loadRawSvgProfilePoints(
 
 export function setRawSvgProfilePointsCache(
   profile: BeverageCanBodyProfile,
-  points: SvgPoint2[],
+  points: LatheSvgPoint2[],
 ): void {
   rawPointsCache.set(profile, points);
 }

@@ -34,15 +34,16 @@ Vor jeder größeren Entscheidung kurz diese Datei lesen, dann die passende Kate
 | `requirements-colors.md` | Colors library, named RGB swatches, ColorPicker integration |
 | `requirements-materials.md` | Materials library, PBR presets, built-ins, assignment |
 | `requirements-assets.md` | Asset catalog, drop/placement, screen image, sizing |
-| `requirements-assets-book.md` | Book: softcover & hardcover, pages block, covers, spine image |
-| `requirements-assets-picture-framed.md` | Picture framed: frame geometry, glazing, panel |
-| `requirements-assets-wall.md` | Wall, wall with door, wallpaper pattern |
+| `requirements-assets-book.md` | Book Softcover & Book Hardcover, pages block, covers, spine image |
+| `requirements-assets-picture-framed.md` | Picture Frame: frame geometry, glazing, panel |
+| `requirements-assets-wall.md` | Wall, Wall Doorway, wallpaper pattern |
 | `requirements-assets-block.md` | Block: box dimensions, single material, corner radius, physics mode |
 | `requirements-assets-cylinder.md` | Cylinder: radius/height, 2-edge corner radius, like block |
 | `requirements-assets-sphere.md` | Sphere: radius, rigid physics like block |
 | `requirements-assets-fabric-cloth.md` | Fabric cloth: image both sides, border, Rapier simulation |
-| `requirements-assets-beverage-can.md` | Beverage can (330 ml): SVG lathe alu body, label UV on mantle band, top ring |
-| `requirements-assets-tin-can.md` | Tin can (food can): parametric radius + height, beads on middle 80% of mantle, label follows corrugation |
+| `requirements-assets-lathe.md` | Lathe SVG: path mm, uniform scale, Dimensions+Position panel target |
+| `requirements-assets-beverage-can.md` | Can Beverage (330 ml): SVG lathe alu body, label UV on mantle band, top ring |
+| `requirements-assets-tin-can.md` | Can Tin (food can): parametric radius + height, beads on middle 80% of mantle, label follows corrugation |
 | `requirements-assets-wine-bottle.md` | Wine bottle: bordeaux / alsace / sparkling profiles, glass wall, label (TBD) |
 | `requirements-assets-pen.md` | Pen (v1): marker & fountain pen, SVG lathe cap/ring/body, body wrap + PNG underlay |
 | `requirements-assets-wheel-car.md` | Wheel Car (`wheel-car`): tire ring (lathe fillet), rim barrel + 5 spokes + hub, tire/rim materials |

@@ -13,6 +13,7 @@ import {
   selectColor,
   updateColor,
 } from '@/ui/store/app-store';
+import { sortByDisplayName } from '@/ui/utils/library-list-order';
 import { useAppStore } from '@/ui/store/use-app-store';
 
 function swatchColor(preset: ColorPreset): string {
@@ -69,6 +70,7 @@ function ColorEditor({ preset }: ColorEditorProps) {
 
 export function ColorsPanel() {
   const colors = useAppStore((s) => s.colors);
+  const sortedColors = sortByDisplayName(colors, (color) => color.name);
   const selectedColorId = useAppStore((s) => s.selectedColorId);
   const selected = colors.find((color) => color.id === selectedColorId);
 
@@ -89,7 +91,7 @@ export function ColorsPanel() {
       }
     >
       <ul className="material-list">
-        {colors.map((color) => (
+        {sortedColors.map((color) => (
           <li key={color.id}>
             <button
               type="button"

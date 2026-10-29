@@ -15,6 +15,7 @@ import {
   LATHE_SEAM_PHI_START,
 } from './lathe-asset-common';
 import { weldLathePhiSeam } from './lathe-seam-normals';
+import { ensureGeometryTangents } from '@/engine/geometry-tangents';
 import {
   latheProfileBandBounds,
   type WheelCarLatheProfiles,
@@ -38,6 +39,7 @@ export function buildWheelCarLatheGeometry(points: Vector2[]): BufferGeometry {
   );
   weldLathePhiSeam(geometry, LATHE_SEGMENTS, points.length);
   geometry.computeVertexNormals();
+  ensureGeometryTangents(geometry);
   return geometry;
 }
 

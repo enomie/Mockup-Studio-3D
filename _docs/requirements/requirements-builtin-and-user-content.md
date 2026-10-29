@@ -37,7 +37,7 @@
 | **Environments** | Built-in Presets | Save as environment | `removeEnvironment` nur user → [`requirements-environments.md`](./requirements-environments.md) |
 | **Light rigs** | Built-in Presets | Save as lighting preset | `removeLightingPreset` nur user → [`requirements-lighting-presets.md`](./requirements-lighting-presets.md) |
 | **Scenes** | Built-in Scene-Presets | Save as scene | `deleteScene` nur user → [`requirements-scenes.md`](./requirements-scenes.md) |
-| **Asset-Katalog** | Alle Katalog-Kinds (Block, Dose, …) | — (v1: keine User-Kinds) | —; nur **Entity** aus Szene entfernen → [`requirements-assets.md`](./requirements-assets.md) |
+| **Asset-Katalog** | Alle Built-in-`assetKind` (Block, Dose, …) | **Gebaktes Stoff-User-Asset** (nach Freeze + Bake) → [`requirements-assets-fabric-cloth.md`](./requirements-assets-fabric-cloth.md) | Built-in-Kinds nicht löschbar; **User-Asset-Zeile** `removeUserBakedAsset` (TBD) nur `source: 'user'`; Sim-`fabric-cloth` nur **Entity** entfernen → [`requirements-assets.md`](./requirements-assets.md) |
 | **Szene-Entities** | Default-Szene-Inhalt nur via Built-in-**Scene**-Load | Drop / Place aus Katalog | `removeEntity` / Trash / Delete-Key → [`requirements-scene-placement.md`](./requirements-scene-placement.md) |
 
 **Nicht** unter diese Regel: Session-only UI (z. B. ColorPicker **Recent**), temporäre Physics-Test-Würfel, Export-Dateien auf Disk — kein Bibliotheks-Eintrag.

@@ -1,0 +1,13 @@
+# Language Rules for Code & Documentation
+
+## Strict Language Boundary:
+1. **Source Code (`src/**`)**:
+   - **STRICTLY ENGLISH ONLY.**
+   - All variable names, function names, types, interfaces, enums, constants, and properties MUST be English.
+   - All code comments (line comments `//`, block comments `/* */`, and JSDoc `/** */`) MUST be in English.
+   - All user-facing UI labels, dropdown values, tooltips, titles, placeholders, and error messages defined in code MUST be English.
+   - **NO GERMAN IN CODE FILES OR COMMENTS UNDER ANY CIRCUMSTANCES.**
+
+2. **Documentation (`_docs/**`)**:
+   - Documentation files, implementation plans, and architectural design notes can be in German or English.
+

@@ -11,6 +11,7 @@ import {
   rgbToHsv,
   type Hsv,
 } from '@/colors/color-format';
+import { sortByDisplayName } from '@/ui/utils/library-list-order';
 import { useAppStore } from '@/ui/store/use-app-store';
 import { getRecentColors, pushRecentColor } from './color-picker-recent';
 
@@ -37,8 +38,10 @@ export function ColorPickerPopover({
   const [hexInput, setHexInput] = useState(() => rgbToHex(value));
   const [hexInvalid, setHexInvalid] = useState(false);
   const [recent, setRecent] = useState(() => getRecentColors());
-  const libraryColors = useAppStore((s) => s.colors);
+  const colorsLibrary = useAppStore((s) => s.colors);
+  const libraryColors = sortByDisplayName(colorsLibrary, (preset) => preset.name);
   const hsvRef = useRef(hsv);
+  const openHexRef = useRef(rgbToHex(value));
 
   useEffect(() => {
     hsvRef.current = hsv;
@@ -56,9 +59,12 @@ export function ColorPickerPopover({
     [onChange],
   );
 
-  const commitRecent = useCallback(() => {
-    pushRecentColor(hsvToRgb(hsvRef.current));
-    setRecent(getRecentColors());
+  const commitRecentOnClose = useCallback(() => {
+    const finalHex = rgbToHex(hsvToRgb(hsvRef.current));
+    if (finalHex !== openHexRef.current) {
+      pushRecentColor(hsvToRgb(hsvRef.current));
+      setRecent(getRecentColors());
+    }
   }, []);
 
   useEffect(() => {
@@ -68,7 +74,7 @@ export function ColorPickerPopover({
     const updatePosition = (): void => {
       const rect = anchor.getBoundingClientRect();
       const width = 200;
-      const height = 280;
+      const height = 338;
       let top = rect.top - height - 8;
       let left = rect.right - width;
 
@@ -91,13 +97,13 @@ export function ColorPickerPopover({
       const target = event.target as Node;
       if (popoverRef.current?.contains(target)) {return;}
       if (anchorRef.current?.contains(target)) {return;}
-      commitRecent();
+      commitRecentOnClose();
       onClose();
     };
 
     const handleKeyDown = (event: KeyboardEvent): void => {
       if (event.key === 'Escape') {
-        commitRecent();
+        commitRecentOnClose();
         onClose();
       }
     };
@@ -108,7 +114,7 @@ export function ColorPickerPopover({
       document.removeEventListener('pointerdown', handlePointerDown);
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [anchorRef, commitRecent, onClose]);
+  }, [anchorRef, commitRecentOnClose, onClose]);
 
   const updateSvFromPointer = (clientX: number, clientY: number, rect: DOMRect): void => {
     const s = clamp01((clientX - rect.left) / rect.width);
@@ -135,8 +141,6 @@ export function ColorPickerPopover({
   const handleHexBlur = (): void => {
     const parsed = parseHexColor(hexInput);
     if (parsed) {
-      pushRecentColor(parsed);
-      setRecent(getRecentColors());
       setHexInput(rgbToHex(parsed));
       setHexInvalid(false);
     }
@@ -149,11 +153,11 @@ export function ColorPickerPopover({
     bytes[channel] = Math.max(0, Math.min(255, parsed));
     const rgb = rgbFromByte(bytes.r, bytes.g, bytes.b);
     emitRgb(rgbToHsv(rgb));
-    pushRecentColor(rgb);
-    setRecent(getRecentColors());
   };
 
   const bytes = rgbToByte(hsvToRgb(hsv));
+  const currentRgb = hsvToRgb(hsv);
+  const currentHex = rgbToHex(currentRgb);
   const hueColor = rgbToCss(hueToRgb(hsv.h));
 
   return (
@@ -186,7 +190,6 @@ export function ColorPickerPopover({
         onPointerUp={(event) => {
           if (event.currentTarget.hasPointerCapture(event.pointerId)) {
             event.currentTarget.releasePointerCapture(event.pointerId);
-            commitRecent();
           }
         }}
       >
@@ -214,7 +217,6 @@ export function ColorPickerPopover({
         onPointerUp={(event) => {
           if (event.currentTarget.hasPointerCapture(event.pointerId)) {
             event.currentTarget.releasePointerCapture(event.pointerId);
-            commitRecent();
           }
         }}
       >
@@ -283,8 +285,6 @@ export function ColorPickerPopover({
               title={preset.name}
               onClick={() => {
                 emitRgb(rgbToHsv(preset.rgb));
-                pushRecentColor(preset.rgb);
-                setRecent(getRecentColors());
               }}
             />
           ))}
@@ -302,13 +302,21 @@ export function ColorPickerPopover({
               aria-label={`Recent color ${rgbToHex(color)}`}
               onClick={() => {
                 emitRgb(rgbToHsv(color));
-                pushRecentColor(color);
-                setRecent(getRecentColors());
               }}
             />
           ))}
         </div>
       ) : null}
+
+      <div
+        className="color-picker-popover__preview"
+        aria-label={`Selected color ${currentHex}`}
+      >
+        <span
+          className="color-picker-popover__preview-color"
+          style={{ backgroundColor: rgbToCss(currentRgb) }}
+        />
+      </div>
     </div>
   );
 }

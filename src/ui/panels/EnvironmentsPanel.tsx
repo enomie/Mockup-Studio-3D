@@ -14,6 +14,7 @@ import {
   saveCurrentAsEnvironment,
   updateEnvironment,
 } from '@/ui/store/app-store';
+import { sortBuiltinThenUserByName } from '@/ui/utils/library-list-order';
 import { useAppStore } from '@/ui/store/use-app-store';
 
 function environmentSwatchStyle(preset: EnvironmentPreset): CSSProperties {
@@ -66,6 +67,11 @@ function EnvironmentEditor({ preset }: EnvironmentEditorProps) {
 
 export function EnvironmentsPanel() {
   const environments = useAppStore((s) => s.environments);
+  const sortedEnvironments = sortBuiltinThenUserByName(
+    environments,
+    (preset) => preset.name,
+    (preset) => preset.source === 'builtin',
+  );
   const activeEnvironmentId = useAppStore((s) => s.activeEnvironmentId);
   const activeUser = environments.find(
     (entry) => entry.id === activeEnvironmentId && entry.source === 'user',
@@ -88,7 +94,7 @@ export function EnvironmentsPanel() {
       }
     >
       <ul className="material-list">
-        {environments.map((preset) => (
+        {sortedEnvironments.map((preset) => (
           <li key={preset.id}>
             <button
               type="button"

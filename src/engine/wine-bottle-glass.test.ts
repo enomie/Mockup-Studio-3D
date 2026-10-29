@@ -35,9 +35,9 @@ const stubMaterial = new MeshBasicMaterial();
 const glassBuild = { wallThicknessM: WALL_THICKNESS_M };
 
 const BOTTLE_SVGS = [
-  'bottle-bordeaux-open.svg',
-  'bottle-alsace-open.svg',
-  'bottle-sparkling-open.svg',
+  'lathe-y-bottle-bordeaux-open.svg',
+  'lathe-y-bottle-alsace-open.svg',
+  'lathe-y-bottle-sparkling-open.svg',
 ] as const;
 
 function wallFromSvg(file: string): Vector2[] {
@@ -150,7 +150,7 @@ describe('wine-bottle-glass', () => {
   }
 
   it('prepareWineBottleGlassLatheProfile normalizes open alsace outer wall', () => {
-    const prep = latheProfileFromSvg('bottle-alsace-open.svg');
+    const prep = latheProfileFromSvg('lathe-y-bottle-alsace-open.svg');
     expect(prep.length).toBeGreaterThan(50);
     expect(prep.every((p) => p.x >= 0)).toBe(true);
     expect(prep[0].distanceTo(prep.at(-1)!)).toBeGreaterThan(1e-8);
@@ -178,7 +178,7 @@ describe('wine-bottle-glass', () => {
   });
 
   it('open outer SVG adds stirn caps via wall thickness', () => {
-    const profile = latheProfileFromSvg('bottle-bordeaux-open.svg');
+    const profile = latheProfileFromSvg('lathe-y-bottle-bordeaux-open.svg');
     const mantleOnly = new LatheGeometry(profile, WINE_BOTTLE_GLASS_LATHE_SEGMENTS);
     const withStirn = buildWineBottleGlassMeshFromLatheProfile(
       profile,
@@ -236,7 +236,7 @@ describe('wine-bottle-glass', () => {
   }
 
   it('inner mantle lathe normals face the cavity after x-flip', () => {
-    const profile = latheProfileFromSvg('bottle-bordeaux-open.svg');
+    const profile = latheProfileFromSvg('lathe-y-bottle-bordeaux-open.svg');
     const innerProfile = offsetLatheProfileForInnerMantle(profile, WALL_THICKNESS_M);
     const inner = new LatheGeometry(innerProfile, WINE_BOTTLE_GLASS_LATHE_SEGMENTS);
     inner.scale(-1, 1, 1);
@@ -270,7 +270,7 @@ describe('wine-bottle-glass', () => {
 
   it('builds glass mesh from lathe profile (bottle build path)', () => {
     const mesh = buildWineBottleGlassMeshFromLatheProfile(
-      latheProfileFromSvg('bottle-alsace-open.svg'),
+      latheProfileFromSvg('lathe-y-bottle-alsace-open.svg'),
       stubMaterial,
       true,
       glassBuild,
@@ -282,7 +282,7 @@ describe('wine-bottle-glass', () => {
 
   it('builds glass mesh from normalized wall (fetch wrapper path)', () => {
     const mesh = buildWineBottleGlassMeshFromWall(
-      wallFromSvg('bottle-alsace-open.svg'),
+      wallFromSvg('lathe-y-bottle-alsace-open.svg'),
       stubMaterial,
       true,
       glassBuild,
@@ -293,7 +293,7 @@ describe('wine-bottle-glass', () => {
   });
 
   it('builds glass mesh via fetch loader', async () => {
-    const svg = readFileSync(join(PUBLIC_LATHE, 'bottle-alsace-open.svg'), 'utf8');
+    const svg = readFileSync(join(PUBLIC_LATHE, 'lathe-y-bottle-alsace-open.svg'), 'utf8');
     setRawWineBottleSvgPointsCache('alsace', extractOpenPathPointsFromSvgText(svg, 48));
     const mesh = await buildWineBottleGlassMesh(
       'alsace',

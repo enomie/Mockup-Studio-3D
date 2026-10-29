@@ -1,10 +1,6 @@
 import type { Vector2 } from 'three/webgpu';
 import { bandUToTextureS, labelImageUSpan } from './beverage-can-label-unfold';
-import {
-  computePenHeightM,
-  PEN_BODY_TOP_OFFSET_SVG,
-  PEN_SVG_REFERENCE_HEIGHT,
-} from '@/scene/asset-pen';
+import { penNominalFootprintM, type PenBodyProfile } from '@/scene/asset-pen';
 
 /** Marker body max X / global profile max X (authoring SVG). */
 export const PEN_NOMINAL_BODY_RADIUS_RATIO = 26.09 / 28.35;
@@ -32,8 +28,6 @@ export function penBodyYBounds(bodyPoints: Vector2[]): { y0: number; y1: number 
 
 export function penBodyWrapCoverPlaneM(
   bodyPoints: Vector2[],
-  _maxRadiusM: number,
-  _sizeScale = 1,
 ): { planeW: number; planeH: number } {
   const { y0, y1 } = penBodyYBounds(bodyPoints);
   const bodyR = maxBodyRadiusM(bodyPoints);
@@ -45,9 +39,8 @@ export function penBodyWrapCoverPlaneM(
 
 export function computePenBodyWrapAspect(
   bodyPoints: Vector2[],
-  _maxRadiusM: number,
 ): { widthOverHeight: number } {
-  const { planeW, planeH } = penBodyWrapCoverPlaneM(bodyPoints, 0, 1);
+  const { planeW, planeH } = penBodyWrapCoverPlaneM(bodyPoints);
   if (planeH <= 0) {
     return { widthOverHeight: 1 };
   }
@@ -112,13 +105,11 @@ export function mapPenBandUvToTextureST(
   return rotatePenWrapTextureSt180(s, t);
 }
 
-/** Sync placeholder aspect before SVG load (nominal body radius). */
-export function penBodyWrapAspectNominal(maxRadiusM: number): number {
-  const bodyRadiusM = maxRadiusM * PEN_NOMINAL_BODY_RADIUS_RATIO;
-  const heightM = computePenHeightM(maxRadiusM);
-  const bodyHeightM =
-    heightM *
-    ((PEN_SVG_REFERENCE_HEIGHT - PEN_BODY_TOP_OFFSET_SVG) / PEN_SVG_REFERENCE_HEIGHT);
+/** Sync placeholder aspect before SVG load (nominal body wrap unfold). */
+export function penBodyWrapAspectNominal(profile: PenBodyProfile): number {
+  const footprint = penNominalFootprintM(profile);
+  const bodyRadiusM = (footprint.widthM / 2) * PEN_NOMINAL_BODY_RADIUS_RATIO;
+  const bodyHeightM = footprint.heightM;
   if (bodyHeightM <= 0) {
     return 1;
   }

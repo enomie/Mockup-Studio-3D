@@ -1,4 +1,11 @@
-import { BoxGeometry, Mesh, type Group, type Texture } from 'three/webgpu';
+import {
+  BoxGeometry,
+  Mesh,
+  StaticDrawUsage,
+  type BufferAttribute,
+  type Group,
+  type Texture,
+} from 'three/webgpu';
 import type { AssetFaceId, AssetFaces } from '@/scene/asset-faces';
 import { defaultBlockParams, type BlockParams } from '@/scene/asset-block';
 import {
@@ -6,7 +13,12 @@ import {
   type FabricClothParams,
 } from '@/scene/asset-fabric-cloth';
 import { buildFabricClothMesh } from '@/engine/fabric-cloth-geometry';
+import {
+  buildBufferGeometryFromBakedMeshPayload,
+  normalizeFabricClothBakedMeshPayload,
+} from '@/engine/fabric-cloth-bake';
 import { createFabricClothMaterial } from '@/engine/fabric-cloth-material';
+import type { FabricClothBakedMeshPayload } from '@/scene/user-baked-asset';
 import { defaultPrintParams, printCornerRadiusM, type PrintDeviceParams } from '@/scene/asset-print';
 import {
   defaultWallParams,
@@ -371,4 +383,40 @@ export function addFabricCloth(
   );
 
   group.add(buildFabricClothMesh(faceWidth, faceHeight, clothMaterial));
+}
+
+export function addBakedFabricCloth(
+  group: Group,
+  meshPayloadInput: FabricClothBakedMeshPayload,
+  resolver: MaterialResolver,
+  imageTexture: Texture | null,
+  materials: AssetMaterialSlots = {},
+  imageWidth?: number,
+  imageHeight?: number,
+  imageName?: string,
+  fabricClothParams: FabricClothParams = defaultFabricClothParams(),
+): void {
+  const meshPayload = normalizeFabricClothBakedMeshPayload(meshPayloadInput);
+  const clothMaterialId = materials.fabricClothMaterialId ?? MATERIAL_FABRIC_ID;
+  const clothMaterial = createFabricClothMaterial(
+    (id: string) => resolver.resolvePreset(id),
+    clothMaterialId,
+    imageTexture,
+    meshPayload.planeWidthM,
+    meshPayload.planeHeightM,
+    fabricClothParams,
+    imageWidth,
+    imageHeight,
+    imageName,
+  );
+
+  const geometry = buildBufferGeometryFromBakedMeshPayload(meshPayload);
+  const positionAttr = geometry.getAttribute('position') as BufferAttribute;
+  positionAttr.usage = StaticDrawUsage;
+
+  const mesh = new Mesh(geometry, clothMaterial);
+  mesh.rotation.x = -Math.PI / 2;
+  mesh.userData.isAssetScreen = true;
+  mesh.userData.assetMeshRole = 'fabricClothBaked';
+  group.add(mesh);
 }

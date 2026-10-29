@@ -4,6 +4,7 @@ import {
   effectiveBlockCornerRadiusM,
   type BlockParams,
 } from '@/scene/asset-block';
+import { ensureGeometryTangents } from '@/engine/geometry-tangents';
 
 const ROUNDED_BOX_SEGMENTS = 4;
 
@@ -29,5 +30,6 @@ export function buildBlockGeometry(params: BlockParams): BufferGeometry {
   }
 
   translateBottomPivot(geometry, heightM);
+  ensureGeometryTangents(geometry);
   return geometry;
 }

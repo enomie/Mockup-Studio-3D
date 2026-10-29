@@ -126,7 +126,7 @@ Live Viewport-Update: Store → Scene-API → `AmbientLight`.
 
 **Category:** Lighting  
 **Title:** Schatten  
-**Description:** **Key** und **Fill (SpotLight):** `castShadow` per Checkbox (Default **on**); **Softness** pro Rolle (`0`–`30`, Default `4`) → `light.shadow.radius`. Shadow: `configureSpotShadowLight` + `updateSpotShadowCamera` → `shadow.updateMatrices(light)` (4096², PCF, 5 m Coverage). `updateFrame()` jeden Render-Tick. **Ambient:** kein Schatten. Keine globale Shadows-Sektion. Mesh-/Ground-Flags → [`requirements-shadows.md`](./requirements-shadows.md).
+**Description:** **Key** und **Fill (SpotLight):** `castShadow` per Checkbox (Default **on**); **Softness** pro Rolle (`0`–`30`, Default `4`) → `light.shadow.radius`. Shadow: `configureSpotShadowLight` + `updateSpotShadowCamera` → `shadow.updateMatrices(light)` (PCF **4096²**, adaptive Coverage bis **5 m** Cap). `LightingSystem.updateFrame()` jeden Render-Tick. Bild-Export: temporär **8192²** → [`requirements-export.md`](./requirements-export.md). **Ambient:** kein Schatten. Keine globale Shadows-Sektion. Mesh-/Ground-Flags → [`requirements-shadows.md`](./requirements-shadows.md).
 
 **UI:** **Cast shadows** + **Softness** pro Key/Fill im jeweiligen Licht-Block. Kein eigener Right-Main-Nav „Shadow". Fill-Ratio und Ambient-Intensity steuern wahrgenommene Schattenhärte manuell.
 

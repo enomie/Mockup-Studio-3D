@@ -9,12 +9,15 @@ import {
   MATERIAL_GRID_PAPER_ID,
   MATERIAL_CHROME_ID,
   MATERIAL_GLOSSY_PRINT_ID,
+  MATERIAL_GOLD_BRUSHED_ID,
   MATERIAL_GOLD_ID,
+  MATERIAL_ALUMINUM_BRUSHED_ID,
   MATERIAL_PLASTIC_MATTE_ID,
 } from '@/scene/material-ids';
 import { MATERIAL_PRESETS } from '@/data/material-presets';
 import {
   createImagePbrMaterial,
+  createImageOnPresetMaterial,
   createMaterialFromPreset,
   createPenBodyWrapMaterial,
   createPassepartoutPbrMaterial,
@@ -142,6 +145,17 @@ describe('createMaterialFromPreset — textured built-ins', () => {
     }
   });
 
+  it('material-silk shares brushed structure with gold brushed', () => {
+    const silk = presetById('material-silk');
+    const goldBrushed = presetById(MATERIAL_GOLD_BRUSHED_ID);
+    expect(silk.proceduralProfile).toBe('metal-brushed');
+    expect(silk.metalness).toBe(goldBrushed.metalness);
+    expect(silk.tileScale).toBe(goldBrushed.tileScale);
+    expect(silk.anisotropy).toBe(goldBrushed.anisotropy);
+    expect(silk.roughness).toBe(goldBrushed.roughness);
+    expect(silk.normalScale).toBe(goldBrushed.normalScale);
+  });
+
   it('applies preset clearcoat on Print Glossy', () => {
     const material = createMaterialFromPreset(
       presetById(MATERIAL_GLOSSY_PRINT_ID),
@@ -159,6 +173,29 @@ describe('createMaterialFromPreset — textured built-ins', () => {
       expect(material.clearcoat).toBeCloseTo(0.35, 5);
       expect(material.clearcoatRoughness).toBeCloseTo(0.12, 5);
     }
+  });
+});
+
+describe('createImageOnPresetMaterial — fabric cloth plane', () => {
+  it('uses preset structure without texture (not passepartout gray)', () => {
+    const brushed = presetById(MATERIAL_ALUMINUM_BRUSHED_ID);
+    const material = createImageOnPresetMaterial(
+      presetById,
+      MATERIAL_ALUMINUM_BRUSHED_ID,
+      null,
+      0.45,
+      0.45,
+    );
+
+    expect(material).toBeInstanceOf(MeshPhysicalNodeMaterial);
+    expect(material.side).toBe(DoubleSide);
+    if (material instanceof MeshPhysicalNodeMaterial) {
+      expect(material.anisotropy).toBe(brushed.anisotropy);
+    }
+    expect(material.colorNode).toBeDefined();
+    expect(material.roughnessNode).toBeDefined();
+    expect(material.metalnessNode).toBeDefined();
+    material.dispose();
   });
 });
 

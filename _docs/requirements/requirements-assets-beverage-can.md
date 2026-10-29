@@ -8,6 +8,8 @@ Parametrischer **Getränkedosen**-Baustein (klassische **330-ml-Aluminiumdose**,
 
 **v1-Scope:** Ein Built-in `beverage-can`; **330 ml** in zwei **Körperprofilen** (**Standard** und **Sleek**); **real scale**; **Dosenformat fix** — Bild bestimmt **nicht** Höhe/BOD/Profil (Ausnahme zu Image-driven sizing → [`requirements-assets.md`](./requirements-assets.md)); **Alu-Körper** = **SVG-Silhouette → `LatheGeometry`** + **parametrischer Mantel-Endring** (2,5 × 1,5 mm); **Label** = **`screenImageId` auf dem Lathe-Mesh** (Cover auf festem Band); **`sizeScale`** = **uniform** auf **gesamte** Dose; Szene-Panel **Geometries**; **Kein** Pull-Tab, **kein** Verschluss-Mesh in v1.
 
+**Lathe (Querschnitt):** SVG-Pfade in **mm**, nur **uniform** skalieren, Szene-Panel-Ziel **Size** + gekoppeltes Width/Height → [`requirements-assets-lathe.md`](./requirements-assets-lathe.md).
+
 ---
 
 **Category:** Assets — Beverage can  
@@ -16,7 +18,7 @@ Parametrischer **Getränkedosen**-Baustein (klassische **330-ml-Aluminiumdose**,
 
 | `assetKind` | UI-Label | Kategorie (Ziel) |
 |---|---|---|
-| `beverage-can` | Beverage can | **Objects** (Lucide z. B. `cylinder` / `package`) |
+| `beverage-can` | Can Beverage | **Objects** (Lucide z. B. `cylinder` / `package`) |
 
 Stabile Katalog-ID über `kind`. Mehrfach-Instanzen unbegrenzt. Default-Szene: **keine** Pflicht-Instanz (optional später Stilleben-Layout).
 
@@ -217,8 +219,8 @@ Gerundete Pixelmaße können vom exakten Ratio um **±1 px** abweichen — für 
 
 | Datei | URL | `canBodyProfile` | `viewBox` (Ist, Authoring) |
 |---|---|---|---|
-| [`330ml-classic.svg`](../../public/profiles/lathe/330ml-classic.svg) | `/profiles/lathe/330ml-classic.svg` | **`standard`** | `0 0 94.185 322.799` |
-| [`330ml-sleek.svg`](../../public/profiles/lathe/330ml-sleek.svg) | `/profiles/lathe/330ml-sleek.svg` | **`sleek`** | `0 0 81.854 410.248` |
+| [`lathe-y-can-330ml-classic.svg`](../../public/profiles/lathe/lathe-y-can-330ml-classic.svg) | `/profiles/lathe/lathe-y-can-330ml-classic.svg` | **`standard`** | `0 0 94.185 322.799` |
+| [`lathe-y-can-330ml-sleek.svg`](../../public/profiles/lathe/lathe-y-can-330ml-sleek.svg) | `/profiles/lathe/lathe-y-can-330ml-sleek.svg` | **`sleek`** | `0 0 81.854 410.248` |
 
 **Status:** Silhouetten **vom User geliefert** (2026-10-09). Referenz-Render: [`../images/330ml-standard.png`](../images/330ml-standard.png), [`../images/330ml-sleek.png`](../images/330ml-sleek.png).
 
@@ -231,7 +233,7 @@ Gerundete Pixelmaße können vom exakten Ratio um **±1 px** abweichen — für 
 
 **Import-Pipeline (Ziel, Engine):**
 
-1. `SVGLoader` laden von `/profiles/lathe/330ml-classic.svg` bzw. `/profiles/lathe/330ml-sleek.svg` (Profilwechsel).
+1. `SVGLoader` laden von `/profiles/lathe/lathe-y-can-330ml-classic.svg` bzw. `/profiles/lathe/lathe-y-can-330ml-sleek.svg` (Profilwechsel).
 2. Ersten Pfad → `createShapes` → `getPoints(n)` (n TBD, glatte Kurven).
 3. **Normalisieren** zu `Vector2(radiusM, yM)` mit **y = 0** am Bodenkontakt, **x = 0** an der Achse, Gesamthöhe ≈ `heightM` (115,2 / 146,05 m).
 4. `LatheGeometry(points, segments)`; danach Bounding-Check vs. Doc-Maße (`diameterM`, `bottomStandDiameterM`, Label-Zone 5 mm / 2,5 mm).
@@ -358,15 +360,8 @@ Dropdown: alle Material-Presets erlaubt; Metall-Slots typisch **Chrome**, **Alum
 ---
 
 **Category:** Assets — Beverage can  
-**Title:** Szene-Panel (Ziel)  
-**Description:** Bei selektierter `beverage-can`-Entity (Right **Szene**):
-
-1. **Label / Image** — `ImageSurfaceFields` (`screenImageId`, Finish, Emissive); leer = Platzhalter.
-2. **Geometries** — Body, Top ring, Label (Sichtbarkeit).
-3. **Body profile** — Dropdown **Standard** / **Sleek** (`canBodyProfile`).
-4. **Dimensions** — Size (`sizeScale`); Advanced optional: Height, Diameter, Label-Offsets (Defaults aus Profil + SVG).
-5. **Materials** — Metal (Dropdown, Mantel + Ring).
-6. **Transform** — Position, Rotation; **Size** (`sizeScale`) wie andere Assets.
+**Title:** Szene-Panel (Ist)  
+**Description:** Label / Image → Geometries → Body profile → Materials → Footer **Dimensions** (Size + gekoppeltes W/H) → **Position**. Kein Transform-Block. Advanced mm (Höhe/Durchmesser) im Panel **nicht** in v1 — nur `sizeScale` + Footprint. Inventar → [`improve-04-asset-settings.md`](../improve/improve-04-asset-settings.md).
 
 ---
 
@@ -378,7 +373,7 @@ Dropdown: alle Material-Presets erlaubt; Metall-Slots typisch **Chrome**, **Alum
 |---|---|
 | Requirements / Maße / Bildformat | **doc** |
 | Label-Unfold-Rechner | **Code** (`beverage-can-label-unfold.ts`) |
-| SVG-Profile | **Dateien** `public/profiles/lathe/330ml-classic.svg`, `330ml-sleek.svg` — Normalisierung Engine ✓ |
+| SVG-Profile | **Dateien** `public/profiles/lathe/lathe-y-can-330ml-classic.svg`, `lathe-y-can-330ml-sleek.svg` — Normalisierung Engine ✓ |
 | `beverage-can-geometry.ts` (SVG→Lathe, Gruppen body/label, zyl. UV + Cover, Ring) | **fehlt** |
 | Katalog `assetKind: beverage-can`, `addAsset`, Rebuild-Pfad in `asset-meshes` | **fehlt** |
 | `geometryVisibility` + Panel Geometries | **doc** — Pattern aus Picture kopieren |

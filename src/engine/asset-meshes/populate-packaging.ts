@@ -7,7 +7,7 @@ import {
   defaultWineBottleParams,
   WINE_BOTTLE_GLASS_TRANSMISSION_MESH_DEPTH_FACTOR,
 } from '@/scene/asset-wine-bottle';
-import { defaultPenParams, scaledPenMaxRadiusM } from '@/scene/asset-pen';
+import { defaultPenParams } from '@/scene/asset-pen';
 import { resolveImageSurfaceSettings } from '@/scene/image-surface';
 import {
   MATERIAL_ALUMINUM_BRUSHED_ID,
@@ -222,9 +222,8 @@ export async function populatePenGroup(
   );
 
   const hasLabelImage = Boolean(context.imageTexture);
-  const maxRadiusM = scaledPenMaxRadiusM(params.maxRadiusM, sizeScale);
-  const profiles = await loadPenLatheProfiles(params.penBodyProfile, maxRadiusM);
-  const coverPlane = penBodyCoverPlaneFromProfiles(profiles, params, sizeScale);
+  const profiles = await loadPenLatheProfiles(params.penBodyProfile, sizeScale);
+  const coverPlane = penBodyCoverPlaneFromProfiles(profiles);
 
   const bodyMaterialId = materials.bodyMaterialId ?? MATERIAL_PLASTIC_SMOOTH_ID;
   const bodyPreset = resolver.resolvePreset(bodyMaterialId);

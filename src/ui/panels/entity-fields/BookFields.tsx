@@ -1,6 +1,13 @@
 import { isBookHardcoverKind, resolveBookParams } from '@/scene/asset-book';
-import { formatMmAsMeters, mmToM, mToMm } from '@/units/length';
+import { defaultBlockParams } from '@/scene/asset-block';
+import {
+  computeFaceSize,
+  resolveAssetAspectRatio,
+  resolveEntityImagePixels,
+} from '@/scene/asset-ui-helpers';
+import { defaultWallParams } from '@/scene/asset-wall';
 import { bookCoverTint, bookPagesTint } from '@/scene/book-material-tints';
+import { formatMmAsMeters, mmToM, mToMm } from '@/units/length';
 import { ColorPicker } from '@/ui/components/ColorPicker';
 import { PanelAxisField } from '@/ui/components/PanelAxisField/PanelAxisField';
 import { MATERIAL_PAPER_ID } from '@/scene/material-ids';
@@ -8,6 +15,7 @@ import { PanelCheckbox } from '@/ui/components/PanelCheckbox';
 import { SubPanelSection } from '@/ui/components/SubPanelSection';
 import { ImageSelect } from '@/ui/panels/ImageSurfaceFields';
 import { MaterialSelect } from '@/ui/panels/MaterialSelect';
+import { AssetDimensionsFields } from '@/ui/panels/entity-fields/EntityDimensionsSection';
 import { parseMmInput } from '@/ui/panels/entity-fields/field-input-helpers';
 import {
   setAssetScreenImage,
@@ -28,6 +36,23 @@ export function BookFields({
   const slots = entity.materials;
   const bookParams = resolveBookParams(entity.assetKind, entity.bookParams);
   const hardcover = isBookHardcoverKind(entity.assetKind);
+
+  const imagePixels = resolveEntityImagePixels(entity, images);
+  const aspect = resolveAssetAspectRatio(
+    entity.assetKind,
+    imagePixels.width,
+    imagePixels.height,
+    entity,
+  );
+  const faceSize = computeFaceSize(
+    entity.assetKind,
+    imagePixels.width,
+    imagePixels.height,
+    entity.sizeScale,
+    entity.wallParams ?? defaultWallParams(),
+    entity.blockParams ?? defaultBlockParams(),
+    entity,
+  );
 
   return (
     <>
@@ -62,16 +87,6 @@ export function BookFields({
       </SubPanelSection>
 
       <SubPanelSection title="Pages">
-        <PanelAxisField
-          label="Thickness"
-          unit="mm"
-          value={mToMm(bookParams.pagesThicknessM)}
-          format={formatMmAsMeters}
-          parse={parseMmInput}
-          onChange={(mm) => {
-            if (mm > 0) {setBookParams(entity.id, { pagesThicknessM: mmToM(mm) });}
-          }}
-        />
         <ColorPicker
           label="Pages color"
           value={bookPagesTint(slots)}
@@ -87,6 +102,37 @@ export function BookFields({
       </SubPanelSection>
 
       <SubPanelSection title="Cover">
+        <ColorPicker
+          label="Cover color"
+          value={bookCoverTint(slots)}
+          onChange={(color) => { setBookMaterialTint(entity.id, 'cover', color); }}
+        />
+        <MaterialSelect
+          entityId={entity.id}
+          slot="bookCoverMaterialId"
+          label="Cover material"
+          value={slots?.bookCoverMaterialId ?? MATERIAL_PAPER_ID}
+          materials={materials}
+        />
+      </SubPanelSection>
+
+      <SubPanelSection title="Dimensions">
+        <AssetDimensionsFields
+          entity={entity}
+          faceSize={faceSize}
+          aspect={aspect}
+          mode="faceOnly"
+        />
+        <PanelAxisField
+          label="Pages thickness"
+          unit="mm"
+          value={mToMm(bookParams.pagesThicknessM)}
+          format={formatMmAsMeters}
+          parse={parseMmInput}
+          onChange={(mm) => {
+            if (mm > 0) {setBookParams(entity.id, { pagesThicknessM: mmToM(mm) });}
+          }}
+        />
         <PanelAxisField
           label="Cover thickness"
           unit="mm"
@@ -124,30 +170,15 @@ export function BookFields({
             }}
           />
         ) : null}
-        <ColorPicker
-          label="Cover color"
-          value={bookCoverTint(slots)}
-          onChange={(color) => { setBookMaterialTint(entity.id, 'cover', color); }}
-        />
-        <MaterialSelect
-          entityId={entity.id}
-          slot="bookCoverMaterialId"
-          label="Cover material"
-          value={slots?.bookCoverMaterialId ?? MATERIAL_PAPER_ID}
-          materials={materials}
-        />
-      </SubPanelSection>
-
-      <SubPanelSection title="Hinge groove">
         <PanelCheckbox
-          label="Enable"
+          label="Hinge groove"
           checked={bookParams.hingeGrooveEnabled}
           onChange={(checked) => {
             setBookParams(entity.id, { hingeGrooveEnabled: checked });
           }}
         />
         <PanelAxisField
-          label="Offset from spine"
+          label="Hinge offset from spine"
           unit="mm"
           value={bookParams.hingeGrooveOffsetMm}
           format={(value) => String(value)}
@@ -157,7 +188,7 @@ export function BookFields({
           }}
         />
         <PanelAxisField
-          label="Width"
+          label="Hinge width"
           unit="mm"
           value={bookParams.hingeGrooveWidthMm}
           format={(value) => String(value)}
@@ -167,7 +198,7 @@ export function BookFields({
           }}
         />
         <PanelAxisField
-          label="Intensity"
+          label="Hinge intensity"
           value={bookParams.hingeGrooveIntensity}
           format={(value) => value.toFixed(2)}
           parse={(raw) => Number.parseFloat(raw)}

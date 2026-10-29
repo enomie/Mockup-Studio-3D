@@ -6,6 +6,7 @@ import {
   Shape,
   type BufferGeometry,
 } from 'three/webgpu';
+import { ensureGeometryTangents } from '@/engine/geometry-tangents';
 
 export interface FrameGeometryParams {
   faceWidth: number;
@@ -181,6 +182,7 @@ export function createExtrudedFrameGeometry(
   };
   assignExtrudedFrameUvs(geometry, params);
   toCreasedNormals(geometry, Math.PI / 2);
+  ensureGeometryTangents(geometry);
 
   return geometry;
 }
@@ -206,5 +208,6 @@ export function createRectangularGlassSlabGeometry(
   });
   geometry.translate(0, 0, -thickness);
   toCreasedNormals(geometry, Math.PI / 2);
+  ensureGeometryTangents(geometry);
   return geometry;
 }

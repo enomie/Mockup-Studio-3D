@@ -1,22 +1,24 @@
-# Assets — Wine bottle
+# Assets — Bottle Wine
 
 Parametrischer **Weinflaschen**-Baustein (Glas + optional Etikett) — **Label** als Bild aus der **Images-Bibliothek** → [`requirements-images.md`](./requirements-images.md). Katalog, Entity-Modell, Drop/Add → [`requirements-assets.md`](./requirements-assets.md). Bild-Flächen → [`requirements-image-surfaces.md`](./requirements-image-surfaces.md). Material-Slots (Glas, Korken, Kapsel-Folie, Kapsel-Scheibe) → [`requirements-materials.md`](./requirements-materials.md). Schatten → [`requirements-shadows.md`](./requirements-shadows.md). Uniform Scale → [`requirements-gimbals.md`](./requirements-gimbals.md).
 
 **Abgrenzung:** Eigenes Asset neben **Beverage can** → [`requirements-assets-beverage-can.md`](./requirements-assets-beverage-can.md). Kein `print`-Prisma. Marken-Etiketten = User-Bilder.
 
-**Status:** **implementiert (v1)** — Engine: [`asset-wine-bottle.ts`](../../src/scene/asset-wine-bottle.ts), [`wine-bottle-svg-profile.ts`](../../src/engine/wine-bottle-svg-profile.ts), [`wine-bottle-geometry.ts`](../../src/engine/wine-bottle-geometry.ts). SVGs: `public/profiles/lathe/bottle-*-open.svg`.
+**Status:** **implementiert (v1)** — Engine: [`asset-wine-bottle.ts`](../../src/scene/asset-wine-bottle.ts), [`wine-bottle-svg-profile.ts`](../../src/engine/wine-bottle-svg-profile.ts), [`wine-bottle-geometry.ts`](../../src/engine/wine-bottle-geometry.ts). SVGs: `public/profiles/lathe/lathe-y-bottle-*-open.svg`.
 
 **v1-Scope (Ziel):** Ein Built-in `wine-bottle`; **drei Körperprofile** (**Bordeaux**, **Alsace**, **Sparkling**); **real scale**; **Flaschenformat fix** — Bild bestimmt **nicht** Höhe/Profil (analog Dose → [`requirements-assets.md`](./requirements-assets.md)); **`sizeScale`** uniform auf **gesamte** Flasche **inkl. Korken + Kapsel**; **Etikett** auf **Außen-Mantel** (s. Etikett-Blöcke); **Korken**, **Kapsel-Folie** (Mantel), **Kapsel-Scheibe** (Disc oben) als separate Meshes (s. jeweilige Blöcke). **Alle drei Profile:** Folie + Disc Default **sichtbar**. **Kein** Muselet / Drahtkorb in v1.
 
+**Lathe (Querschnitt):** SVG-Pfade in **mm**, keine Verzerrung, Panel-Ziel → [`requirements-assets-lathe.md`](./requirements-assets-lathe.md).
+
 ---
 
-**Category:** Assets — Wine bottle  
+**Category:** Assets — Bottle Wine  
 **Title:** Identität & Katalog  
 **Description:** Built-in Baustein, nicht löschbar.
 
 | `assetKind` | UI-Label (Ziel) | Kategorie (Ziel) |
 |---|---|---|
-| `wine-bottle` | Wine bottle | **Objects** (Lucide z. B. `wine` / `bottle`) |
+| `wine-bottle` | Bottle Wine | **Objects** (Lucide z. B. `wine` / `bottle`) |
 
 Stabile Katalog-ID über `kind`. Mehrfach-Instanzen unbegrenzt. Default-Szene: **keine** Pflicht-Instanz.
 
@@ -24,7 +26,7 @@ Stabile Katalog-ID über `kind`. Mehrfach-Instanzen unbegrenzt. Default-Szene: *
 
 ---
 
-**Category:** Assets — Wine bottle  
+**Category:** Assets — Bottle Wine  
 **Title:** Fachbegriffe — drei Profile  
 **Description:** Industrie- und Mockup-Sprache für die drei Built-in-Silhouetten.
 
@@ -38,7 +40,7 @@ Stabile Katalog-ID über `kind`. Mehrfach-Instanzen unbegrenzt. Default-Szene: *
 
 ---
 
-**Category:** Assets — Wine bottle  
+**Category:** Assets — Bottle Wine  
 **Title:** Gemeinsame Nennmaße (vorläufig)  
 **Description:** Erste Projekt-Nennwerte; **profil-spezifische** Durchmesser, Schulter, Hals, Punt und Etikett-Zonen **folgen**.
 
@@ -57,9 +59,9 @@ Stabile Katalog-ID über `kind`. Mehrfach-Instanzen unbegrenzt. Default-Szene: *
 
 ---
 
-**Category:** Assets — Wine bottle  
+**Category:** Assets — Bottle Wine  
 **Title:** Profil-Tabelle — aus SVG (Nennhöhe 290 mm)  
-**Description:** Silhouette aus **offenen Außen-SVGs** (`public/profiles/lathe/bottle-*-open.svg`) — **ein** Stroke-Pfad, **ohne** Pflicht-`Z` (Illustrator-Umlauf nach dem Mund wird in der Engine **nicht** gelathe). **Einheitlich skaliert:** SVG-**Höhenspanne → 290 mm**, **X mit demselben Faktor** (Achse = **min X** im Pfad). **Bauch-Außenradius** aus normalisiertem Profil; Schulter/Hals/Punt folgen der Kurve im SVG.
+**Description:** Silhouette aus **offenen Außen-SVGs** (`public/profiles/lathe/lathe-y-bottle-*-open.svg`) — **ein** Stroke-Pfad, **ohne** Pflicht-`Z` (Illustrator-Umlauf nach dem Mund wird in der Engine **nicht** gelathe). **Einheitlich skaliert:** SVG-**Höhenspanne → 290 mm**, **X mit demselben Faktor** (Achse = **min X** im Pfad). **Bauch-Außenradius** aus normalisiertem Profil; Schulter/Hals/Punt folgen der Kurve im SVG.
 
 | | **bordeaux** | **alsace** | **sparkling** |
 |---|---|---|---|
@@ -72,21 +74,21 @@ Stabile Katalog-ID über `kind`. Mehrfach-Instanzen unbegrenzt. Default-Szene: *
 | **Silhouette (Mockup)** | hohe Schulter, kürzerer Hals | **längerer Hals**, Bauch tiefer | **breiter** Bauch, **tiefere Punt** |
 | **Etikett** | User-Parameter (nicht festes Band) | wie bordeaux | wie bordeaux |
 | **Korken — Radius** | **9,0 mm** | **9,0 mm** | **10,0 mm** |
-| **SVG-Außenprofil** | [`bottle-bordeaux-open.svg`](../../public/profiles/lathe/bottle-bordeaux-open.svg) | [`bottle-alsace-open.svg`](../../public/profiles/lathe/bottle-alsace-open.svg) | [`bottle-sparkling-open.svg`](../../public/profiles/lathe/bottle-sparkling-open.svg) |
+| **SVG-Außenprofil** | [`lathe-y-bottle-bordeaux-open.svg`](../../public/profiles/lathe/lathe-y-bottle-bordeaux-open.svg) | [`lathe-y-bottle-alsace-open.svg`](../../public/profiles/lathe/lathe-y-bottle-alsace-open.svg) | [`lathe-y-bottle-sparkling-open.svg`](../../public/profiles/lathe/lathe-y-bottle-sparkling-open.svg) |
 
 **Hinweis:** Bordeaux und Alsace: **gleicher** Bauch-Radius **38,0 mm**; Unterschied nur **Halslänge / Schulter** im SVG (Alsace längerer Hals). Sparkling: **44,0 mm** Radius (**+6 mm**) + tiefere Punt im SVG.
 
 ---
 
-**Category:** Assets — Wine bottle  
+**Category:** Assets — Bottle Wine  
 **Title:** SVG — Außen-Silhouette (`bottle-*-open.svg`)  
-**Description:** Pro Profil **eine** Datei unter **`public/profiles/lathe/`** — **ein** offener Pfad, **Außenkontur** (Stroke, kein Fill). **Keine** separate Innenkontur im SVG; Wandstärke optisch über Transmission + **`wallThicknessM`**; geometrisch **Stirn-Ringe** an Mund/Boden (s. **Glas-Mesh**).
+**Description:** Pro Profil **eine** Datei unter **`public/profiles/lathe/`** — **ein** offener Pfad, **Außenkontur** (`class="path_red"`, Stroke **#ff0000**, kein Fill) — s. [`requirements-assets-lathe.md`](./requirements-assets-lathe.md). **Keine** separate Innenkontur im SVG; Wandstärke optisch über Transmission + **`wallThicknessM`**; geometrisch **Stirn-Ringe** an Mund/Boden (s. **Glas-Mesh**).
 
 | Datei | URL (Dev) | `wineBottleBodyProfile` |
 |---|---|---|
-| [`bottle-bordeaux-open.svg`](../../public/profiles/lathe/bottle-bordeaux-open.svg) | `/profiles/lathe/bottle-bordeaux-open.svg` | **`bordeaux`** |
-| [`bottle-alsace-open.svg`](../../public/profiles/lathe/bottle-alsace-open.svg) | `/profiles/lathe/bottle-alsace-open.svg` | **`alsace`** |
-| [`bottle-sparkling-open.svg`](../../public/profiles/lathe/bottle-sparkling-open.svg) | `/profiles/lathe/bottle-sparkling-open.svg` | **`sparkling`** |
+| [`lathe-y-bottle-bordeaux-open.svg`](../../public/profiles/lathe/lathe-y-bottle-bordeaux-open.svg) | `/profiles/lathe/lathe-y-bottle-bordeaux-open.svg` | **`bordeaux`** |
+| [`lathe-y-bottle-alsace-open.svg`](../../public/profiles/lathe/lathe-y-bottle-alsace-open.svg) | `/profiles/lathe/lathe-y-bottle-alsace-open.svg` | **`alsace`** |
+| [`lathe-y-bottle-sparkling-open.svg`](../../public/profiles/lathe/lathe-y-bottle-sparkling-open.svg) | `/profiles/lathe/lathe-y-bottle-sparkling-open.svg` | **`sparkling`** |
 
 **Engine:** [`wine-bottle-svg-profile.ts`](../../src/engine/wine-bottle-svg-profile.ts) — `loadWineBottleOpenWallProfile` → `extractOpenPathPointsFromSvgText` (48 Kurven-Segmente) → **`normalizeOpenWallSvgToLathePoints`**: `scale = heightM / (maxY − minY)`, **`x_m = max(0, x) × scale`**, **`y_m = (maxY − y) × scale`** (Fuß bei `y ≈ 0`). Nicht `normalizeSvgProfileToLathePoints` (Dose).
 
@@ -94,7 +96,7 @@ Stabile Katalog-ID über `kind`. Mehrfach-Instanzen unbegrenzt. Default-Szene: *
 
 ---
 
-**Category:** Assets — Wine bottle  
+**Category:** Assets — Bottle Wine  
 **Title:** Glas-Mesh — Außen-Mantel + Stirnringe (implementiert)  
 **Description:** **Abweichung von Beverage can:** Dose = eine offene Silhouetten-Halbachse. Flasche v1 = **Außen-Mantel** (Lathe der getrimmten SVG-Polyline) + **zwei Stirnflächen** (Mund/Boden) in **einem** Body-Mesh. Transmission + `meshDepthM` ergänzen die optische Wandstärke; **kein** geschlossener SVG-Wandring als eine Lathe.
 
@@ -117,7 +119,7 @@ Stabile Katalog-ID über `kind`. Mehrfach-Instanzen unbegrenzt. Default-Szene: *
 
 ---
 
-**Category:** Assets — Wine bottle  
+**Category:** Assets — Bottle Wine  
 **Title:** Glas-Material — Preset, Farbe, Wandstärke (2,5 mm)  
 **Description:** **Ja — eigenes Built-in** für Weinflaschen (nicht `material-glass-solid` neutral als Default). Begründung: typisches **Flaschengrün** ist ein fester Mockup-Look; Display-Glazing (`material-glass-pane` / `displayGlass`) ist **falscher** Zweig (kein Transmission, scharfes Bild dahinter). Flasche = **Volumen-Glas** mit **Transmission** + **Tint**.
 
@@ -139,7 +141,7 @@ Stabile Katalog-ID über `kind`. Mehrfach-Instanzen unbegrenzt. Default-Szene: *
 
 ---
 
-**Category:** Assets — Wine bottle  
+**Category:** Assets — Bottle Wine  
 **Title:** Korken — Maße, Geometrie, Platzierung  
 **Description:** Optionaler **Naturkork**-Stopfen als **eigenes Mesh** (`cork`) — **nicht** Teil des Glas-Lathe. Mockup-typisch: Zylinder mit **abgerundeten** Ober- und Unterkante (Kantenradius). **Sekt:** etwas **dickerer** Kork (10 mm Radius). Kork-Oberkante bleibt **bündig** mit **`y = heightM`**; **Kapsel-Folie** und **Disc** können den Kork **visuell verdecken** (Mockup-Stack).
 
@@ -163,7 +165,7 @@ Stabile Katalog-ID über `kind`. Mehrfach-Instanzen unbegrenzt. Default-Szene: *
 
 ---
 
-**Category:** Assets — Wine bottle  
+**Category:** Assets — Bottle Wine  
 **Title:** Korken — Sichtbarkeit, Material, UI  
 **Description:** Pattern wie **Beverage can** `topRing` / Picture **Geometries** → [`requirements-assets-beverage-can.md`](./requirements-assets-beverage-can.md), [`requirements-look-and-feel.md`](./requirements-look-and-feel.md).
 
@@ -183,7 +185,7 @@ Stabile Katalog-ID über `kind`. Mehrfach-Instanzen unbegrenzt. Default-Szene: *
 
 ---
 
-**Category:** Assets — Wine bottle  
+**Category:** Assets — Bottle Wine  
 **Title:** Kapsel-Folie — Mantel (nur seitlich)  
 **Description:** **Schrumpf-/Folienkapsel** am **Hals und oberen Schulterbereich** — **nur Mantel** (360° **um** die Flasche), **keine** Folien-Deckfläche oben (die übernimmt die **Kapsel-Scheibe**). Folie liegt **leicht erhaben** außerhalb des Glases und **folgt der Außen-Silhouette** (profilabhängig).
 
@@ -204,7 +206,7 @@ Stabile Katalog-ID über `kind`. Mehrfach-Instanzen unbegrenzt. Default-Szene: *
 
 ---
 
-**Category:** Assets — Wine bottle  
+**Category:** Assets — Bottle Wine  
 **Title:** Kapsel-Folie — Sichtbarkeit, Material, UI  
 **Description:** **Alle drei Profile**; Checkbox Default **an**.
 
@@ -218,7 +220,7 @@ Stabile Katalog-ID über `kind`. Mehrfach-Instanzen unbegrenzt. Default-Szene: *
 
 ---
 
-**Category:** Assets — Wine bottle  
+**Category:** Assets — Bottle Wine  
 **Title:** Kapsel-Scheibe (Capsule disc)  
 **Description:** **Scheibe / Kappen-Zylinder** **oben auf** der Flasche — separates Mesh **`capsuleDisc`**. v1: **einfacher Zylinder** (optional später leichte **Wölbung** der +Y-Fläche — **nicht** blockierend).
 
@@ -241,7 +243,7 @@ Stabile Katalog-ID über `kind`. Mehrfach-Instanzen unbegrenzt. Default-Szene: *
 
 ---
 
-**Category:** Assets — Wine bottle  
+**Category:** Assets — Bottle Wine  
 **Title:** Kapsel-Scheibe — Sichtbarkeit, Material, UI  
 **Description:**
 
@@ -253,7 +255,7 @@ Stabile Katalog-ID über `kind`. Mehrfach-Instanzen unbegrenzt. Default-Szene: *
 
 ---
 
-**Category:** Assets — Wine bottle  
+**Category:** Assets — Bottle Wine  
 **Title:** Kapsel — Stack, Maße, `WineBottleParams` (Skizze)  
 **Description:**
 
@@ -281,7 +283,7 @@ capsuleDiscHeightM: number;
 
 ---
 
-**Category:** Assets — Wine bottle  
+**Category:** Assets — Bottle Wine  
 **Title:** Mesh-Stack (Ziel)  
 **Description:** Übersicht der Meshes pro Instanz (Reihenfolge / `renderOrder` TBD):
 
@@ -295,7 +297,7 @@ capsuleDiscHeightM: number;
 
 ---
 
-**Category:** Assets — Wine bottle  
+**Category:** Assets — Bottle Wine  
 **Title:** Geometries — Sichtbarkeit (alle Teile)  
 **Description:** Right Sub: Sektion **„Geometries“** wie Dose / Picture — **jedes** Teil mit **Checkbox** + Material-Dropdown (wo sinnvoll). API: `setGeometryVisible(entityId, part, visible)` → Rebuild. Default **alle `true`**.
 
@@ -313,11 +315,11 @@ capsuleDiscHeightM: number;
 
 ---
 
-**Category:** Assets — Wine bottle  
+**Category:** Assets — Bottle Wine  
 **Title:** Etikett — Abgrenzung zur Dose  
 **Description:** Die **Dose** hat ein **festes** bedruckbares Band (`labelBottomOffsetM`, `labelHeightM` aus Profil + Nennhöhe) und skaliert die Textur primär **an die Bandhöhe** (Height-fit, horizontal je nach Aspect). Die **Flasche** hat **kein** fixes Industrie-Band in v1: der User legt **Druckformat** (flaches Etikett, real scale) und **vertikale Position** fest; das **Bild** skaliert **proportional** in dieses Rechteck — **nie** Verzerrung (→ [`image-aspect-ratio.mdc`](../../.cursor/rules/image-aspect-ratio.mdc)).
 
-| | **Beverage can** | **Wine bottle** |
+| | **Beverage can** | **Bottle Wine** |
 |---|---|---|
 | Körpermaß aus Bild | **nein** | **nein** |
 | Label-Größe | aus **Profil** + 5 mm Boden | User: **Breite *oder* Höhe** (mm/m) |
@@ -327,7 +329,7 @@ capsuleDiscHeightM: number;
 
 ---
 
-**Category:** Assets — Wine bottle  
+**Category:** Assets — Bottle Wine  
 **Title:** Etikett — Druckmaß & Bild (proportional)  
 **Description:** Das **flache Etikett** (Mockup: Rechteck auf dem Mantel) hat reale Abmessungen **`labelWidthM`** × **`labelHeightM`**. Der User gibt **genau eine** Seite vor; die andere wird aus dem **Bild-Seitenverhältnis** (Pixel width/height von `screenImageId`) berechnet — **ohne** Stretch.
 
@@ -355,7 +357,7 @@ capsuleDiscHeightM: number;
 
 ---
 
-**Category:** Assets — Wine bottle  
+**Category:** Assets — Bottle Wine  
 **Title:** Etikett — Position (Höhe)  
 **Description:** Vertikale Lage ist **editierbar** (Mockup: typisch Hauptetikett im Bauch, kleines Neck-Label später optional — **ein** Label-Slot in v1).
 
@@ -374,7 +376,7 @@ Alternative Darstellung in UI: Slider „**von unten**“ oder „**Mitte Y**“
 
 ---
 
-**Category:** Assets — Wine bottle  
+**Category:** Assets — Bottle Wine  
 **Title:** Etikett — Vollmantel (360°) vs. PNG-Teiletikett  
 **Description:** Zwei Anwendungsfälle:
 
@@ -394,11 +396,11 @@ Alternative Darstellung in UI: Slider „**von unten**“ oder „**Mitte Y**“
 
 ---
 
-**Category:** Assets — Wine bottle  
+**Category:** Assets — Bottle Wine  
 **Title:** Etikett — Mesh, Material, UI  
 **Description:** Separates **Label-Mantel-Mesh** (leicht radial versetzt) mit **`screenImageId`** + `imageSurfaces.label`; Glas-Körper darunter. **Material:** `createImagePbrMaterial` + Cover-UV aus Label-Rechteckmaßen — bei PNG **Transparenz → Glas**, kein deckendes Underlay. **Ohne Bild:** **kein** Label-Mesh. **`geometryVisibility.label` aus** → Label aus, auch wenn Bild gesetzt. (Dosen: separates Label + `createCanLabelMaterial` — anderer Alpha-Pfad.)
 
-**Right Panel / Image (Ziel):** `ImageSurfaceFields` (`screenImageId`, Finish, Emissive). **Geometries** oder eigene Sektion **Label:**
+**Right Panel (Ist):** `ImageSurfaceFields` + Sektionen in [`WineBottleFields.tsx`](../../src/ui/panels/entity-fields/WineBottleFields.tsx). Footer **Dimensions** + **Position** → [`improve-04-asset-settings.md`](../improve/improve-04-asset-settings.md). **Label** (im Panel):
 
 - `labelWrap` — Full / Partial  
 - `labelSizeMode` — Width / Height  
@@ -411,16 +413,14 @@ Alternative Darstellung in UI: Slider „**von unten**“ oder „**Mitte Y**“
 
 ---
 
-**Category:** Assets — Wine bottle  
-**Title:** Offene Punkte (nächste Docs-Schritte)  
-**Description:**
+**Category:** Assets — Bottle Wine  
+**Title:** Szene-Panel (Ist)  
+**Description:** Label / Image → Geometries → Body profile → Capsule → Label placement → Footer **Dimensions** (Size + gekoppeltes W/H, Footprint Bauch × `heightM`) → **Position**. Kein Transform-Block.
 
-1. ~~SVG-Außenprofil pro Profil~~ — **erledigt** (`bottle-*-open.svg` + Engine oben).
-2. ~~Etikett: Größe, Höhe, Wrap, PNG~~ — **spezifiziert** (dieses Dokument); optional: **Azimut** (`labelRotationDeg`), **zweites** Neck-Label.
-3. ~~Kapsel-Folie + Kapsel-Scheibe~~ — **spezifiziert** (Mantel + Disc); optional: gewölbte Disc-Oberseite.
-4. **Image-driven sizing** — explizit **aus** (wie Dose).
-5. Abgleich **0,75 l** Füllvolumen vs. **290 mm** Höhe (Innenraum ≈ Stirn + Transmission, nicht SVG-Wandring).
-6. ~~Glas-Mesh (Mantel + Stirn)~~ — **implementiert**; Feintuning Innen-Punt-Look optional.
-7. Katalog, `WineBottleParams`, `geometryVisibility` (`cork`, `capsuleFoil`, `capsuleDisc`), Material-Slots, Scene-API.
+---
+
+**Category:** Assets — Bottle Wine  
+**Title:** Offen (nicht Panel Runde 1)  
+**Description:** Optional später: Etikett-**Azimut**, zweites Neck-Label, gewölbte Kapsel-Disc, Abgleich Füllvolumen 0,75 l vs. 290 mm Nennhöhe, Glas-Innen-Punt-Feintuning.
 
 ---

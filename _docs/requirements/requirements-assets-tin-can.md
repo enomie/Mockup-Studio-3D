@@ -8,6 +8,8 @@ Parametrischer **klassischer Blechdosen**-Baustein — **Zylindermantel** mit **
 
 **v1-Scope:** Ein Built-in **`tin-can`**; **ein Default-Nennmaß**; User stellt **`bodyRadiusMm`** und **`bodyHeightMm`** ein (Geometrie-Rebuild); **Bead-Zone** = mittlere **80 %** des **Mantels** (oben/unten je **10 %** glatt); **Label-Mesh** folgt der **gewellten** Mantelgeometrie (kein flaches Zylinder-UV über Beads); **`sizeScale`** uniform auf **gesamte** Dose; Szene-Panel **Geometries**; **kein** Öffnungsmechanismus, **kein** Längsnaht-Mesh in v1 (optional später).
 
+**Skalierung (Querschnitt):** kein Lathe-SVG — gleiche **Uniform-only**- und Szene-Panel-Ziele → [`requirements-assets-lathe.md`](./requirements-assets-lathe.md) (*Nicht Lathe-SVG*).
+
 ---
 
 **Category:** Assets — Tin can  
@@ -16,7 +18,7 @@ Parametrischer **klassischer Blechdosen**-Baustein — **Zylindermantel** mit **
 
 | `assetKind` | UI-Label | Kategorie (Ziel) |
 |---|---|---|
-| `tin-can` | Tin can | **Objects** (Lucide z. B. `cylinder` / `package`) |
+| `tin-can` | Can Tin | **Objects** (Lucide z. B. `cylinder` / `package`) |
 
 Stabile Katalog-ID über `kind`. Mehrfach-Instanzen unbegrenzt. Default-Szene: **keine** Pflicht-Instanz.
 
@@ -146,19 +148,18 @@ User-Panel (Geometries): **Radius (mm)** und **Höhe (mm)** — Änderung → **
 ---
 
 **Category:** Assets — Tin can  
-**Title:** Szene-Panel — Geometries (v1)  
-**Description:** Sektion **Geometries** (wie Block / Beverage can):
+**Title:** Szene-Panel (Ist)  
+**Description:** Right **Szene** — **kein** Lathe-Packaging-Footer (kein gekoppeltes Width/Height aus Label-Aspect).
 
-| Feld | Bindung |
+| Reihenfolge | Sektion |
 |---|---|
-| **Radius (mm)** | `bodyRadiusMm` |
-| **Height (mm)** | `bodyHeightMm` |
-| **Waves** | `beadCount` (**1–20**, ganzzahlig) |
-| **Size** / `sizeScale` | uniform, gesamte Dose |
+| 1 | Label / Image |
+| 2 | **Geometries** — **Waves** (`beadCount`, 1–20); Mesh-Sichtbarkeit |
+| 3 | Materials |
+| 4 | **Dimensions** — **Size** (`sizeScale`); **Radius** / **Height** (m → `bodyRadiusM`, `bodyHeightM`) |
+| 5 | **Position** |
 
-**Kein** Panel-Feld für Bead-Prozent in v1 — **fix** 10 % / 80 % / 10 % auf Mantelhöhe. **Kein** Bead-Tiefe-Slider in v1 (interner Nennwert).
-
-**Bild:** Images-Picker auf Label; Finish/Emissive → image surfaces.
+**Kein** Bead-Prozent-Slider in v1 — **fix** 10 % / 80 % / 10 % Mantel. Rebuild bei Params + `sizeScale` unabhängig vom Bild. → [`improve-04-asset-settings.md`](../improve/improve-04-asset-settings.md), [`TinCanFields.tsx`](../../src/ui/panels/entity-fields/TinCanFields.tsx).
 
 ---
 
