@@ -1,3 +1,4 @@
+import type { KindParamFamily, KindParamsByFamily } from './kind-param-families';
 import type { Rgb } from '@/colors/rgb';
 import type {
   AssetEntity,
@@ -6,22 +7,7 @@ import type {
   AssetGeometryPart,
   AssetKind,
   EntityTransform,
-  HandheldDeviceParams,
-  MonitorDeviceParams,
-  BeverageCanParams,
-  TinCanParams,
-  WineBottleParams,
-  PenParams,
-  BlockParams,
-  CylinderParams,
-  SphereParams,
-  WheelCarParams,
-  FabricClothParams,
-  BookParams,
-  TrianglePatchParams,
   PatchHandleTarget,
-  PrintDeviceParams,
-  WallParams,
   WallpaperPattern,
   ImageResolver,
   MaterialEntitySlot,
@@ -231,37 +217,22 @@ export interface SceneApi {
     part: AssetGeometryPart,
     visible: boolean,
   ): void;
-  setHandheldParams(entityId: string, partial: Partial<HandheldDeviceParams>): void;
-  setMonitorParams(entityId: string, partial: Partial<MonitorDeviceParams>): void;
-  setPrintParams(entityId: string, partial: Partial<PrintDeviceParams>): void;
-  setWallParams(entityId: string, partial: Partial<WallParams>): void;
   setWallpaperPattern(entityId: string, partial: Partial<WallpaperPattern>): void;
-  setBlockParams(entityId: string, partial: Partial<BlockParams>): void;
-  setCylinderParams(entityId: string, partial: Partial<CylinderParams>): void;
-  setSphereParams(entityId: string, partial: Partial<SphereParams>): void;
-  setWheelCarParams(entityId: string, partial: Partial<WheelCarParams>): void;
+  /** Merges a param patch for the entity's kind family and rebuilds it. Ignored for other kinds. */
+  setKindParams<F extends KindParamFamily>(
+    family: F,
+    entityId: string,
+    partial: Partial<KindParamsByFamily[F]>,
+  ): void;
   setPhysicsBodyMode(entityId: string, mode: PhysicsBodyMode): void;
   setPhysicsDensityKgPerM3(entityId: string, densityKgPerM3: number): void;
   /** Border, `physics` (Verlet tuning), `sim` (pins, restPose) — partial merge with clamp. */
-  setFabricClothParams(entityId: string, partial: Partial<FabricClothParams>): void;
   /** Ephemeral UI state — active pin corner 0–3 for gizmo during world physics. */
   setFabricClothActivePinCorner(entityId: string, cornerIndex: number): void;
   getFabricClothActivePinCorner(entityId: string): number;
-  setBookParams(entityId: string, partial: Partial<BookParams>): void;
   setBookBackCoverImageId(entityId: string, imageId: string | null): void;
   setBookSpineImageId(entityId: string, imageId: string | null): void;
   setBookMaterialTint(entityId: string, part: BookMaterialTintPart, tint: Rgb): void;
-  setBeverageCanParams(
-    entityId: string,
-    partial: Partial<BeverageCanParams>,
-  ): void;
-  setTinCanParams(entityId: string, partial: Partial<TinCanParams>): void;
-  setWineBottleParams(
-    entityId: string,
-    partial: Partial<WineBottleParams>,
-  ): void;
-  setPenParams(entityId: string, partial: Partial<PenParams>): void;
-  setTrianglePatchParams(entityId: string, partial: Partial<TrianglePatchParams>): void;
   selectPatchHandle(entityId: string, nodeIndex: number, targetKey: PatchHandleTarget): void;
   loadBuiltinView(id: BuiltinCameraViewId): void;
   captureSlot(index: CameraSlotIndex): void;

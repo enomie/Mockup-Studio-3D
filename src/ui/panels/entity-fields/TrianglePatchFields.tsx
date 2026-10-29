@@ -4,9 +4,9 @@ import { PanelAxisField } from '@/ui/components/PanelAxisField/PanelAxisField';
 import { MaterialSelect } from '@/ui/panels/MaterialSelect';
 import { useAppStore } from '@/ui/store/use-app-store';
 import {
+  setKindParams,
   selectPatchHandle,
-  setTrianglePatchParams,
-} from '@/ui/store/app-store';
+  } from '@/ui/store/app-store';
 import {
   defaultTrianglePatchParams,
   type PatchHandleTarget,
@@ -112,7 +112,7 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
       updatedNodes[selectedCornerIdx] = nodeCopy;
     }
 
-    setTrianglePatchParams(entity.id, { nodes: updatedNodes });
+    setKindParams('trianglePatch', entity.id, { nodes: updatedNodes });
   };
 
   const updateAnchorHandleRotation = (axis: 'x' | 'y' | 'z', radians: number): void => {
@@ -135,7 +135,7 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
         activeNode,
         deltaEuler,
       );
-      setTrianglePatchParams(entity.id, { nodes: updatedNodes });
+      setKindParams('trianglePatch', entity.id, { nodes: updatedNodes });
 
       return { ...prev, [axis]: radians };
     });
@@ -181,7 +181,7 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
     }
 
     updatedNodes[selectedCornerIdx] = nodeCopy;
-    setTrianglePatchParams(entity.id, { nodes: updatedNodes });
+    setKindParams('trianglePatch', entity.id, { nodes: updatedNodes });
   };
 
   const handleLen = selectedTargetKey !== 'pos'

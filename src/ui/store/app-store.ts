@@ -10,28 +10,14 @@ import * as store from './app-store-internals';
 export type { AppState } from './app-store-internals';
 
 export {
-  setBeverageCanParams,
-  setBlockParams,
-  setCylinderParams,
-  setSphereParams,
-  setWheelCarParams,
+  setKindParams,
   setPhysicsBodyMode,
   setPhysicsDensityKgPerM3,
-  setFabricClothParams,
   setFabricClothActivePinCorner,
-  setBookParams,
   setBookBackCoverImageId,
   setBookSpineImageId,
   setBookMaterialTint,
-  setHandheldParams,
-  setMonitorParams,
-  setPrintParams,
-  setTinCanParams,
-  setWallParams,
   setWallpaperPattern,
-  setWineBottleParams,
-  setPenParams,
-  setTrianglePatchParams,
   selectPatchHandle,
 } from './app-store-asset-params';
 

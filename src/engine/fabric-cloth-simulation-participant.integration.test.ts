@@ -133,7 +133,7 @@ describe('FabricClothSimulationParticipant integration', () => {
         if (id === cloth.id) {return { entity: cloth, object: clothRoot };}
         return undefined;
       },
-      setFabricClothParams: () => {},
+      setKindParams: () => {},
     } as unknown as EntityRegistry;
 
     const scene = new Scene();

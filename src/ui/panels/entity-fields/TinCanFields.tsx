@@ -15,10 +15,10 @@ import { SubPanelSection } from '@/ui/components/SubPanelSection';
 import { ImageSurfaceFields } from '@/ui/panels/ImageSurfaceFields';
 import { GeometryPartsSection } from '@/ui/panels/GeometryPartsSection';
 import {
+  setKindParams,
   setAssetScreenImage,
   setAssetSizeScale,
-  setTinCanParams,
-} from '@/ui/store/app-store';
+  } from '@/ui/store/app-store';
 import { useAppStore } from '@/ui/store/use-app-store';
 import { MaterialSelect } from '@/ui/panels/MaterialSelect';
 import { formatSizeScale, parseSizeScaleInput } from './field-input-helpers';
@@ -67,7 +67,7 @@ export function TinCanFields({
               TIN_CAN_BEAD_COUNT_MAX,
               Math.max(TIN_CAN_BEAD_COUNT_MIN, Math.round(value)),
             );
-            setTinCanParams(entity.id, { beadCount: clamped });
+            setKindParams('tinCan', entity.id, { beadCount: clamped });
           }}
         />
         <GeometryPartsSection
@@ -103,7 +103,7 @@ export function TinCanFields({
           parse={parseLengthMetersInput}
           onChange={(value) => {
             if (value > 0) {
-              setTinCanParams(entity.id, { bodyRadiusM: value });
+              setKindParams('tinCan', entity.id, { bodyRadiusM: value });
             }
           }}
         />
@@ -115,7 +115,7 @@ export function TinCanFields({
           parse={parseLengthMetersInput}
           onChange={(value) => {
             if (value > 0) {
-              setTinCanParams(entity.id, { bodyHeightM: value });
+              setKindParams('tinCan', entity.id, { bodyHeightM: value });
             }
           }}
         />

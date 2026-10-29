@@ -18,10 +18,10 @@ import { MaterialSelect } from '@/ui/panels/MaterialSelect';
 import { AssetDimensionsFields } from '@/ui/panels/entity-fields/EntityDimensionsSection';
 import { parseMmInput } from '@/ui/panels/entity-fields/field-input-helpers';
 import {
+  setKindParams,
   setAssetScreenImage,
   setBookBackCoverImageId,
   setBookMaterialTint,
-  setBookParams,
   setBookSpineImageId,
 } from '@/ui/store/app-store';
 import { useAppStore } from '@/ui/store/use-app-store';
@@ -130,7 +130,7 @@ export function BookFields({
           format={formatMmAsMeters}
           parse={parseMmInput}
           onChange={(mm) => {
-            if (mm > 0) {setBookParams(entity.id, { pagesThicknessM: mmToM(mm) });}
+            if (mm > 0) {setKindParams('book', entity.id, { pagesThicknessM: mmToM(mm) });}
           }}
         />
         <PanelAxisField
@@ -141,7 +141,7 @@ export function BookFields({
           parse={parseMmInput}
           onChange={(mm) => {
             if (mm > 0) {
-              setBookParams(entity.id, {
+              setKindParams('book', entity.id, {
                 coverThicknessM: mmToM(mm),
                 spineThicknessM: mmToM(mm),
               });
@@ -155,7 +155,7 @@ export function BookFields({
           format={formatMmAsMeters}
           parse={parseMmInput}
           onChange={(mm) => {
-            if (mm > 0) {setBookParams(entity.id, { spineThicknessM: mmToM(mm) });}
+            if (mm > 0) {setKindParams('book', entity.id, { spineThicknessM: mmToM(mm) });}
           }}
         />
         {hardcover ? (
@@ -166,7 +166,7 @@ export function BookFields({
             format={(value) => String(value)}
             parse={(raw) => Number.parseFloat(raw)}
             onChange={(mm) => {
-              if (mm >= 0) {setBookParams(entity.id, { coverOverhangMm: mm });}
+              if (mm >= 0) {setKindParams('book', entity.id, { coverOverhangMm: mm });}
             }}
           />
         ) : null}
@@ -174,7 +174,7 @@ export function BookFields({
           label="Hinge groove"
           checked={bookParams.hingeGrooveEnabled}
           onChange={(checked) => {
-            setBookParams(entity.id, { hingeGrooveEnabled: checked });
+            setKindParams('book', entity.id, { hingeGrooveEnabled: checked });
           }}
         />
         <PanelAxisField
@@ -184,7 +184,7 @@ export function BookFields({
           format={(value) => String(value)}
           parse={(raw) => Number.parseFloat(raw)}
           onChange={(mm) => {
-            if (mm >= 0) {setBookParams(entity.id, { hingeGrooveOffsetMm: mm });}
+            if (mm >= 0) {setKindParams('book', entity.id, { hingeGrooveOffsetMm: mm });}
           }}
         />
         <PanelAxisField
@@ -194,7 +194,7 @@ export function BookFields({
           format={(value) => String(value)}
           parse={(raw) => Number.parseFloat(raw)}
           onChange={(mm) => {
-            if (mm > 0) {setBookParams(entity.id, { hingeGrooveWidthMm: mm });}
+            if (mm > 0) {setKindParams('book', entity.id, { hingeGrooveWidthMm: mm });}
           }}
         />
         <PanelAxisField
@@ -204,7 +204,7 @@ export function BookFields({
           parse={(raw) => Number.parseFloat(raw)}
           onChange={(value) => {
             if (Number.isFinite(value)) {
-              setBookParams(entity.id, { hingeGrooveIntensity: value });
+              setKindParams('book', entity.id, { hingeGrooveIntensity: value });
             }
           }}
         />

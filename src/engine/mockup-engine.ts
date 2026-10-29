@@ -47,23 +47,8 @@ import type {
   AssetFaceId,
   AssetGeometryPart,
   EntityTransform,
-  HandheldDeviceParams,
-  MonitorDeviceParams,
   MaterialEntitySlot,
-  PrintDeviceParams,
-  BeverageCanParams,
-  TinCanParams,
-  WineBottleParams,
-  PenParams,
-  BlockParams,
-  CylinderParams,
-  SphereParams,
-  WheelCarParams,
-  FabricClothParams,
-  BookParams,
-  TrianglePatchParams,
   PatchHandleTarget,
-  WallParams,
   WallpaperPattern,
   Vec3,
 } from '@/scene/entity-types';
@@ -102,6 +87,10 @@ import {
   mergePhysicsSettings,
   type PhysicsSettings,
 } from '@/scene/physics-settings';
+import type {
+  KindParamFamily,
+  KindParamsByFamily,
+} from '@/scene/kind-param-families';
 import { EntityRegistry } from './entity-registry';
 import { AssetSystem } from './asset-system';
 import { ImageTextureLoader } from './image-texture-loader';
@@ -648,45 +637,26 @@ export class MockupEngine implements SceneApi {
     );
   }
 
-  setHandheldParams(
+  setKindParams<F extends KindParamFamily>(
+    family: F,
     entityId: string,
-    partial: Partial<HandheldDeviceParams>,
+    partial: Partial<KindParamsByFamily[F]>,
   ): void {
-    this.applyAssetMutation(() => this.assets.setKindParams('handheld', entityId, partial));
-  }
-
-  setMonitorParams(
-    entityId: string,
-    partial: Partial<MonitorDeviceParams>,
-  ): void {
-    this.applyAssetMutation(() => this.assets.setKindParams('monitor', entityId, partial));
-  }
-
-  setPrintParams(
-    entityId: string,
-    partial: Partial<PrintDeviceParams>,
-  ): void {
-    this.applyAssetMutation(() => this.assets.setPrintParams(entityId, partial));
-  }
-
-  setWallParams(entityId: string, partial: Partial<WallParams>): void {
-    this.applyAssetMutation(() => this.assets.setKindParams('wall', entityId, partial));
-  }
-
-  setBlockParams(entityId: string, partial: Partial<BlockParams>): void {
-    this.applyAssetMutation(() => this.assets.setKindParams('block', entityId, partial));
-  }
-
-  setCylinderParams(entityId: string, partial: Partial<CylinderParams>): void {
-    this.applyAssetMutation(() => this.assets.setKindParams('cylinder', entityId, partial));
-  }
-
-  setSphereParams(entityId: string, partial: Partial<SphereParams>): void {
-    this.applyAssetMutation(() => this.assets.setKindParams('sphere', entityId, partial));
-  }
-
-  setWheelCarParams(entityId: string, partial: Partial<WheelCarParams>): void {
-    this.applyAssetMutation(() => this.assets.setKindParams('wheelCar', entityId, partial));
+    this.applyAssetMutation(async () => {
+      switch (family) {
+        case 'print':
+          await this.assets.setPrintParams(entityId, partial);
+          return;
+        case 'fabricCloth':
+          await this.assets.setFabricClothParams(entityId, partial);
+          return;
+        default:
+          await this.assets.setKindParams(family, entityId, partial);
+          if (family === 'trianglePatch') {
+            this.patchGizmo.syncHelpersFromEntity();
+          }
+      }
+    });
   }
 
   setPhysicsBodyMode(entityId: string, mode: PhysicsBodyMode): void {
@@ -699,15 +669,6 @@ export class MockupEngine implements SceneApi {
     this.applyAssetMutation(() => {
       this.assets.setPhysicsDensityKgPerM3(entityId, densityKgPerM3);
     });
-  }
-
-  setFabricClothParams(
-    entityId: string,
-    partial: Partial<FabricClothParams>,
-  ): void {
-    this.applyAssetMutation(() =>
-      this.assets.setFabricClothParams(entityId, partial),
-    );
   }
 
   setFabricClothActivePinCorner(entityId: string, cornerIndex: number): void {
@@ -729,10 +690,6 @@ export class MockupEngine implements SceneApi {
     return 0;
   }
 
-  setBookParams(entityId: string, partial: Partial<BookParams>): void {
-    this.applyAssetMutation(() => this.assets.setKindParams('book', entityId, partial));
-  }
-
   setBookBackCoverImageId(entityId: string, imageId: string | null): void {
     this.applyAssetMutation(() =>
       this.assets.setBookBackCoverImageId(entityId, imageId),
@@ -751,39 +708,6 @@ export class MockupEngine implements SceneApi {
     this.applyAssetMutation(() =>
       this.assets.setBookMaterialTint(entityId, part, tint),
     );
-  }
-
-  setBeverageCanParams(
-    entityId: string,
-    partial: Partial<BeverageCanParams>,
-  ): void {
-    this.applyAssetMutation(() =>
-      this.assets.setKindParams('beverageCan', entityId, partial),
-    );
-  }
-
-  setTinCanParams(entityId: string, partial: Partial<TinCanParams>): void {
-    this.applyAssetMutation(() => this.assets.setKindParams('tinCan', entityId, partial));
-  }
-
-  setWineBottleParams(
-    entityId: string,
-    partial: Partial<WineBottleParams>,
-  ): void {
-    this.applyAssetMutation(() =>
-      this.assets.setKindParams('wineBottle', entityId, partial),
-    );
-  }
-
-  setPenParams(entityId: string, partial: Partial<PenParams>): void {
-    this.applyAssetMutation(() => this.assets.setKindParams('pen', entityId, partial));
-  }
-
-  setTrianglePatchParams(entityId: string, partial: Partial<TrianglePatchParams>): void {
-    this.applyAssetMutation(async () => {
-      await this.assets.setKindParams('trianglePatch', entityId, partial);
-      this.patchGizmo.syncHelpersFromEntity();
-    });
   }
 
   selectPatchHandle(entityId: string, nodeIndex: number, targetKey: PatchHandleTarget): void {

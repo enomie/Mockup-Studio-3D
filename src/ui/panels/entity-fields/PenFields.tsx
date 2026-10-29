@@ -11,7 +11,7 @@ import {
 import { SubPanelSection } from '@/ui/components/SubPanelSection';
 import { ImageSurfaceFields } from '@/ui/panels/ImageSurfaceFields';
 import { GeometryPartsSection } from '@/ui/panels/GeometryPartsSection';
-import { setAssetScreenImage, setPenParams } from '@/ui/store/app-store';
+import { setKindParams, setAssetScreenImage } from '@/ui/store/app-store';
 import { useAppStore } from '@/ui/store/use-app-store';
 import { MaterialSelect } from '@/ui/panels/MaterialSelect';
 import { PanelSelect } from '@/ui/components/PanelSelect';
@@ -59,7 +59,7 @@ export function PenFields({
             { value: 'marker', label: 'Marker' },
             { value: 'fountain', label: 'Fountain pen' },
           ]}
-          onChange={(value) => { setPenParams(entity.id, {
+          onChange={(value) => { setKindParams('pen', entity.id, {
               penBodyProfile: value as PenBodyProfile,
             }); }
           }

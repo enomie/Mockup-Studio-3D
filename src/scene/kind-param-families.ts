@@ -37,6 +37,9 @@ export interface KindParamsByFamily {
 
 export type KindParamFamily = keyof KindParamsByFamily;
 
+/** Families whose param patches only need a merge plus a rebuild. */
+export type RebuildOnlyKindParamFamily = Exclude<KindParamFamily, 'print' | 'fabricCloth'>;
+
 /** Asset kinds that accept param patches of the given family. */
 export const KIND_PARAM_FAMILY_GUARDS: Record<KindParamFamily, (kind: AssetKind) => boolean> = {
   print: isPrintAssetKind,

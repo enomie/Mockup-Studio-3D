@@ -12,7 +12,7 @@ import { formatLengthMeters, LENGTH_DECIMALS, parseLengthMetersInput } from '@/u
 import { noop } from '@/utils/noop';
 import { PanelAxisField } from '@/ui/components/PanelAxisField/PanelAxisField';
 import { SubPanelSection } from '@/ui/components/SubPanelSection';
-import { setWheelCarParams } from '@/ui/store/app-store';
+import { setKindParams } from '@/ui/store/app-store';
 import { useAppStore } from '@/ui/store/use-app-store';
 import { MaterialSelect } from '@/ui/panels/MaterialSelect';
 import { formatSizeScale, parseSizeScaleInput } from './field-input-helpers';
@@ -34,7 +34,7 @@ export function WheelCarFields({ entity }: WheelCarFieldsProps) {
 
   const setOuterRadiusFromDiameter = (widthM: number): void => {
     if (widthM > 0) {
-      setWheelCarParams(entity.id, { outerRadiusM: widthM / 2 });
+      setKindParams('wheelCar', entity.id, { outerRadiusM: widthM / 2 });
     }
   };
 
@@ -67,7 +67,7 @@ export function WheelCarFields({ entity }: WheelCarFieldsProps) {
           parse={parseSizeScaleInput}
           onChange={(value) => {
             if (value > 0) {
-              setWheelCarParams(entity.id, { outerRadiusM: defaultOuterRadiusM * value });
+              setKindParams('wheelCar', entity.id, { outerRadiusM: defaultOuterRadiusM * value });
             }
           }}
         />
@@ -103,7 +103,7 @@ export function WheelCarFields({ entity }: WheelCarFieldsProps) {
           format={(value) => formatLengthMeters(value, LENGTH_DECIMALS)}
           parse={parseLengthMetersInput}
           onChange={(value) => {
-            if (value >= 0) {setWheelCarParams(entity.id, { rimInsetM: value });}
+            if (value >= 0) {setKindParams('wheelCar', entity.id, { rimInsetM: value });}
           }}
         />
         <PanelAxisField
@@ -113,7 +113,7 @@ export function WheelCarFields({ entity }: WheelCarFieldsProps) {
           format={(value) => formatLengthMeters(value, LENGTH_DECIMALS)}
           parse={parseLengthMetersInput}
           onChange={(value) => {
-            if (value > 0) {setWheelCarParams(entity.id, { hubRadiusM: value });}
+            if (value > 0) {setKindParams('wheelCar', entity.id, { hubRadiusM: value });}
           }}
         />
         <PanelAxisField
@@ -123,7 +123,7 @@ export function WheelCarFields({ entity }: WheelCarFieldsProps) {
           format={(value) => formatLengthMeters(value, LENGTH_DECIMALS)}
           parse={parseLengthMetersInput}
           onChange={(value) => {
-            if (value > 0) {setWheelCarParams(entity.id, { hubDepthM: value });}
+            if (value > 0) {setKindParams('wheelCar', entity.id, { hubDepthM: value });}
           }}
         />
       </SubPanelSection>

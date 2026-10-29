@@ -1,8 +1,8 @@
 import { Group, type Scene } from 'three/webgpu';
 import {
   kindAcceptsParamFamily,
-  type KindParamFamily,
   type KindParamsByFamily,
+  type RebuildOnlyKindParamFamily,
 } from '@/scene/kind-param-families';
 import {
   defaultHandheldParams,
@@ -547,7 +547,7 @@ export class AssetSystem {
    * Patches kind params and rebuilds the entity. Print and fabric cloth have
    * extra behavior and use setPrintParams / setFabricClothParams instead.
    */
-  async setKindParams<F extends Exclude<KindParamFamily, 'print' | 'fabricCloth'>>(
+  async setKindParams<F extends RebuildOnlyKindParamFamily>(
     family: F,
     entityId: string,
     partial: Partial<KindParamsByFamily[F]>,

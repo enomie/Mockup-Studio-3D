@@ -17,7 +17,7 @@ import { PanelSelect } from '@/ui/components/PanelSelect';
 import { PanelAxisField } from '@/ui/components/PanelAxisField/PanelAxisField';
 import { SubPanelSection } from '@/ui/components/SubPanelSection';
 import { ImageSurfaceFields } from '@/ui/panels/ImageSurfaceFields';
-import { setAssetDepth, setAssetFace, setAssetScreenImage, setFaceTint, setPrintParams } from '@/ui/store/app-store';
+import { setKindParams, setAssetDepth, setAssetFace, setAssetScreenImage, setFaceTint } from '@/ui/store/app-store';
 import { useAppStore } from '@/ui/store/use-app-store';
 import { MaterialSelect } from '@/ui/panels/MaterialSelect';
 import { AssetDimensionsFields } from '@/ui/panels/entity-fields/EntityDimensionsSection';
@@ -165,7 +165,7 @@ export function PrintFields({
           format={formatMmAsMeters}
           parse={parseMmInput}
           onChange={(value) => {
-            setPrintParams(entity.id, { cornerRadiusMm: value });
+            setKindParams('print', entity.id, { cornerRadiusMm: value });
           }}
         />
         <PanelAxisField

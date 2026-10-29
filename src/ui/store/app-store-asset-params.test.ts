@@ -8,7 +8,7 @@ import {
 } from '@/scene/entity-types';
 import type { SceneApi } from '@/scene/scene-api';
 import {
-  setBlockParams,
+  setKindParams,
   setWallpaperPattern,
   wireAppStoreAssetParams,
 } from './app-store-asset-params';
@@ -43,9 +43,9 @@ function wallEntity(id: string): AssetEntity {
 }
 
 describe('app-store-asset-params', () => {
-  it('setBlockParams patches local entity and forwards to scene API', () => {
+  it('setKindParams patches local entity and forwards to scene API', () => {
     let entities = [blockEntity('e1')];
-    const setBlockParamsApi = vi.fn();
+    const setKindParamsApi = vi.fn();
 
     wireAppStoreAssetParams({
       getEntities: () => entities,
@@ -55,13 +55,13 @@ describe('app-store-asset-params', () => {
         );
       },
       getSceneApi: () =>
-        ({ setBlockParams: setBlockParamsApi }) as unknown as SceneApi,
+        ({ setKindParams: setKindParamsApi }) as unknown as SceneApi,
     });
 
-    setBlockParams('e1', { widthM: 2 });
+    setKindParams('block', 'e1', { widthM: 2 });
 
     expect(entities[0].blockParams?.widthM).toBe(2);
-    expect(setBlockParamsApi).toHaveBeenCalledWith('e1', { widthM: 2 });
+    expect(setKindParamsApi).toHaveBeenCalledWith('block', 'e1', { widthM: 2 });
   });
 
   it('setWallpaperPattern patches wallpaper slice and forwards to scene API', () => {

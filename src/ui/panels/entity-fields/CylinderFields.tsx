@@ -3,7 +3,7 @@ import { MATERIAL_PAPER_ID } from '@/scene/material-ids';
 import { formatLengthMeters, formatMmAsMeters, LENGTH_DECIMALS, parseLengthMetersInput } from '@/units/length';
 import { PanelAxisField } from '@/ui/components/PanelAxisField/PanelAxisField';
 import { SubPanelSection } from '@/ui/components/SubPanelSection';
-import { setCylinderParams } from '@/ui/store/app-store';
+import { setKindParams } from '@/ui/store/app-store';
 import { useAppStore } from '@/ui/store/use-app-store';
 import { MaterialSelect } from '@/ui/panels/MaterialSelect';
 import { parseMmInput } from './field-input-helpers';
@@ -39,7 +39,7 @@ export function CylinderFields({ entity }: CylinderFieldsProps) {
           format={(value) => formatLengthMeters(value, LENGTH_DECIMALS)}
           parse={parseLengthMetersInput}
           onChange={(value) => {
-            if (value > 0) {setCylinderParams(entity.id, { radiusM: value });}
+            if (value > 0) {setKindParams('cylinder', entity.id, { radiusM: value });}
           }}
         />
         <PanelAxisField
@@ -49,7 +49,7 @@ export function CylinderFields({ entity }: CylinderFieldsProps) {
           format={(value) => formatLengthMeters(value, LENGTH_DECIMALS)}
           parse={parseLengthMetersInput}
           onChange={(value) => {
-            if (value > 0) {setCylinderParams(entity.id, { heightM: value });}
+            if (value > 0) {setKindParams('cylinder', entity.id, { heightM: value });}
           }}
         />
         <PanelAxisField
@@ -59,7 +59,7 @@ export function CylinderFields({ entity }: CylinderFieldsProps) {
           format={formatMmAsMeters}
           parse={parseMmInput}
           onChange={(value) => {
-            if (value >= 0) {setCylinderParams(entity.id, { cornerRadiusMm: value });}
+            if (value >= 0) {setKindParams('cylinder', entity.id, { cornerRadiusMm: value });}
           }}
         />
       </SubPanelSection>
