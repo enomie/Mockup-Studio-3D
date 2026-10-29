@@ -26,7 +26,7 @@ export interface TrianglePatchParams {
   nodes: [PatchNodeData, PatchNodeData, PatchNodeData];
 }
 
-export function isTrianglePatchAssetKind(kind: AssetKind): boolean {
+export function isTrianglePatchAssetKind(kind: AssetKind): kind is 'triangle-patch' {
   return kind === 'triangle-patch';
 }
 

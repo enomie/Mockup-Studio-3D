@@ -62,7 +62,7 @@ export function clonePenParams(params: PenParams): PenParams {
   return resolvePenParams(params);
 }
 
-export function isPenAssetKind(kind: AssetKind): boolean {
+export function isPenAssetKind(kind: AssetKind): kind is 'pen' {
   return kind === 'pen';
 }
 

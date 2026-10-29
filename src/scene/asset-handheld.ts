@@ -49,7 +49,7 @@ const DEFAULT_SCREEN_CORNER_RADIUS_MM = 6;
 const DEFAULT_BEZEL_WIDTH_MM = 1;
 const DEFAULT_OUTER_EDGE_RADIUS_MM = 0.8;
 
-export function isHandheldAssetKind(kind: AssetKind): boolean {
+export function isHandheldAssetKind(kind: AssetKind): kind is 'smartphone' | 'tablet' {
   return kind === 'smartphone' || kind === 'tablet';
 }
 

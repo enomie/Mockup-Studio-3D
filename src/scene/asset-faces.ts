@@ -11,11 +11,11 @@ export type AssetFaces = Record<AssetFaceId, AssetFaceContent>;
 
 export const NEAR_WHITE_SIDE_COLOR: Rgb = { r: 0.98, g: 0.98, b: 0.98 };
 
-export function isPrintAssetKind(kind: AssetKind): boolean {
+export function isPrintAssetKind(kind: AssetKind): kind is 'print' {
   return kind === 'print';
 }
 
-export function isPictureAssetKind(kind: AssetKind): boolean {
+export function isPictureAssetKind(kind: AssetKind): kind is 'picture' {
   return kind === 'picture';
 }
 

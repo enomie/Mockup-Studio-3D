@@ -16,7 +16,7 @@ export function cloneSphereParams(params: SphereParams): SphereParams {
   return { ...params };
 }
 
-export function isSphereAssetKind(kind: AssetKind): boolean {
+export function isSphereAssetKind(kind: AssetKind): kind is 'sphere' {
   return kind === 'sphere';
 }
 

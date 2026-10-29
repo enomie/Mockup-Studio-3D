@@ -25,7 +25,7 @@ export function cloneCylinderParams(params: CylinderParams): CylinderParams {
   return { ...params };
 }
 
-export function isCylinderAssetKind(kind: AssetKind): boolean {
+export function isCylinderAssetKind(kind: AssetKind): kind is 'cylinder' {
   return kind === 'cylinder';
 }
 
