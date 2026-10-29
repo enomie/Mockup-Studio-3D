@@ -18,6 +18,7 @@ import {
 } from 'three/webgpu';
 import type {
   PatchHandleTarget,
+  PatchNodeData,
   TrianglePatchParams,
 } from '@/scene/asset-triangle-patch';
 import type { EntityRegistry } from './entity-registry';
@@ -321,12 +322,10 @@ export class TrianglePatchGizmoController {
 
     const length = Math.max(MIN_HANDLE_LENGTH_M, drag.startLength + t - drag.startAxisParam);
     const tip = origin.addScaledVector(drag.dir, length);
-    node[drag.key].x = tip.x;
-    node[drag.key].y = tip.y;
-    node[drag.key].z = tip.z;
-
-    this.syncHelpersFromEntity();
-    this.onPatchChange?.(this.activeEntityId, params);
+    this.commitNode(this.activeEntityId, drag.nodeIndex, {
+      ...node,
+      [drag.key]: { x: tip.x, y: tip.y, z: tip.z },
+    });
   }
 
   endLengthDrag(): void {
@@ -458,8 +457,10 @@ export class TrianglePatchGizmoController {
     const params = runtime.entity.trianglePatchParams;
     const nodeIndex = this.activeTarget.nodeIndex;
     const targetKey = this.activeTarget.targetKey;
-    const node = params.nodes.at(nodeIndex);
-    if (!node) {return false;}
+    const currentNode = params.nodes.at(nodeIndex);
+    if (!currentNode) {return false;}
+    // Entities are immutable: edit a copy of the node and commit it through the registry.
+    const node = structuredClone(currentNode);
 
     const parentObject = runtime.object;
     parentObject.updateMatrixWorld(true);
@@ -537,9 +538,23 @@ export class TrianglePatchGizmoController {
       }
     }
 
-    this.syncHelpersFromEntity();
-    this.onPatchChange?.(this.activeEntityId, params);
+    this.commitNode(this.activeEntityId, nodeIndex, node);
     return true;
+  }
+
+  /** Entities are immutable: replaces one node through the registry, then resyncs helpers. */
+  private commitNode(entityId: string, nodeIndex: number, node: PatchNodeData): void {
+    const params = this.registry.getRuntime(entityId)?.entity.trianglePatchParams;
+    if (!params) {return;}
+    const nodes = params.nodes.map((entry, index) =>
+      index === nodeIndex ? node : entry,
+    ) as TrianglePatchParams['nodes'];
+    this.registry.setKindParams('trianglePatch', entityId, { nodes });
+    this.syncHelpersFromEntity();
+    const updatedParams = this.registry.getRuntime(entityId)?.entity.trianglePatchParams;
+    if (updatedParams) {
+      this.onPatchChange?.(entityId, updatedParams);
+    }
   }
 
   dispose(): void {

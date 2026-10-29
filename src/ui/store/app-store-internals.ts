@@ -79,7 +79,7 @@ export interface AppState {
   activeEnvironmentId: string;
   lightingPresets: LightingPreset[];
   activeLightingPresetId: string;
-  entities: AssetEntity[];
+  entities: readonly AssetEntity[];
   userBakedAssets: UserBakedAsset[];
   selectedEntityId: string | null;
   camera: CameraSettings;
@@ -253,7 +253,7 @@ export function syncEngineStateFromEngine(): void {
       ...clonePhysicsSettings(sceneApi.getPhysicsSettings()),
       lastFabricClothBakeSummary: state.physics.lastFabricClothBakeSummary,
     },
-    entities: [...sceneApi.getEntities()],
+    entities: sceneApi.getEntities(),
     selectedEntityId: sceneApi.getSelectedEntityId(),
     camera: cloneCameraSettings(sceneApi.getCameraSettings()),
   };
