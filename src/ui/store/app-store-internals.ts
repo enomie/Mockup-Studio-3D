@@ -146,22 +146,6 @@ export function emit(): void {
   listeners.forEach((listener) => { listener(); });
 }
 
-export function patchEntity(
-  entityId: string,
-  updater: (entity: AssetEntity) => AssetEntity,
-): void {
-  const index = state.entities.findIndex((entry) => entry.id === entityId);
-  if (index < 0) {return;}
-
-  state = {
-    ...state,
-    entities: state.entities.map((entry, i) =>
-      i === index ? updater(entry) : entry,
-    ),
-  };
-  emit();
-}
-
 export function cloneGround(settings: GroundSettings): GroundSettings {
   return normalizeGroundSettings(settings);
 }

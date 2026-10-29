@@ -1,87 +1,30 @@
-import { describe, expect, it, vi } from 'vitest';
-import { defaultBlockParams } from '@/scene/asset-block';
-import { defaultWallParams, defaultWallpaperPattern } from '@/scene/asset-wall';
-import {
-  DEFAULT_SIZE_SCALE,
-  defaultTransform,
-  type AssetEntity,
-} from '@/scene/entity-types';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { SceneApi } from '@/scene/scene-api';
-import {
-  setKindParams,
-  setWallpaperPattern,
-  wireAppStoreAssetParams,
-} from './app-store-asset-params';
-
-function blockEntity(id: string): AssetEntity {
-  return {
-    id,
-    type: 'asset',
-    name: 'block',
-    assetKind: 'block',
-    screenImageId: null,
-    sizeScale: DEFAULT_SIZE_SCALE,
-    blockParams: defaultBlockParams(),
-    visible: true,
-    transform: defaultTransform(),
-  };
-}
-
-function wallEntity(id: string): AssetEntity {
-  return {
-    id,
-    type: 'asset',
-    name: 'wall',
-    assetKind: 'wall',
-    screenImageId: null,
-    sizeScale: DEFAULT_SIZE_SCALE,
-    wallParams: defaultWallParams(),
-    wallpaperPattern: defaultWallpaperPattern(),
-    visible: true,
-    transform: defaultTransform(),
-  };
-}
+import { setKindParams, setWallpaperPattern } from './app-store-asset-params';
+import { setSceneApiRef } from './app-store-internals';
 
 describe('app-store-asset-params', () => {
-  it('setKindParams patches local entity and forwards to scene API', () => {
-    let entities = [blockEntity('e1')];
-    const setKindParamsApi = vi.fn();
+  afterEach(() => { setSceneApiRef(null); });
 
-    wireAppStoreAssetParams({
-      getEntities: () => entities,
-      patchEntity: (entityId, updater) => {
-        entities = entities.map((entry) =>
-          entry.id === entityId ? updater(entry) : entry,
-        );
-      },
-      getSceneApi: () =>
-        ({ setKindParams: setKindParamsApi }) as unknown as SceneApi,
-    });
+  it('setKindParams forwards to the scene API', () => {
+    const setKindParamsApi = vi.fn();
+    setSceneApiRef({ setKindParams: setKindParamsApi } as unknown as SceneApi);
 
     setKindParams('block', 'e1', { widthM: 2 });
 
-    expect(entities[0].blockParams?.widthM).toBe(2);
     expect(setKindParamsApi).toHaveBeenCalledWith('block', 'e1', { widthM: 2 });
   });
 
-  it('setWallpaperPattern patches wallpaper slice and forwards to scene API', () => {
-    let entities = [wallEntity('w1')];
+  it('setWallpaperPattern forwards to the scene API', () => {
     const setWallpaperPatternApi = vi.fn();
-
-    wireAppStoreAssetParams({
-      getEntities: () => entities,
-      patchEntity: (entityId, updater) => {
-        entities = entities.map((entry) =>
-          entry.id === entityId ? updater(entry) : entry,
-        );
-      },
-      getSceneApi: () =>
-        ({ setWallpaperPattern: setWallpaperPatternApi }) as unknown as SceneApi,
-    });
+    setSceneApiRef({ setWallpaperPattern: setWallpaperPatternApi } as unknown as SceneApi);
 
     setWallpaperPattern('w1', { stripWidthM: 0.4 });
 
-    expect(entities[0].wallpaperPattern?.stripWidthM).toBe(0.4);
     expect(setWallpaperPatternApi).toHaveBeenCalledWith('w1', { stripWidthM: 0.4 });
+  });
+
+  it('does nothing without a scene API', () => {
+    expect(() => { setKindParams('block', 'e1', { widthM: 2 }); }).not.toThrow();
   });
 });

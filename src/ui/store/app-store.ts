@@ -4,7 +4,6 @@ import {
   resolveBuiltinMaterialPreset,
 } from '@/data/material-presets';
 import type { SceneApi } from '@/scene/scene-api';
-import { wireAppStoreAssetParams } from './app-store-asset-params';
 import * as store from './app-store-internals';
 
 export type { AppState } from './app-store-internals';
@@ -163,12 +162,6 @@ export {
 export const initAppStore = store.initAppStore;
 export const getAppState = store.getAppState;
 export const subscribe = store.subscribe;
-
-wireAppStoreAssetParams({
-  getEntities: () => store.state.entities,
-  patchEntity: store.patchEntity,
-  getSceneApi: () => store.sceneApi,
-});
 
 export function setSceneApi(api: SceneApi | null): void {
   store.engineUnsubscribe?.();
