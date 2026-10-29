@@ -652,14 +652,14 @@ export class MockupEngine implements SceneApi {
     entityId: string,
     partial: Partial<HandheldDeviceParams>,
   ): void {
-    this.applyAssetMutation(() => this.assets.setHandheldParams(entityId, partial));
+    this.applyAssetMutation(() => this.assets.setKindParams('handheld', entityId, partial));
   }
 
   setMonitorParams(
     entityId: string,
     partial: Partial<MonitorDeviceParams>,
   ): void {
-    this.applyAssetMutation(() => this.assets.setMonitorParams(entityId, partial));
+    this.applyAssetMutation(() => this.assets.setKindParams('monitor', entityId, partial));
   }
 
   setPrintParams(
@@ -670,23 +670,23 @@ export class MockupEngine implements SceneApi {
   }
 
   setWallParams(entityId: string, partial: Partial<WallParams>): void {
-    this.applyAssetMutation(() => this.assets.setWallParams(entityId, partial));
+    this.applyAssetMutation(() => this.assets.setKindParams('wall', entityId, partial));
   }
 
   setBlockParams(entityId: string, partial: Partial<BlockParams>): void {
-    this.applyAssetMutation(() => this.assets.setBlockParams(entityId, partial));
+    this.applyAssetMutation(() => this.assets.setKindParams('block', entityId, partial));
   }
 
   setCylinderParams(entityId: string, partial: Partial<CylinderParams>): void {
-    this.applyAssetMutation(() => this.assets.setCylinderParams(entityId, partial));
+    this.applyAssetMutation(() => this.assets.setKindParams('cylinder', entityId, partial));
   }
 
   setSphereParams(entityId: string, partial: Partial<SphereParams>): void {
-    this.applyAssetMutation(() => this.assets.setSphereParams(entityId, partial));
+    this.applyAssetMutation(() => this.assets.setKindParams('sphere', entityId, partial));
   }
 
   setWheelCarParams(entityId: string, partial: Partial<WheelCarParams>): void {
-    this.applyAssetMutation(() => this.assets.setWheelCarParams(entityId, partial));
+    this.applyAssetMutation(() => this.assets.setKindParams('wheelCar', entityId, partial));
   }
 
   setPhysicsBodyMode(entityId: string, mode: PhysicsBodyMode): void {
@@ -730,7 +730,7 @@ export class MockupEngine implements SceneApi {
   }
 
   setBookParams(entityId: string, partial: Partial<BookParams>): void {
-    this.applyAssetMutation(() => this.assets.setBookParams(entityId, partial));
+    this.applyAssetMutation(() => this.assets.setKindParams('book', entityId, partial));
   }
 
   setBookBackCoverImageId(entityId: string, imageId: string | null): void {
@@ -758,12 +758,12 @@ export class MockupEngine implements SceneApi {
     partial: Partial<BeverageCanParams>,
   ): void {
     this.applyAssetMutation(() =>
-      this.assets.setBeverageCanParams(entityId, partial),
+      this.assets.setKindParams('beverageCan', entityId, partial),
     );
   }
 
   setTinCanParams(entityId: string, partial: Partial<TinCanParams>): void {
-    this.applyAssetMutation(() => this.assets.setTinCanParams(entityId, partial));
+    this.applyAssetMutation(() => this.assets.setKindParams('tinCan', entityId, partial));
   }
 
   setWineBottleParams(
@@ -771,17 +771,17 @@ export class MockupEngine implements SceneApi {
     partial: Partial<WineBottleParams>,
   ): void {
     this.applyAssetMutation(() =>
-      this.assets.setWineBottleParams(entityId, partial),
+      this.assets.setKindParams('wineBottle', entityId, partial),
     );
   }
 
   setPenParams(entityId: string, partial: Partial<PenParams>): void {
-    this.applyAssetMutation(() => this.assets.setPenParams(entityId, partial));
+    this.applyAssetMutation(() => this.assets.setKindParams('pen', entityId, partial));
   }
 
   setTrianglePatchParams(entityId: string, partial: Partial<TrianglePatchParams>): void {
     this.applyAssetMutation(async () => {
-      await this.assets.setTrianglePatchParams(entityId, partial);
+      await this.assets.setKindParams('trianglePatch', entityId, partial);
       this.patchGizmo.syncHelpersFromEntity();
     });
   }
