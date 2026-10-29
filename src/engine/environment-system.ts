@@ -84,15 +84,24 @@ export class EnvironmentSystem {
   }
 
   apply(state: EnvironmentState): void {
-    this.setSkyEnabled(state.skyEnabled);
-    this.setSkyHorizonColor(state.skyHorizonColor);
-    this.setSkyZenithColor(state.skyZenithColor);
-    this.setSkyGradientFade(state.skyGradientFade);
-    this.setFogEnabled(state.fogEnabled);
-    this.setFogColor(state.fogColor);
-    this.setFogDistances(state.fogNear, state.fogFar);
-    this.setReflectionEnabled(state.reflectionEnabled);
-    this.setReflectionIntensity(state.reflectionIntensity);
+    this.setEnvironment(state);
+  }
+
+  setEnvironment(partial: Partial<EnvironmentState>): void {
+    if (partial.skyEnabled !== undefined) {this.setSkyEnabled(partial.skyEnabled);}
+    if (partial.skyHorizonColor) {this.setSkyHorizonColor(partial.skyHorizonColor);}
+    if (partial.skyZenithColor) {this.setSkyZenithColor(partial.skyZenithColor);}
+    if (partial.skyGradientFade !== undefined) {this.setSkyGradientFade(partial.skyGradientFade);}
+    if (partial.fogEnabled !== undefined) {this.setFogEnabled(partial.fogEnabled);}
+    if (partial.fogColor) {this.setFogColor(partial.fogColor);}
+    if (partial.fogNear !== undefined) {this.fog.near = partial.fogNear;}
+    if (partial.fogFar !== undefined) {this.fog.far = partial.fogFar;}
+    if (partial.reflectionEnabled !== undefined) {
+      this.skyEnvironmentMap.setReflectionEnabled(partial.reflectionEnabled);
+    }
+    if (partial.reflectionIntensity !== undefined) {
+      this.skyEnvironmentMap.setReflectionIntensity(partial.reflectionIntensity);
+    }
   }
 
   getSkyEnabled(): boolean {
@@ -103,12 +112,12 @@ export class EnvironmentSystem {
     return this.fogEnabled;
   }
 
-  setSkyEnabled(enabled: boolean): void {
+  private setSkyEnabled(enabled: boolean): void {
     this.skyEnabled = enabled;
     this.skybox.setVisible(enabled);
   }
 
-  setFogEnabled(enabled: boolean): void {
+  private setFogEnabled(enabled: boolean): void {
     this.fogEnabled = enabled;
     this.mainScene.fog = enabled ? this.fog : null;
   }
@@ -159,38 +168,28 @@ export class EnvironmentSystem {
     this.groundMaterial.applyMaterialPreset(preset);
   }
 
-  setSkyHorizonColor(rgb: Rgb): void {
+  private setSkyHorizonColor(rgb: Rgb): void {
     this.skybox.setHorizonColor(rgb);
     this.skyEnvironmentMap.scheduleRebuild();
   }
 
-  setSkyZenithColor(rgb: Rgb): void {
+  private setSkyZenithColor(rgb: Rgb): void {
     this.skybox.setZenithColor(rgb);
     this.skyEnvironmentMap.scheduleRebuild();
   }
 
-  setSkyGradientFade(fade: number): void {
+  private setSkyGradientFade(fade: number): void {
     this.skybox.setGradientFade(fade);
     this.skyEnvironmentMap.scheduleRebuild();
   }
 
-  setReflectionEnabled(enabled: boolean): void {
-    this.skyEnvironmentMap.setReflectionEnabled(enabled);
-  }
 
-  setReflectionIntensity(intensity: number): void {
-    this.skyEnvironmentMap.setReflectionIntensity(intensity);
-  }
 
-  setFogColor(rgb: Rgb): void {
+  private setFogColor(rgb: Rgb): void {
     const color = rgbToColor(rgb);
     this.fog.color.setRGB(color.r, color.g, color.b);
   }
 
-  setFogDistances(near: number, far: number): void {
-    this.fog.near = near;
-    this.fog.far = far;
-  }
 
   updateFrame(camera: Camera): void {
     this.skybox.update(camera);

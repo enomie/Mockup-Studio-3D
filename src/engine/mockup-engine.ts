@@ -740,30 +740,15 @@ export class MockupEngine implements SceneApi {
     this.invalidateViewport();
   }
 
+  setEnvironment(partial: Partial<EnvironmentState>): void {
+    this.environment.setEnvironment(partial);
+    this.invalidateViewport();
+  }
+
   applyAtmosphereSnapshot(snapshot: AtmosphereSnapshot): void {
     this.commitVisualState(() => {
       applyAtmosphereSnapshotToApi(this, snapshot);
     });
-  }
-
-  setSkyEnabled(enabled: boolean): void {
-    this.environment.setSkyEnabled(enabled);
-    this.invalidateViewport();
-  }
-
-  setSkyHorizonColor(rgb: Rgb): void {
-    this.environment.setSkyHorizonColor(rgb);
-    this.invalidateViewport();
-  }
-
-  setSkyZenithColor(rgb: Rgb): void {
-    this.environment.setSkyZenithColor(rgb);
-    this.invalidateViewport();
-  }
-
-  setSkyGradientFade(fade: number): void {
-    this.environment.setSkyGradientFade(fade);
-    this.invalidateViewport();
   }
 
   applyGround(state: GroundSettings): void {
@@ -796,31 +781,6 @@ export class MockupEngine implements SceneApi {
 
   getViewportHelpers(): ViewportHelpersState {
     return this.viewportHelpers.getState();
-  }
-
-  setFogEnabled(enabled: boolean): void {
-    this.environment.setFogEnabled(enabled);
-    this.invalidateViewport();
-  }
-
-  setFogColor(rgb: Rgb): void {
-    this.environment.setFogColor(rgb);
-    this.invalidateViewport();
-  }
-
-  setFogDistances(near: number, far: number): void {
-    this.environment.setFogDistances(near, far);
-    this.invalidateViewport();
-  }
-
-  setReflectionEnabled(enabled: boolean): void {
-    this.environment.setReflectionEnabled(enabled);
-    this.invalidateViewport();
-  }
-
-  setReflectionIntensity(intensity: number): void {
-    this.environment.setReflectionIntensity(intensity);
-    this.invalidateViewport();
   }
 
   loadBuiltinView(id: BuiltinCameraViewId): void {

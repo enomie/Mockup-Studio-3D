@@ -99,20 +99,12 @@ export {
 } from './app-store-lighting-live';
 
 export {
-  setSkyEnabled,
-  setSkyHorizonColor,
-  setSkyZenithColor,
-  setSkyGradientFade,
+  setEnvironment,
   setGroundMaterialId,
   setGroundVisible,
   setGroundReceiveShadow,
   setGroundMirrorEnabled,
   setGroundMirrorOpacity,
-  setFogEnabled,
-  setFogColor,
-  setFogDistances,
-  setReflectionEnabled,
-  setReflectionIntensity,
 } from './app-store-atmosphere';
 
 export {

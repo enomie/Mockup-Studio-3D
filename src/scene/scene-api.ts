@@ -171,17 +171,9 @@ export interface SceneApi {
   resetWorldPhysics(): void;
   applyEnvironment(state: EnvironmentState): void;
   applyAtmosphereSnapshot(snapshot: AtmosphereSnapshot): void;
+  setEnvironment(partial: Partial<EnvironmentState>): void;
   applyGround(state: GroundSettings): void;
   setGround(partial: Partial<GroundSettings>): void;
-  setSkyEnabled(enabled: boolean): void;
-  setSkyHorizonColor(rgb: Rgb): void;
-  setSkyZenithColor(rgb: Rgb): void;
-  setSkyGradientFade(fade: number): void;
-  setFogEnabled(enabled: boolean): void;
-  setFogColor(rgb: Rgb): void;
-  setFogDistances(near: number, far: number): void;
-  setReflectionEnabled(enabled: boolean): void;
-  setReflectionIntensity(intensity: number): void;
   applyViewportHelpers(state: ViewportHelpersState): void;
   setViewportHelpers(partial: Partial<ViewportHelpersState>): void;
   getViewportHelpers(): ViewportHelpersState;
