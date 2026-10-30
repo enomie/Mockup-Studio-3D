@@ -51,7 +51,11 @@ export interface EnvironmentState {
   fogFar: number;
   reflectionEnabled: boolean;
   reflectionIntensity: number;
+  /** What metals, glass and glossy prints mirror: sky gradient or studio softboxes. */
+  reflectionSource: ReflectionSource;
 }
+
+export type ReflectionSource = 'sky' | 'studio';
 
 export interface GroundSettings {
   visible: boolean;

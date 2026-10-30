@@ -52,6 +52,7 @@ import type {
   EnvironmentState,
   GroundSettings,
   LightingSettings,
+  ReflectionSource,
   SceneApi,
   ViewportHelpersState,
 } from '@/scene/scene-api';
@@ -72,6 +73,7 @@ export interface AppState {
   fogFar: number;
   reflectionEnabled: boolean;
   reflectionIntensity: number;
+  reflectionSource: ReflectionSource;
   images: ImageAsset[];
   selectedImageId: string | null;
   materials: MaterialPreset[];
@@ -126,6 +128,7 @@ export let state: AppState = {
   fogFar: environment.fogFar,
   reflectionEnabled: environment.reflectionEnabled,
   reflectionIntensity: environment.reflectionIntensity,
+  reflectionSource: environment.reflectionSource,
   images: [...STARTER_IMAGES],
   selectedImageId: null,
   materials: MATERIAL_PRESETS.map(cloneMaterialPreset),
@@ -197,6 +200,7 @@ export function getEnvironmentState(): EnvironmentState {
     fogFar: state.fogFar,
     reflectionEnabled: state.reflectionEnabled,
     reflectionIntensity: state.reflectionIntensity,
+    reflectionSource: state.reflectionSource,
   };
 }
 
@@ -225,6 +229,7 @@ export function applyAtmosphereToStateAndScene(
     fogFar: environment.fogFar,
     reflectionEnabled: environment.reflectionEnabled,
     reflectionIntensity: environment.reflectionIntensity,
+    reflectionSource: environment.reflectionSource,
     ground: cloneGround(ground),
     lighting: cloneLightingSettings(lighting),
     ...(activeEnvironmentId !== undefined

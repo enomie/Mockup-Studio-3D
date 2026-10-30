@@ -3,7 +3,7 @@ import { rgbToColor, type Rgb } from '@/colors/rgb';
 import type { EnvironmentDefaults } from '@/config/scene-defaults';
 import type { MaterialResolver } from './material-resolver';
 import type { GroundMaterial } from '@/materials/groundMaterial';
-import { SkyEnvironmentMap } from '@/render/environment-map';
+import { EnvironmentReflectionMap } from '@/render/environment-map';
 import type { Skybox } from '@/render/skybox';
 import { normalizeGroundSettings } from '@/scene/ground-settings';
 import type { ExportGroundSurface } from '@/scene/export-image';
@@ -12,7 +12,7 @@ import type { ViewportInvalidation } from './viewport-invalidation';
 
 export class EnvironmentSystem {
   private readonly fog: Fog;
-  private readonly skyEnvironmentMap: SkyEnvironmentMap;
+  private readonly reflectionMap: EnvironmentReflectionMap;
   private skyEnabled = true;
   private fogEnabled = true;
   private groundSettings: GroundSettings;
@@ -39,14 +39,15 @@ export class EnvironmentSystem {
     this.mainScene.fog = this.fog;
     this.mainScene.background = null;
 
-    this.skyEnvironmentMap = new SkyEnvironmentMap(
+    this.reflectionMap = new EnvironmentReflectionMap(
       renderer,
       this.mainScene,
       skybox.getMaterial(),
     );
-    this.skyEnvironmentMap.setReflectionIntensity(defaults.reflectionIntensity);
-    this.skyEnvironmentMap.setReflectionEnabled(defaults.reflectionEnabled);
-    this.skyEnvironmentMap.rebuild();
+    this.reflectionMap.setReflectionIntensity(defaults.reflectionIntensity);
+    this.reflectionMap.setReflectionEnabled(defaults.reflectionEnabled);
+    this.reflectionMap.setSource(defaults.reflectionSource);
+    this.reflectionMap.rebuild();
 
     this.apply(defaults);
   }
@@ -78,7 +79,7 @@ export class EnvironmentSystem {
   }
 
   setViewportInvalidation(invalidation: ViewportInvalidation): void {
-    this.skyEnvironmentMap.setOnRebuildComplete(() => {
+    this.reflectionMap.setOnRebuildComplete(() => {
       invalidation.invalidate();
     });
   }
@@ -97,10 +98,13 @@ export class EnvironmentSystem {
     if (partial.fogNear !== undefined) {this.fog.near = partial.fogNear;}
     if (partial.fogFar !== undefined) {this.fog.far = partial.fogFar;}
     if (partial.reflectionEnabled !== undefined) {
-      this.skyEnvironmentMap.setReflectionEnabled(partial.reflectionEnabled);
+      this.reflectionMap.setReflectionEnabled(partial.reflectionEnabled);
     }
     if (partial.reflectionIntensity !== undefined) {
-      this.skyEnvironmentMap.setReflectionIntensity(partial.reflectionIntensity);
+      this.reflectionMap.setReflectionIntensity(partial.reflectionIntensity);
+    }
+    if (partial.reflectionSource !== undefined) {
+      this.reflectionMap.setSource(partial.reflectionSource);
     }
   }
 
@@ -170,17 +174,17 @@ export class EnvironmentSystem {
 
   private setSkyHorizonColor(rgb: Rgb): void {
     this.skybox.setHorizonColor(rgb);
-    this.skyEnvironmentMap.scheduleRebuild();
+    this.reflectionMap.scheduleRebuild();
   }
 
   private setSkyZenithColor(rgb: Rgb): void {
     this.skybox.setZenithColor(rgb);
-    this.skyEnvironmentMap.scheduleRebuild();
+    this.reflectionMap.scheduleRebuild();
   }
 
   private setSkyGradientFade(fade: number): void {
     this.skybox.setGradientFade(fade);
-    this.skyEnvironmentMap.scheduleRebuild();
+    this.reflectionMap.scheduleRebuild();
   }
 
 
@@ -196,6 +200,6 @@ export class EnvironmentSystem {
   }
 
   dispose(): void {
-    this.skyEnvironmentMap.dispose();
+    this.reflectionMap.dispose();
   }
 }

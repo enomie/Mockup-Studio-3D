@@ -83,6 +83,7 @@ function cloneEnvironment(environment: EnvironmentState): EnvironmentState {
     fogFar: environment.fogFar,
     reflectionEnabled: environment.reflectionEnabled,
     reflectionIntensity: environment.reflectionIntensity,
+    reflectionSource: environment.reflectionSource,
   };
 }
 

@@ -4,6 +4,8 @@ import { SceneEntityBlock } from './SceneEntityBlock';
 import { ColorPicker } from '@/ui/components/ColorPicker';
 import { DualRangeSlider, RangeSlider } from '@/ui/components/RangeSlider';
 import { PanelCheckbox } from '@/ui/components/PanelCheckbox';
+import { PanelSelect } from '@/ui/components/PanelSelect';
+import type { ReflectionSource } from '@/scene/scene-api';
 import { SubPanel } from '@/ui/components/SubPanel';
 import { LENGTH_DECIMALS, LENGTH_STEP_M } from '@/units/length';
 import { NORMALIZED_DECIMALS, NORMALIZED_STEP } from '@/units/normalized';
@@ -39,6 +41,7 @@ export function EnvironmentSubPanel() {
   const fogFar = useAppStore((s) => s.fogFar);
   const reflectionEnabled = useAppStore((s) => s.reflectionEnabled);
   const reflectionIntensity = useAppStore((s) => s.reflectionIntensity);
+  const reflectionSource = useAppStore((s) => s.reflectionSource);
   const groundVisible = useAppStore((s) => s.ground.visible);
   const viewportHelpers = useAppStore((s) => s.viewportHelpers);
 
@@ -100,6 +103,17 @@ export function EnvironmentSubPanel() {
           onToggleCollapse={() => { toggleCollapsed(ENV_BLOCK_IDS.reflections); }}
           onToggleEnabled={() => { setEnvironment({ reflectionEnabled: !reflectionEnabled }); }}
         >
+          <PanelSelect
+            label="Source"
+            id="env-reflection-source"
+            value={reflectionSource}
+            disabled={!reflectionEnabled}
+            options={[
+              { value: 'studio', label: 'Studio' },
+              { value: 'sky', label: 'Sky' },
+            ]}
+            onChange={(next) => { setEnvironment({ reflectionSource: next as ReflectionSource }); }}
+          />
           <RangeSlider
             label="Reflection intensity"
             min={0}

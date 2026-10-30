@@ -1,6 +1,6 @@
 # Plan: Studio-Reflexionen (Variante 1)
 
-Status: Entwurf, wartet auf Freigabe (2026-10-30)
+Status: freigegeben, Default `studio` entschieden (2026-10-30)
 
 ## Ziel
 
@@ -24,7 +24,7 @@ Neues Feld im Environment-Zustand:
 
 | Feld | Werte | Default |
 |---|---|---|
-| `reflectionSource` | `'sky'` \\| `'studio'` | `'studio'` (zu besprechen) |
+| `reflectionSource` | `'sky'` \\| `'studio'` | `'studio'` (entschieden) |
 
 - `sky`: wie heute, die Map kommt aus der Skybox.
 - `studio`: Die Map kommt aus `RoomEnvironment` (three.js, `three/examples/jsm/environments/RoomEnvironment.js`). Das ist ein virtueller Raum mit hellen Leuchtkästen, derselbe wie im Test-Render.

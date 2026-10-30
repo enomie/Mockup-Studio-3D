@@ -33,6 +33,7 @@ export function atmosphereFromSceneDefaults(): AtmosphereSnapshot {
       fogFar: environment.fogFar,
       reflectionEnabled: environment.reflectionEnabled,
       reflectionIntensity: environment.reflectionIntensity,
+      reflectionSource: environment.reflectionSource,
     },
     ground: {
       visible: ground.visible,

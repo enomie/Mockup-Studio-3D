@@ -1,3 +1,4 @@
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import {
   Mesh,
   PMREMGenerator,
@@ -8,18 +9,26 @@ import {
 } from 'three/webgpu';
 import { ENV_MAP_PMREM_SIZE, ENV_MAP_REBUILD_DEBOUNCE_MS } from '@/constants';
 import type { SkyboxMaterial } from '@/materials/skyboxMaterial';
+import type { ReflectionSource } from '@/scene/scene-api';
+
+/** Slight blur so softbox edges stay crisp but not aliased (same as three.js examples). */
+const STUDIO_BLUR_SIGMA = 0.04;
 
 /**
- * Builds scene.environment from the shared sky gradient material (PMREM).
- * Sky uniforms stay live on SkyboxMaterial; PMREM rebuild is debounced on sky edits.
+ * Builds scene.environment (IBL reflections) from one of two sources:
+ * - `sky`: the shared sky gradient material; rebuild is debounced on sky edits.
+ * - `studio`: three.js RoomEnvironment (softbox room), baked once on first use.
+ * The visible background is not affected.
  */
-export class SkyEnvironmentMap {
+export class EnvironmentReflectionMap {
   private readonly mainScene: Scene;
   private readonly pmremScene = new Scene();
   private readonly pmremGenerator: PMREMGenerator;
   private readonly pmremMesh: Mesh;
   private pmremTarget: RenderTarget | null = null;
   private rebuildTimer: ReturnType<typeof setTimeout> | null = null;
+  private studioTarget: RenderTarget | null = null;
+  private source: ReflectionSource = 'sky';
   private reflectionEnabled = true;
   private onRebuildComplete: (() => void) | null = null;
 
@@ -38,6 +47,13 @@ export class SkyEnvironmentMap {
   setReflectionEnabled(enabled: boolean): void {
     this.reflectionEnabled = enabled;
     this.applyEnvironmentAssignment();
+  }
+
+  setSource(source: ReflectionSource): void {
+    if (this.source === source) {return;}
+    this.source = source;
+    this.applyEnvironmentAssignment();
+    this.onRebuildComplete?.();
   }
 
   setReflectionIntensity(intensity: number): void {
@@ -81,6 +97,11 @@ export class SkyEnvironmentMap {
 
     this.mainScene.environment = null;
 
+    if (this.studioTarget) {
+      this.studioTarget.dispose();
+      this.studioTarget = null;
+    }
+
     if (this.pmremTarget) {
       this.pmremTarget.dispose();
       this.pmremTarget = null;
@@ -91,11 +112,23 @@ export class SkyEnvironmentMap {
   }
 
   private applyEnvironmentAssignment(): void {
-    if (!this.reflectionEnabled || !this.pmremTarget) {
+    const target = this.source === 'studio' ? this.ensureStudioTarget() : this.pmremTarget;
+    if (!this.reflectionEnabled || !target) {
       this.mainScene.environment = null;
       return;
     }
 
-    this.mainScene.environment = this.pmremTarget.texture;
+    this.mainScene.environment = target.texture;
+  }
+
+  private ensureStudioTarget(): RenderTarget {
+    if (!this.studioTarget) {
+      const room = new RoomEnvironment();
+      this.studioTarget = this.pmremGenerator.fromScene(room, STUDIO_BLUR_SIGMA, 0.1, 100, {
+        size: ENV_MAP_PMREM_SIZE,
+      });
+      room.dispose();
+    }
+    return this.studioTarget;
   }
 }

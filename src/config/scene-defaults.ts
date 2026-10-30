@@ -14,6 +14,7 @@ import type {
   CameraSettings,
   GroundSettings,
   LightingSettings,
+  ReflectionSource,
   ViewportHelpersState,
 } from '@/scene/scene-api';
 import { defaultTransform } from '@/scene/entity-types';
@@ -29,6 +30,7 @@ export interface EnvironmentDefaults {
   fogFar: number;
   reflectionEnabled: boolean;
   reflectionIntensity: number;
+  reflectionSource: ReflectionSource;
 }
 
 export type GroundDefaults = GroundSettings;
@@ -70,6 +72,7 @@ export const SCENE_DEFAULTS = {
     fogFar: 100,
     reflectionEnabled: true,
     reflectionIntensity: 0.85,
+    reflectionSource: 'studio',
   },
   ground: {
     visible: true,
