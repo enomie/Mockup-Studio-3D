@@ -56,7 +56,7 @@ export function evalPatchSurfacePoint(
   const B = nodeB.pos;
   const C = nodeC.pos;
 
-  // 1. Lineare Planare Basis
+  // 1. Linear planar base
   const lx = u * A.x + v * B.x + w * C.x;
   const ly = u * A.y + v * B.y + w * C.y;
   const lz = u * A.z + v * B.z + w * C.z;
@@ -65,8 +65,8 @@ export function evalPatchSurfacePoint(
   let dy = 0;
   let dz = 0;
 
-  // 2. Kanten-Korrekturen (Coon's Patch Blend)
-  // Kante AB (u + v)
+  // 2. Edge corrections (Coons patch blend)
+  // Edge AB (u + v)
   if (u + v > 0.0001) {
     const tAB = v / (u + v);
     evalCubicBezierEdge(nodeA, nodeB, tAB, _pA);
@@ -78,7 +78,7 @@ export function evalPatchSurfacePoint(
     dz += (u + v) * (_pA.z - linZ);
   }
 
-  // Kante BC (v + w)
+  // Edge BC (v + w)
   if (v + w > 0.0001) {
     const tBC = w / (v + w);
     evalCubicBezierEdge(nodeB, nodeC, tBC, _pB);
@@ -90,7 +90,7 @@ export function evalPatchSurfacePoint(
     dz += (v + w) * (_pB.z - linZ);
   }
 
-  // Kante CA (w + u)
+  // Edge CA (w + u)
   if (w + u > 0.0001) {
     const tCA = u / (w + u);
     evalCubicBezierEdge(nodeC, nodeA, tCA, _pC);
