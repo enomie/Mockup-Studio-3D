@@ -4,7 +4,7 @@ Parametrischer **Stift**-Baustein — **Cap**, **Ring** und **Schaft (body)** au
 
 **Abgrenzung:** Keine Getränkedose (zylindrisches Label-Band) → [`requirements-assets-beverage-can.md`](./requirements-assets-beverage-can.md). Kein `print`-Prisma, keine Flasche. **Block**, **Picture framed** → eigene Docs. Marken-Druck = User-Bilder.
 
-**Status:** **v1 fertig** — Katalog, Szene-Entity, Engine-Rebuild, Body-Wrap (90°-Mapping, PNG-Underlay, Orientierung Kappe links). Code: [`asset-pen.ts`](../../src/scene/asset-pen.ts), [`pen-svg-profile.ts`](../../src/engine/pen-svg-profile.ts), [`pen-geometry.ts`](../../src/engine/pen-geometry.ts), [`pen-body-wrap-unfold.ts`](../../src/engine/pen-body-wrap-unfold.ts), [`material-resolver.ts`](../../src/engine/material-resolver.ts) (`createPenBodyWrapMaterial`), [`populate-packaging.ts`](../../src/engine/asset-meshes/populate-packaging.ts) (`populatePenGroup`), [`PenFields.tsx`](../../src/ui/panels/entity-fields/PenFields.tsx). SVGs: [`profiles/lathe/lathe-y-pen-marker.svg`](../../public/profiles/lathe/lathe-y-pen-marker.svg), [`lathe-y-pen-fountain.svg`](../../public/profiles/lathe/lathe-y-pen-fountain.svg).
+**Status:** **v1 fertig** — Katalog, Szene-Entity, Engine-Rebuild, Body-Wrap (90°-Mapping, Druck im Body-Material, Orientierung Kappe links). Code: [`asset-pen.ts`](../../src/scene/asset-pen.ts), [`pen-svg-profile.ts`](../../src/engine/pen-svg-profile.ts), [`pen-geometry.ts`](../../src/engine/pen-geometry.ts), [`pen-body-wrap-unfold.ts`](../../src/engine/pen-body-wrap-unfold.ts), [`rotational-print-material.ts`](../../src/engine/rotational-print-material.ts) (`createRotationalPrintMaterial`), [`populate-packaging.ts`](../../src/engine/asset-meshes/populate-packaging.ts) (`populatePenGroup`), [`PenFields.tsx`](../../src/ui/panels/entity-fields/PenFields.tsx). SVGs: [`profiles/lathe/lathe-y-pen-marker.svg`](../../public/profiles/lathe/lathe-y-pen-marker.svg), [`lathe-y-pen-fountain.svg`](../../public/profiles/lathe/lathe-y-pen-fountain.svg).
 
 **v1-Scope:** Ein Built-in **`pen`**; **zwei Körperprofile** (**Marker**, **Fountain pen**); **real scale** aus **SVG-mm-Pfaden**; **Stiftformat fix** — Bild bestimmt **nicht** Länge oder Profil (analog Dose → [`requirements-assets.md`](./requirements-assets.md)); **drei Lathe-Teile** pro Profil (Cap, Ring, Body); **Bild nur auf Body**; **Material + Farbe** pro Teil (`cap` / `ring` / `body`); **`sizeScale`** uniform auf **gesamten** Stift; Szene-Panel **Geometries**; **kein** Clip-Mechanismus, **keine** Feder-Spitze als separates Mechanik-Mesh in v1.
 
@@ -136,7 +136,7 @@ Stabile Katalog-ID über `kind`. Mehrfach-Instanzen unbegrenzt. Default-Szene: *
 
 **Lathe:** `Vector2(radius, y)` in Metern; **80** Segmente; Naht → [`lathe-asset-common.ts`](../../src/engine/lathe-asset-common.ts) (`LATHE_SEAM_PHI_START`, `weldLathePhiSeam`).
 
-**Mit Bild:** Body-UV = [`cylindricalLabelUv`](../../src/engine/cylindrical-label-uv.ts) über Body-Y-Spanne (`penBodyYBounds`).
+**Druck-UV:** Body bekommt immer `printUv` über die Body-Y-Spanne (`penBodyYBounds`), `uv` bleibt Lathe-Standard → [`requirements-rotational-print.md`](./requirements-rotational-print.md).
 
 **Ohne Bild:** Body rendert mit **`bodyMaterialId`** allein (einheitliche Farbe / PBR) — Geometrie bleibt.
 
@@ -160,9 +160,9 @@ Stabile Katalog-ID über `kind`. Mehrfach-Instanzen unbegrenzt. Default-Szene: *
 
 **Unfold (Ist):** `penBodyWrapCoverPlaneM` — `planeH` = Body-Y-Spanne; `planeW` = `2π × maxBodyRadiusM` (max **X** nur am Body-Pfad). Platzhalter-Aspect: `penBodyWrapAspectNominal(maxRadiusM)` (nominaler Body-Radius ≈ `maxRadiusM × PEN_NOMINAL_BODY_RADIUS_RATIO`).
 
-**Textur-Achsen (90° zur Dose):** Mesh-**U** → Textur-**t** (Bild**höhe** = Umfang); Mesh-**V** → Textur-**s** (Bild**breite** = Schaftlänge). Cover-Spans: `penWrapCircumferenceSpan` / `penWrapBodyLengthSpan`; Shader [`fitPenBodyWrapColorNode`](../../src/engine/material-resolver.ts). Umlauf-Spiegelung + **180°**-Rotation (`rotatePenWrapTextureSt180`) für lesbare Front und **Kappe links** im Motiv — s. **Body-Bild — Front & UV**.
+**Textur-Achsen (90° zur Dose):** Mesh-**U** → Textur-**t** (Bild**höhe** = Umfang); Mesh-**V** → Textur-**s** (Bild**breite** = Schaftlänge). Cover-Spans: `penWrapCircumferenceSpan` / `penWrapBodyLengthSpan`; Mapping `rotationalPrintFit('wrap-height', …)` → [`rotational-print-mapping.ts`](../../src/engine/rotational-print-mapping.ts). Umlauf-Spiegelung + **180°**-Rotation (`rotatePenWrapTextureSt180`) für lesbare Front und **Kappe links** im Motiv — s. **Body-Bild — Front & UV**.
 
-**PNG-Alpha:** Transparente Pixel → **Body-Material-Farbe** (`bodyMaterialId`-Preset), **deckend** — **`createPenBodyWrapMaterial`** (wie Dosen-`createCanLabelMaterial`, Underlay = Plastik statt Alu).
+**PNG-Alpha:** Transparente Pixel → Body-Material (`bodyMaterialId`) mit allen Eigenschaften. Default **Substrate 1** (Direktdruck, Multiply) → [`requirements-rotational-print.md`](./requirements-rotational-print.md).
 
 **Kein** separates Mantel-Mesh — Textur auf Body-Lathe mit zylindrischen UVs (konischer Radius im Profil; Cover-Plane nutzt max Body-Radius).
 
@@ -247,7 +247,7 @@ Weitere mm-Feinjustierung **einzelner** Teile **nicht** v1 — nur **SVG-Revisio
 | `pen-svg-profile.ts` (Stroke → Cap/Ring/Body) | ✓ |
 | `pen-geometry.ts` (3× Lathe, zyl. Body-UV) | ✓ |
 | `pen-body-wrap-unfold.ts` + Tests | ✓ |
-| `createPenBodyWrapMaterial` / PNG-Underlay | ✓ |
+| Druck im Body-Material (`createRotationalPrintMaterial`) | ✓ |
 | `assetKind: 'pen'`, Katalog, `populatePenGroup` | ✓ |
 | Entity `penParams`, Materials, `screenImageId` | ✓ |
 | `PenFields` (Profil, Geometries, Label; **kein** Max radius) | ✓ |

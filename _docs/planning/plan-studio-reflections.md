@@ -1,6 +1,6 @@
 # Plan: Studio-Reflexionen (Variante 1)
 
-Status: freigegeben, Default `studio` entschieden (2026-10-30)
+Status: umgesetzt (2026-10-30). Default `studio`; Intensität im Default-Environment 0,5 (siehe plan-environments-vs-light-rigs).
 
 ## Ziel
 

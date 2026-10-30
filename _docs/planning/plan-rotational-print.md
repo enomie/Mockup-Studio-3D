@@ -1,6 +1,6 @@
 # Plan: Druck auf gedrehten Objekten (Dose, Konserve, Flasche, Stift)
 
-Status: Entwurf, noch nicht umgesetzt (2026-10-30)
+Status: umgesetzt (2026-10-30). Spezifikation: [`requirements-rotational-print.md`](../requirements/requirements-rotational-print.md). Abweichungen: Finish als Regler `gloss` (Uniform), Substrate/Ink/Gloss live ohne Rebuild; keine Migration (keine gespeicherten Szenen).
 
 ## Ziel
 

@@ -129,9 +129,7 @@ Zentrale **Bildliste** im Projekt — Upload, Starter-Assets, Metadaten. Alles w
 | Kontext | Verhalten | Engine |
 |---|---|---|
 | **Ebene Bild-Flächen** (Picture, Smartphone/Tablet/Monitor-Screen, Print Front/Back, Tapete) | `transparent`, `opacityNode` = Textur-Alpha, `depthWrite: false` — dahinter Passepartout, Device-Innenfläche, Wandkörper, … | `createImagePbrMaterial`, `createWallpaperImageMaterial` |
-| **Weinflasche — Etikett** | Wie ebene Fläche auf Mantel-Mesh: Alpha → **Glas** dahinter (kein weißes/deckendes Underlay) | `createImagePbrMaterial` (nicht Dosen-Label-Shader) |
-| **Getränkedose + Blechdose — Label** | Material **deckend** (kein Transparent-Pass); Alpha-Löcher → **Metall-Underlay** im Shader (`mix` mit gebürstetem Alu); **Körper-Geometrie** unverändert | `createCanLabelMaterial` + `fitHeightLabelColorNode` |
-| **Pen — Body-Wrap** | Wie Dosen-Label **deckend**; Alpha-Löcher → **`bodyMaterialId`-Farbe** (Plastik-Underlay); Bildachsen **90°** zur Dose (Höhe = Umfang) | `createPenBodyWrapMaterial` + `fitPenBodyWrapColorNode` → [`requirements-assets-pen.md`](./requirements-assets-pen.md) |
+| **Getränkedose, Blechdose, Weinflasche, Stift** | Druck **im Körpermaterial**; Alpha × Ink opacity = Druckmaske, außerhalb echtes Körpermaterial (Alu, Glas, Kunststoff); Regler Substrate (Papier ↔ Direktdruck) | `createRotationalPrintMaterial` → [`requirements-rotational-print.md`](./requirements-rotational-print.md) |
 
 Zentral: `src/engine/image-surface-alpha.ts`. Emissive (wenn Intensity > 0): mit gleicher Alpha-Maske multiplizieren (Pen-Body: Emissive auf Shader-`colorNode`).
 

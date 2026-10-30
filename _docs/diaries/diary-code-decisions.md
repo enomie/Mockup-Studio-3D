@@ -6,6 +6,26 @@ Kurze Historie: **wie** wir uns entschieden haben (Warum, Alternativen). Require
 
 ## Einträge
 
+### 2026-10-30 — Erst Plan-Doc, dann Code
+- **Entscheidung:** Vor jeder Änderung ein Plan in `_docs/planning/plan-<thema>.md`; Code erst nach Freigabe (Regel in `AGENTS.md`).
+- **Grund:** Johann will Richtung und offene Punkte vorher sehen, nicht nachträglich korrigieren.
+
+### 2026-10-30 — Environments ohne Lichter
+- **Entscheidung:** Environment-Preset = `EnvironmentSnapshot` (`environment` + `ground`); Lichter nur in Light rigs. `applyAtmosphereSnapshot` → `applyEnvironmentSnapshot`. Neue Built-ins: **Default** (neutral hellgrau, Fog aus, Studio-Reflexionen 0,5), **Blue Sky** (früherer Default), **Dark Stage**. Viewport helpers vom Environment- ins Scene-Panel.
+- **Grund:** Environment laden überschrieb das gewählte Light rig, Light-Rigs-Panel markierte danach das falsche Rig, Lichtwerte waren doppelt gepflegt. Neutraler Himmel tönt Glas/Metall nicht.
+- **Verworfen:** Lichter im Environment behalten und `activeLightingPresetId` nachziehen (löst die Doppelpflege nicht).
+
+### 2026-10-30 — Studio-Reflexionen als Standard
+- **Entscheidung:** `reflectionSource: 'studio' | 'sky'`; Studio = three.js `RoomEnvironment` (einmal PMREM), Default. `SkyEnvironmentMap` → `EnvironmentReflectionMap`. Intensität im Default-Environment 0,5 (0,85 zu hell).
+- **Grund:** Himmel-Verlauf spiegelt sich als gleichmäßiger Schimmer, Glas und Alu wirken flach; Softboxen geben klare Glanzkanten.
+- **Später möglich:** eigener einstellbarer Studio-Aufbau (Leuchtflächen).
+
+### 2026-10-30 — Druck im Körpermaterial (Dose, Blechdose, Flasche, Stift)
+- **Entscheidung:** Ein Builder `createRotationalPrintMaterial` wrappt die Nodes des Körpermaterials; pro Pixel Mix aus Papier (Substrate 0) und Multiply-Direktdruck (Substrate 1), Ink opacity auf PNG-Alpha, Gloss als Klarlack. Druck-UV als eigenes Attribut `printUv`. Etikett-Mäntel, `createCanLabelMaterial`, `createPenBodyWrapMaterial`, `cylindricalLabelUv`, Label-Band-Ausschnitt und polygonOffset entfernt. Substrate/Ink/Gloss sind Uniforms (Regler ohne Rebuild). → `requirements-rotational-print.md`
+- **Grund:** Drei Implementierungen mit drei Verhaltensweisen; Druck kannte das Material darunter nicht (flache Underlay-Farbe statt Metall/Glas); Z-Fighting-Workarounds.
+- **Verworfen:** Separater Mantel mit nachgebautem Basismaterial (Glas über Glas, Sortierung); `uv` (Kanal 0) für den Druck (verschiebt Maserung und Tangenten).
+- **Nebenbei behoben:** gequetschtes Segment an der Naht bei vollem Umlauf; Etikett-Druck spiegelverkehrt durchs Glas (Rückseite jetzt blankes Papier).
+
 ### 2026-10-30 — Kein `_deleted/`-Ordner mehr
 - **Entscheidung:** Entfernte Dateien werden direkt gelöscht. Die Regel „nach `/_deleted/` verschieben“ ist aufgehoben (Requirements Code + Development Workflow angepasst).
 - **Grund:** Git-History bewahrt alles; der Ordner existierte ohnehin nicht mehr. Ältere Diary-Einträge, die `_deleted/` erwähnen, bleiben als Historie stehen.

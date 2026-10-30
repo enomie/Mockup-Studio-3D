@@ -47,7 +47,7 @@ Stabile Katalog-ID über `kind`. Mehrfach-Instanzen unbegrenzt. Default-Szene: *
 | Maß | Wert | Hinweis |
 |---|---|---|
 | **Gesamthöhe** (`heightM`) | **290,0 mm** → **0,2900 m** | **Alle drei Profile** (vorläufig gleich; Abweichung pro Profil später möglich) |
-| **Glas — Wandstärke** (`wallThicknessM`) | **2,5 mm** → **0,0025 m** | Stirn-Innenradius (Open-SVG) + Label-Standoff + Transmission **`meshDepthM`** (×0,4) — s. **Glas-Mesh** |
+| **Glas — Wandstärke** (`wallThicknessM`) | **2,5 mm** → **0,0025 m** | Stirn-Innenradius (Open-SVG) + Transmission **`meshDepthM`** (×0,4) — s. **Glas-Mesh** |
 | **Füllvolumen** | *TBD* | Ziel typ. **0,75 l** Stillwein; **0,75 l** Sekt — nach Silhouette |
 | **Bodendurchmesser / Punt** | *TBD* | Sparkling: tiefe Punt; Bordeaux/Alsace: flacher Boden |
 | **Max. Außen-Radius (Bauch)** | **38,0 mm** (Bordeaux + Alsace); **44,0 mm** (Sparkling) | Bei **290 mm** Gesamthöhe — **User-Nennmaß** aus SVG-Zeichnung; s. Profil-Tabelle |
@@ -129,7 +129,7 @@ Stabile Katalog-ID über `kind`. Mehrfach-Instanzen unbegrenzt. Default-Szene: *
 | **Kind** | `transmission`, **`glassVariant: solid`** |
 | **Farbe / Tint** | **`#176132`** → RGB **(23, 97, 50)** / **~(0,09, 0,38, 0,20)** — Preset-`tint` (nicht Entity-loses RGB) |
 | **IOR / Roughness (Ziel)** | **1,52**; **~0,04–0,06** (gegossenes Flaschenglas, leicht matter als Kristall-`glass-solid`) |
-| **Wandstärke 2,5 mm** | **Stirn-Innenradius** (`rOuter − wallThicknessM`) + Entity **`wallThicknessM`** für Label-Standoff. **Transmission:** `meshDepthM = wallThicknessM × 0,4` (optisch, Multi-Hit) — **nicht** ins Preset → [`requirements-materials.md`](./requirements-materials.md) |
+| **Wandstärke 2,5 mm** | **Stirn-Innenradius** (`rOuter − wallThicknessM`) + Entity **`wallThicknessM`**. **Transmission:** `meshDepthM = wallThicknessM × 0,4` (optisch, Multi-Hit) — **nicht** ins Preset → [`requirements-materials.md`](./requirements-materials.md) |
 | **Entity-Slot (Ziel)** | `glassMaterialId` — Default **`material-glass-wine-bottle`**; Geometries-Dropdown wie Picture/Handheld — **Asset-Wiring TBD** |
 | **Schatten** | **`castShadow = true`** immer (Weinflaschen-Glas ≠ Display-Glazing). Glas-Body: **`customDepthMaterial`** (`MeshDepthMaterial`, **FrontSide**) in [`wine-bottle-glass.ts`](../../src/engine/wine-bottle-glass.ts) — Kontaktschatten am Boden aus Lathe-Silhouette, Beauty-Transmission unverändert. Weniger durchsichtig (Roughness, Tint, Preset) → **dunklerer** Schatten im Receive-Pass — kein Extra-Flag → [`requirements-shadows.md`](./requirements-shadows.md) |
 
@@ -398,7 +398,7 @@ Alternative Darstellung in UI: Slider „**von unten**“ oder „**Mitte Y**“
 
 **Category:** Assets — Bottle Wine  
 **Title:** Etikett — Mesh, Material, UI  
-**Description:** Separates **Label-Mantel-Mesh** (leicht radial versetzt) mit **`screenImageId`** + `imageSurfaces.label`; Glas-Körper darunter. **Material:** `createImagePbrMaterial` + Cover-UV aus Label-Rechteckmaßen — bei PNG **Transparenz → Glas**, kein deckendes Underlay. **Ohne Bild:** **kein** Label-Mesh. **`geometryVisibility.label` aus** → Label aus, auch wenn Bild gesetzt. (Dosen: separates Label + `createCanLabelMaterial` — anderer Alpha-Pfad.)
+**Description (Stand 2026-10-30):** **Kein** separates Label-Mesh mehr. Das Etikett wird **im Glas-Material** gedruckt: `printUv` nur auf dem Außenmantel (Teilbogen aus `labelWrap`), Innenmantel/Stirnringe außerhalb. Default **Substrate 0** = deckendes Papier; PNG-Transparenz → Glas; Rückseite durchs Glas = blankes Papier. **`geometryVisibility.label` aus** → kein Druck → [`requirements-rotational-print.md`](./requirements-rotational-print.md).
 
 **Right Panel (Ist):** `ImageSurfaceFields` + Sektionen in [`WineBottleFields.tsx`](../../src/ui/panels/entity-fields/WineBottleFields.tsx). Footer **Dimensions** + **Position**. **Label** (im Panel):
 

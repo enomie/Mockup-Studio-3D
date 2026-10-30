@@ -363,13 +363,13 @@ API: `applyLighting(state)`, `setLighting(partial: DeepPartial<LightingSettings>
 
 **Category:** Lighting  
 **Title:** Light handles — Wireframe (Querverweis)  
-**Description:** Sichtbares **Wireframe** am Key/Fill-Rig = **Light handles** unter Environment **Viewport helpers** (Toggle global), nicht Fixture-Sichtbarkeit. Selection verstärkt Wireframe (bestehend `SelectionHighlight`) — unverändert. Export: Light handles folgen Viewport-helpers-Regel (an = mitexportieren); **nicht** über **Hide light fixtures** steuern (Ziel: Export-Checkbox blendet nur noch Fixtures aus, nicht Wireframe — siehe Export-Zielbild).
+**Description:** Sichtbares **Wireframe** am Key/Fill-Rig = **Light handles** unter **Viewport helpers** im Scene-Panel (Toggle global), nicht Fixture-Sichtbarkeit. Selection verstärkt Wireframe (bestehend `SelectionHighlight`) — unverändert. Export: Light handles folgen Viewport-helpers-Regel (an = mitexportieren); **nicht** über **Hide light fixtures** steuern (Ziel: Export-Checkbox blendet nur noch Fixtures aus, nicht Wireframe — siehe Export-Zielbild).
 
 ---
 
 **Category:** Lighting  
 **Title:** Spot beams — SpotLightHelper (Querverweis)  
-**Description:** Environment-Toggle **Spot beams** (`viewportHelpers.lightHandles`) steuert **`SpotLightHelper`** pro Key/Fill — Kegel zur `SpotLight` + Target, nicht die Fixture-Disc. Details → [`requirements-environment.md`](./requirements-environment.md) (*Viewport helpers — Spot beams*).
+**Description:** Toggle **Spot beams** (Viewport helpers, Scene-Panel) (`viewportHelpers.lightHandles`) steuert **`SpotLightHelper`** pro Key/Fill — Kegel zur `SpotLight` + Target, nicht die Fixture-Disc. Details → [`requirements-environment.md`](./requirements-environment.md) (*Viewport helpers — Spot beams*).
 
 ---
 

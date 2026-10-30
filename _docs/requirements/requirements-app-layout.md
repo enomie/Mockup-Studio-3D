@@ -126,12 +126,12 @@ Links: Main außen → Sub innen (Richtung Viewport). Rechts: Sub innen → Main
 ---
 
 **Category:** App Layout  
-**Title:** Environment Sub-Panel — Viewport helpers (Sektion)  
-**Description:** **Stack**-Panel **Environment:** nach den vier `scene-entity-block`s (Sky … Ground) eine flache Sektion **Viewport helpers** (Checkboxen, kein Eye-Header) — Spec → [`requirements-environment.md`](./requirements-environment.md). **Light fixtures**-Sichtbarkeit → **Lighting** Sub-Panel, nicht hier.
+**Title:** Viewport helpers — Platzierung (Stand 2026-10-30)  
+**Description:** **Viewport helpers** gehören **nicht** zur Umgebung. Sie liegen im **Scene** Sub-Panel unter der Entity-Liste (`ViewportHelpersBlock.tsx`). Das **Environment** Sub-Panel enthält nur Sky, Reflections, Fog, Ground. **Light fixtures**-Sichtbarkeit → **Lighting** Sub-Panel.
 
 ---
 
 **Category:** App Layout  
-**Title:** Environment Sub-Panel — Viewport helpers (scene-entity-block)  
-**Description:** **Viewport helpers** im Environment-`panel-stack` als **`scene-entity-block`** (fünfter Block nach Ground) — aufklappbar, Eye schaltet **alle** Helper-Toggles gemeinsam ein/aus (Details → [`requirements-environment.md`](./requirements-environment.md) *Viewport helpers — Panel (scene-entity-block)*). **Light fixtures** bleiben im **Lighting** Sub-Panel.
+**Title:** Scene Sub-Panel — Viewport helpers (scene-entity-block)  
+**Description:** **Viewport helpers** im Scene-Panel als **`scene-entity-block`** (unter der Entity-Liste; bis 2026-10-30 fünfter Block im Environment-Panel) — aufklappbar, Eye schaltet **alle** Helper-Toggles gemeinsam ein/aus (Details → [`requirements-environment.md`](./requirements-environment.md) *Viewport helpers — Panel (scene-entity-block)*). **Light fixtures** bleiben im **Lighting** Sub-Panel.
 

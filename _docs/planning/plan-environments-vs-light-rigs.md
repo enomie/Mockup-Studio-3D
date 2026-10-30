@@ -1,6 +1,6 @@
 # Plan: Environments und Light Rigs trennen
 
-Status: freigegeben (2026-10-30). Defaults wie in Schritt 3; Viewport helpers wandern ins Panel „Scene“ (Funktion bleibt).
+Status: umgesetzt (2026-10-30). Defaults wie in Schritt 3; Viewport helpers wandern ins Panel „Scene“ (Funktion bleibt).
 
 ## Ziel
 

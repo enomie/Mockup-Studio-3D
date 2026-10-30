@@ -130,7 +130,7 @@ Hintergrund und Arbeitsfläche der Szene. UI-Platzierung → [`requirements-app-
 
 **Category:** Environment  
 **Title:** Viewport helpers — Panel-Platzierung (UI)  
-**Description:** **Right Main → Environment → Right Sub** (`EnvironmentSubPanel`): **fünfte Sektion** **unter** dem `scene-entity-block` **Ground** (nach Sky, Reflections, Fog, Ground). **Kein** Eye/Collapse-Header wie bei Sky/Ground — flache **`SubPanelSection`** mit Titel **Viewport helpers** und **`PanelCheckbox`**-Zeilen (Labels + Checkboxen, optional muted Hint). Styling → [`requirements-look-and-feel.md`](./requirements-look-and-feel.md). **Light fixtures** und Fixture-Sichtbarkeit **nicht** in dieser Sektion.
+**Description:** **Right Main → Scene → Right Sub** (`SceneSubPanel`): `scene-entity-block` **Viewport helpers** (`ViewportHelpersBlock.tsx`) **unter** der Entity-Liste — aufklappbar, Eye schaltet alle Helper gemeinsam. Bis 2026-10-30 lag der Block im Environment-Panel; er gehört nicht zur Umgebung. **Light fixtures** und Fixture-Sichtbarkeit **nicht** hier → Lighting.
 
 ---
 

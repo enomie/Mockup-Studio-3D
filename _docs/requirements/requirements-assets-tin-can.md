@@ -108,9 +108,9 @@ User-Panel (Geometries): **Radius (mm)** und **Höhe (mm)** — Änderung → **
 
 **Flaches Unfold (Design-Referenz):** `unfoldWidthMm = 2π × bodyRadiusMm`, `unfoldHeightMm = labelHeightMm`. **Wellung im Unfold:** Das **flache** Lieferanten-Template bleibt **rechteckig**; die **3D-Engine** verformt die Textur durch **Geometrie + UV** — Export-Unfold optional später.
 
-**Mit Bild / ohne Bild:** Wie Beverage can — Hülle kann im Label-Band **ohne** Mantel-Dreiecke sein; Label-Mantel schließt das Band. **Ohne Bild:** voller Mantel inkl. Metall inkl. Beads.
+**Mit Bild / ohne Bild:** Hülle immer **vollständig** (Mantel inkl. Beads); mit Bild wird das Label-Band **im Hüllen-Material** bedruckt (`printUv` auf dem Seitenmantel, Endringe/Deckel außerhalb). Kein separater Label-Mantel mehr (Stand 2026-10-30).
 
-**Material:** `createCanLabelMaterial` (Height-fit + Metall-Underlay bei Alpha) — **nicht** `createImagePbrMaterial` (das wäre für ebene/glas-durchsichtige Stacks). → [`requirements-images.md`](./requirements-images.md).
+**Material:** `createRotationalPrintMaterial` auf dem Metall-Material (Default **Substrate 0** = Papier-Etikett; PNG-Alpha → Metall sichtbar) → [`requirements-rotational-print.md`](./requirements-rotational-print.md).
 
 ---
 

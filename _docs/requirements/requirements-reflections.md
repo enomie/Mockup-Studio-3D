@@ -2,7 +2,7 @@
 
 Spiegelungen und Umgebungsreflexionen für photorealistische Mockups. Bezüge: [`requirements-environment.md`](./requirements-environment.md) (Sky), [`requirements-ground.md`](./requirements-ground.md) (Roughness/Metalness), [`requirements-lighting.md`](./requirements-lighting.md), [`requirements-code.md`](./requirements-code.md) (WebGPU/TSL).
 
-**Bestand (Inventur):** IBL via `SkyEnvironmentMap` (`src/render/environment-map.ts`) → `scene.environment` (PMREM aus `SkyboxMaterial`). Planar Mirror via TSL `reflector()` in `src/render/planar-reflection.ts`, Mix in `GroundMaterial.setupOutput`. Sky = separater unlit Pass (`SkyboxMaterial`).
+**Bestand (Inventur):** IBL via `EnvironmentReflectionMap` (`src/render/environment-map.ts`) → `scene.environment`. Quelle `reflectionSource`: **`studio`** (Default; three.js `RoomEnvironment`, einmal per PMREM gebacken) oder **`sky`** (PMREM aus `SkyboxMaterial`, Neuaufbau bei Himmel-Änderung). UI: Environment → Reflections → **Source**. Plan: [`plan-studio-reflections.md`](../planning/plan-studio-reflections.md). Planar Mirror via TSL `reflector()` in `src/render/planar-reflection.ts`, Mix in `GroundMaterial.setupOutput`. Sky = separater unlit Pass (`SkyboxMaterial`).
 
 **Status:** Phase A + B + C implementiert (IBL, Reflection Intensity, Planar Mirror). Phase D (HDRI) offen.
 

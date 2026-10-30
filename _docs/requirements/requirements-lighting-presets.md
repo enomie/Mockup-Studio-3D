@@ -24,14 +24,12 @@ Bezüge: [`requirements-lighting.md`](./requirements-lighting.md), [`requirement
 
 | | **Light rigs (Left)** | **Environments (Left)** | **Lighting (Right)** |
 |---|---|---|---|
-| **Inhalt** | nur `LightingSettings` | `environment` + `ground` + `lighting` | Einzelwerte live |
+| **Inhalt** | nur `LightingSettings` | `environment` + `ground` (keine Lichter) | Einzelwerte live |
 | **Sky / Ground / Fog / IBL** | unverändert | ersetzt | unverändert |
 | **Assets / Kamera** | unverändert | unverändert | unverändert |
 | **User-Save** | Save as light rig | Save as environment | — |
 
-**Overlap:** Built-in **Softbox** kann in beiden Bibliotheken existieren — Environment-Softbox ändert **auch** Sky/Ground/IBL; Light-rig-Softbox **nur** Lichter. User wählt je nach Bedarf.
-
-**Active-State v1:** `activeLightingPresetId` und `activeEnvironmentId` sind **unabhängig**. Apply Environment (enthält Lighting) **aktualisiert nicht** automatisch `activeLightingPresetId` — Highlight kann vom tatsächlichen Rig abweichen (gleiche Klasse wie manuelle Edits rechts). Optional später: Preset-Highlight zurücksetzen wenn Lighting von anderer Quelle geändert wird.
+**Trennung (2026-10-30):** Environments enthalten **keine** Lichter mehr. Ein Environment zu laden ändert weder Lichter noch `activeLightingPresetId`; ein Light rig zu laden ändert die Umgebung nicht. Lichtwerte liegen nur in `builtin-light-rigs.ts` → [`plan-environments-vs-light-rigs.md`](../planning/plan-environments-vs-light-rigs.md).
 
 ---
 
@@ -53,7 +51,7 @@ Bezüge: [`requirements-lighting.md`](./requirements-lighting.md), [`requirement
 
 1. **Default** — **`SCENE_DEFAULTS.lighting`** (Referenz-Helper `lightingFromSceneDefaults()` in `src/data/builtin-light-rigs.ts`, keine duplizierten Zahlen).
 
-2. **Softbox** — weiches Studio-Rig: Key/Fill **Shadow softness** erhöht (z. B. 10), Fill **intensity ratio** / **distance** für gleichmäßige Aufhellung, leicht reduziertes **Ambient** — **ohne** Sky/Ground zu ändern. Werte neben Environment-Softbox in `builtin-light-rigs.ts` dokumentieren.
+2. **Softbox** — weiches Studio-Rig: Key/Fill **Shadow softness** erhöht (z. B. 10), Fill **intensity ratio** / **distance** für gleichmäßige Aufhellung, leicht reduziertes **Ambient** — **ohne** Sky/Ground zu ändern. Werte in `builtin-light-rigs.ts`.
 
 3. **Dramatic** — stärkerer **Key** (Intensity), schwächerer **Fill** (ratio / optional Cast shadows off), niedrigeres **Ambient** — harte Schatten, Produkt-Highlight; für dunkle Environments oder kontrastreiche Mockups.
 
@@ -117,7 +115,7 @@ Built-in-IDs z. B. `builtin-light-default`, `builtin-light-softbox`, `builtin-li
 
 **Category:** Light rigs  
 **Title:** v1 — Umsetzungsstand (2026-10-08)  
-**Description:** Erledigt: `lighting-preset-types`, `builtin-light-rigs`, Store-Actions, `LightRigsPanel`, Nav `LampFloor`. Save nutzt `getLighting()` aus Engine wenn API verbunden. **Nicht in v1:** Confirm beim Apply; Sync von `activeLightingPresetId` nach `loadEnvironment`.
+**Description:** Erledigt: `lighting-preset-types`, `builtin-light-rigs`, Store-Actions, `LightRigsPanel`, Nav `LampFloor`. Save nutzt `getLighting()` aus Engine wenn API verbunden. **Nicht in v1:** Confirm beim Apply. (Der frühere Abgleich mit `loadEnvironment` entfällt: Environments setzen seit 2026-10-30 keine Lichter mehr.)
 
 ---
 
