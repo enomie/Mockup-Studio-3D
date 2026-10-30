@@ -160,7 +160,7 @@ Hintergrund und Arbeitsfläche der Szene. UI-Platzierung → [`requirements-app-
 
 **Category:** Environment  
 **Title:** Viewport helpers — State & Serialisierung  
-**Description:** Flags z. B. `viewportHelpers.floorGrid`, `viewportHelpers.worldOrigin`, `viewportHelpers.lightHandles`, `viewportHelpers.forwardArrow` — Teil von **Scene Save** / `EnvironmentState` (oder eigenes Slice, in Snapshot serialisiert) — nicht nur Session-UI. **Left Environments**-Presets: Viewport helpers **nicht** mit anwenden (nur Sky/Ground/Lighting-Atmosphäre) — analog Fog/Reflection nicht in jedem Preset. Defaults: alle **aus** (clean Mockup-Start), außer Produkt entscheidet anders in `SCENE_DEFAULTS`.
+**Description:** Flags z. B. `viewportHelpers.floorGrid`, `viewportHelpers.worldOrigin`, `viewportHelpers.lightHandles`, `viewportHelpers.compassArrows` — Teil von **Scene Save** / `EnvironmentState` (oder eigenes Slice, in Snapshot serialisiert) — nicht nur Session-UI. **Left Environments**-Presets: Viewport helpers **nicht** mit anwenden (nur Sky/Ground/Lighting-Atmosphäre) — analog Fog/Reflection nicht in jedem Preset. Defaults: alle **aus** (clean Mockup-Start), außer Produkt entscheidet anders in `SCENE_DEFAULTS`.
 
 ---
 

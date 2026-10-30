@@ -148,7 +148,7 @@ export {
   toggleViewportHelpersAll,
   setViewportHelperFloorGrid,
   setViewportHelperWorldOrigin,
-  setViewportHelperForwardArrow,
+  setViewportHelperCompassArrows,
   setViewportHelperLightHandles,
 } from './app-store-viewport-helpers';
 

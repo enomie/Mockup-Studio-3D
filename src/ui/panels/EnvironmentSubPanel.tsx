@@ -10,7 +10,7 @@ import { NORMALIZED_DECIMALS, NORMALIZED_STEP } from '@/units/normalized';
 import {
   setGroundVisible,
   setViewportHelperFloorGrid,
-  setViewportHelperForwardArrow,
+  setViewportHelperCompassArrows,
   setViewportHelperLightHandles,
   setViewportHelperWorldOrigin,
   isAnyViewportHelperEnabled,
@@ -168,9 +168,9 @@ export function EnvironmentSubPanel() {
             onChange={setViewportHelperWorldOrigin}
           />
           <PanelCheckbox
-            label="Forward arrow"
-            checked={viewportHelpers.forwardArrow}
-            onChange={setViewportHelperForwardArrow}
+            label="Compass arrows"
+            checked={viewportHelpers.compassArrows}
+            onChange={setViewportHelperCompassArrows}
           />
           <PanelCheckbox
             label="Spot beams"

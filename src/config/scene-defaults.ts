@@ -81,7 +81,7 @@ export const SCENE_DEFAULTS = {
   viewportHelpers: {
     floorGrid: false,
     worldOrigin: false,
-    forwardArrow: false,
+    compassArrows: false,
     lightHandles: false,
   },
   lighting: {

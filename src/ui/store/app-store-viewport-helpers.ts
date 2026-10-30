@@ -5,7 +5,7 @@ export function isAnyViewportHelperEnabled(state: ViewportHelpersState): boolean
   return (
     state.floorGrid ||
     state.worldOrigin ||
-    state.forwardArrow ||
+    state.compassArrows ||
     state.lightHandles
   );
 }
@@ -14,7 +14,7 @@ export function setViewportHelpersAllEnabled(enabled: boolean): void {
   store.patchViewportHelpers({
     floorGrid: enabled,
     worldOrigin: enabled,
-    forwardArrow: enabled,
+    compassArrows: enabled,
     lightHandles: enabled,
   });
 }
@@ -32,8 +32,8 @@ export function setViewportHelperWorldOrigin(worldOrigin: boolean): void {
   store.patchViewportHelpers({ worldOrigin });
 }
 
-export function setViewportHelperForwardArrow(forwardArrow: boolean): void {
-  store.patchViewportHelpers({ forwardArrow });
+export function setViewportHelperCompassArrows(compassArrows: boolean): void {
+  store.patchViewportHelpers({ compassArrows });
 }
 
 export function setViewportHelperLightHandles(lightHandles: boolean): void {

@@ -64,7 +64,7 @@ export interface GroundSettings {
 export interface ViewportHelpersState {
   floorGrid: boolean;
   worldOrigin: boolean;
-  forwardArrow: boolean;
+  compassArrows: boolean;
   lightHandles: boolean;
 }
 
