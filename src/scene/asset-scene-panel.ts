@@ -7,7 +7,7 @@ import {
   isWineBottleAssetKind,
 } from './asset-kind-predicates';
 
-/** Szene panel: shared Dimensions (Size + WH) + Position footer. */
+/** Scene panel: shared Dimensions (Size + WH) + Position footer. */
 export function usesPackagingDimensionsPositionFooter(kind: AssetKind): boolean {
   return (
     isBeverageCanAssetKind(kind) ||

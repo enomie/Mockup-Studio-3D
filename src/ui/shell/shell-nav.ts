@@ -30,7 +30,7 @@ export const LEFT_SHELL_NAV: ShellNavItem[] = [
 ];
 
 export const RIGHT_SHELL_NAV: ShellNavItem[] = [
-  { id: 'scene', label: 'Szene', icon: Boxes },
+  { id: 'scene', label: 'Scene', icon: Boxes },
   { id: 'environment', label: 'Environment', icon: Sun },
   { id: 'camera', label: 'Camera', icon: Camera },
   { id: 'lighting', label: 'Lighting', icon: Lightbulb },

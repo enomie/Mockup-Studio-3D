@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight, Eye, EyeOff, Trash2 } from 'lucide-react';
+import { Eye, EyeOff, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Icon } from '@/ui/components/Icon';
 import { SubPanel } from '@/ui/components/SubPanel';
@@ -6,134 +6,68 @@ import { EntityPropertyFields } from './EntityPropertyFields';
 import { removeEntity, setEntityVisible, setSelectedEntity } from '@/ui/store/app-store';
 import { useAppStore } from '@/ui/store/use-app-store';
 
-function defaultCollapsedEntityIds(
-  entityIds: readonly string[],
-  selectedId: string | null,
-): Set<string> {
-  const collapsed = new Set(entityIds);
-  if (selectedId) {
-    collapsed.delete(selectedId);
-  }
-  return collapsed;
-}
-
 export function SceneSubPanel() {
   const entities = useAppStore((s) => s.entities);
   const selectedEntityId = useAppStore((s) => s.selectedEntityId);
   const images = useAppStore((s) => s.images);
-  const sectionRefs = useRef(new Map<string, HTMLElement>());
-  const [collapsedIds, setCollapsedIds] = useState<Set<string>>(() =>
-    defaultCollapsedEntityIds(
-      entities.map((entity) => entity.id),
-      selectedEntityId,
-    ),
-  );
+  const rowRefs = useRef(new Map<string, HTMLElement>());
+  const selected = entities.find((entity) => entity.id === selectedEntityId) ?? null;
+  const [detailCollapsed, setDetailCollapsed] = useState(false);
   const [prevSelectedEntityId, setPrevSelectedEntityId] = useState(selectedEntityId);
-  const knownEntityIdsRef = useRef(new Set(entities.map((entity) => entity.id)));
 
-  useEffect(() => {
-    const entityIdSet = new Set(entities.map((entity) => entity.id));
-    setCollapsedIds((prev) => {
-      const next = new Set(prev);
-      let changed = false;
-      for (const id of entityIdSet) {
-        if (!knownEntityIdsRef.current.has(id)) {
-          knownEntityIdsRef.current.add(id);
-          if (id !== selectedEntityId) {
-            next.add(id);
-            changed = true;
-          }
-        }
-      }
-      for (const id of knownEntityIdsRef.current) {
-        if (!entityIdSet.has(id)) {
-          knownEntityIdsRef.current.delete(id);
-          if (next.has(id)) {
-            next.delete(id);
-            changed = true;
-          }
-        }
-      }
-      return changed ? next : prev;
-    });
-  }, [entities, selectedEntityId]);
-
+  // A new selection (list or viewport) always reopens the detail column.
   if (selectedEntityId !== prevSelectedEntityId) {
     setPrevSelectedEntityId(selectedEntityId);
-    if (selectedEntityId) {
-      setCollapsedIds((prev) => {
-        if (!prev.has(selectedEntityId)) {return prev;}
-        const next = new Set(prev);
-        next.delete(selectedEntityId);
-        return next;
-      });
-    }
+    if (selectedEntityId) {setDetailCollapsed(false);}
   }
 
   useEffect(() => {
     if (!selectedEntityId) {return;}
-    const section = sectionRefs.current.get(selectedEntityId);
-    section?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    rowRefs.current.get(selectedEntityId)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   }, [selectedEntityId]);
 
-  const toggleCollapsed = (entityId: string): void => {
-    setCollapsedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(entityId)) {
-        next.delete(entityId);
-      } else {
-        next.add(entityId);
-      }
-      return next;
-    });
-  };
-
-  const handleRemove = (entityId: string): void => {
-    removeEntity(entityId);
-    setCollapsedIds((prev) => {
-      if (!prev.has(entityId)) {return prev;}
-      const next = new Set(prev);
-      next.delete(entityId);
-      return next;
-    });
+  const handleSelect = (entityId: string): void => {
+    if (entityId === selectedEntityId && !detailCollapsed) {
+      setSelectedEntity(null);
+      return;
+    }
+    setDetailCollapsed(false);
+    setSelectedEntity(entityId);
   };
 
   return (
-    <SubPanel title="Szene" side="right">
-      {entities.length === 0 ? (
-        <p className="placeholder">No items — add from Assets.</p>
-      ) : (
-        <ul className="scene-entity-list">
-          {entities.map((entity) => {
-            const isSelected = entity.id === selectedEntityId;
-            const isCollapsed = collapsedIds.has(entity.id);
-            return (
-              <li key={entity.id}>
-                <section
+    <SubPanel
+      layout="split"
+      title="Scene"
+      side="right"
+      detailCollapsed={detailCollapsed}
+      onCollapseDetail={() => { setDetailCollapsed(true); }}
+      detailTitle={selected?.name ?? ''}
+      primary={
+        entities.length === 0 ? (
+          <p className="placeholder">No items — add from Assets.</p>
+        ) : (
+          <ul className="scene-entity-list scene-entity-list--rows">
+            {entities.map((entity) => {
+              const isSelected = entity.id === selectedEntityId;
+              return (
+                <li
+                  key={entity.id}
                   ref={(node) => {
                     if (node) {
-                      sectionRefs.current.set(entity.id, node);
+                      rowRefs.current.set(entity.id, node);
                     } else {
-                      sectionRefs.current.delete(entity.id);
+                      rowRefs.current.delete(entity.id);
                     }
                   }}
-                  className={`scene-entity-block${isSelected ? ' scene-entity-block--selected' : ''}${isCollapsed ? ' scene-entity-block--collapsed' : ''}${entity.visible ? '' : ' scene-entity-block--hidden'}`}
+                  className={`scene-entity-block${isSelected ? ' scene-entity-block--selected' : ''}${entity.visible ? '' : ' scene-entity-block--hidden'}`}
                 >
                   <div className="scene-entity-block__header">
                     <button
                       type="button"
-                      className="scene-entity-block__collapse"
-                      aria-expanded={!isCollapsed}
-                      aria-label={isCollapsed ? 'Expand properties' : 'Collapse properties'}
-                      onClick={() => { toggleCollapsed(entity.id); }}
-                    >
-                      <Icon icon={isCollapsed ? ChevronRight : ChevronDown} />
-                    </button>
-                    <button
-                      type="button"
                       className="scene-entity-block__title"
                       aria-current={isSelected ? 'true' : undefined}
-                      onClick={() => { setSelectedEntity(isSelected ? null : entity.id); }}
+                      onClick={() => { handleSelect(entity.id); }}
                     >
                       {entity.name}
                     </button>
@@ -152,24 +86,26 @@ export function SceneSubPanel() {
                       className="scene-entity-block__remove"
                       aria-label={`Remove ${entity.name}`}
                       title="Remove"
-                      onClick={() => { handleRemove(entity.id); }}
+                      onClick={() => { removeEntity(entity.id); }}
                     >
                       <Icon icon={Trash2} />
                     </button>
                   </div>
-                  {!isCollapsed ? (
-                    <EntityPropertyFields
-                      entity={entity}
-                      images={images}
-                      screenImageFieldId={`scene-entity-image-${entity.id}`}
-                    />
-                  ) : null}
-                </section>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-    </SubPanel>
+                </li>
+              );
+            })}
+          </ul>
+        )
+      }
+      detail={
+        selected ? (
+          <EntityPropertyFields
+            entity={selected}
+            images={images}
+            screenImageFieldId={`scene-entity-image-${selected.id}`}
+          />
+        ) : null
+      }
+    />
   );
 }

@@ -4,14 +4,22 @@ import { ExportSubPanel } from '@/ui/panels/ExportSubPanel';
 import { LightingSubPanel } from '@/ui/panels/LightingSubPanel';
 import { PhysicsSubPanel } from '@/ui/panels/PhysicsSubPanel';
 import { SceneSubPanel } from '@/ui/panels/SceneSubPanel';
-import { ShellSubPanelProvider } from '@/ui/components/shell-sub-panel-context';
+import {
+  ShellSubPanelProvider,
+  type SubPanelWidthMode,
+} from '@/ui/components/shell-sub-panel-context';
 
 interface RightSubPanelProps {
   selectedId: string;
   onToggleShellCollapse: () => void;
+  onSubWidthModeChange: (mode: SubPanelWidthMode) => void;
 }
 
-export function RightSubPanel({ selectedId, onToggleShellCollapse }: RightSubPanelProps) {
+export function RightSubPanel({
+  selectedId,
+  onToggleShellCollapse,
+  onSubWidthModeChange,
+}: RightSubPanelProps) {
   let content = null;
 
   if (selectedId === 'scene') {
@@ -33,7 +41,11 @@ export function RightSubPanel({ selectedId, onToggleShellCollapse }: RightSubPan
   }
 
   return (
-    <ShellSubPanelProvider side="right" onToggleShellCollapse={onToggleShellCollapse}>
+    <ShellSubPanelProvider
+      side="right"
+      onToggleShellCollapse={onToggleShellCollapse}
+      onSubWidthModeChange={onSubWidthModeChange}
+    >
       {content}
     </ShellSubPanelProvider>
   );

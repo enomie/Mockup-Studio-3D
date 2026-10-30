@@ -22,9 +22,14 @@ export function AppShell() {
   const [leftSubCollapsed, setLeftSubCollapsed] = useState(false);
   const [rightSubCollapsed, setRightSubCollapsed] = useState(false);
   const [leftSubWidthMode, setLeftSubWidthMode] = useState<SubPanelWidthMode>('default');
+  const [rightSubWidthMode, setRightSubWidthMode] = useState<SubPanelWidthMode>('default');
 
   const handleLeftSubWidthMode = useCallback((mode: SubPanelWidthMode) => {
     setLeftSubWidthMode(mode);
+  }, []);
+
+  const handleRightSubWidthMode = useCallback((mode: SubPanelWidthMode) => {
+    setRightSubWidthMode(mode);
   }, []);
 
   const handleLeftSelect = useCallback((id: string) => {
@@ -49,6 +54,7 @@ export function AppShell() {
         data-left-sub-collapsed={leftSubCollapsed ? '' : undefined}
         data-right-sub-collapsed={rightSubCollapsed ? '' : undefined}
         data-left-sub-split={leftSubWidthMode === 'split' ? '' : undefined}
+        data-right-sub-split={rightSubWidthMode === 'split' ? '' : undefined}
       >
         <LeftMainPanel
           selectedId={leftSelected}
@@ -79,6 +85,7 @@ export function AppShell() {
             <RightSubPanel
               selectedId={rightSelected}
               onToggleShellCollapse={() => { setRightSubCollapsed(true); }}
+              onSubWidthModeChange={handleRightSubWidthMode}
             />
           ) : null}
         </div>

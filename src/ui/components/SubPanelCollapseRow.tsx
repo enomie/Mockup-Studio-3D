@@ -30,7 +30,7 @@ export function SubPanelCollapseRow({
     onCollapseDetail?.();
   };
 
-  // Match split columns: primary (list) is left → shell; detail (editor) is right → detail only.
+  // Match split columns: shell bar under the list, detail bar under the editor (mirrored on the right side via CSS).
   return (
     <div
       className={`sub-panel__collapse-row${multiple ? ' sub-panel__collapse-row--multiple' : ''}`}
