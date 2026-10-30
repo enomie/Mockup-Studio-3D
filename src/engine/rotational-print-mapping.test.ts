@@ -48,6 +48,19 @@ describe('applyRotationalPrintUv', () => {
   });
 });
 
+describe('applyRotationalPrintUv seam', () => {
+  it('keeps every triangle of a full wrap continuous in U', () => {
+    const geometry = new CylinderGeometry(0.03, 0.03, 0.1, 24, 1, true, Math.PI);
+    applyRotationalPrintUv(geometry, { y0: -0.05, y1: 0.05 });
+    const printUv = geometry.getAttribute(PRINT_UV_ATTRIBUTE);
+    const index = geometry.getIndex()!;
+    for (let i = 0; i < index.count; i += 3) {
+      const us = [0, 1, 2].map((k) => printUv.getX(index.getX(i + k)));
+      expect(Math.max(...us) - Math.min(...us)).toBeLessThan(0.1);
+    }
+  });
+});
+
 describe('rotationalPrintFit', () => {
   it('falls back to spans of 1 without image size', () => {
     expect(rotationalPrintFit('wrap-width', 0.2, 0.1)).toEqual({

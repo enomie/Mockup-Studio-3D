@@ -19,7 +19,6 @@ import {
   createImagePbrMaterial,
   createImageOnPresetMaterial,
   createMaterialFromPreset,
-  createPenBodyWrapMaterial,
   createPassepartoutPbrMaterial,
   createTransmissionMaterial,
   isClearTransmissionPreset,
@@ -316,30 +315,6 @@ describe('createPassepartoutPbrMaterial', () => {
 
     expect(material.colorNode).toBeDefined();
     expect(material.roughnessNode).toBeDefined();
-  });
-});
-
-describe('createPenBodyWrapMaterial', () => {
-  it('uses opaque standard material with shader color (no PNG hole pass)', () => {
-    const tex = new Texture();
-    const surface = resolveImageSurfaceSettings(undefined, 'label', {
-      assetKind: 'pen',
-    });
-    const material = createPenBodyWrapMaterial(
-      resolvePreset,
-      surface,
-      tex,
-      0.04,
-      0.12,
-      800,
-      2000,
-      { r: 0.2, g: 0.3, b: 0.4 },
-    );
-
-    expect(material).toBeInstanceOf(MeshStandardNodeMaterial);
-    expect(material.transparent).toBe(false);
-    expect(material.depthWrite).toBe(true);
-    expect(material.colorNode).toBeDefined();
   });
 });
 

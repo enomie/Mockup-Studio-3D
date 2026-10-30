@@ -43,12 +43,10 @@ describe('wine-bottle-geometry', () => {
     const result = await buildWineBottleMeshes({
       params: defaultWineBottleParams('bordeaux'),
       sizeScale: 1,
-      labelPrintVisible: false,
       glassMaterial: stubMaterial,
       corkMaterial: stubMaterial,
       foilMaterial: stubMaterial,
       discMaterial: stubMaterial,
-      labelMaterial: stubMaterial,
     });
     result.bodyMesh.geometry.computeBoundingBox();
     const footY = result.bodyMesh.geometry.boundingBox?.min.y ?? 0;
@@ -61,12 +59,10 @@ describe('wine-bottle-geometry', () => {
     const result = await buildWineBottleMeshes({
       params: defaultWineBottleParams('alsace'),
       sizeScale: 1,
-      labelPrintVisible: false,
       glassMaterial: stubMaterial,
       corkMaterial: stubMaterial,
       foilMaterial: stubMaterial,
       discMaterial: stubMaterial,
-      labelMaterial: stubMaterial,
     });
     const pos = result.bodyMesh.geometry.getAttribute('position');
     for (let i = 0; i < pos.count; i += 1) {
@@ -84,12 +80,10 @@ describe('wine-bottle-geometry', () => {
     const result = await buildWineBottleMeshes({
       params: defaultWineBottleParams('bordeaux'),
       sizeScale: 1,
-      labelPrintVisible: false,
       glassMaterial: stubMaterial,
       corkMaterial: stubMaterial,
       foilMaterial: stubMaterial,
       discMaterial: stubMaterial,
-      labelMaterial: stubMaterial,
     });
     expect(result.bodyMesh.geometry.getAttribute('position').count).toBeGreaterThan(100);
     result.bodyMesh.geometry.dispose();
@@ -99,14 +93,12 @@ describe('wine-bottle-geometry', () => {
     const result = await buildWineBottleMeshes({
       params: defaultWineBottleParams('bordeaux'),
       sizeScale: 1,
-      labelPrintVisible: false,
       glassMaterial: stubMaterial,
       corkMaterial: stubMaterial,
       foilMaterial: stubMaterial,
       discMaterial: stubMaterial,
-      labelMaterial: stubMaterial,
     });
-    expect(result.labelMesh).toBeNull();
+    expect(result.bodyMesh.geometry.getAttribute('printUv')).toBeTruthy();
     expect(result.bodyMesh).toBeTruthy();
   });
 
@@ -115,12 +107,10 @@ describe('wine-bottle-geometry', () => {
     const result = await buildWineBottleMeshes({
       params,
       sizeScale: 1,
-      labelPrintVisible: false,
       glassMaterial: stubMaterial,
       corkMaterial: stubMaterial,
       foilMaterial: stubMaterial,
       discMaterial: stubMaterial,
-      labelMaterial: stubMaterial,
     });
     expect(result.foilMesh).toBeTruthy();
     result.foilMesh!.geometry.computeBoundingBox();

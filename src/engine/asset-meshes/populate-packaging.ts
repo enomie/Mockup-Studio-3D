@@ -8,7 +8,7 @@ import {
   WINE_BOTTLE_GLASS_TRANSMISSION_MESH_DEPTH_FACTOR,
 } from '@/scene/asset-wine-bottle';
 import { defaultPenParams } from '@/scene/asset-pen';
-import { resolveImageSurfaceSettings } from '@/scene/image-surface';
+import { isGeometryVisible } from '@/scene/geometry-visibility';
 import {
   MATERIAL_ALUMINUM_BRUSHED_ID,
   MATERIAL_GLASS_WINE_BOTTLE_ID,
@@ -22,11 +22,6 @@ import {
   beverageCanLabelCoverPlaneM,
   buildBeverageCanMeshes,
 } from '@/engine/beverage-can-geometry';
-import { prepareCylindricalCanPopulateSetup } from '@/engine/cylindrical-can-populate';
-import {
-  createImagePbrMaterial,
-  createPenBodyWrapMaterial,
-} from '@/engine/material-resolver';
 import {
   buildTinCanMeshes,
   tinCanLabelCoverPlaneM,
@@ -42,6 +37,7 @@ import {
 import { loadPenLatheProfiles } from '@/engine/pen-svg-profile';
 import type { AssetBuildContext } from './asset-build-context';
 import { disposeAssetGroup } from './dispose-asset-group';
+import { resolveRotationalPrintBodyMaterial } from './rotational-print-populate';
 import { resolveMeshMaterial } from './shared';
 
 export async function populateBeverageCanGroup(
@@ -49,38 +45,38 @@ export async function populateBeverageCanGroup(
   context: AssetBuildContext,
 ): Promise<void> {
   disposeAssetGroup(group);
+  const resolver = context.materialResolver;
+  if (!resolver) {return;}
 
   const params = context.beverageCanParams ?? defaultBeverageCanParams('standard');
   const sizeScale = context.sizeScale ?? 1;
   const coverPlane = beverageCanLabelCoverPlaneM(params, sizeScale);
+  const metalMaterialId = context.materials?.metalMaterialId ?? MATERIAL_ALUMINUM_BRUSHED_ID;
 
-  const setup = prepareCylindricalCanPopulateSetup(context, {
+  const bodyMetalMaterial = resolveRotationalPrintBodyMaterial(context, {
     assetKind: 'beverage-can',
+    bodyMaterialId: metalMaterialId,
+    bodyOptions: { surfaceRole: 'frame', grainAlongU: true },
+    layout: 'wrap-width',
     planeW: coverPlane.planeW,
     planeH: coverPlane.planeH,
-    includeTopRingMetal: true,
+    printVisible: isGeometryVisible(context.geometryVisibility, 'label'),
   });
-  if (!setup) {return;}
+  if (!bodyMetalMaterial) {return;}
+  const topRingMetalMaterial = resolveMeshMaterial(resolver, metalMaterialId, {
+    surfaceRole: 'frame',
+    grainAlongU: false,
+  });
 
-  const topRingMetalMaterial = setup.topRingMetalMaterial;
-  if (!topRingMetalMaterial) {
-    throw new Error('Beverage can populate requires top ring material');
-  }
-
-  const { bodyMesh, labelMesh, topRingMesh } = await buildBeverageCanMeshes({
+  const { bodyMesh, topRingMesh } = await buildBeverageCanMeshes({
     params,
     sizeScale,
     geometryVisibility: context.geometryVisibility,
-    labelPrintVisible: setup.hasLabelImage,
-    bodyMetalMaterial: setup.bodyMetalMaterial,
+    bodyMetalMaterial,
     topRingMetalMaterial,
-    labelMaterial: setup.labelMaterial,
   });
 
   group.add(bodyMesh);
-  if (labelMesh) {
-    group.add(labelMesh);
-  }
   group.add(topRingMesh);
   applyAssetShadowFlags(group);
 }
@@ -95,27 +91,25 @@ export function populateTinCanGroup(
   const sizeScale = context.sizeScale ?? 1;
   const coverPlane = tinCanLabelCoverPlaneM(params, sizeScale);
 
-  const setup = prepareCylindricalCanPopulateSetup(context, {
+  const bodyMetalMaterial = resolveRotationalPrintBodyMaterial(context, {
     assetKind: 'tin-can',
+    bodyMaterialId: context.materials?.metalMaterialId ?? MATERIAL_ALUMINUM_BRUSHED_ID,
+    bodyOptions: { surfaceRole: 'frame', grainAlongU: true },
+    layout: 'wrap-width',
     planeW: coverPlane.planeW,
     planeH: coverPlane.planeH,
-    applyTinLabelPolygonOffset: true,
+    printVisible: isGeometryVisible(context.geometryVisibility, 'label'),
   });
-  if (!setup) {return;}
+  if (!bodyMetalMaterial) {return;}
 
-  const { bodyMesh, labelMesh } = buildTinCanMeshes({
+  const { bodyMesh } = buildTinCanMeshes({
     params,
     sizeScale,
     geometryVisibility: context.geometryVisibility,
-    labelPrintVisible: setup.hasLabelImage,
-    bodyMetalMaterial: setup.bodyMetalMaterial,
-    labelMaterial: setup.labelMaterial,
+    bodyMetalMaterial,
   });
 
   group.add(bodyMesh);
-  if (labelMesh) {
-    group.add(labelMesh);
-  }
   applyAssetShadowFlags(group);
 }
 
@@ -134,10 +128,23 @@ export async function populateWineBottleGroup(
   const glassMaterialId =
     materials.glassMaterialId ?? MATERIAL_GLASS_WINE_BOTTLE_ID;
   const wallThicknessM = params.wallThicknessM * sizeScale;
-  const glassMaterial = resolveMeshMaterial(resolver, glassMaterialId, {
-    meshDepthM: wallThicknessM * WINE_BOTTLE_GLASS_TRANSMISSION_MESH_DEPTH_FACTOR,
+  const labelPlane = computeWineBottleLabelPlane(
+    params,
+    context.imageWidth,
+    context.imageHeight,
+  );
+  const glassMaterial = resolveRotationalPrintBodyMaterial(context, {
+    assetKind: 'wine-bottle',
+    bodyMaterialId: glassMaterialId,
+    bodyOptions: {
+      meshDepthM: wallThicknessM * WINE_BOTTLE_GLASS_TRANSMISSION_MESH_DEPTH_FACTOR,
+    },
+    layout: 'wrap-width',
+    planeW: labelPlane.planeW,
+    planeH: labelPlane.planeH,
+    printVisible: isGeometryVisible(context.geometryVisibility, 'label'),
   });
-
+  if (!glassMaterial) {return;}
   const corkMaterial = resolveMeshMaterial(
     resolver,
     materials.corkMaterialId ?? MATERIAL_WOOD_POROUS_ID,
@@ -153,43 +160,19 @@ export async function populateWineBottleGroup(
     { surfaceRole: 'frame', grainAlongU: false },
   );
 
-  const hasLabelImage = Boolean(context.imageTexture);
-  const labelPlane = computeWineBottleLabelPlane(
-    params,
-    context.imageWidth,
-    context.imageHeight,
-  );
-  const labelMaterial =
-    hasLabelImage && context.imageTexture
-      ? createImagePbrMaterial(
-          (id) => resolver.resolvePreset(id),
-          resolveImageSurfaceSettings(context.imageSurfaces, 'label', {
-            assetKind: 'wine-bottle',
-          }),
-          context.imageTexture,
-          labelPlane.planeW * sizeScale,
-          labelPlane.planeH * sizeScale,
-          context.imageWidth,
-          context.imageHeight,
-        )
-      : glassMaterial;
-
   const meshes = await buildWineBottleMeshes({
     params,
     sizeScale,
     geometryVisibility: context.geometryVisibility,
-    labelPrintVisible: hasLabelImage,
     imageWidth: context.imageWidth,
     imageHeight: context.imageHeight,
     glassMaterial,
     corkMaterial,
     foilMaterial,
     discMaterial,
-    labelMaterial,
   });
 
   group.add(meshes.bodyMesh);
-  if (meshes.labelMesh) {group.add(meshes.labelMesh);}
   if (meshes.corkMesh) {group.add(meshes.corkMesh);}
   if (meshes.foilMesh) {group.add(meshes.foilMesh);}
   if (meshes.discMesh) {group.add(meshes.discMesh);}
@@ -216,40 +199,21 @@ export async function populatePenGroup(
     resolver,
     materials.ringMaterialId ?? MATERIAL_ALUMINUM_BRUSHED_ID,
   );
-  const bodyBaseMaterial = resolveMeshMaterial(
-    resolver,
-    materials.bodyMaterialId ?? MATERIAL_PLASTIC_SMOOTH_ID,
-  );
-
-  const hasLabelImage = Boolean(context.imageTexture);
   const profiles = await loadPenLatheProfiles(params.penBodyProfile, sizeScale);
   const coverPlane = penBodyCoverPlaneFromProfiles(profiles);
-
-  const bodyMaterialId = materials.bodyMaterialId ?? MATERIAL_PLASTIC_SMOOTH_ID;
-  const bodyPreset = resolver.resolvePreset(bodyMaterialId);
-  const bodyUnderlayRgb = bodyPreset?.color ?? { r: 0.72, g: 0.72, b: 0.72 };
-
-  const bodyMaterial =
-    hasLabelImage && context.imageTexture
-      ? createPenBodyWrapMaterial(
-          (id) => resolver.resolvePreset(id),
-          resolveImageSurfaceSettings(context.imageSurfaces, 'label', {
-            assetKind: 'pen',
-          }),
-          context.imageTexture,
-          coverPlane.planeW,
-          coverPlane.planeH,
-          context.imageWidth,
-          context.imageHeight,
-          bodyUnderlayRgb,
-        )
-      : bodyBaseMaterial;
+  const bodyMaterial = resolveRotationalPrintBodyMaterial(context, {
+    assetKind: 'pen',
+    bodyMaterialId: materials.bodyMaterialId ?? MATERIAL_PLASTIC_SMOOTH_ID,
+    layout: 'wrap-height',
+    planeW: coverPlane.planeW,
+    planeH: coverPlane.planeH,
+  });
+  if (!bodyMaterial) {return;}
 
   const meshes = await buildPenMeshes({
     penParams: params,
     sizeScale,
     geometryVisibility: context.geometryVisibility,
-    bodyPrintVisible: hasLabelImage,
     imageWidth: context.imageWidth,
     imageHeight: context.imageHeight,
     capMaterial,

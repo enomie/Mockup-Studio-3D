@@ -4,7 +4,6 @@ import {
   LatheGeometry,
   Mesh,
   Vector2,
-  type BufferAttribute,
   type BufferGeometry,
   type Material,
 } from 'three/webgpu';
@@ -21,7 +20,7 @@ import {
   tinCanVerticalPivotOffsetM,
   type TinCanParams,
 } from '@/scene/asset-tin-can';
-import { cylindricalLabelUv } from './cylindrical-label-uv';
+import { applyOutsidePrintUv, applyRotationalPrintUv } from './rotational-print-mapping';
 import { LATHE_SEAM_PHI_START } from './lathe-asset-common';
 import { buildOpenMantleGeometry } from './open-mantle-geometry';
 import { ensureGeometryTangents } from '@/engine/geometry-tangents';
@@ -32,9 +31,6 @@ const CAP_RADIAL_SEGMENTS = 64;
 
 /** Bead depth relative to body radius at default size. */
 const BEAD_AMPLITUDE_RATIO = 0.022;
-/** Outward bias so label sits on top of hull (avoids z-fight on rippled mantle). */
-export const TIN_CAN_LABEL_RADIAL_STANDOFF_M = 0.00008;
-
 export function tinCanOuterRadiusAtY(y: number, params: TinCanParams): number {
   const R = params.bodyRadiusM;
   const { mantleY0, mantleY1 } = mantleYBounds(params);
@@ -73,18 +69,15 @@ function buildSideMantleGeometry(
   y0: number,
   y1: number,
   heightSegments: number,
-  uvAt?: (x: number, y: number, z: number, phiT: number, heightT: number) => [number, number],
-  radialStandoffM = 0,
 ): BufferGeometry {
   const geometry = buildOpenMantleGeometry({
     y0,
     y1,
-    sampleRadius: (y) => tinCanOuterRadiusAtY(y, params) + radialStandoffM,
+    sampleRadius: (y) => tinCanOuterRadiusAtY(y, params),
     phiStart: LATHE_SEAM_PHI_START,
     phiLength: Math.PI * 2,
     radialSegments: MANTLE_RADIAL_SEGMENTS,
     heightSegments,
-    uvAt,
   });
   finalizeMantleGeometry(geometry);
   return geometry;
@@ -153,37 +146,6 @@ function buildSealedLidPair(
   ];
 }
 
-function omitLabelBandFromSideMantle(
-  geometry: BufferGeometry,
-  params: TinCanParams,
-): void {
-  const position = geometry.getAttribute('position') as BufferAttribute;
-  const index = geometry.getIndex();
-  if (!index) {
-    return;
-  }
-
-  const positions = position.array as Float32Array;
-  const { labelY0, labelY1 } = labelBandYBounds(params);
-  const kept: number[] = [];
-
-  for (let i = 0; i < index.count; i += 3) {
-    const ia = index.getX(i);
-    const ib = index.getX(i + 1);
-    const ic = index.getX(i + 2);
-    const ay = positions[ia * 3 + 1];
-    const by = positions[ib * 3 + 1];
-    const cy = positions[ic * 3 + 1];
-    const cyY = (ay + by + cy) / 3;
-    if (cyY >= labelY0 && cyY <= labelY1) {
-      continue;
-    }
-    kept.push(ia, ib, ic);
-  }
-
-  geometry.setIndex(kept);
-}
-
 function applyTinCanFootPivot(geometry: BufferGeometry, params: TinCanParams): void {
   const dy = tinCanVerticalPivotOffsetM(params);
   if (Math.abs(dy) > 1e-12) {
@@ -191,10 +153,8 @@ function applyTinCanFootPivot(geometry: BufferGeometry, params: TinCanParams): v
   }
 }
 
-export function buildTinCanBodyGeometry(
-  params: TinCanParams,
-  omitLabelBand: boolean,
-): BufferGeometry {
+/** Sealed body; the label band of the side mantle carries `printUv`, all other parts are outside. */
+export function buildTinCanBodyGeometry(params: TinCanParams): BufferGeometry {
   const { mantleY0, mantleY1 } = mantleYBounds(params);
   const side = buildSideMantleGeometry(
     params,
@@ -202,14 +162,16 @@ export function buildTinCanBodyGeometry(
     mantleY1,
     MANTLE_HEIGHT_SEGMENTS,
   );
-  if (omitLabelBand) {
-    omitLabelBandFromSideMantle(side, params);
-  }
+  const { labelY0, labelY1 } = labelBandYBounds(params);
+  applyRotationalPrintUv(side, { y0: labelY0, y1: labelY1 });
 
   const bottomRing = buildEndRingGeometry(params, 'bottom');
   const topRing = buildEndRingGeometry(params, 'top');
   const [bottomOuter, bottomInner] = buildSealedLidPair(params, 'bottom');
   const [topOuter, topInner] = buildSealedLidPair(params, 'top');
+  for (const part of [bottomRing, topRing, bottomOuter, bottomInner, topOuter, topInner]) {
+    applyOutsidePrintUv(part);
+  }
 
   const merged = mergeGeometries(
     [bottomRing, topRing, side, bottomOuter, bottomInner, topOuter, topInner],
@@ -228,25 +190,6 @@ export function buildTinCanBodyGeometry(
   return merged;
 }
 
-export function buildTinCanLabelMantleGeometry(
-  params: TinCanParams,
-  radialStandoffM = TIN_CAN_LABEL_RADIAL_STANDOFF_M,
-): BufferGeometry {
-  const { labelY0, labelY1 } = labelBandYBounds(params);
-  const geometry = buildSideMantleGeometry(
-    params,
-    labelY0,
-    labelY1,
-    LABEL_MANTLE_HEIGHT_SEGMENTS,
-    (x, y, z) => cylindricalLabelUv(x, y, z, labelY0, labelY1),
-    radialStandoffM,
-  );
-  applyTinCanFootPivot(geometry, params);
-  return geometry;
-}
-
-const LABEL_MANTLE_HEIGHT_SEGMENTS = 32;
-
 export function tinCanLabelCoverPlaneM(
   params: TinCanParams,
   sizeScale = 1,
@@ -263,41 +206,19 @@ export interface TinCanMeshBuildInput {
   params: TinCanParams;
   sizeScale: number;
   geometryVisibility?: AssetGeometryVisibility;
-  labelPrintVisible: boolean;
+  /** Body metal; carries the label print when an image is set. */
   bodyMetalMaterial: Material;
-  labelMaterial: Material;
 }
 
 export interface TinCanMeshBuildResult {
   bodyMesh: Mesh;
-  labelMesh: Mesh | null;
 }
 
 export function buildTinCanMeshes(input: TinCanMeshBuildInput): TinCanMeshBuildResult {
   const scaled = scaledTinCanParams(input.params, input.sizeScale);
-
-  const labelPartVisible = isGeometryVisible(input.geometryVisibility, 'label');
-  const showLabelPrint = labelPartVisible && input.labelPrintVisible;
-
-  const bodyGeometry = buildTinCanBodyGeometry(scaled, showLabelPrint);
-  const bodyVisible = isGeometryVisible(input.geometryVisibility, 'body');
-
-  const bodyMesh = new Mesh(bodyGeometry, input.bodyMetalMaterial);
+  const bodyMesh = new Mesh(buildTinCanBodyGeometry(scaled), input.bodyMetalMaterial);
   bodyMesh.name = 'tin-can-body';
   bodyMesh.userData.assetMeshRole = 'body';
-  bodyMesh.visible = bodyVisible;
-
-  let labelMesh: Mesh | null = null;
-  if (showLabelPrint) {
-    const labelGeometry = buildTinCanLabelMantleGeometry(
-      scaled,
-      TIN_CAN_LABEL_RADIAL_STANDOFF_M * input.sizeScale,
-    );
-    labelMesh = new Mesh(labelGeometry, input.labelMaterial);
-    labelMesh.name = 'tin-can-label';
-    labelMesh.userData.assetMeshRole = 'label';
-    labelMesh.renderOrder = 2;
-  }
-
-  return { bodyMesh, labelMesh };
+  bodyMesh.visible = isGeometryVisible(input.geometryVisibility, 'body');
+  return { bodyMesh };
 }

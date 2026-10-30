@@ -6,7 +6,6 @@ import { defaultBeverageCanParams } from '@/scene/asset-beverage-can';
 import { MM_TO_M } from '@/units/length';
 import { computeLabelUnfoldForProfile } from './beverage-can-label-unfold';
 import {
-  buildBeverageCanLabelMantleGeometry,
   buildCanHullLatheGeometry,
   buildTopRingGeometry,
   labelBandYBounds,
@@ -75,47 +74,23 @@ describe('beverage-can-geometry', () => {
     }
   });
 
-  it('omitting label band removes cylindrical hull triangles when label is shown', () => {
+  it('keeps the full hull and writes printUv spanning the label band', () => {
     const params = defaultBeverageCanParams('standard');
     const profile = syntheticCylinderProfile(params);
-    const full = buildCanHullLatheGeometry(profile);
-    const cut = buildCanHullLatheGeometry(profile, { params, omitLabelBand: true });
-    expect(cut.getIndex()!.count).toBeLessThan(full.getIndex()!.count);
-    expect(cut.getIndex()!.count).toBeGreaterThan(0);
-  });
+    const plain = buildCanHullLatheGeometry(profile);
+    const printed = buildCanHullLatheGeometry(profile, { params });
+    expect(printed.getIndex()!.count).toBe(plain.getIndex()!.count);
 
-  it('label mantle spans the cylindrical band height', () => {
-    for (const profile of ['standard', 'sleek'] as const) {
-      const params = defaultBeverageCanParams(profile);
-      const { labelY0, labelY1 } = labelBandYBounds(params);
-      const geometry = buildBeverageCanLabelMantleGeometry(
-        syntheticCylinderProfile(params),
-        params,
-      );
-      geometry.computeBoundingBox();
-      const box = geometry.boundingBox!;
-      expect(box.min.y).toBeCloseTo(labelY0, 4);
-      expect(box.max.y).toBeCloseTo(labelY1, 4);
-    }
-  });
-
-  it('label UV reaches v ≈ 1 near mantle top', () => {
-    const params = defaultBeverageCanParams('standard');
-    const { labelY1 } = labelBandYBounds(params);
-    const geometry = buildBeverageCanLabelMantleGeometry(
-      syntheticCylinderProfile(params),
-      params,
-    );
-    const uv = geometry.getAttribute('uv');
-    const pos = geometry.getAttribute('position');
-    let maxVNearTop = 0;
+    const { labelY0, labelY1 } = labelBandYBounds(params);
+    const printUv = printed.getAttribute('printUv');
+    const pos = printed.getAttribute('position');
+    // V is linear in y, so band edges interpolate correctly even between profile vertices.
     for (let i = 0; i < pos.count; i += 1) {
       const y = pos.getY(i);
-      if (y >= labelY1 - params.heightM * 0.02) {
-        maxVNearTop = Math.max(maxVNearTop, uv.getY(i));
-      }
+      const v = printUv.getY(i);
+      if (v === -1) {continue;}
+      expect(v).toBeCloseTo((y - labelY0) / (labelY1 - labelY0), 5);
     }
-    expect(maxVNearTop).toBeGreaterThan(0.95);
   });
 
   it('lathe seam is placed at −Z (back), not on front +Z', () => {

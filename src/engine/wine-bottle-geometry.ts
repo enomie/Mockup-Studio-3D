@@ -32,14 +32,12 @@ import {
   loadWineBottleOpenWallProfile,
   sampleWineBottleRadiusAtY,
 } from './wine-bottle-svg-profile';
+import type { RotationalPrintBand } from './rotational-print-mapping';
 import { ensureGeometryTangents } from '@/engine/geometry-tangents';
 const MANTLE_RADIAL_SEGMENTS = 64;
+/** Former label offset; still widens the arc slightly so existing label widths stay put. */
 const LABEL_RADIAL_STANDOFF_M = 0.001;
 const CAPSULE_RENDER_STANDOFF_M = 0.001;
-
-function labelRadialStandoffM(wallThicknessM: number, sizeScale: number): number {
-  return Math.max(LABEL_RADIAL_STANDOFF_M, wallThicknessM * 0.5 + 0.0001) * sizeScale;
-}
 
 function capsuleRadialStandoffM(sizeScale: number): number {
   return Math.max(CAPSULE_FOIL_STANDOFF_M, CAPSULE_RENDER_STANDOFF_M) * sizeScale;
@@ -58,21 +56,19 @@ export interface WineBottleMeshBuildInput {
   params: WineBottleParams;
   sizeScale: number;
   geometryVisibility?: AssetGeometryVisibility;
-  labelPrintVisible: boolean;
   imageWidth?: number;
   imageHeight?: number;
+  /** Glass; carries the label print when an image is set. */
   glassMaterial: Material;
   corkMaterial: Material;
   foilMaterial: Material;
   discMaterial: Material;
-  labelMaterial: Material;
   /** Override spike flag `WINE_BOTTLE_GLASS_INNER_MANTLE` for A/B. */
   innerMantle?: boolean;
 }
 
 export interface WineBottleMeshBuildResult {
   bodyMesh: Mesh;
-  labelMesh: Mesh | null;
   corkMesh: Mesh | null;
   foilMesh: Mesh | null;
   discMesh: Mesh | null;
@@ -101,6 +97,23 @@ function mantlePhiRange(
   const phiLength = Math.min(Math.PI * 2, Math.max(0.05, theta));
   const phiStart = -phiLength * 0.5;
   return { phiStart, phiLength };
+}
+
+/** Label band on the glass mantle (arc unless `labelWrap` is full); sized by image aspect. */
+function wineBottlePrintBand(
+  scaled: WineBottleParams,
+  latheProfile: Vector2[],
+  imageWidth?: number,
+  imageHeight?: number,
+): RotationalPrintBand {
+  const { labelWidthM, labelHeightM } = computeWineBottleLabelPlane(
+    scaled,
+    imageWidth,
+    imageHeight,
+  );
+  const y0 = scaled.labelBottomOffsetM;
+  const { phiStart, phiLength } = mantlePhiRange(scaled, latheProfile, labelWidthM, labelHeightM);
+  return { y0, y1: y0 + labelHeightM, phiStart, phiLength };
 }
 
 export function computeWineBottleLabelPlane(
@@ -143,44 +156,9 @@ export async function buildWineBottleMeshes(
     {
       wallThicknessM: scaled.wallThicknessM,
       innerMantle: input.innerMantle ?? WINE_BOTTLE_GLASS_INNER_MANTLE,
+      printBand: wineBottlePrintBand(scaled, latheProfile, input.imageWidth, input.imageHeight),
     },
   );
-
-  const labelPartVisible = isGeometryVisible(input.geometryVisibility, 'label');
-  const showLabel =
-    labelPartVisible && input.labelPrintVisible && input.imageWidth && input.imageHeight;
-
-  let labelMesh: Mesh | null = null;
-  if (showLabel) {
-    const { labelWidthM, labelHeightM } = computeWineBottleLabelPlane(
-      scaled,
-      input.imageWidth,
-      input.imageHeight,
-    );
-    const y0 = scaled.labelBottomOffsetM;
-    const y1 = y0 + labelHeightM;
-    const { phiStart, phiLength } = mantlePhiRange(
-      scaled,
-      latheProfile,
-      labelWidthM,
-      labelHeightM,
-    );
-    const labelStandoff = labelRadialStandoffM(scaled.wallThicknessM, input.sizeScale);
-    const labelGeometry = buildOpenMantleGeometry({
-      y0,
-      y1,
-      sampleRadius: (y) => sampleWineBottleRadiusAtY(latheProfile, y) + labelStandoff,
-      phiStart,
-      phiLength,
-      radialSegments: MANTLE_RADIAL_SEGMENTS,
-      heightSegments: 24,
-    });
-    labelMesh = new Mesh(labelGeometry, input.labelMaterial);
-    labelMesh.name = 'wine-bottle-label';
-    labelMesh.userData.assetMeshRole = 'label';
-    labelMesh.renderOrder = 3;
-    applyMeshPolygonOffset(labelMesh);
-  }
 
   let corkMesh: Mesh | null = null;
   if (isGeometryVisible(input.geometryVisibility, 'cork')) {
@@ -231,5 +209,5 @@ export async function buildWineBottleMeshes(
     applyMeshPolygonOffset(discMesh);
   }
 
-  return { bodyMesh, labelMesh, corkMesh, foilMesh, discMesh };
+  return { bodyMesh, corkMesh, foilMesh, discMesh };
 }

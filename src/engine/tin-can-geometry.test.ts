@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { defaultTinCanParams, mantleYBounds } from '@/scene/asset-tin-can';
+import { defaultTinCanParams, labelBandYBounds, mantleYBounds } from '@/scene/asset-tin-can';
 import {
   buildTinCanBodyGeometry,
-  buildTinCanLabelMantleGeometry,
   tinCanOuterRadiusAtY,
 } from './tin-can-geometry';
 
@@ -51,7 +50,7 @@ describe('tin-can-geometry', () => {
   });
 
   it('end rings extend past body radius', () => {
-    const geometry = buildTinCanBodyGeometry(params, false);
+    const geometry = buildTinCanBodyGeometry(params);
     const position = geometry.getAttribute('position');
     const positions = position.array as Float32Array;
     let maxR = 0;
@@ -63,27 +62,24 @@ describe('tin-can-geometry', () => {
     geometry.dispose();
   });
 
-  it('omitting label band removes hull triangles when label is shown', () => {
-    const full = buildTinCanBodyGeometry(params, false);
-    const cut = buildTinCanBodyGeometry(params, true);
-    expect(cut.getIndex()!.count).toBeLessThan(full.getIndex()!.count);
-    full.dispose();
-    cut.dispose();
-  });
-
-  it('label mantle matches inward bead radii', () => {
-    const geometry = buildTinCanLabelMantleGeometry(params);
+  it('prints only on the side mantle band, not on lids or end rings', () => {
+    const geometry = buildTinCanBodyGeometry(params);
+    const printUv = geometry.getAttribute('printUv');
     const position = geometry.getAttribute('position');
-    const positions = position.array as Float32Array;
+    const { labelY0, labelY1 } = labelBandYBounds(params);
     const R = params.bodyRadiusM;
-    const standoff = 0.00008;
-    for (let i = 0; i < positions.length; i += 3) {
-      const y = positions[i + 1];
-      const r = Math.hypot(positions[i], positions[i + 2]);
-      const expected = tinCanOuterRadiusAtY(y, params) + standoff;
-      expect(r).toBeCloseTo(expected, 3);
-      expect(r).toBeLessThanOrEqual(R + standoff + 1e-6);
+    let printed = 0;
+    for (let i = 0; i < position.count; i += 1) {
+      const u = printUv.getX(i);
+      const v = printUv.getY(i);
+      if (u < 0 || u > 1 || v < 0 || v > 1) {continue;}
+      printed += 1;
+      const r = Math.hypot(position.getX(i), position.getZ(i));
+      expect(r).toBeLessThanOrEqual(R + 1e-6);
+      expect(r).toBeGreaterThan(R * 0.95);
     }
+    expect(printed).toBeGreaterThan(0);
+    expect(labelY1).toBeGreaterThan(labelY0);
     geometry.dispose();
   });
 });

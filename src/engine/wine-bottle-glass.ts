@@ -20,6 +20,11 @@ import {
   resolveWineBottleStirnRadiiAtY,
   wineBottleLatheProfileBounds,
 } from './wine-bottle-svg-profile';
+import {
+  applyOutsidePrintUv,
+  applyRotationalPrintUv,
+  type RotationalPrintBand,
+} from './rotational-print-mapping';
 import { ensureGeometryTangents } from '@/engine/geometry-tangents';
 
 export const WINE_BOTTLE_GLASS_LATHE_SEGMENTS = 64;
@@ -176,6 +181,8 @@ export interface WineBottleGlassBuildOptions {
   wallThicknessM: number;
   /** When true, adds offset inner lathe mantle (defaults to `WINE_BOTTLE_GLASS_INNER_MANTLE`). */
   innerMantle?: boolean;
+  /** Label band (post-pivot, foot at y = 0); writes `printUv` on the outer mantle only. */
+  printBand?: RotationalPrintBand;
 }
 
 function buildOuterMantleLatheGeometry(latheProfile: Vector2[]): LatheGeometry {
@@ -210,11 +217,22 @@ function buildWineBottleGlassBodyGeometry(
   latheProfile: Vector2[],
   wallThicknessM: number,
   innerMantle: boolean,
+  printBand?: RotationalPrintBand,
 ): BufferGeometry {
   const bounds = wineBottleLatheProfileBounds(latheProfile);
   const pivotDy = -bounds.minY;
 
   const mantle = buildOuterMantleLatheGeometry(latheProfile);
+  if (printBand) {
+    // Band is given after the foot pivot; the mantle is still in profile space.
+    applyRotationalPrintUv(mantle, {
+      ...printBand,
+      y0: printBand.y0 - pivotDy,
+      y1: printBand.y1 - pivotDy,
+    });
+  } else {
+    applyOutsidePrintUv(mantle);
+  }
 
   const stirnParts = buildWineBottleGlassStirnGeometries(
     latheProfile,
@@ -231,6 +249,11 @@ function buildWineBottleGlassBodyGeometry(
     }
   }
   parts.push(...stirnParts);
+  for (const part of parts) {
+    if (part !== mantle) {
+      applyOutsidePrintUv(part);
+    }
+  }
   const merged = mergeGeometries(parts, false);
   for (const part of parts) {
     part.dispose();
@@ -256,6 +279,7 @@ export function buildWineBottleGlassMeshFromLatheProfile(
     latheProfile,
     options.wallThicknessM,
     useInnerMantle,
+    options.printBand,
   );
 
   const mesh = new Mesh(geometry, material);

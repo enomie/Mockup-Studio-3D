@@ -25,15 +25,12 @@ import {
   imageFormatMayHaveAlpha,
   resolveImageFileName,
 } from './image-surface-alpha';
-import { rotationalPrintFit, type RotationalPrintFit } from './rotational-print-mapping';
-import { rotationalPrintNodes } from './rotational-print-nodes';
 import { finishToMaterialId, type ImageSurfaceSettings } from '@/scene/image-surface';
 import { multiplyRgb, type Rgb } from '@/colors/rgb';
 import { createTexturedMaterial } from '@/materials/procedural';
 import type { ProceduralSurfaceRole } from '@/materials/procedural/procedural-params';
 import { applyGlassSurfaceToPhysicalMaterial } from '@/materials/procedural/glass-surface';
 import {
-  MATERIAL_ALUMINUM_BRUSHED_ID,
   MATERIAL_GLASS_WINE_BOTTLE_ID,
   MATERIAL_PLASTIC_MATTE_ID,
   migrateMaterialId,
@@ -426,112 +423,6 @@ export function createWallpaperImageMaterial(
   return material;
 }
 
-/** Mantle band color: print over underlay where the band is covered (PNG alpha included). */
-function bandPrintColorNode(
-  tex: Texture,
-  fit: RotationalPrintFit,
-  underlayRgb: Rgb,
-): ShaderColorNode {
-  const { sampleUv, inBandMask } = rotationalPrintNodes(fit, uv());
-  const texColor = asTextureRgba(texture(tex, sampleUv));
-  return mix(rgbColorNode(underlayRgb), texColor.rgb, inBandMask.mul(texColor.a));
-}
-
-/**
- * Pen body image on lathe: opaque blend with plastic underlay (PNG holes show body color).
- */
-export function createPenBodyWrapMaterial(
-  resolvePreset: MaterialPresetResolver,
-  surface: ImageSurfaceSettings,
-  tex: Texture,
-  planeW: number,
-  planeH: number,
-  imageW?: number,
-  imageH?: number,
-  underlayRgb?: Rgb,
-): MeshStandardNodeMaterial | MeshPhysicalNodeMaterial {
-  const imagePreset = resolvePreset(finishToMaterialId(surface.finish));
-  const roughness = imagePreset?.roughness ?? 0.35;
-  const plasticPreset = resolvePreset(MATERIAL_PLASTIC_MATTE_ID);
-  const underlay =
-    underlayRgb ?? plasticPreset?.color ?? { r: 0.72, g: 0.72, b: 0.72 };
-
-  const material = new MeshStandardNodeMaterial({ metalness: 0 });
-  material.roughnessNode = float(roughness);
-  material.metalnessNode = float(0);
-
-  const hasImageSize =
-    imageW !== undefined &&
-    imageH !== undefined &&
-    planeW > 0 &&
-    planeH > 0 &&
-    imageW > 0 &&
-    imageH > 0;
-
-  const colorNode: ShaderColorNode = hasImageSize
-    ? bandPrintColorNode(
-        tex,
-        rotationalPrintFit('wrap-height', planeW, planeH, imageW, imageH),
-        underlay,
-      )
-    : (texture(tex));
-  material.colorNode = colorNode;
-
-  if (surface.emissiveEnabled) {
-    material.emissiveNode = colorNode.mul(float(surface.emissiveIntensity));
-  }
-
-  return material;
-}
-
-/**
- * Beverage-can label: height-fit on printable band (v = full band height).
- * Narrow images: metal on sides; wide images: horizontal crop. No 2D cover.
- */
-export function createCanLabelMaterial(
-  resolvePreset: MaterialPresetResolver,
-  surface: ImageSurfaceSettings,
-  tex: Texture,
-  planeW: number,
-  planeH: number,
-  imageW?: number,
-  imageH?: number,
-  underlayRgb?: Rgb,
-): MeshStandardNodeMaterial | MeshPhysicalNodeMaterial {
-  const imagePreset = resolvePreset(finishToMaterialId(surface.finish));
-  const roughness = imagePreset?.roughness ?? 0.35;
-  const metalPreset = resolvePreset(MATERIAL_ALUMINUM_BRUSHED_ID);
-  const underlay =
-    underlayRgb ?? metalPreset?.color ?? { r: 0.75, g: 0.76, b: 0.78 };
-
-  const material = new MeshStandardNodeMaterial({ metalness: 0 });
-  material.roughnessNode = float(roughness);
-  material.metalnessNode = float(0);
-
-  const hasImageSize =
-    imageW !== undefined &&
-    imageH !== undefined &&
-    planeW > 0 &&
-    planeH > 0 &&
-    imageW > 0 &&
-    imageH > 0;
-
-  const colorNode: ShaderColorNode = hasImageSize
-    ? bandPrintColorNode(
-        tex,
-        rotationalPrintFit('wrap-width', planeW, planeH, imageW, imageH),
-        underlay,
-      )
-    : (texture(tex));
-  material.colorNode = colorNode;
-
-  if (surface.emissiveEnabled) {
-    material.emissiveNode = colorNode.mul(float(surface.emissiveIntensity));
-  }
-
-  return material;
-}
-
 /** Image albedo on a single plane. Ignores `passepartoutOffsetM` — use `createPassepartoutDisplayMeshes` for inset. */
 export function createImagePbrMaterial(
   resolvePreset: MaterialPresetResolver,
@@ -862,5 +753,14 @@ export class MaterialResolver {
     }
 
     return createMaterialFromPreset(preset, options);
+  }
+
+  /** Always a new material (never the shared cache entry), safe to rewire its nodes. */
+  createUncached(
+    materialId: string,
+    options: MaterialResolveOptions = {},
+  ): MeshStandardNodeMaterial | MeshPhysicalNodeMaterial | null {
+    const preset = this.resolvePreset(migrateMaterialId(materialId));
+    return preset ? createMaterialFromPreset(preset, options) : null;
   }
 }

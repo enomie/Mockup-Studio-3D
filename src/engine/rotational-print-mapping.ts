@@ -47,7 +47,7 @@ export interface RotationalPrintSample {
   mask: number;
 }
 
-/** Full-wrap U, identical to the former `cylindricalLabelUv` (U = 0.5 at +Z, seam at −Z). */
+/** Full-wrap U, U = 0.5 at +Z front, seam at −Z. */
 function fullWrapU(x: number, z: number): number {
   const theta = Math.atan2(z, x);
   let u = (theta - Math.PI / 2) / (Math.PI * 2) + 0.5;
@@ -109,7 +109,57 @@ export function applyRotationalPrintUv(
     uvs[i * 2] = u;
     uvs[i * 2 + 1] = v;
   }
+  if (band.phiLength === undefined || band.phiLength >= Math.PI * 2) {
+    fixFullWrapSeam(geometry, uvs);
+  }
   geometry.setAttribute(attributeName, new BufferAttribute(uvs, 2));
+}
+
+const SEAM_EPSILON = 1e-4;
+
+function isSeamU(u: number): boolean {
+  return u < SEAM_EPSILON || u > 1 - SEAM_EPSILON;
+}
+
+/**
+ * Lathe seams duplicate vertices at −Z, and atan2 gives all of them the same U (0 or 1).
+ * In triangles that span the seam, snap seam vertices to the side of their neighbors so
+ * the first strip does not squeeze the whole artwork into one segment.
+ */
+function fixFullWrapSeam(geometry: BufferGeometry, uvs: Float32Array): void {
+  const index = geometry.getIndex();
+  const count = index ? index.count : geometry.getAttribute('position').count;
+  const tri = [0, 0, 0];
+  for (let i = 0; i + 2 < count; i += 3) {
+    for (let k = 0; k < 3; k += 1) {
+      tri[k] = index ? index.getX(i + k) : i + k;
+    }
+    let sum = 0;
+    let others = 0;
+    for (const vi of tri) {
+      const u = uvs[vi * 2];
+      if (!isSeamU(u)) {
+        sum += u;
+        others += 1;
+      }
+    }
+    if (others === 0) {continue;}
+    const side = sum / others < 0.5 ? 0 : 1;
+    for (const vi of tri) {
+      if (isSeamU(uvs[vi * 2])) {
+        uvs[vi * 2] = side;
+      }
+    }
+  }
+}
+
+/** Mark every vertex as outside the band (lids, rings, inner walls merged with a printed part). */
+export function applyOutsidePrintUv(
+  geometry: BufferGeometry,
+  attributeName: string = PRINT_UV_ATTRIBUTE,
+): void {
+  const count = geometry.getAttribute('position').count;
+  geometry.setAttribute(attributeName, new BufferAttribute(new Float32Array(count * 2).fill(-1), 2));
 }
 
 /**

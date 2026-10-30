@@ -39,7 +39,6 @@ export interface PenMeshBuildInput {
   penParams: PenParams;
   sizeScale: number;
   geometryVisibility?: AssetGeometryVisibility;
-  bodyPrintVisible: boolean;
   imageWidth?: number;
   imageHeight?: number;
   capMaterial: Material;
@@ -73,11 +72,7 @@ export async function buildPenMeshes(
   const ringGeometry = buildPenLatheGeometry(profiles.ring);
   const bodyGeometry = buildPenLatheGeometry(profiles.body);
 
-  const { y0, y1 } = penBodyYBounds(profiles.body);
-  if (input.bodyPrintVisible) {
-    // Step 4 moves the pen print to `printUv`; the wrap material still reads `uv`.
-    applyRotationalPrintUv(bodyGeometry, { y0, y1 }, 'uv');
-  }
+  applyRotationalPrintUv(bodyGeometry, penBodyYBounds(profiles.body));
 
   const capMesh = new Mesh(capGeometry, input.capMaterial);
   capMesh.name = 'pen-cap';

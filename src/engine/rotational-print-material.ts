@@ -1,6 +1,7 @@
 import { MeshPhysicalNodeMaterial, type MeshStandardNodeMaterial, type Node, type Texture } from 'three/webgpu';
 import {
   float,
+  frontFacing,
   materialClearcoat,
   materialClearcoatRoughness,
   materialColor,
@@ -11,10 +12,13 @@ import {
   mix,
   normalView,
   normalize,
+  select,
   texture,
+  vec3,
 } from 'three/tsl';
 import type { MaterialPreset } from '@/scene/material-types';
 import type { ImageSurfaceSettings } from '@/scene/image-surface';
+import type { RotationalPrintSettings } from '@/scene/rotational-print';
 import type { RotationalPrintFit } from './rotational-print-mapping';
 import { rotationalPrintNodes, printUvNode } from './rotational-print-nodes';
 
@@ -26,13 +30,7 @@ type Vec4Node = Node<'vec4'>;
 /** Lacquer on top of the print for the glossy finish (physical materials only). */
 const GLOSSY_CLEARCOAT = 1;
 const FALLBACK_FINISH_ROUGHNESS = 0.35;
-
-export interface RotationalPrintSettings {
-  /** 0 = opaque paper label, 1 = direct print (multiply on the body material). */
-  substrate: number;
-  /** Scales the PNG alpha (0 = no ink). */
-  inkOpacity: number;
-}
+const PAPER_BACK_FALLBACK = { r: 0.96, g: 0.95, b: 0.92 };
 
 export interface RotationalPrintInput {
   /** Fresh, unshared body material (never a resolver cache entry: its nodes are replaced). */
@@ -114,7 +112,14 @@ export function createRotationalPrintMaterial(
     materialClearcoatRoughness) as FloatNode;
 
   const inkRgb = ink.rgb as Vec3Node;
-  const printColor = mix(inkRgb, baseColor.mul(inkRgb), substrate);
+  // Back faces (seen through glass) show the blank paper back; direct ink stays visible.
+  const paperBack = input.finishPreset?.color ?? PAPER_BACK_FALLBACK;
+  const paperColor = select(
+    frontFacing,
+    inkRgb,
+    vec3(paperBack.r, paperBack.g, paperBack.b),
+  ) as Vec3Node;
+  const printColor = mix(paperColor, baseColor.mul(inkRgb), substrate);
   material.colorNode = mix(baseColor, printColor, mask);
 
   const finishRoughness = float(input.finishPreset?.roughness ?? FALLBACK_FINISH_ROUGHNESS);
