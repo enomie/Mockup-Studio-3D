@@ -76,10 +76,18 @@ Ziel: 51 rohe Farbwerte → **16 Tokens** + klar abgegrenzte Ausnahmen.
 2. `--color-border-light` mit `--color-border` zusammenlegen (Vorschlag: ja)?
 3. Dark Mode jetzt schon mitdenken? (Mit Tokens später nur ein zweiter `:root`-Block.)
 
-### A3. Skalen (Vorschlag, noch zu entscheiden)
-- **Font-size** – Ist: 10 / 11 / 12 / 13 px. Vorschlag: 3 Stufen (`--font-xs` 10?, `--font-sm` 11, `--font-md` 12) + Body 13.
-- **Radius** – Ist: 2 / 3 / 4 / 5 / 6 / 8 / 50 %. Vorschlag: `--radius-sm` 3, `--radius-md` 4/6, `--radius-round` 50 %.
-- **Spacing** – Ist: 1 / 2 / 4 / 6 / 8 / 10 px gemischt. Vorschlag: 2-4-6-8-Skala als Tokens.
+### A3. Skalen (Schritt 2 – umgesetzt 2026-10-30)
+
+> **Regel:** `gap`, `padding`, `margin`, `font-size`, `border-radius` nur über Tokens. Einzige px-Ausnahme: `1px` (Haarlinien/Mini-Gaps).
+
+| Skala | Tokens | Zusammengelegt |
+|---|---|---|
+| Spacing | `--space-1` 2 · `-2` 4 · `-3` 6 · `-4` 8 · `-5` 12 · `-6` 24 | 5→4, 10→8 |
+| Font-size | `--font-xs` 10 · `--font-sm` 11 · `--font-md` 12 · `--font-base` 13 (Body) | – |
+| Radius | `--radius-sm` 3 · `--radius-md` 4 · `--radius-lg` 6 · `--radius-round` 50 % | 2→3, 5→4, 8→6 |
+| Control-Höhe | `--control-h-sm` 22 · `--control-h` 28 | 24/32/36 bleiben vorerst (Schritt 3) |
+
+Panel-Tokens (`--panel-pad-x/-y`, `--panel-gap`, `--panel-stack-gap`) sind jetzt Aliase auf die Spacing-Skala.
 
 ### A4. Komponenten statt Klassen-Neuerfindung
 Vor neuem Button/Chip/Toggle → existiert schon etwas? (siehe B2). Shared React-Komponenten liegen in `src/ui/components/`:
@@ -126,7 +134,7 @@ Vor neuem Button/Chip/Toggle → existiert schon etwas? (siehe B2). Shared React
 Jeder Schritt: besprechen → umsetzen → Teil A aktualisieren → Häkchen.
 
 - [x] **1. Tokens** – fehlende Tokens definieren, Farbpalette auf ~10–12 Werte eindampfen, Hex-Codes ersetzen.
-- [ ] **2. Skalen** – Font-size, Radius, Spacing als Tokens festlegen und anwenden.
+- [x] **2. Skalen** – Font-size, Radius, Spacing als Tokens festlegen und anwenden.
 - [ ] **3. Buttons** – eine Button-Basis (`.btn` + Varianten icon/chip/danger) oder Komponente; Active-State vereinheitlichen (`aria-pressed` / `--active`).
 - [ ] **4. Toggles/Segmente** – `side-toggle`, `panel-toggle-group`, Projection-Toggle zusammenführen.
 - [ ] **5. Listen & Tiles** – gemeinsames Tile/Row-Muster.
@@ -142,3 +150,4 @@ Jeder Schritt: besprechen → umsetzen → Teil A aktualisieren → Häkchen.
 |---|---|
 | 2026-10-30 | Guide angelegt. |
 | 2026-10-30 | Palette umgesetzt: eine Akzentfamilie (`#2f6bff`), Himmelblau-Auswahl entfällt; border-light mit border zusammengelegt; Dark Mode später. |
+| 2026-10-30 | Skalen umgesetzt: 6 Spacing-, 4 Font-, 4 Radius-Stufen, 2 Control-Höhen. |
