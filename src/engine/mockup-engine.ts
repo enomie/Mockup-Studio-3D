@@ -77,9 +77,9 @@ import type { CaptureViewportImageOptions } from '@/scene/export-image';
 import type { AtmosphereSnapshot } from '@/scene/environment-preset-types';
 
 import {
-  clonePhysicsSettings,
-  defaultPhysicsSettings,
-  mergePhysicsSettings,
+  clampGravityScale,
+  DEFAULT_GRAVITY_SCALE,
+  type EditablePhysicsSettings,
   type PhysicsSettings,
 } from '@/scene/physics-settings';
 import type {
@@ -115,7 +115,7 @@ export class MockupEngine implements SceneApi {
   private cameraSlots: [CameraSlot, CameraSlot, CameraSlot] = [null, null, null];
   private disposed = false;
   private lastTime = performance.now();
-  private physicsSettings: PhysicsSettings = defaultPhysicsSettings();
+  private gravityScale = DEFAULT_GRAVITY_SCALE;
   private readonly gizmoInteraction: GizmoInteractionController;
 
   private constructor(
@@ -617,21 +617,19 @@ export class MockupEngine implements SceneApi {
 
   getPhysicsSettings(): PhysicsSettings {
     return {
-      ...clonePhysicsSettings(this.physicsSettings),
+      gravityScale: this.gravityScale,
+      lastFabricClothBakeSummary: null,
       rigidTestPhase: this.rigidTest.getPhase(),
       worldPhysicsPhase: this.worldPhysics.getPhase(),
       worldPhysicsHasSnapshot: this.worldPhysics.hasSnapshot(),
     };
   }
 
-  setPhysicsSettings(partial: Partial<PhysicsSettings>): void {
-    const rest = { ...partial };
-    delete rest.rigidTestPhase;
-    delete rest.worldPhysicsPhase;
-    delete rest.worldPhysicsHasSnapshot;
-    delete rest.lastFabricClothBakeSummary;
-    this.physicsSettings = mergePhysicsSettings(this.physicsSettings, rest);
-    this.physics.setGravityScale(this.physicsSettings.gravityScale);
+  setPhysicsSettings(partial: Partial<EditablePhysicsSettings>): void {
+    if (partial.gravityScale !== undefined) {
+      this.gravityScale = clampGravityScale(partial.gravityScale);
+    }
+    this.physics.setGravityScale(this.gravityScale);
     this.notifySceneApiListeners();
   }
 

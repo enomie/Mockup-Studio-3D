@@ -17,7 +17,7 @@ import type { AssetImageSurfaceId, ImageSurfaceSettings } from './image-surface'
 import type { AtmosphereSnapshot } from './environment-preset-types';
 import type { CaptureViewportImageOptions } from './export-image';
 import type { MaterialPresetResolver } from './material-types';
-import type { PhysicsSettings } from './physics-settings';
+import type { EditablePhysicsSettings, PhysicsSettings } from './physics-settings';
 import type { PhysicsBodyMode } from './physics-rigid-body';
 import type { BookMaterialTintPart } from './book-material-tints';
 import type {
@@ -163,7 +163,7 @@ export interface SceneApi {
   setLighting(partial: DeepPartial<LightingSettings>): void;
   getLighting(): LightingSettings;
   getPhysicsSettings(): PhysicsSettings;
-  setPhysicsSettings(partial: Partial<PhysicsSettings>): void;
+  setPhysicsSettings(partial: Partial<EditablePhysicsSettings>): void;
   startPhysicsRigidTest(): void;
   stopPhysicsRigidTest(): void;
   startWorldPhysics(): void;

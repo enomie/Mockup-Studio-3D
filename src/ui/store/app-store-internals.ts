@@ -39,6 +39,7 @@ import {
   clonePhysicsSettings,
   defaultPhysicsSettings,
   mergePhysicsSettings,
+  type EditablePhysicsSettings,
   type PhysicsSettings,
 } from '@/scene/physics-settings';
 import type {
@@ -274,7 +275,7 @@ export function patchViewportHelpers(partial: Partial<ViewportHelpersState>): vo
   emit();
 }
 
-export function patchPhysics(partial: Partial<PhysicsSettings>): void {
+export function patchPhysics(partial: Partial<EditablePhysicsSettings>): void {
   const nextPhysics = mergePhysicsSettings(state.physics, partial);
   state = { ...state, physics: nextPhysics };
   sceneApi?.setPhysicsSettings(partial);

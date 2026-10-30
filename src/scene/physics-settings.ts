@@ -33,6 +33,9 @@ export interface PhysicsSettings {
   lastFabricClothBakeSummary: FabricClothBakeSummary | null;
 }
 
+/** The physics settings the UI may change; the rest is engine-owned state. */
+export type EditablePhysicsSettings = Pick<PhysicsSettings, 'gravityScale'>;
+
 export function defaultPhysicsSettings(): PhysicsSettings {
   return {
     gravityScale: DEFAULT_GRAVITY_SCALE,
