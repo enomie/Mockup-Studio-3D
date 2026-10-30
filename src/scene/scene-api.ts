@@ -65,6 +65,7 @@ export interface ViewportHelpersState {
   floorGrid: boolean;
   worldOrigin: boolean;
   compassArrows: boolean;
+  quadrantGrid: boolean;
   lightHandles: boolean;
 }
 

@@ -44,6 +44,22 @@ describe('world compass', () => {
     expect(new Set(CARDINAL_DIRECTIONS.map((d) => d.color)).size).toBe(4);
   });
 
+  it('uses distinct quadrant colors that differ from the arrow colors', () => {
+    const quadrantColors = PLAN_QUADRANTS.map((q) => q.color);
+    expect(new Set(quadrantColors).size).toBe(4);
+    for (const d of CARDINAL_DIRECTIONS) {
+      expect(quadrantColors).not.toContain(d.color);
+    }
+  });
+
+  it('quadrant short names match their cardinal signs', () => {
+    for (const q of PLAN_QUADRANTS) {
+      const ns = q.signZ === Math.sign(cardinal('north').z) ? 'N' : 'S';
+      const ew = q.signX === Math.sign(cardinal('east').x) ? 'E' : 'W';
+      expect(q.short).toBe(ns + ew);
+    }
+  });
+
   it('yaw turns a +Z arrow onto each direction', () => {
     for (const d of CARDINAL_DIRECTIONS) {
       const tip = new Vector3(0, 0, 1).applyAxisAngle(new Vector3(0, 1, 0), cardinalYaw(d));

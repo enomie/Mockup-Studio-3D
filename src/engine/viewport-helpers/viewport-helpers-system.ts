@@ -4,12 +4,14 @@ import type { LightingSystem } from '@/engine/lighting/lighting-system';
 import type { ViewportHelpersState } from '@/scene/scene-api';
 import { createFloorGridHelper, createFloorGridMajorHelper } from './floor-grid';
 import { createCompassArrowsHelper } from './compass-arrows';
+import { createQuadrantGridHelper } from './quadrant-grid';
 import { createWorldOriginHelper } from './world-origin';
 
 export class ViewportHelpersSystem {
   private readonly root = new Group();
   private readonly floorGrid = createFloorGridHelper();
   private readonly floorGridMajor = createFloorGridMajorHelper();
+  private readonly quadrantGrid = createQuadrantGridHelper();
   private readonly worldOrigin = createWorldOriginHelper();
   private readonly compassArrows = createCompassArrowsHelper();
 
@@ -19,6 +21,7 @@ export class ViewportHelpersSystem {
     this.root.name = 'viewport-helpers';
     this.root.add(this.floorGrid);
     this.root.add(this.floorGridMajor);
+    this.root.add(this.quadrantGrid);
     this.root.add(this.worldOrigin);
     this.root.add(this.compassArrows);
     scene.add(this.root);
@@ -42,6 +45,7 @@ export class ViewportHelpersSystem {
   updateFrame(lighting: LightingSystem): void {
     const center = lighting.getReferenceCenter();
     this.worldOrigin.position.set(center.x, 0, center.z);
+    this.quadrantGrid.position.set(center.x, 0, center.z);
 
     if (!this.state.compassArrows) {
       this.compassArrows.visible = false;
@@ -62,6 +66,7 @@ export class ViewportHelpersSystem {
     this.floorGrid.visible = this.state.floorGrid;
     this.floorGridMajor.visible = this.state.floorGrid;
     this.worldOrigin.visible = this.state.worldOrigin;
+    this.quadrantGrid.visible = this.state.quadrantGrid;
     if (!this.state.compassArrows) {
       this.compassArrows.visible = false;
     }

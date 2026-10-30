@@ -114,6 +114,9 @@ export const VIEWPORT_COMPASS_NORTH_LENGTH_SCALE = 1.35;
 export const VIEWPORT_COMPASS_ARROW_HEAD_LENGTH_M = 0.28;
 export const VIEWPORT_COMPASS_ARROW_HEAD_WIDTH_M = 0.22;
 export const VIEWPORT_COMPASS_ARROW_SHAFT_WIDTH_M = 0.08;
+export const VIEWPORT_QUADRANT_SIZE_M = 2;
+export const VIEWPORT_QUADRANT_FILL_OPACITY = 0.16;
+export const VIEWPORT_QUADRANT_LABEL_SIZE_M = 0.6;
 export const VIEWPORT_HELPER_GROUND_OFFSET_M = 0.002;
 
 /** Fixed length for SpotLightHelper display (Key/Fill studio distance). */

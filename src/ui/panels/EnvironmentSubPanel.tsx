@@ -11,6 +11,7 @@ import {
   setGroundVisible,
   setViewportHelperFloorGrid,
   setViewportHelperCompassArrows,
+  setViewportHelperQuadrantGrid,
   setViewportHelperLightHandles,
   setViewportHelperWorldOrigin,
   isAnyViewportHelperEnabled,
@@ -161,6 +162,11 @@ export function EnvironmentSubPanel() {
             label="Floor grid"
             checked={viewportHelpers.floorGrid}
             onChange={setViewportHelperFloorGrid}
+          />
+          <PanelCheckbox
+            label="Quadrant grid"
+            checked={viewportHelpers.quadrantGrid}
+            onChange={setViewportHelperQuadrantGrid}
           />
           <PanelCheckbox
             label="World origin"

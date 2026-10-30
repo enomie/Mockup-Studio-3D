@@ -82,6 +82,7 @@ export const SCENE_DEFAULTS = {
     floorGrid: false,
     worldOrigin: false,
     compassArrows: false,
+    quadrantGrid: false,
     lightHandles: false,
   },
   lighting: {

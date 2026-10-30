@@ -6,6 +6,7 @@ export function isAnyViewportHelperEnabled(state: ViewportHelpersState): boolean
     state.floorGrid ||
     state.worldOrigin ||
     state.compassArrows ||
+    state.quadrantGrid ||
     state.lightHandles
   );
 }
@@ -15,6 +16,7 @@ export function setViewportHelpersAllEnabled(enabled: boolean): void {
     floorGrid: enabled,
     worldOrigin: enabled,
     compassArrows: enabled,
+    quadrantGrid: enabled,
     lightHandles: enabled,
   });
 }
@@ -34,6 +36,10 @@ export function setViewportHelperWorldOrigin(worldOrigin: boolean): void {
 
 export function setViewportHelperCompassArrows(compassArrows: boolean): void {
   store.patchViewportHelpers({ compassArrows });
+}
+
+export function setViewportHelperQuadrantGrid(quadrantGrid: boolean): void {
+  store.patchViewportHelpers({ quadrantGrid });
 }
 
 export function setViewportHelperLightHandles(lightHandles: boolean): void {

@@ -2,7 +2,7 @@
 
 **Code (einzige Wahrheit):** [`src/engine/world-compass.ts`](../src/engine/world-compass.ts)
 **Automatischer Check:** [`src/engine/world-compass.test.ts`](../src/engine/world-compass.test.ts) (`npx vitest run`)
-**Viewport:** Environment → Viewport helpers → **Compass arrows**
+**Viewport:** Environment → Viewport helpers → **Compass arrows** · **Quadrant grid**
 
 Three.js: **rechtshändig, Y = hoch**. Der Plan liegt in **X / Z**.
 
@@ -36,6 +36,15 @@ Startkamera steht im **Süden** (+Z) und schaut nach **Norden** (−Z) → **Ost
 ```
 
 Quadranten im Uhrzeigersinn ab **alpha = Nordosten** (+X, −Z): alpha → beta → gamma → delta.
+
+| Quadrant | Richtung | Vorzeichen (x , z) | Farbe |
+|----------|----------|--------------------|-------|
+| **alpha** | Nordosten (NE) | (+ , −) | Orange |
+| **beta**  | Südosten (SE)  | (+ , +) | Blau |
+| **gamma** | Südwesten (SW) | (− , +) | Violett |
+| **delta** | Nordwesten (NW) | (− , −) | Türkis |
+
+Quadrantenfarben unterscheiden sich bewusst von den Pfeilfarben. Die Beschriftung liegt flach auf dem Boden und ist so ausgerichtet, dass ihre Oberkante nach Norden zeigt.
 
 ## Warum NICHT „Norden = +Z und Osten = +X“
 

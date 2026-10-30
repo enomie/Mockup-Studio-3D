@@ -35,16 +35,18 @@ export type QuadrantId = 'alpha' | 'beta' | 'gamma' | 'delta';
 export interface PlanQuadrant {
   id: QuadrantId;
   label: string;
+  short: string;
   /** Sign of X and Z inside the quadrant. */
   signX: 1 | -1;
   signZ: 1 | -1;
+  color: number;
 }
 
 export const PLAN_QUADRANTS: readonly PlanQuadrant[] = [
-  { id: 'alpha', label: 'North-east', signX: 1, signZ: -1 },
-  { id: 'beta', label: 'South-east', signX: 1, signZ: 1 },
-  { id: 'gamma', label: 'South-west', signX: -1, signZ: 1 },
-  { id: 'delta', label: 'North-west', signX: -1, signZ: -1 },
+  { id: 'alpha', label: 'North-east', short: 'NE', signX: 1, signZ: -1, color: 0xff7a1a },
+  { id: 'beta', label: 'South-east', short: 'SE', signX: 1, signZ: 1, color: 0x3fa9f5 },
+  { id: 'gamma', label: 'South-west', short: 'SW', signX: -1, signZ: 1, color: 0xb06cff },
+  { id: 'delta', label: 'North-west', short: 'NW', signX: -1, signZ: -1, color: 0x1fc8a8 },
 ];
 
 export function cardinal(id: CardinalId): CardinalDirection {

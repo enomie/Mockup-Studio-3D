@@ -149,6 +149,7 @@ export {
   setViewportHelperFloorGrid,
   setViewportHelperWorldOrigin,
   setViewportHelperCompassArrows,
+  setViewportHelperQuadrantGrid,
   setViewportHelperLightHandles,
 } from './app-store-viewport-helpers';
 
