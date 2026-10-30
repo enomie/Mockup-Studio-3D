@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { CONTACT_D_HAT } from '@/physics/cloth/contact-config';
-import { projectSceneCollisions, sceneObstacleClearance } from '@/physics/cloth/scene-colliders';
+import { CONTACT_D_HAT, CONTACT_SLOP } from '@/physics/cloth/contact-config';
+import {
+  projectPointOutOfObstacles,
+  sceneObstacleClearance,
+} from '@/physics/cloth/scene-colliders';
 import {
   sdfCappedCylinderLocal,
   sdfRoundBoxLocal,
@@ -38,7 +41,7 @@ describe('sdfPrimitives', () => {
   });
 });
 
-describe('projectSceneCollisions', () => {
+describe('projectPointOutOfObstacles', () => {
   it('pushes a point inside a sphere outward by d_hat', () => {
     const snapshot = {
       colliders: [
@@ -51,7 +54,18 @@ describe('projectSceneCollisions', () => {
         },
       ],
     };
-    const projected = projectSceneCollisions(0, 0.12, 0, snapshot, CONTACT_D_HAT, CONTACT_D_HAT);
+    const projected = projectPointOutOfObstacles(
+      0,
+      0.12,
+      0,
+      snapshot,
+      CONTACT_D_HAT,
+      CONTACT_D_HAT,
+      CONTACT_SLOP,
+      { x: 0, y: 0, z: 0, touching: false, nx: 0, ny: 0, nz: 0 },
+    );
+    expect(projected.touching).toBe(true);
+    expect(projected.ny).toBeCloseTo(-1, 5);
     const clearance = sceneObstacleClearance(
       projected.x,
       projected.y,

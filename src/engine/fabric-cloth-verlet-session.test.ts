@@ -24,7 +24,8 @@ function makeBinding(): FabricClothVerletBinding {
     numVertices: 4,
     pos,
     oldPos,
-    xPrev: new Float32Array(12),
+    contactFlags: new Uint8Array(4),
+    contactNormals: new Float32Array(12),
     pinnedFlags: new Uint8Array(4),
     constraints: [],
     cornerIndexMap: [0, 1, 2, 3],
@@ -34,6 +35,7 @@ function makeBinding(): FabricClothVerletBinding {
     localCenterlineScratch: new Float32Array(12),
     syncFrameIndex: 0,
     consecutiveRestFrames: 12,
+    wakeSignature: 0,
   };
 }
 

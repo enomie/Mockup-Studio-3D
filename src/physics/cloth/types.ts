@@ -13,10 +13,12 @@ export interface VerletState {
   numVertices: number;
   pos: Float32Array;
   oldPos: Float32Array;
-  /** Penetration-free reference positions at substep start (OGC-lite bounds). */
-  xPrev: Float32Array;
   pinnedFlags: Uint8Array;
   constraints: DistanceConstraint[];
+  /** 1 when the vertex touched floor or a collider in the last collision pass. */
+  contactFlags: Uint8Array;
+  /** World contact normal per vertex (valid where `contactFlags` is 1). */
+  contactNormals: Float32Array;
 }
 
 export interface VerletParams {
