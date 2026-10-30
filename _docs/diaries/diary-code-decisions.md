@@ -6,6 +6,16 @@ Kurze Historie: **wie** wir uns entschieden haben (Warum, Alternativen). Require
 
 ## Einträge
 
+### 2026-10-30 — Fabric cloth — Verlet-Solver neu, fester Substep-Ablauf
+- **Entscheidung:** Substep = Predict → (Constraints → Collide) × Iterationen → **Reibung** → Pins. Reibung **nur** dort, auf der tangentialen Substep-Verschiebung, mit Haftreibung; Boden = Collider mit Normale (0,1,0). Sleep nach 30 Ruhe-Frames, Wake per Fingerprint.
+- **Grund:** Tuch rutschte am Boden weg und wurde schneller. Ursachen: Slip-Formel addierte die Geschwindigkeit doppelt; danach verschoben Constraint-/Projektions-Pässe Kontakt-Vertices ungebremst (Drift ~20 cm in 10 s über Box).
+- **Verworfen:** Weitere Flicken am alten Solver (Reibung an drei Stellen, OGC-lite-Bounds, `oldPosY`-Tricks) — entfernt.
+
+### 2026-10-30 — Fabric cloth bake — Basis-Pivot, Catmull-Rom, Zeilen-Spiegelung
+- **Entscheidung:** Bake-Payload: X/Z zentriert, tiefster Punkt Y = 0 (auch beim Load → Legacy repariert). Glättung Catmull-Rom ×3 statt bilinear ×4; Normals mit derselben Funktion wie Live. Live-Zeilen (0 bei −Y) werden in `PlaneGeometry`-Reihenfolge (0 bei +Y) gespiegelt.
+- **Grund:** Gebackenes Tuch lag unter dem Ground (Fallhöhe im Ursprung), Gizmo darüber; bilinear = facettiert; ohne Spiegelung Bild kopfüber und Rückseiten-Shading (blass).
+- **Verworfen:** Align an Live-Mesh-AABB (übernahm falschen Ursprung); Bake nur in Sim-Auflösung (Zwischenstand, zu grob).
+
 ### 2026-10-29 — Fabric cloth — Platzhalter ohne Bild = Preset-Pipeline
 - **Entscheidung:** `createImageOnPresetMaterial` bei `tex === null` → `createStructureBaseMaterial(preset)` + `DoubleSide`, nicht `createPassepartoutPbrMaterial`.
 - **Grund:** Requirements: `fabricClothMaterialId` gilt **auch ohne** `screenImageId`; Passepartout-Matt ignorierte Aluminum Brushed / Silk / Linen-Struktur.
