@@ -171,6 +171,20 @@ SubPanel (.sub-panel --form|--list, --left|--right)
 | Deaktiviert | `disabled` → `--opacity-disabled` |
 | Ungültig | `--invalid`-Modifier → `--color-danger` |
 
+### A8. Inline-Styles (Schritt 7 – umgesetzt 2026-10-30)
+
+> **Regel:** `style={…}` nur für Werte, die **zur Laufzeit berechnet** werden. Alles Feste (Abstände, Farben aus der Palette, Größen) → Klasse in `app.css`.
+
+Erlaubte Fälle (Stand heute, alle geprüft):
+
+| Wo | Was |
+|---|---|
+| `RangeSlider`, `DualRangeSlider` | Füllbreite + Thumb-Position |
+| `ColorPicker`, `ColorPickerPopover` | Farbfelder, Hue-Fläche, Cursor-Position, Popover-Position |
+| `ColorsPanel`, `MaterialsPanel` | Swatch-Farbe |
+| `LightRigsPanel`, `EnvironmentsPanel` | Swatch-Verlauf aus Preset-Farben |
+| `engine/camera-controller.ts` | Canvas-Cursor (grab/grabbing), `touch-action` |
+
 ### A5. Checkliste für neue Features
 - [ ] Bestehende Komponente aus `src/ui/components/` verwendet?
 - [ ] Nur Tokens, keine neuen Hex-/px-Magic-Numbers?
@@ -217,7 +231,7 @@ Jeder Schritt: besprechen → umsetzen → Teil A aktualisieren → Häkchen.
 - [x] **4. Toggles/Segmente** (mit Schritt 3 erledigt) – `side-toggle`, `panel-toggle-group`, Projection-Toggle zusammenführen.
 - [x] **5. Listen & Tiles** – gemeinsames Tile/Row-Muster.
 - [x] **6. Panels & Sections** – Header/Body/Footer-Abstände konsistent.
-- [ ] **7. Inline-Styles** – auf dynamische Werte reduzieren.
+- [x] **7. Inline-Styles** – auf dynamische Werte reduzieren.
 - [ ] **8. Datei-Struktur** – app.css aufteilen.
 - [ ] **9. Responsive/Touch** – Entscheidung, was davon jetzt wirklich gilt.
 
@@ -232,3 +246,4 @@ Jeder Schritt: besprechen → umsetzen → Teil A aktualisieren → Häkchen.
 | 2026-10-30 | Buttons: ~25 Klassen → `.btn` + 6 Modifier; Aktiv-Zustand einheitlich über `aria-pressed`. Ungenutzte `.sub-panel__icon-btn` entfernt. |
 | 2026-10-30 | Tiles: `image-tile` + `material-tile` → `.tile`; Auswahl über `aria-current`. Scene-Header-Buttons → `__action`. Ungenutzt entfernt: `light-role-block`, `simple-list`, `preset-list`. |
 | 2026-10-30 | Panels: Inputs/Selects mit gemeinsamer Basis + Fokus-Rahmen; Nav-Aktiv über `aria-current`; Collapse-Leisten zusammengelegt; Höhen/Opacity als Tokens. |
+| 2026-10-30 | Inline-Styles geprüft: nur dynamische Werte übrig; fixer Abstand in `ViewportFrame` → `.viewport__gate-text`. |

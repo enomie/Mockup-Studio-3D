@@ -40,7 +40,7 @@ export function ViewportFrame() {
         <div className="viewport__gate">
           <div>
             <strong>WebGPU required</strong>
-            <p style={{ margin: '8px 0 0' }}>
+            <p className="viewport__gate-text">
               This device or browser does not support WebGPU.
               There is no WebGL fallback.
             </p>

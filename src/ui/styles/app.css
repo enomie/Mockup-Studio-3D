@@ -644,6 +644,10 @@ input[type='range'] {
   color: var(--color-text);
 }
 
+.viewport__gate-text {
+  margin: var(--space-4) 0 0;
+}
+
 .status-bar {
   display: flex;
   align-items: center;
