@@ -6,6 +6,12 @@ Kurze Historie: **wie** wir uns entschieden haben (Warum, Alternativen). Require
 
 ## Einträge
 
+### 2026-10-30 — Himmelsrichtungen: N = −Z, O = +X
+- **Entscheidung:** Eine Datei `src/engine/world-compass.ts` definiert N/O/S/W und die Quadranten alpha (NE) … delta (NW) samt Farben. Viewport helpers **Compass arrows** (ersetzt Forward arrow) und **Quadrant grid**. Tests prüfen Händigkeit und Startansicht (N oben, O rechts, alpha oben rechts).
+- **Grund:** Ein Vorgängerprojekt nutzte N = +Z **und** O = +X. Das ist in Three.js (rechtshändig) eine gespiegelte Karte und erzwang Hacks (Projektionsmatrix spiegeln, Orbit spiegeln, `DoubleSide`). Ost/West wirkten für den User immer vertauscht.
+- **Alternativen:** N = +Z / O = −X (korrekt, aber Startkamera müsste im Norden stehen). Verworfen: jede Form von Spiegelung.
+- **Doku:** [`../project-coordinates.md`](../project-coordinates.md) — übertragbarer Minimumstandard.
+
 ### 2026-10-30 — Panels als Overlay über dem Viewport
 - **Entscheidung:** Mittelzeile = `Icon-Rail | Viewport | Icon-Rail`. Ausgeklappte Main-Nav, Sub- und Detail-Panels liegen absolut **über** dem Viewport (`.app-shell__overlay`), statt eigene Grid-Spalten zu belegen.
 - **Grund:** Viewport-Größe sprang bei jedem Panel-Wechsel (auto-Spalten, `max-content`-Listen) — Export-Rahmen und Komposition wurden unruhig.

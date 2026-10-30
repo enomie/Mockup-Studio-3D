@@ -44,7 +44,7 @@ Quadranten im Uhrzeigersinn ab **alpha = Nordosten** (+X, −Z): alpha → beta 
 | **gamma** | Südwesten (SW) | (− , +) | Violett |
 | **delta** | Nordwesten (NW) | (− , −) | Türkis |
 
-Quadrantenfarben unterscheiden sich bewusst von den Pfeilfarben. Die Beschriftung liegt flach auf dem Boden und ist so ausgerichtet, dass ihre Oberkante nach Norden zeigt.
+Im Viewport ist jeder Quadrant ein **Linienraster** (2 × 2 m, Zellen 0,25 m) in seiner Farbe. Quadrantenfarben unterscheiden sich bewusst von den Pfeilfarben. Die Beschriftung liegt flach auf dem Boden und ist so ausgerichtet, dass ihre Oberkante nach Norden zeigt.
 
 ## Warum NICHT „Norden = +Z und Osten = +X“
 
@@ -55,6 +55,16 @@ Jeder dieser Hacks verbreitet sich in weitere Dateien. **Nie machen.**
 Erlaubt sind nur Paare, bei denen Osten = Norden **im Uhrzeigersinn** von oben gesehen ist:
 - **N = −Z, E = +X** (dieser Standard, passt zur Three.js-Kamera, die nach −Z schaut, und zu glTF, wo die Front nach +Z zeigt)
 - N = +Z, E = −X (auch korrekt, aber die Startkamera muss dann im Norden stehen)
+
+## Dateien in diesem Repo
+
+| Rolle | Datei |
+|-------|-------|
+| Richtungen, Quadranten, Farben (einzige Wahrheit) | `src/engine/world-compass.ts` |
+| Tests (Händigkeit, alpha = NE, Startkamera: N oben, O rechts) | `src/engine/world-compass.test.ts` |
+| Kompasspfeile | `src/engine/viewport-helpers/compass-arrows.ts` |
+| Quadrant grid | `src/engine/viewport-helpers/quadrant-grid.ts` |
+| Größen/Längen | `src/constants.ts` (`VIEWPORT_COMPASS_*`, `VIEWPORT_QUADRANT_*`) |
 
 ## Checkliste für jedes Projekt
 

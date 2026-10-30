@@ -142,7 +142,19 @@ Hintergrund und Arbeitsfläche der Szene. UI-Platzierung → [`requirements-app-
 
 **Category:** Environment  
 **Title:** Viewport helpers — World origin (v1)  
-**Description:** **World origin** = RGB-Achsen am Weltursprung `(0, 0, 0)` (X/Y/Z, feste Länge in Metern, v1 Konstante). Toggle **World origin**. Kein Placement — fix am Ursprung.
+**Description:** **World origin** = RGB-Achsen am Weltursprung `(0, 0, 0)` (X/Y/Z, feste Länge in Metern, v1 Konstante). Toggle **World origin**. Kein Placement — fix am Ursprung. **Achtung:** Die rote X-Achse zeigt nach **Osten**, nicht nach Norden.
+
+---
+
+**Category:** Environment  
+**Title:** Viewport helpers — Compass arrows (v1)  
+**Description:** Vier flache Pfeile am Boden, ausgehend vom Referenz-Zentrum: **N rot** (längster Pfeil = Kompassnadel), **O gelb**, **S weiß**, **W grün**. Welt-Mapping **N = −Z, O = +X, S = +Z, W = −X** (rechtshändig, keine Projektions-Spiegelung). Ersetzt den früheren **Forward arrow** (zeigte nach +Z = Süden). Toggle **Compass arrows**. Einzige Wahrheit: `src/engine/world-compass.ts` → [`project-coordinates.md`](../project-coordinates.md).
+
+---
+
+**Category:** Environment  
+**Title:** Viewport helpers — Quadrant grid (v1)  
+**Description:** Vier farbige **Linienraster** (je 2 × 2 m, Zellen 0,25 m) um das Referenz-Zentrum, jeweils mit flacher Beschriftung (Name + Kürzel): **alpha = NE (orange)**, **beta = SE (blau)**, **gamma = SW (violett)**, **delta = NW (türkis)**, im Uhrzeigersinn ab Nordosten. Beschriftung liest sich von Süden (Startkamera), Oberkante zeigt nach Norden. Toggle **Quadrant grid**. Farben/Vorzeichen in `world-compass.ts`; Größen in `constants.ts` (`VIEWPORT_QUADRANT_*`).
 
 ---
 
@@ -160,13 +172,13 @@ Hintergrund und Arbeitsfläche der Szene. UI-Platzierung → [`requirements-app-
 
 **Category:** Environment  
 **Title:** Viewport helpers — State & Serialisierung  
-**Description:** Flags z. B. `viewportHelpers.floorGrid`, `viewportHelpers.worldOrigin`, `viewportHelpers.lightHandles`, `viewportHelpers.compassArrows` — Teil von **Scene Save** / `EnvironmentState` (oder eigenes Slice, in Snapshot serialisiert) — nicht nur Session-UI. **Left Environments**-Presets: Viewport helpers **nicht** mit anwenden (nur Sky/Ground/Lighting-Atmosphäre) — analog Fog/Reflection nicht in jedem Preset. Defaults: alle **aus** (clean Mockup-Start), außer Produkt entscheidet anders in `SCENE_DEFAULTS`.
+**Description:** Flags z. B. `viewportHelpers.floorGrid`, `viewportHelpers.worldOrigin`, `viewportHelpers.lightHandles`, `viewportHelpers.compassArrows`, `viewportHelpers.quadrantGrid` — Teil von **Scene Save** / `EnvironmentState` (oder eigenes Slice, in Snapshot serialisiert) — nicht nur Session-UI. **Left Environments**-Presets: Viewport helpers **nicht** mit anwenden (nur Sky/Ground/Lighting-Atmosphäre) — analog Fog/Reflection nicht in jedem Preset. Defaults: alle **aus** (clean Mockup-Start), außer Produkt entscheidet anders in `SCENE_DEFAULTS`.
 
 ---
 
 **Category:** Environment  
 **Title:** Viewport helpers — Rendering (see-through)  
-**Description:** **Alle** Viewport helpers (Grid, Origin, Light handles, Forward arrow, spätere Overlays) nutzen ein **gemeinsames X-Ray-Styling**: leicht **durch andere Geometrie sichtbar** („ein bisschen hindurchsehen“), ohne das Mockup voll zu übermalen. **Normativ v1:** Materialien **`transparent: true`**, **`depthWrite: false`**, **`depthTest: false`** (Helper zeichnen über der Szene, bleiben bei Assets/Boden lesbar); **`toneMapped: false`** wo sinnvoll (konstante Lesbarkeit). **Opacity** fest in `constants` (z. B. **0.35–0.5** Linien/Flächen — ein Wert für alle Helpers, Feintuning später optional). **`renderOrder`** über Produkt-Meshes (z. B. ≥ `VIEWPORT_HELPER_RENDER_ORDER`). **Kein** Cast/Receive Shadow. **Gizmo** und **Selection-Outline** folgen **nicht** diesem Profil (Editor-Chrome, eigenes Verhalten). Implementierung: zentral z. B. `viewport-helpers-layer.ts` / shared Node- oder Line-Material — kein Copy-Paste pro Helper.
+**Description:** **Alle** Viewport helpers (Grid, Origin, Light handles, Compass arrows, Quadrant grid, spätere Overlays) nutzen ein **gemeinsames X-Ray-Styling**: leicht **durch andere Geometrie sichtbar** („ein bisschen hindurchsehen“), ohne das Mockup voll zu übermalen. **Normativ v1:** Materialien **`transparent: true`**, **`depthWrite: false`**, **`depthTest: false`** (Helper zeichnen über der Szene, bleiben bei Assets/Boden lesbar); **`toneMapped: false`** wo sinnvoll (konstante Lesbarkeit). **Opacity** fest in `constants` (z. B. **0.35–0.5** Linien/Flächen — ein Wert für alle Helpers, Feintuning später optional). **`renderOrder`** über Produkt-Meshes (z. B. ≥ `VIEWPORT_HELPER_RENDER_ORDER`). **Kein** Cast/Receive Shadow. **Gizmo** und **Selection-Outline** folgen **nicht** diesem Profil (Editor-Chrome, eigenes Verhalten). Implementierung: zentral z. B. `viewport-helpers-layer.ts` / shared Node- oder Line-Material — kein Copy-Paste pro Helper.
 
 ---
 
