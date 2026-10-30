@@ -48,9 +48,12 @@ export const SHADOW_COVERAGE_CONTENT_PADDING_M = 0.35;
 export const SHADOW_CAMERA_NEAR = 0.1;
 /** Past-target margin along the light axis (spot shadow camera far). */
 export const SHADOW_CAMERA_FAR_MARGIN = 2;
-/** PCF shadow softness — maps to light.shadow.radius (user slider in Lighting panel). */
+/**
+ * PCF shadow softness in preview shadow-map texels (SHADOW_MAP_SIZE). Scaled with map size
+ * so export (SHADOW_MAP_SIZE_EXPORT) keeps the same world-space penumbra.
+ */
 export const SHADOW_SOFTNESS_MIN = 0;
-export const SHADOW_SOFTNESS_MAX = 30;
+export const SHADOW_SOFTNESS_MAX = 100;
 export const SHADOW_SOFTNESS_DEFAULT = 4;
 export const SHADOW_SOFTNESS_STEP = 0.5;
 /**

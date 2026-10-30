@@ -89,7 +89,7 @@ export interface KeyLightSettings {
   color: Rgb;
   intensity: number;
   castShadow: boolean;
-  /** PCF penumbra — maps to light.shadow.radius (0 = hard, 30 = very soft). */
+  /** PCF penumbra — maps to light.shadow.radius (0 = hard, 100 = very soft). */
   shadowSoftness: number;
   transformOffset: EntityTransform;
 }
@@ -100,7 +100,7 @@ export interface FillLightSettings {
   intensityRatio: number;
   distance: number;
   castShadow: boolean;
-  /** PCF penumbra — maps to light.shadow.radius (0 = hard, 30 = very soft). */
+  /** PCF penumbra — maps to light.shadow.radius (0 = hard, 100 = very soft). */
   shadowSoftness: number;
   transformOffset: EntityTransform;
 }

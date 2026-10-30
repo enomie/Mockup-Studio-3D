@@ -68,6 +68,11 @@ export function applyAssetShadowFlags(group: Object3D): void {
   });
 }
 
+/** Softness is authored at SHADOW_MAP_SIZE; scale radius so penumbra width is resolution-independent. */
+export function shadowRadiusForMapSize(softness: number, mapSize: number): number {
+  return softness * (mapSize / SHADOW_MAP_SIZE);
+}
+
 export function applyShadowMapQuality(
   shadow: LightShadow,
   radius = SHADOW_SOFTNESS_DEFAULT,
@@ -78,7 +83,7 @@ export function applyShadowMapQuality(
     shadow.map = null;
     shadow.mapSize.set(mapSize, mapSize);
   }
-  shadow.radius = radius;
+  shadow.radius = shadowRadiusForMapSize(radius, mapSize);
   shadow.bias = SHADOW_DEPTH_BIAS;
   shadow.normalBias = SHADOW_NORMAL_BIAS;
 }

@@ -9,6 +9,7 @@ import {
 import { computeSceneShadowCoverageRadius } from '@/render/scene-shadow-coverage';
 import {
   applyShadowMapSize,
+  shadowRadiusForMapSize,
   applySpotShadowCast,
   updateSpotShadowCamera,
 } from '@/render/shadow-setup';
@@ -434,7 +435,10 @@ export class LightingSystem {
     rig.light.intensity = key.intensity;
     rig.light.visible = key.enabled;
     applySpotShadowCast(rig.light, key.enabled, key.castShadow);
-    rig.light.shadow.radius = key.shadowSoftness;
+    rig.light.shadow.radius = shadowRadiusForMapSize(
+      key.shadowSoftness,
+      rig.light.shadow.mapSize.x,
+    );
     rig.helper.visible = key.enabled;
     this.applySpotBeamVisibility(rig, key.enabled);
     if (rig.fixtureDisc) {
@@ -459,7 +463,10 @@ export class LightingSystem {
     rig.light.decay = fillCastsShadow ? KEY_DECAY : FILL_DECAY;
     rig.light.visible = fill.enabled;
     applySpotShadowCast(rig.light, fill.enabled, fill.castShadow);
-    rig.light.shadow.radius = fill.shadowSoftness;
+    rig.light.shadow.radius = shadowRadiusForMapSize(
+      fill.shadowSoftness,
+      rig.light.shadow.mapSize.x,
+    );
     rig.helper.visible = fill.enabled;
     this.applySpotBeamVisibility(rig, fill.enabled);
     if (rig.fixtureDisc) {
