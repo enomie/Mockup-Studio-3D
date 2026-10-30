@@ -82,7 +82,7 @@ export const CAMERA_ORTHO_MAX_ZOOM = 4;
 /** Pixels before a pointer down becomes a camera drag instead of a click. */
 export const VIEWPORT_CLICK_DRAG_THRESHOLD_PX = 4;
 
-/** Inverted-hull selection outline color (matches --color-active-text). */
+/** Inverted-hull selection outline color (matches --color-accent-text). */
 export const SELECTION_OUTLINE_COLOR = 0x4d9fff;
 export const SELECTION_OUTLINE_SCALE = 1.03;
 export const SELECTION_OUTLINE_RENDER_ORDER = 1000;

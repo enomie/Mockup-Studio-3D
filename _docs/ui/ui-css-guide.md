@@ -31,7 +31,9 @@ Neue Werte **immer** über Tokens, keine Hex-Codes direkt in Regeln.
 | Panel-Abstände | `--panel-pad-x/-y`, `--panel-gap`, `--panel-stack-gap` | Rest nutzt freie px-Werte |
 | Typo / Radius | – | siehe A3 |
 
-### A2a. Palettenvorschlag (Schritt 1 – zur Abstimmung)
+### A2a. Farbpalette (Schritt 1 – umgesetzt 2026-10-30)
+
+> **Regel:** In `app.css` stehen Farben nur noch im `:root`-Block. Überall sonst `var(--color-…)`. Einzige Ausnahme: Color-Picker-Spektrum/Sättigungsverläufe. Alte Namen `--color-active-*` → `--color-accent-*`, `--color-border-light` → `--color-border`, `--color-panel-subtle` → `--color-surface-subtle`. Zusätzlich: `--color-text-on-accent`, `--color-checker`, `--color-mark-anchor/-edge`.
 
 Ziel: 51 rohe Farbwerte → **16 Tokens** + klar abgegrenzte Ausnahmen.
 
@@ -123,7 +125,7 @@ Vor neuem Button/Chip/Toggle → existiert schon etwas? (siehe B2). Shared React
 
 Jeder Schritt: besprechen → umsetzen → Teil A aktualisieren → Häkchen.
 
-- [ ] **1. Tokens** – fehlende Tokens definieren, Farbpalette auf ~10–12 Werte eindampfen, Hex-Codes ersetzen.
+- [x] **1. Tokens** – fehlende Tokens definieren, Farbpalette auf ~10–12 Werte eindampfen, Hex-Codes ersetzen.
 - [ ] **2. Skalen** – Font-size, Radius, Spacing als Tokens festlegen und anwenden.
 - [ ] **3. Buttons** – eine Button-Basis (`.btn` + Varianten icon/chip/danger) oder Komponente; Active-State vereinheitlichen (`aria-pressed` / `--active`).
 - [ ] **4. Toggles/Segmente** – `side-toggle`, `panel-toggle-group`, Projection-Toggle zusammenführen.
@@ -139,3 +141,4 @@ Jeder Schritt: besprechen → umsetzen → Teil A aktualisieren → Häkchen.
 | Datum | Entscheidung |
 |---|---|
 | 2026-10-30 | Guide angelegt. |
+| 2026-10-30 | Palette umgesetzt: eine Akzentfamilie (`#2f6bff`), Himmelblau-Auswahl entfällt; border-light mit border zusammengelegt; Dark Mode später. |
