@@ -49,10 +49,6 @@
   display: none;
 }
 
-.app-shell__overlay > .app-shell__sub-slot:not(:empty) {
-  box-shadow: var(--shadow-md);
-}
-
 .app-shell__sub-slot {
   display: flex;
   flex-direction: column;
