@@ -38,9 +38,8 @@ export const FABRIC_CLOTH_SIM_MAX_SEGMENTS_PER_AXIS = 64;
 export const FABRIC_CLOTH_SYNC_NORMALS_EVERY_N_FRAMES = 1;
 export const FABRIC_CLOTH_SYNC_BOUNDS_EVERY_N_FRAMES = 2;
 
-/** Dense grid multiplier when baking fabric cloth to a user asset (per sim axis). */
-export const FABRIC_CLOTH_BAKE_SUBDIV_FACTOR = 4;
-/** Target bake cell size (~3.1 mm) — quarter of sim cell for visible fold smoothing. */
-export const FABRIC_CLOTH_BAKE_CELL_SIZE_M = FABRIC_CLOTH_SIM_CELL_SIZE_M / 4;
-/** Cap baked cloth vertices ((segmentsW+1) * (segmentsH+1)). */
+/** Catmull-Rom upsampling per axis when baking fabric cloth (smooth folds between sim vertices). */
+export const FABRIC_CLOTH_BAKE_SUBDIV_FACTOR = 3;
+/** Cap baked cloth vertices; the factor is lowered until the dense grid fits. */
 export const FABRIC_CLOTH_BAKE_MAX_VERTICES = 65536;
+

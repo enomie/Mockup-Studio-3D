@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { SIZE_SCALE_MAX, SIZE_SCALE_MIN } from '@/constants';
-import { FABRIC_CLOTH_REF_WIDTH_M } from './asset-fabric-cloth';
+import {
+  defaultFabricClothParams,
+  FABRIC_CLOTH_REF_WIDTH_M,
+  migrateFabricClothParams,
+} from './asset-fabric-cloth';
 import {
   defaultHandheldParams,
   HANDHELD_PLACEHOLDER_ASPECT,
@@ -463,5 +467,36 @@ describe('foot world Y', () => {
       },
     };
     expect(footWorldYPreservedAfterFootprintChange(base, after, null)).toBe(true);
+  });
+});
+
+describe('fabric-cloth free dimensions without image', () => {
+  const entityWithAspect = (placeholderAspect: number): AssetEntity => ({
+    id: 'f1',
+    type: 'asset',
+    name: 'Fabric',
+    assetKind: 'fabric-cloth',
+    screenImageId: null,
+    sizeScale: 1,
+    visible: true,
+    transform: defaultTransform(),
+    fabricClothParams: { ...defaultFabricClothParams(), placeholderAspect },
+  });
+
+  it('uses the stored placeholder aspect when no image is set', () => {
+    const face = computeFaceSize('fabric-cloth', undefined, undefined, 1, undefined, undefined, entityWithAspect(2));
+    expect(face.width).toBeCloseTo(FABRIC_CLOTH_REF_WIDTH_M, 6);
+    expect(face.height).toBeCloseTo(FABRIC_CLOTH_REF_WIDTH_M / 2, 6);
+  });
+
+  it('lets the image ratio win over the placeholder aspect', () => {
+    const face = computeFaceSize('fabric-cloth', 1000, 1000, 1, undefined, undefined, entityWithAspect(3));
+    expect(face.height).toBeCloseTo(face.width, 6);
+  });
+
+  it('clamps and migrates placeholderAspect', () => {
+    expect(migrateFabricClothParams({}).placeholderAspect).toBe(1);
+    expect(migrateFabricClothParams({ placeholderAspect: 1000 }).placeholderAspect).toBe(20);
+    expect(migrateFabricClothParams({ placeholderAspect: -1 }).placeholderAspect).toBe(1);
   });
 });

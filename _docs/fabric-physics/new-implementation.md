@@ -1,6 +1,6 @@
 # Fabric cloth — CPU Verlet (Silk Studio port)
 
-**Status:** Plan / Arbeitsdokument (User-Freigabe 2026-10-23).  
+**Status:** Plan / Arbeitsdokument (User-Freigabe 2026-10-23). **Stand 2026-10-30:** Port umgesetzt, Solver danach **neu geschrieben** — Abweichungen siehe *Stand 2026-10-30* unten; normativ ist [`requirements-physics.md`](../requirements/requirements-physics.md).  
 **Zielverhalten:** [`cloth-physics.md`](./cloth-physics.md) — 1:1 mit Referenz in [`src-silk-studio/`](./src-silk-studio/).  
 **Referenz-Quellcode:** `_docs/fabric-physics/src-silk-studio/` (Kopie, nicht builden — Port nach `src/`).
 
@@ -250,3 +250,17 @@ Aus `StudioPanel.tsx` + `fabricPresets.ts`:
 | [`src-silk-studio/`](./src-silk-studio/) | Port-Quelle |
 | [`interactive_silk_cloth_studio (7).html`](../examples/interactive_silk_cloth_studio%20(7).html) | Historische Demo (weniger OGC als TS) |
 | [`silk-optics.md`](./silk-optics.md) | Optional später für Look-Parität |
+
+---
+
+## Stand 2026-10-30 — Abweichungen vom Silk-Port
+
+| Thema | Plan (oben) | Ist |
+|---|---|---|
+| Kontakt | OGC-lite (`displacementBounds`), Slip/`oldPosY` in Collidern, Extra-Projektionspässe | **Entfernt.** Ein Pfad `projectPointOutOfObstacles` (Push + Normale); Tuch rutschte/raste weg |
+| Reibung | in Predict + Collider-Slip | **Nur** Schritt 4 im Substep, auf Substep-Verschiebung, mit Haftreibung |
+| Substep | Silk-Reihenfolge mit Bounds/`xPrev` | Predict → (Constraints → Collide) × N → Reibung → Pins; kein `xPrev` |
+| Wake/Idle | Silk REST_FRAMES | Sleep nach 30 Ruhe-Frames; Wake per Fingerprint (Pins, Collider, Params) + Ecken-Drag |
+| Backend | `cloth-physics-backend.ts` (`stepClothPhysics('cpu')`) | Entfernt — direkter Aufruf `simulateVerletStep` |
+| Bake-Glättung | `fabric-cloth-bake.ts` bilinear | **Catmull-Rom** ×3, Basis-Pivot, Zeilen-Spiegelung; `fabric-cloth-bake-align.ts`, `fabric-cloth-grid-normals.ts` entfernt |
+

@@ -1,4 +1,3 @@
-import { CONTACT_D_HAT } from '@/physics/cloth/contact-config';
 import {
   SDF_EPS,
   sdfCappedCylinderGradientLocal,
@@ -39,16 +38,6 @@ export type SceneCollider = RoundedBoxCollider | CappedCylinderCollider | Sphere
 
 export interface SceneColliderSnapshot {
   colliders: SceneCollider[];
-}
-
-interface ParticleCollisionResult {
-  x: number;
-  y: number;
-  z: number;
-  vy: number;
-  oldPosY: number | null;
-  slipX: number | null;
-  slipZ: number | null;
 }
 
 function sdfForMatrixCollider(
@@ -115,185 +104,95 @@ export function sceneObstacleClearance(
   return clearance;
 }
 
-function resolveMatrixCollider(
-  wx: number,
-  wy: number,
-  wz: number,
-  collider: RoundedBoxCollider | CappedCylinderCollider,
-  dHat: number,
-  friction: number,
-  vx: number,
-  vz: number,
-): ParticleCollisionResult | null {
-  const [lx, ly, lz] = transformPointInverse(
-    collider.matrixWorldInverse,
-    wx,
-    wy,
-    wz,
-  );
-  const dist = sdfForMatrixCollider(collider, lx, ly, lz);
-  if (dist >= dHat) {
-    return null;
-  }
-
-  const push = dHat - dist;
-  const [glx, gly, glz] = gradientForMatrixCollider(collider, lx, ly, lz);
-  const [nx, ny, nz] = transformLocalNormalToWorld(collider.matrixWorld, glx, gly, glz);
-
-  const outX = wx + nx * push;
-  const outY = wy + ny * push;
-  const outZ = wz + nz * push;
-  let vy = 0;
-  let oldPosY: number | null = null;
-  let slipX: number | null = null;
-  let slipZ: number | null = null;
-
-  if (ny > 0.65) {
-    vy = 0;
-    oldPosY = outY;
-    const slipRatio = 1.0 - friction;
-    slipX = wx + vx * slipRatio;
-    slipZ = wz + vz * slipRatio;
-  } else if (dist < dHat * 0.5) {
-    vy = 0;
-  }
-
-  return { x: outX, y: outY, z: outZ, vy, oldPosY, slipX, slipZ };
+/** Result of pushing one point out of all obstacles. Normal is valid when `touching`. */
+export interface ObstacleContact {
+  x: number;
+  y: number;
+  z: number;
+  touching: boolean;
+  nx: number;
+  ny: number;
+  nz: number;
 }
 
-function resolveSphere(
-  wx: number,
-  wy: number,
-  wz: number,
-  collider: SphereCollider,
-  dHat: number,
-  friction: number,
-  vx: number,
-  vz: number,
-): ParticleCollisionResult | null {
-  const dx = wx - collider.centerX;
-  const dy = wy - collider.centerY;
-  const dz = wz - collider.centerZ;
-  const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
-  const limit = collider.radius + dHat;
-  if (dist >= limit) {
-    return null;
-  }
-  if (dist < SDF_EPS) {
-    return {
-      x: wx,
-      y: collider.centerY + limit,
-      z: wz,
-      vy: 0,
-      oldPosY: null,
-      slipX: null,
-      slipZ: null,
-    };
-  }
-
-  const nx = dx / dist;
-  const ny = dy / dist;
-  const nz = dz / dist;
-  const push = limit - dist;
-  const outX = wx + nx * push;
-  const outY = wy + ny * push;
-  const outZ = wz + nz * push;
-
-  let oldPosY: number | null = null;
-  let slipX: number | null = null;
-  let slipZ: number | null = null;
-  if (ny > 0.65) {
-    oldPosY = outY;
-    const slipRatio = 1.0 - friction;
-    slipX = wx + vx * slipRatio;
-    slipZ = wz + vz * slipRatio;
-  }
-
-  return { x: outX, y: outY, z: outZ, vy: 0, oldPosY, slipX, slipZ };
-}
-
-function resolveCollider(
-  wx: number,
-  wy: number,
-  wz: number,
-  collider: SceneCollider,
-  dHat: number,
-  friction: number,
-  vx: number,
-  vz: number,
-): ParticleCollisionResult | null {
-  if (collider.kind === 'sphere') {
-    return resolveSphere(wx, wy, wz, collider, dHat, friction, vx, vz);
-  }
-  return resolveMatrixCollider(wx, wy, wz, collider, dHat, friction, vx, vz);
-}
-
-export function projectSceneCollisions(
+/**
+ * Pushes a point out of the floor (plane y = floorY) and all colliders so it keeps
+ * `dHat` clearance. `touching` is set when the point ends within `slop` of a surface;
+ * the normal is the one of the closest surface. Writes into `out`.
+ */
+export function projectPointOutOfObstacles(
   wx: number,
   wy: number,
   wz: number,
   snapshot: SceneColliderSnapshot,
-  floorContactY: number,
-  dHat: number = CONTACT_D_HAT,
-): { x: number; y: number; z: number } {
-  let x = wx;
-  let y = wy;
-  let z = wz;
-
-  for (const collider of snapshot.colliders) {
-    const hit = resolveCollider(x, y, z, collider, dHat, 0, 0, 0);
-    if (!hit) {continue;}
-    x = hit.x;
-    y = hit.y;
-    z = hit.z;
-  }
-
-  if (y < floorContactY) {
-    y = floorContactY;
-  }
-
-  return { x, y, z };
-}
-
-export function resolveSceneCollisions(
-  wx: number,
-  wy: number,
-  wz: number,
-  vx: number,
-  vy: number,
-  vz: number,
-  snapshot: SceneColliderSnapshot,
-  floorContactY: number,
+  floorY: number,
   dHat: number,
-  friction: number,
-): { x: number; y: number; z: number; vy: number; oldPosY?: number } {
+  slop: number,
+  out: ObstacleContact,
+): ObstacleContact {
   let x = wx;
   let y = wy;
   let z = wz;
-  let outVy = vy;
-  let oldPosY: number | undefined;
+  let best = Infinity;
+  out.touching = false;
 
   for (const collider of snapshot.colliders) {
-    const hit = resolveCollider(x, y, z, collider, dHat, friction, vx, vz);
-    if (!hit) {continue;}
-    x = hit.x;
-    y = hit.y;
-    z = hit.z;
-    if (hit.vy === 0) {outVy = 0;}
-    if (hit.oldPosY !== null) {
-      oldPosY = hit.oldPosY;
-      if (hit.slipX !== null) {x = hit.slipX;}
-      if (hit.slipZ !== null) {z = hit.slipZ;}
+    let gap: number;
+    let nx: number;
+    let ny: number;
+    let nz: number;
+    if (collider.kind === 'sphere') {
+      const dx = x - collider.centerX;
+      const dy = y - collider.centerY;
+      const dz = z - collider.centerZ;
+      const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+      if (dist < SDF_EPS) {
+        nx = 0;
+        ny = 1;
+        nz = 0;
+      } else {
+        nx = dx / dist;
+        ny = dy / dist;
+        nz = dz / dist;
+      }
+      gap = dist - collider.radius - dHat;
+    } else {
+      const [lx, ly, lz] = transformPointInverse(collider.matrixWorldInverse, x, y, z);
+      gap = sdfForMatrixCollider(collider, lx, ly, lz) - dHat;
+      if (gap >= slop) {continue;}
+      const [glx, gly, glz] = gradientForMatrixCollider(collider, lx, ly, lz);
+      [nx, ny, nz] = transformLocalNormalToWorld(collider.matrixWorld, glx, gly, glz);
+    }
+    if (gap >= slop) {continue;}
+    if (gap < 0) {
+      x -= nx * gap;
+      y -= ny * gap;
+      z -= nz * gap;
+    }
+    if (gap < best) {
+      best = gap;
+      out.touching = true;
+      out.nx = nx;
+      out.ny = ny;
+      out.nz = nz;
     }
   }
 
-  if (y < floorContactY) {
-    y = floorContactY;
-    outVy = 0;
-    oldPosY = y;
-    x = wx + vx * (1.0 - friction);
-    z = wz + vz * (1.0 - friction);
+  const floorGap = y - floorY;
+  if (floorGap < slop) {
+    if (floorGap < 0) {
+      y = floorY;
+    }
+    if (floorGap < best) {
+      out.touching = true;
+      out.nx = 0;
+      out.ny = 1;
+      out.nz = 0;
+    }
   }
 
-  return { x, y, z, vy: outVy, oldPosY };
+  out.x = x;
+  out.y = y;
+  out.z = z;
+  return out;
 }

@@ -1,5 +1,7 @@
 # Cloth physics — implementation guide
 
+> **Note (2026-10-30):** This is the **Silk Studio reference**. Mockup Studio no longer uses OGC-lite displacement bounds or collider slip; its solver (fixed substep pipeline, single friction pass, sleep) is specified in [requirements-physics.md](../requirements/requirements-physics.md) — *Fabric cloth — CPU Verlet*.
+
 This document describes how Silk Studio simulates cloth on the **CPU** today, and how to port the same approach into another project. Normative product rules live in [requirements-scene.md](../requirements/requirements-scene.md).
 
 ## Overview

@@ -45,10 +45,17 @@ function buildFlatGridState(
     }
   }
   const oldPos = new Float32Array(pos);
-  const xPrev = new Float32Array(pos);
   const pinnedFlags = new Uint8Array(numVertices);
   const constraints = buildFabricClothGridConstraints(pos, segX, segY);
-  return { numVertices, pos, oldPos, xPrev, pinnedFlags, constraints };
+  return {
+    numVertices,
+    pos,
+    oldPos,
+    pinnedFlags,
+    constraints,
+    contactFlags: new Uint8Array(numVertices),
+    contactNormals: new Float32Array(numVertices * 3),
+  };
 }
 
 function blockUnderClothSnapshot(): SceneColliderSnapshot {

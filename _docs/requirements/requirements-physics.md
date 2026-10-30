@@ -1,10 +1,10 @@
 # Physics
 
-**Engine:** [Rapier](https://rapier.rs/) (`@dimforge/rapier3d-simd-compat`) — **kein** GPU-Cloth, **kein** separater Verlet-Solver.
+**Engine:** [Rapier](https://rapier.rs/) (`@dimforge/rapier3d-simd-compat`) für Boden + rigide Props; **Stoff:** eigener CPU-Verlet-Solver (`src/physics/cloth/`) — **kein** GPU-Cloth, **kein** Rapier SoftBody.
 
 **Bezüge:** Block → [`requirements-assets-block.md`](./requirements-assets-block.md). Zylinder → [`requirements-assets-cylinder.md`](./requirements-assets-cylinder.md). Stoff → [`requirements-assets-fabric-cloth.md`](./requirements-assets-fabric-cloth.md). Panel-Layout → [`requirements-app-layout.md`](./requirements-app-layout.md). Rigid-Test-Würfel → [`requirements-physics-test.md`](./requirements-physics-test.md). Export/Freeze → [`requirements-export.md`](./requirements-export.md).
 
-**Status (kurz):** Boden **immer** Fixed. **World physics** (Start/Freeze/Reset) implementiert. **Block:** `physicsBodyMode`, `physicsDensityKgPerM3`, Collider-Margin, globale Kontakt-/Damping-Konstanten. **Stoff:** Rapier **SoftBody** auf subdividiertem Flatlay-Mesh (`resolveFabricDrape`, `FabricClothPhysicsColliders`). **Offen:** Zylinder-Physik. Export Stoff: WYSIWYG → [`requirements-export.md`](./requirements-export.md).
+**Status (kurz):** Boden **immer** Fixed. **World physics** (Start/Freeze/Reset) implementiert. **Block:** `physicsBodyMode`, `physicsDensityKgPerM3`, Collider-Margin, globale Kontakt-/Damping-Konstanten. **Stoff:** CPU **Verlet** auf dem Sim-Gitter (`FabricClothSimulationParticipant`, `src/physics/cloth/verlet.ts`) — Abschnitt *Fabric cloth — CPU Verlet* unten. **Offen:** Zylinder-Physik. Export Stoff: WYSIWYG → [`requirements-export.md`](./requirements-export.md).
 
 ---
 
@@ -188,7 +188,7 @@ Kurzzeitiges numerisches Zittern beim Stillstand ist tolerierbar; Rapier **`slee
 | Phase | Stoff-Mesh | Sync |
 |---|---|---|
 | **alle Phasen** | Ein festes subdividiertes Sim-Grid — **kein** Topologie-Wechsel in der Session | — |
-| **`simulating`** | gleiches Grid; Vertices deformierbar | Rapier → Vertex-**`position`** jeden `tick`; **Normals** aus nu×nv-**Grid** (`fabric-cloth-grid-normals.ts`); **Bounds** optional gedrosselt (Spawn/Reset/Export: voller Sync) |
+| **`simulating`** | gleiches Grid; Vertices deformierbar | Rapier → Vertex-**`position`** jeden `tick`; **Normals** aus nx×ny-**Grid** (`writeClothGridNormals` in `src/physics/cloth/plane-vertices.ts` — dieselbe Funktion nutzt der Bake); **Bounds** optional gedrosselt (Spawn/Reset/Export: voller Sync) |
 | **`paused` (Freeze)** | **Eingefrorene** Deformation (grobes Gitter) sichtbar | **Kein** `tick`-Sync; Voraussetzung für **Bake** → User-Asset → [`requirements-assets-fabric-cloth.md`](./requirements-assets-fabric-cloth.md) |
 | **Reset** | Vertices wieder **flach**; Entity-Transform = Start-Snapshot | Dynamics / Sim-State entfernen |
 
@@ -242,17 +242,22 @@ Kurzzeitiges numerisches Zittern beim Stillstand ist tolerierbar; Rapier **`slee
 
 | Thema | Regel |
 |---|---|
-| **Solver** | Position-based **Verlet** auf Centerline-Partikeln (CPU), 6 Substeps/Frame, Distance-Constraints (structural / shear / bending) |
+| **Solver** | Position-based **Verlet** auf Centerline-Partikeln (CPU), fester Frame-Schritt **`CLOTH_FRAME_DT` = 1/60 s**, **`CLOTH_SUB_STEPS` = 6**, Distance-Constraints (structural / shear 0,85 / bending = Preset) |
+| **Substep-Ablauf (fest)** | 1. **Predict** (Damping, Gravity; `oldPos` = Substep-Start) → 2.+3. **`solverIterations` ×** (Constraints → **Collide**) → 4. **Reibung** → 5. **Pins**. Keine weiteren Pässe. |
 | **Rendering** | **Physische Doppelhülle** (Top + Bottom); `updateClothShellVertices` nach jedem Sim-Step |
-| **Kontakt** | Analytische **SDF** (Boden + alle rigiden Mockup-Collider-Formen) mit `d_hat` gekoppelt an `SHELL_HALF_THICKNESS` — **OGC-lite** Displacement Bounds |
+| **Kontakt** | Analytische **SDF** (Boden als Ebene + alle rigiden Mockup-Collider-Formen) mit `CONTACT_D_HAT` gekoppelt an `SHELL_HALF_THICKNESS`. **Ein** Pfad: `projectPointOutOfObstacles` schiebt heraus und liefert die Kontakt-**Normale** (Kontakt = Abstand < `CONTACT_SLOP` 1 mm). **Keine** OGC-lite-Displacement-Bounds (entfernt 2026-10-30). |
+| **Reibung** | **Nur an einer Stelle** (Schritt 4), Boden und Collider gleich, Wert = Preset-`friction`: tangentiale Substep-Verschiebung × (1 − friction); unter **`STATIC_FRICTION_SLIDE_M`** (0,15 mm/Substep) → 0 (**Haftreibung**); Normal-Geschwindigkeit in die Fläche wird verworfen (inelastisch). |
+| **Ruhe / Sleep** | Max. Vertex-Schritt < 0,02 mm über **30 Frames** → Tuch **schläft** (kein Step). **Wake:** Änderung an Pins, Collider-Posen, Physik-Params (Fingerprint pro Frame) oder Ecken-Drag. |
 | **Rapier** | Nur **Ground** + **Rigid primitives** (Block, Cylinder, Sphere, Wheel-Car); Posen pro Frame in Collider-Snapshot für Cloth |
 | **Collider-Snapshot** | `buildSceneColliderSnapshot(registry, { worldSessionActive })` — feste Rigids immer; dynamische nur bei aktiver World-Session; unsichtbar + `fabric-cloth` / baked ausgeschlossen; SDF-Maße = Rapier-Collider-Builder + Foot-Pivot-Offset (Wheel: gemeinsame Achsen-Rotation) |
 | **Session** | Start / Pause / Reset / Bake unverändert phasenweise → [`requirements-assets-fabric-cloth.md`](./requirements-assets-fabric-cloth.md) |
 | **Tuning** | Entity `fabricClothParams.physics` (Silk-Presets `silk` \| `satin` \| `linen` \| `chiffon`) — **nicht** `resolveFabricDrape` / Material-`fabricDrape` |
 
-**Frame-Ablauf (Ziel):** `physics.step` (Rigids) → `buildSceneColliderSnapshot` → `simulateVerletStep` pro `fabric-cloth` → Shell-Vertices → Viewport.
+**Frame-Ablauf:** `physics.step` (Rigids) → `buildSceneColliderSnapshot` → `stepFabricClothVerletBinding` (Wake-Check → `simulateVerletStep`) pro `fabric-cloth` → Plane-Vertices + Normals → Viewport.
 
-**Code-Zielpfad:** `src/physics/cloth/*`, `src/engine/fabric-cloth-simulation.ts` (Name TBD), Participant statt `FabricClothPhysicsColliders` + Rapier.
+**Abnahme (Tests `verlet-settle.test.ts`):** Fall auf Boden, über Box (friction 0,1 / 0,9), an Pin — nach 20 s Drift < 1 mm, Ruhe, keine Penetration.
+
+**Code:** `src/physics/cloth/*` (`verlet`, `scene-colliders`, `sdf-primitives`, `contact-config`, `grid-constraints`, `plane-vertices`), `src/engine/fabric-cloth-verlet-session.ts`, `src/engine/fabric-cloth-simulation-participant.ts`.
 
 ---
 

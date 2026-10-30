@@ -6,12 +6,12 @@ import {
   type Mesh,
   type Object3D,
 } from 'three/webgpu';
-import { stepClothPhysics } from '@/physics/cloth/cloth-physics-backend';
 import { buildFabricClothGridConstraints } from '@/physics/cloth/grid-constraints';
 import { vec3Get, vec3Set } from '@/physics/cloth/float-buffer';
 import type { SceneColliderSnapshot } from '@/physics/cloth/scene-colliders';
 import { updateClothPlaneVertices } from '@/physics/cloth/plane-vertices';
-import type { VerletState } from '@/physics/cloth/types';
+import type { VerletParams, VerletState } from '@/physics/cloth/types';
+import { maxVertexStepSq, simulateVerletStep } from '@/physics/cloth/verlet';
 import { verletParamsFromFabricCloth } from '@/physics/cloth/verlet-params';
 import {
   readFabricClothMeshGrid,
@@ -56,7 +56,8 @@ export interface FabricClothVerletBinding {
   numVertices: number;
   pos: Float32Array;
   oldPos: Float32Array;
-  xPrev: Float32Array;
+  contactFlags: Uint8Array;
+  contactNormals: Float32Array;
   pinnedFlags: Uint8Array;
   constraints: VerletState['constraints'];
   cornerIndexMap: readonly number[];
@@ -66,6 +67,8 @@ export interface FabricClothVerletBinding {
   localCenterlineScratch: Float32Array;
   syncFrameIndex: number;
   consecutiveRestFrames: number;
+  /** Fingerprint of everything outside the cloth that can move it; a change wakes it. */
+  wakeSignature: number;
 }
 
 function restPoseMatrix(sim: FabricClothSimParams): Matrix4 {
@@ -129,7 +132,6 @@ export function createFabricClothVerletBinding(
 
   const pos = new Float32Array(numVertices * 3);
   const oldPos = new Float32Array(numVertices * 3);
-  const xPrev = new Float32Array(numVertices * 3);
   const originalLocal = new Float32Array(numVertices * 3);
   for (let idx = 0; idx < numVertices; idx++) {
     centerlineLocalFromGrid(restPlane, idx, sim, _localCenter);
@@ -158,7 +160,8 @@ export function createFabricClothVerletBinding(
     numVertices,
     pos,
     oldPos,
-    xPrev,
+    contactFlags: new Uint8Array(numVertices),
+    contactNormals: new Float32Array(numVertices * 3),
     pinnedFlags,
     constraints,
     cornerIndexMap,
@@ -168,10 +171,48 @@ export function createFabricClothVerletBinding(
     localCenterlineScratch: new Float32Array(numVertices * 3),
     syncFrameIndex: 0,
     consecutiveRestFrames: 0,
+    wakeSignature: Number.NaN,
   };
 }
 
-const REST_SPEED_THRESHOLD_SQ = 1e-10;
+/** Per-substep vertex step (m) below which a frame counts as resting. */
+const REST_STEP_M = 2e-5;
+const REST_STEP_SQ = REST_STEP_M * REST_STEP_M;
+
+/** Resting frames before the cloth sleeps (no stepping until woken). */
+const SLEEP_AFTER_REST_FRAMES = 30;
+
+export function isFabricClothVerletBindingAsleep(binding: FabricClothVerletBinding): boolean {
+  return binding.consecutiveRestFrames >= SLEEP_AFTER_REST_FRAMES;
+}
+
+function hashNumber(hash: number, value: number): number {
+  // Quantize to 0.1 mm / small angles so float noise does not wake the cloth.
+  return (Math.imul(hash ^ Math.round(value * 1e4), 16777619) >>> 0);
+}
+
+/** Fingerprint of colliders, pins and physics params (the cloth's external inputs). */
+function wakeSignatureOf(params: VerletParams): number {
+  let h = 2166136261;
+  h = hashNumber(h, params.gravityMagnitude);
+  h = hashNumber(h, params.damping);
+  h = hashNumber(h, params.bendingStiffness);
+  h = hashNumber(h, params.friction);
+  h = hashNumber(h, params.solverIterations);
+  h = hashNumber(h, params.pinnedCornersCount);
+  for (const p of params.pinPositions) {
+    h = hashNumber(hashNumber(hashNumber(h, p.x), p.y), p.z);
+  }
+  for (const c of params.sceneColliders.colliders) {
+    if (c.kind === 'sphere') {
+      h = hashNumber(hashNumber(hashNumber(hashNumber(h, c.centerX), c.centerY), c.centerZ), c.radius);
+    } else {
+      for (const v of c.matrixWorld) {h = hashNumber(h, v);}
+      h = hashNumber(h, c.kind === 'roundedBox' ? c.halfExtents.x + c.halfExtents.y + c.halfExtents.z : c.radius + c.halfHeight);
+    }
+  }
+  return h;
+}
 
 export function wakeFabricClothVerletBinding(binding: FabricClothVerletBinding): void {
   binding.consecutiveRestFrames = 0;
@@ -254,30 +295,28 @@ export function stepFabricClothVerletBinding(
     pinPositionsWorld: pinPositionsWorldFromEntity(entityRoot, sim),
   });
 
+  const signature = wakeSignatureOf(params);
+  if (signature !== binding.wakeSignature) {
+    binding.wakeSignature = signature;
+    binding.consecutiveRestFrames = 0;
+  }
+  if (isFabricClothVerletBindingAsleep(binding)) {
+    return;
+  }
+
   const state: VerletState = {
     numVertices: binding.numVertices,
     pos: binding.pos,
     oldPos: binding.oldPos,
-    xPrev: binding.xPrev,
     pinnedFlags: binding.pinnedFlags,
     constraints: binding.constraints,
+    contactFlags: binding.contactFlags,
+    contactNormals: binding.contactNormals,
   };
 
-  stepClothPhysics('cpu', state, params);
+  simulateVerletStep(state, params);
 
-  let maxSpeedSq = 0;
-  for (let i = 0; i < binding.numVertices; i++) {
-    const [px, py, pz] = vec3Get(binding.pos, i);
-    const [ox, oy, oz] = vec3Get(binding.oldPos, i);
-    const dx = px - ox;
-    const dy = py - oy;
-    const dz = pz - oz;
-    const sq = dx * dx + dy * dy + dz * dz;
-    if (sq > maxSpeedSq) {
-      maxSpeedSq = sq;
-    }
-  }
-  if (maxSpeedSq < REST_SPEED_THRESHOLD_SQ) {
+  if (maxVertexStepSq(state) < REST_STEP_SQ) {
     binding.consecutiveRestFrames += 1;
   } else {
     binding.consecutiveRestFrames = 0;
@@ -308,6 +347,7 @@ export function setCornerWorldPosition(
   const vIdx = binding.cornerIndexMap[cornerIndex];
   vec3Set(binding.pos, vIdx, wx, wy, wz);
   vec3Set(binding.oldPos, vIdx, wx, wy, wz);
+  binding.consecutiveRestFrames = 0;
   if (flushPlane) {
     flushPlaneFromWorldCenterline(binding, { recomputeBounds: true });
   }

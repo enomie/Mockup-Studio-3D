@@ -38,6 +38,8 @@ export interface FabricClothParams {
   borderEnabled: boolean;
   borderWidthM: number;
   borderColor: string;
+  /** Width / height while no image is assigned (an image's own ratio wins). */
+  placeholderAspect: number;
   physics: FabricClothPhysicsParams;
   sim: FabricClothSimParams;
 }
@@ -63,6 +65,14 @@ export interface FabricClothFootprintM {
 
 export const FABRIC_CLOTH_REF_WIDTH_M = 0.45;
 export const FABRIC_CLOTH_PLACEHOLDER_ASPECT = 1;
+const PLACEHOLDER_ASPECT_MIN = 0.05;
+const PLACEHOLDER_ASPECT_MAX = 20;
+
+function clampPlaceholderAspect(value: unknown, fallback: number): number {
+  return typeof value === 'number' && Number.isFinite(value) && value > 0
+    ? Math.min(PLACEHOLDER_ASPECT_MAX, Math.max(PLACEHOLDER_ASPECT_MIN, value))
+    : fallback;
+}
 export const FABRIC_CLOTH_BORDER_WIDTH_M = 0.002;
 export const FABRIC_CLOTH_BORDER_WIDTH_MIN_M = 0.5 * MM_TO_M;
 export const FABRIC_CLOTH_BORDER_WIDTH_MAX_M = 50 * MM_TO_M;
@@ -148,6 +158,7 @@ export function defaultFabricClothParams(
     borderEnabled: false,
     borderWidthM: FABRIC_CLOTH_BORDER_WIDTH_M,
     borderColor: DEFAULT_BORDER_COLOR,
+    placeholderAspect: FABRIC_CLOTH_PLACEHOLDER_ASPECT,
     physics: defaultPhysics(),
     sim: defaultFabricClothSimParams(footprint),
   };
@@ -289,6 +300,7 @@ export function migrateFabricClothParams(
       typeof raw.borderColor === 'string' && raw.borderColor.length > 0
         ? raw.borderColor
         : base.borderColor,
+    placeholderAspect: clampPlaceholderAspect(raw.placeholderAspect, base.placeholderAspect),
     physics: readPhysics(raw.physics),
     sim: readSim(raw.sim, footprint),
   };
@@ -384,6 +396,10 @@ export function clampFabricClothParams(
       typeof partial.borderColor === 'string' && partial.borderColor.length > 0
         ? partial.borderColor
         : migratedBase.borderColor,
+    placeholderAspect: clampPlaceholderAspect(
+      partial.placeholderAspect,
+      migratedBase.placeholderAspect,
+    ),
     physics: mergePhysicsPartial(partial.physics, migratedBase.physics),
     sim: mergeSimPartial(partial.sim, migratedBase.sim, footprint),
   };
@@ -395,6 +411,7 @@ export function cloneFabricClothParams(params: FabricClothParams): FabricClothPa
     borderEnabled: migrated.borderEnabled,
     borderWidthM: migrated.borderWidthM,
     borderColor: migrated.borderColor,
+    placeholderAspect: migrated.placeholderAspect,
     physics: { ...migrated.physics },
     sim: {
       pinnedCornersCount: migrated.sim.pinnedCornersCount,

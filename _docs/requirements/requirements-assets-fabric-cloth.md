@@ -24,7 +24,7 @@ Mehrfach-Instanzen unbegrenzt. Default-Szene: **keine** Pflicht-Instanz.
 
 **Category:** Assets — Fabric cloth  
 **Title:** Image-driven sizing  
-**Description:** Wie [`requirements-assets.md`](./requirements-assets.md): **Nie Bilder verzerren.** Zugewiesenes Bild (`screenImageId`) definiert **Breite-zu-Höhe** der Stoffbahn. **Referenzkante:** **Breite** **0,450 m** (45 cm). Höhe = Breite / Aspect-Ratio. **`sizeScale`** (Default `1`, Range `0.05`–`5`) skaliert Breite und Höhe **proportional** — Ratio bleibt bildgetrieben. Panel **Dimensions:** nur **Width (m)** und **Height (m)** — **kein** separates Size-Feld; Änderung **einer** Kante setzt `sizeScale`, die **andere** Kante folgt automatisch der Bild-Ratio (bzw. Platzhalter-Quadrat ohne Bild). `setAssetSizeScale` hält **Bodenkontakt** (Fuß-Pivot, `position.y` nachziehen — nicht Mittelpunkt-Pivot wie senkrechter Print).
+**Description:** Wie [`requirements-assets.md`](./requirements-assets.md): **Nie Bilder verzerren.** Zugewiesenes Bild (`screenImageId`) definiert **Breite-zu-Höhe** der Stoffbahn. **Ohne Bild:** Width und Height im Panel **unabhängig** einstellbar — Verhältnis in `fabricClothParams.placeholderAspect` (Breite/Höhe, Default 1, Clamp 0,05–20); sobald ein Bild gewählt ist, gilt wieder dessen Ratio. **Referenzkante:** **Breite** **0,450 m** (45 cm). Höhe = Breite / Aspect-Ratio. **`sizeScale`** (Default `1`, Range `0.05`–`5`) skaliert Breite und Höhe **proportional** — Ratio bleibt bildgetrieben. Panel **Dimensions:** nur **Width (m)** und **Height (m)** — **kein** separates Size-Feld; Änderung **einer** Kante setzt `sizeScale`, die **andere** Kante folgt automatisch der Bild-Ratio (bzw. Platzhalter-Quadrat ohne Bild). `setAssetSizeScale` hält **Bodenkontakt** (Fuß-Pivot, `position.y` nachziehen — nicht Mittelpunkt-Pivot wie senkrechter Print).
 
 | Zustand | Aspect-Ratio |
 |---|---|
@@ -246,11 +246,13 @@ type FabricClothParams = {
 | **Katalog** | Neue Zeile unter **Assets** neben Built-ins: Anzeigename (User, Default z. B. „Fabric cloth (baked)“ + fortlaufend), Thumbnail aus Pose; `source: 'user'`; **Remove** aus Katalog |
 | **Platzierung** | Drop/Klick wie Built-in → neue Entity mit **festem** deformiertem Mesh; **`assetKind`** Ziel: **`fabric-cloth-baked`** (oder äquivalent — **kein** World-physics-Teilnehmer) |
 | **Physik** | **Kein** SoftBody bei Start/Freeze/Reset der World-Session; **kein** `fabric-cloth`-Sim auf Instanzen aus gebackenem User-Asset — rein **statisches** Mesh (optional später: rigid fixed collider TBD, v1: Schatten-Mesh wie Block-Plane) |
-| **Gizmo** | Move/Rotate nach Platzierung erlaubt (nicht an World-`simulating` gebunden); Uniform-Scale-Regel wie `fabric-cloth` / Foot-Pivot TBD in Implementierung |
+| **Gizmo** | Move/Rotate nach Platzierung erlaubt (nicht an World-`simulating` gebunden); Uniform-Scale-Regel wie `fabric-cloth` |
+| **Pivot (Bake)** | **Basis-Pivot:** Footprint in **X/Z zentriert**, **tiefster Punkt = Entity-Y 0** — Tuch liegt nach Platzierung auf dem Ground, Gizmo sitzt an der Tuch-Unterkante. Gesetzt in `normalizeFabricClothBakedMeshPayload` (Bake **und** Load → repariert Legacy-Payloads mit Vor-Fall-Ursprung) |
 | **Gespeicherte Daten** | Deformierte **`position`** (+ `normal`, `uv`, **`restPlaneXY`**), Topologie (Indices/Segmente), **`planeWidthM`** / **`planeHeightM`** (Footprint für Border-TSL), **Default** beim Bake: `screenImageId`, `materials.fabricClothMaterialId`, `fabricClothParams` (Border) der Quell-Instanz; **kein** Rapier-State |
 | **Border nach Bake** | **`restPlaneXY`** = Ruhe-Gitter **vor** Deformation (zentriert, ±½ Footprint); deformierte `position` ändert `restPlaneXY` **nicht**. Material wie Live: `planeWidthM`/`planeHeightM` + `restPlaneXY` in `buildBufferGeometryFromBakedMeshPayload` / `addBakedFabricCloth`. Legacy-Payloads: `normalizeFabricClothBakedMeshPayload` gleicht deklarierte Plane-Maße an `restPlaneXY`-Extents an (`fabric-cloth-bake.ts`). |
 | **Bild nach Platzierung** | Jede platzierte **`fabric-cloth-baked`**-Entity: **`screenImageId` frei änderbar** (Images-Picker / Szene-Panel **Image** wie `fabric-cloth`). **Pose/Mesh bleibt fix** — Bildwechsel **kein** Geometrie-Rebuild, **kein** image-driven Footprint-Resize (Faltenform ≠ Bild-Ratio). Textur: **Cover** auf unveränderten UVs, **kein** Stretch → `.cursor/rules/image-aspect-ratio.mdc` |
-| **Mesh-Glättung (Teil des Bake)** | Beim Bake aus grobem Sim-Gitter: **einmalig** dichteres Grid + **interpoliertes** Displacement (bilinear Minimum, bicubic Ziel) — Kanten an Falten für Seiden-Look; Konstanten `FABRIC_CLOTH_BAKE_SUBDIV_FACTOR`, `FABRIC_CLOTH_BAKE_MAX_VERTICES` |
+| **Mesh-Glättung (Teil des Bake)** | Beim Bake: Sim-Gitter **Catmull-Rom** hochgerechnet (`upsampleGridCatmullRom`, `src/physics/cloth/catmull-rom-grid.ts`) — Faktor **`FABRIC_CLOTH_BAKE_SUBDIV_FACTOR` = 3** pro Achse, automatisch kleiner bis ≤ **`FABRIC_CLOTH_BAKE_MAX_VERTICES`** (65 536). Kurve geht **durch jeden Sim-Vertex** (Pins/Kontakte exakt), flache Bereiche bleiben flach. **Normals** aus dem dichten Gitter mit `writeClothGridNormals` (wie Live). **Kein** bilineares Upsampling (facettiert). |
+| **Zeilen-Reihenfolge (Pflicht)** | Live-Gitter: Zeile 0 bei **−Y**; Payload/`PlaneGeometry` (UV, `restPlaneXY`, Index): Zeile 0 bei **+Y** → Bake **spiegelt die Zeilen**. Sonst Bild kopfüber + Dreiecke falsch gewickelt (Rückseiten-Shading, wirkt blass). Test: `baked triangle winding` |
 | **Szene-Instanz nach Bake** | **Quell-`fabric-cloth` bleibt** in der Szene (weiter **`paused`**, grobes Sim-Mesh unverändert) — **kein** Ersetzen/Umwandeln der Entity. Bake legt **nur** einen neuen Katalog-Eintrag an; User platziert gebackenes Asset **optional** zusätzlich per Drop/Add |
 | **Project Save** | User-Assets-Array im Projekt-JSON (mit Mesh-Payload oder dediziertem Blob-Store im Save) — **überlebt** Reload |
 | **Built-in `fabric-cloth`** | Unverändert löschbar nur als **Entity**; Katalog-Baustein bleibt Werk |
@@ -317,7 +319,7 @@ Preset-Namen (z. B. „Fabric Silk“) beschreiben **Oberflächenverhalten**, 
 
 | Thema | Regel |
 |---|---|
-| **Solver** | CPU Verlet + OGC-lite + SDF (kein Rapier SoftBody) |
+| **Solver** | CPU Verlet + SDF, fester Substep-Ablauf, Reibung an einer Stelle, Sleep — Details [`requirements-physics.md`](./requirements-physics.md) (*Fabric cloth — CPU Verlet*); kein Rapier SoftBody, kein OGC-lite |
 | **Mesh** | Physische **Doppelhülle** (Top/Bottom); Centerline-Partikel; `restPlaneXY` für Border-TSL unverändert |
 | **Tuning** | `fabricClothParams.physics` — Presets `silk` \| `satin` \| `linen` \| `chiffon` + Slider (wie Silk Studio Panel) |
 | **Pins** | `sim.pinnedCornersCount` 0–4; `sim.pinCorners[4]` in **Entity-Lokalraum**; Gizmo Phase E |

@@ -536,7 +536,7 @@ export class MockupEngine implements SceneApi {
     const sourceSegments = readFabricClothPlaneSegments(clothMesh);
 
     return {
-      mesh: bakeFabricClothMeshFromVerletBinding(binding, runtime.object),
+      mesh: bakeFabricClothMeshFromVerletBinding(binding),
       sourceSegmentsW: sourceSegments.segmentsW,
       sourceSegmentsH: sourceSegments.segmentsH,
       defaults: {
