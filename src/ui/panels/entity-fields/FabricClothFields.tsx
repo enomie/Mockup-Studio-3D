@@ -9,6 +9,7 @@ import {
 import { formatFabricClothBakedMeshSubtitle } from '@/scene/user-baked-asset';
 import {
   computeFaceSize,
+  sizeScaleFromFaceWidth,
   resolveAssetAspectRatio,
   resolveEntityImagePixels,
 } from '@/scene/asset-ui-helpers';
@@ -34,6 +35,7 @@ import { EntityDimensionsSection } from '@/ui/panels/entity-fields/EntityDimensi
 import { parseMmInput } from '@/ui/panels/entity-fields/field-input-helpers';
 import {
   setAssetScreenImage,
+  setAssetSizeScale,
   setFabricClothActivePinCorner,
   setFabricClothParams,
 } from '@/ui/store/app-store';
@@ -87,6 +89,11 @@ export function FabricClothFields({
     entity.blockParams ?? defaultBlockParams(),
     entity,
   );
+
+  // Without an image there is no ratio to keep: width and height are independent.
+  const freeDimensions =
+    isFabricClothAssetKind(entity.assetKind) &&
+    !(imagePixels.width && imagePixels.height);
 
   return (
     <>
@@ -285,6 +292,20 @@ export function FabricClothFields({
         aspect={aspect}
         mode="faceOnly"
         dimensionsReadOnly={dimensionsReadOnly}
+        {...(freeDimensions
+          ? {
+              onWidthChange: (widthM: number) => {
+                const nextScale = sizeScaleFromFaceWidth(entity.assetKind, widthM, aspect, entity);
+                if (nextScale === null) {return;}
+                setFabricClothParams(entity.id, { placeholderAspect: widthM / faceSize.height });
+                setAssetSizeScale(entity.id, nextScale);
+              },
+              onHeightChange: (heightM: number) => {
+                if (heightM <= 0) {return;}
+                setFabricClothParams(entity.id, { placeholderAspect: faceSize.width / heightM });
+              },
+            }
+          : {})}
       />
       {bakedMeshSubtitle ? (
         <p className="panel-hint">Mesh: {bakedMeshSubtitle}</p>

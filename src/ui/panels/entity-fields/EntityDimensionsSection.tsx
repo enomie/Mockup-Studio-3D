@@ -21,6 +21,10 @@ export interface AssetDimensionsFieldsProps {
   aspect: number;
   mode?: AssetDimensionsFieldsMode;
   dimensionsReadOnly?: boolean;
+  /** Overrides the default aspect-locked width edit (e.g. free width/height). */
+  onWidthChange?: (widthM: number) => void;
+  /** Overrides the default aspect-locked height edit. */
+  onHeightChange?: (heightM: number) => void;
 }
 
 export function AssetDimensionsFields({
@@ -29,6 +33,8 @@ export function AssetDimensionsFields({
   aspect,
   mode = 'sizeScaleAndFace',
   dimensionsReadOnly = false,
+  onWidthChange,
+  onHeightChange,
 }: AssetDimensionsFieldsProps) {
   return (
     <>
@@ -49,6 +55,10 @@ export function AssetDimensionsFields({
         format={(value) => formatLengthMeters(value, LENGTH_DECIMALS)}
         parse={parseLengthMetersInput}
         onChange={(value) => {
+          if (onWidthChange) {
+            onWidthChange(value);
+            return;
+          }
           const nextScale = sizeScaleFromFaceWidth(
             entity.assetKind,
             value,
@@ -66,6 +76,10 @@ export function AssetDimensionsFields({
         format={(value) => formatLengthMeters(value, LENGTH_DECIMALS)}
         parse={parseLengthMetersInput}
         onChange={(value) => {
+          if (onHeightChange) {
+            onHeightChange(value);
+            return;
+          }
           const nextScale = sizeScaleFromFaceHeight(
             entity.assetKind,
             value,

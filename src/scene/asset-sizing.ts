@@ -239,7 +239,7 @@ export function resolveAssetAspectRatio(
     case 'pen':
       return 1;
     case 'fabric-cloth':
-      return FABRIC_CLOTH_PLACEHOLDER_ASPECT;
+      return entity?.fabricClothParams?.placeholderAspect ?? FABRIC_CLOTH_PLACEHOLDER_ASPECT;
     case 'book-softcover':
     case 'book-hardcover':
       return BOOK_PLACEHOLDER_ASPECT;
