@@ -57,10 +57,11 @@ export function buildCylinderGeometry(params: CylinderParams): BufferGeometry {
       params.heightM,
       LATHE_SEGMENTS,
     );
+    // CylinderGeometry is centered; the lathe profile already starts at y = 0.
+    translateBottomPivot(geometry, params.heightM);
   } else {
     geometry = buildRoundedCylinderLathe(params);
   }
-  translateBottomPivot(geometry, params.heightM);
   ensureGeometryTangents(geometry);
   return geometry;
 }
