@@ -6,6 +6,14 @@ Kurze Historie: **wie** wir uns entschieden haben (Warum, Alternativen). Require
 
 ## Einträge
 
+### 2026-10-30 — Nur Desktop-Browser, kein Responsive/Touch
+- **Entscheidung:** App vorerst nur am Desktop im Browser. Responsive-Layout, Touch-Optimierung und Mobile-Ansicht sind aus Requirements und UI-Guide gestrichen (ersetzt „Desktop + Mobile“ vom 2026-10-07).
+- **Grund:** Kein aktueller Bedarf; spart Komplexität im CSS (keine `@media`-Queries, keine 44-px-Hit-Areas).
+
+### 2026-10-30 — UI/CSS-Cleanup & UI-Guide
+- **Entscheidung:** Ein CSS-Regelwerk in `_docs/ui/ui-css-guide.md`: Tokens für Farben/Größen, `.btn` + Modifier, `.tile`-Listen, Zustände über `aria-pressed`/`aria-current`, CSS aufgeteilt in `src/ui/styles/` (tokens, base, shell, controls, lists, features/*).
+- **Grund:** Über die Zeit gewachsener Wildwuchs (51 Farbwerte, ~25 Button-Klassen); neue Features sollen nachschlagen statt neu erfinden.
+
 ### 2026-10-30 — Triangle Patch: Punktliste statt fester Ecken
 - **Entscheidung:** Patch-Rand als geschlossener Umlauf `points` mit `cornerIds` + `edgeParams`; jeder Punkt hat alle 4 Hebel. Wölbung = Summe der Quertangenten-Felder der 3 Kanten (bei nur Ecken bit-gleich zur alten Formel). Einfügen per de Casteljau formgleich; Add-Point als Viewport-Modus (Klick auf Kante).
 - **Grund:** „Jeder Punkt kann alles“ ohne Sonderfälle im Code; gespeicherte Kantenparameter verhindern den Formsprung des Prototyps beim Einfügen.

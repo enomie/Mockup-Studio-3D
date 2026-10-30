@@ -202,8 +202,6 @@ Erlaubte Fälle (Stand heute, alle geprüft):
 ### A5. Checkliste für neue Features
 - [ ] Bestehende Komponente aus `src/ui/components/` verwendet?
 - [ ] Nur Tokens, keine neuen Hex-/px-Magic-Numbers?
-- [ ] Hit-Area touch-tauglich (Look & Feel: ~44 px bzw. bewusste Ausnahme)?
-- [ ] Kein Hover-only für kritische Aktionen?
 - [ ] Neue Klassen hier in Teil A/B nachgetragen, falls neues Muster?
 
 ---
@@ -211,7 +209,7 @@ Erlaubte Fälle (Stand heute, alle geprüft):
 ## B. Bestandsaufnahme (2026-10-30)
 
 ### B1. Zahlen
-- (Stand vor Cleanup) 1 CSS-Datei, 1664 Zeilen, **0 `@media`-Queries** (Responsive-Anforderung aus Look & Feel aktuell nicht umgesetzt).
+- (Stand vor Cleanup) 1 CSS-Datei, 1664 Zeilen.
 - **51** verschiedene rohe Farbwerte (Hex/rgba) neben den Tokens.
 - Inline-Styles in 7 Dateien: `ColorPicker.tsx`, `ColorPickerPopover.tsx`, `ViewportFrame.tsx`, `RangeSlider.tsx`, `DualRangeSlider.tsx`, `ColorsPanel.tsx`, `MaterialsPanel.tsx`.
 
@@ -272,7 +270,6 @@ Jeder Schritt: besprechen → umsetzen → Teil A aktualisieren → Häkchen.
 - [x] **7. Inline-Styles** – auf dynamische Werte reduzieren.
 - [x] **7b. Rest-Duplikate** (siehe B5)
 - [x] **8. Datei-Struktur** – app.css aufteilen.
-- [ ] **9. Responsive/Touch** – Entscheidung, was davon jetzt wirklich gilt.
 
 ---
 

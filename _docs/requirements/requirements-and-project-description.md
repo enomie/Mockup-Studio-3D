@@ -87,13 +87,13 @@ Details → [`requirements-development-workflow.md`](./requirements-development-
 
 **Category:** Project  
 **Title:** Browser-only  
-**Description:** Die Anwendung läuft **ausschließlich im Browser** — Desktop **und** Mobile, keine Desktop-App, kein Backend-Zwang für den Kern-Workflow, kein Node/Electron-Wrapper. Alles clientseitig (Upload, Vorschau, Szene, Export). Keine Architektur-Entscheidung die „später mal nativ" voraussetzt.
+**Description:** Die Anwendung läuft **ausschließlich im Browser** — vorerst **nur Desktop-Browser** (kein Mobile/Touch), keine Desktop-App, kein Backend-Zwang für den Kern-Workflow, kein Node/Electron-Wrapper. Alles clientseitig (Upload, Vorschau, Szene, Export). Keine Architektur-Entscheidung die „später mal nativ" voraussetzt.
 
 ---
 
 **Category:** Project  
 **Title:** WebGPU required — kein WebGL-Fallback  
-**Description:** Rendering nur über **WebGPU**. Kein WebGL-Fallback — weder auf Desktop noch Mobile. Geräte ohne WebGPU: klare UI-Meldung, App startet nicht in den 3D-Modus. UI-Chrome (React) darf laden; Viewport bleibt gesperrt bis WebGPU verfügbar.
+**Description:** Rendering nur über **WebGPU**. Kein WebGL-Fallback. Geräte ohne WebGPU: klare UI-Meldung, App startet nicht in den 3D-Modus. UI-Chrome (React) darf laden; Viewport bleibt gesperrt bis WebGPU verfügbar.
 
 ---
 

@@ -48,7 +48,7 @@ Architektur, Patterns und technische Vorgaben für Mockup Studio 3D.
 
 **Category:** Code  
 **Title:** Three.js — WebGPU only  
-**Description:** **Nur** `three/webgpu` — kein `three`, kein `WebGLRenderer`, **kein WebGL-Fallback** (auch nicht „für Mobile"). Hard Requirement: `navigator.gpu` prüfen — bei fehlendem WebGPU klare Meldung in der UI, kein stiller Fallback. Gilt für Desktop **und** Mobile-Browser. `WebGPURenderer` erst nach `await renderer.init()` nutzen. Animation über `renderer.setAnimationLoop()` — kein manuelles `requestAnimationFrame` für den Haupt-Render-Loop. `setPixelRatio(Math.min(devicePixelRatio, 2))` — nicht blind `window.devicePixelRatio`. Resize: Kamera **und** Renderer aktualisieren. Imports addons aus `three/addons/…` nur wenn nötig.
+**Description:** **Nur** `three/webgpu` — kein `three`, kein `WebGLRenderer`, **kein WebGL-Fallback**. Hard Requirement: `navigator.gpu` prüfen — bei fehlendem WebGPU klare Meldung in der UI, kein stiller Fallback. `WebGPURenderer` erst nach `await renderer.init()` nutzen. Animation über `renderer.setAnimationLoop()` — kein manuelles `requestAnimationFrame` für den Haupt-Render-Loop. `setPixelRatio(Math.min(devicePixelRatio, 2))` — nicht blind `window.devicePixelRatio`. Resize: Kamera **und** Renderer aktualisieren. Imports addons aus `three/addons/…` nur wenn nötig.
 
 **Typische Fehler vermeiden:**
 - Renderer vor `init()` rendern → schwarzer Screen / Fehler

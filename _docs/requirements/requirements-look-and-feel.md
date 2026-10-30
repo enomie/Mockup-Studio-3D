@@ -11,14 +11,14 @@ Visuelles Design und UX von Mockup Studio 3D.
 ---
 
 **Category:** Look & Feel  
-**Title:** Responsive & touch-ready  
-**Description:** UI funktioniert auf **Desktop und Mobile** (alle gängigen Browser). Layout responsive: Desktop = Sidebars/Toolbar; Mobile = Drawer/Bottom-Sheets statt schmaler Multi-Panel-Leiste. **Touch-ready:** ausreichend große Hit-Areas (min. ~44px), kein Hover-only für kritische Aktionen, Touch-Gesten für Viewport bewusst definieren (Pan/Pinch vs. Scroll-Konflikt vermeiden). Canvas füllt verfügbaren Platz; UI-Chrome darf Viewport nicht überdecken.
+**Title:** Nur Desktop-Browser  
+**Description:** Die App läuft vorerst **nur am Desktop im Browser** (Maus + Tastatur). **Kein** Responsive-Layout, **keine** Touch-Optimierung, keine Mobile-Ansicht. Canvas füllt verfügbaren Platz; UI-Chrome darf Viewport nicht überdecken.
 
 ---
 
 **Category:** Look & Feel  
 **Title:** Viewport-Steuerung (Space = Pan)  
-**Description:** **Leertaste gedrückt halten + Ziehen** = Arbeitsfläche verschieben (Pan), wie Figma Hand-Tool / Blender. Cursor wechselt zu Hand-Symbol. **Ohne Space:** Linksklick + Ziehen = Orbit; **Linksklick** (ohne Drag, &lt; 4 px) = Select/Deselect. **Mausrad = Zoom** — Wirkung abhängig von Projection: **Perspective** = näher/weiter (Dolly); **Orthographic** = Frustum-Zoom (siehe [`requirements-camera.md`](./requirements-camera.md)). Mittlere Maustaste = Pan (Alternative zu Space). **Rechte Maustaste + Ziehen** = Pan (siehe nächster Block). Mobile: 2-Finger-Drag = Pan, Pinch = Zoom. Space-Pan darf nie mit UI-Scroll kollidieren — Events nur auf dem Canvas wenn Fokus im Viewport.
+**Description:** **Leertaste gedrückt halten + Ziehen** = Arbeitsfläche verschieben (Pan), wie Figma Hand-Tool / Blender. Cursor wechselt zu Hand-Symbol. **Ohne Space:** Linksklick + Ziehen = Orbit; **Linksklick** (ohne Drag, &lt; 4 px) = Select/Deselect. **Mausrad = Zoom** — Wirkung abhängig von Projection: **Perspective** = näher/weiter (Dolly); **Orthographic** = Frustum-Zoom (siehe [`requirements-camera.md`](./requirements-camera.md)). Mittlere Maustaste = Pan (Alternative zu Space). **Rechte Maustaste + Ziehen** = Pan (siehe nächster Block). Space-Pan darf nie mit UI-Scroll kollidieren — Events nur auf dem Canvas wenn Fokus im Viewport.
 
 ---
 
@@ -36,7 +36,7 @@ Visuelles Design und UX von Mockup Studio 3D.
 
 **Category:** Look & Feel  
 **Title:** Panel Sections (Accordion)  
-**Description:** Aufklappbare Sections: **13–14px** Section-Titel, semibold, Chevron rechts, **~40px** Zeilenhöhe (touch-ready). Getrennt durch **1px** `#e8e8e8`. Inhalt: **12–16px** Padding, Form-Controls wie Figma Properties (Label links, Control rechts oder volle Breite). Eingeklappte Section: nur Titelzeile — spart Platz bei „ziemlich vielen" Panels.
+**Description:** Aufklappbare Sections: **13–14px** Section-Titel, semibold, Chevron rechts, **~40px** Zeilenhöhe. Getrennt durch **1px** `#e8e8e8`. Inhalt: **12–16px** Padding, Form-Controls wie Figma Properties (Label links, Control rechts oder volle Breite). Eingeklappte Section: nur Titelzeile — spart Platz bei „ziemlich vielen" Panels.
 
 ---
 
