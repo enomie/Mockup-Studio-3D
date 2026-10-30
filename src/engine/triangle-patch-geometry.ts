@@ -5,6 +5,7 @@ import {
 } from 'three/webgpu';
 import {
   getPatchCorners,
+  getPatchEdgePoints,
   type PatchPoint,
   type TrianglePatchParams,
 } from '@/scene/asset-triangle-patch';
@@ -12,10 +13,7 @@ import { ensureGeometryTangents } from '@/engine/geometry-tangents';
 
 const _pA = new Vector3();
 const _pB = new Vector3();
-const _pC = new Vector3();
 const _bA = new Vector3();
-const _bB = new Vector3();
-const _bC = new Vector3();
 
 /**
  * Evaluates a cubic Bezier edge between two nodes (nA -> nB).
@@ -41,81 +39,103 @@ export function evalCubicBezierEdge(
   return out;
 }
 
+const _edgeKnots: number[] = [];
+
 /**
- * Evaluates the 3D surface at barycentric coordinates (u, v, w) with u + v + w = 1.
- * Nodes: [A, B, C]
- * Edge 0: A -> B
- * Edge 1: B -> C
- * Edge 2: C -> A
+ * Finds the segment of edge `edgeIndex` that holds parameter `t` and returns its two
+ * points plus the local segment parameter. Edge points sit at their `edgeParams` value;
+ * out-of-order params are clamped so the knots stay monotonic.
+ */
+function locateEdgeSegment(
+  params: TrianglePatchParams,
+  edgeIndex: number,
+  t: number,
+): { a: PatchPoint; b: PatchPoint; s: number } {
+  const points = getPatchEdgePoints(params, edgeIndex);
+  const last = points.length - 1;
+  _edgeKnots.length = 0;
+  _edgeKnots.push(0);
+  for (let i = 1; i < last; i++) {
+    const knot = params.edgeParams[points[i].id] ?? i / last;
+    _edgeKnots.push(Math.min(1, Math.max(_edgeKnots[i - 1], knot)));
+  }
+  _edgeKnots.push(1);
+
+  const clampedT = Math.max(0, Math.min(1, t));
+  let k = 0;
+  while (k < last - 1 && clampedT > _edgeKnots[k + 1]) {k++;}
+  const span = _edgeKnots[k + 1] - _edgeKnots[k];
+  const s = span > 1e-9 ? (clampedT - _edgeKnots[k]) / span : 0;
+  return { a: points[k], b: points[k + 1], s };
+}
+
+/** Evaluates edge `edgeIndex` (corner e -> corner e+1) at `t` in [0, 1], across all its segments. */
+export function evalEdge(
+  params: TrianglePatchParams,
+  edgeIndex: number,
+  t: number,
+  out: Vector3 = new Vector3(),
+): Vector3 {
+  const { a, b, s } = locateEdgeSegment(params, edgeIndex, t);
+  return evalCubicBezierEdge(a, b, s, out);
+}
+
+/** Cross-tangent offset (`handleCrossIn - pos`) along edge `edgeIndex`, interpolated between its points. */
+export function evalCross(
+  params: TrianglePatchParams,
+  edgeIndex: number,
+  t: number,
+  out: Vector3 = new Vector3(),
+): Vector3 {
+  const { a, b, s } = locateEdgeSegment(params, edgeIndex, t);
+  out.x = (1 - s) * (a.handleCrossIn.x - a.pos.x) + s * (b.handleCrossIn.x - b.pos.x);
+  out.y = (1 - s) * (a.handleCrossIn.y - a.pos.y) + s * (b.handleCrossIn.y - b.pos.y);
+  out.z = (1 - s) * (a.handleCrossIn.z - a.pos.z) + s * (b.handleCrossIn.z - b.pos.z);
+  return out;
+}
+
+/**
+ * Evaluates the 3D surface at barycentric coordinates (u, v, w) with u + v + w = 1,
+ * weighting corner 0, 1, 2. Edge 0: corner 0 -> 1, edge 1: 1 -> 2, edge 2: 2 -> 0.
  */
 export function evalPatchSurfacePoint(
-  nodes: readonly [PatchPoint, PatchPoint, PatchPoint],
+  params: TrianglePatchParams,
   u: number,
   v: number,
   w: number,
   out: Vector3 = new Vector3(),
 ): Vector3 {
-  const [nodeA, nodeB, nodeC] = nodes;
+  const [nodeA, nodeB, nodeC] = getPatchCorners(params);
   const A = nodeA.pos;
   const B = nodeB.pos;
   const C = nodeC.pos;
 
   // 1. Linear planar base
-  const lx = u * A.x + v * B.x + w * C.x;
-  const ly = u * A.y + v * B.y + w * C.y;
-  const lz = u * A.z + v * B.z + w * C.z;
+  out.set(u * A.x + v * B.x + w * C.x, u * A.y + v * B.y + w * C.y, u * A.z + v * B.z + w * C.z);
 
-  let dx = 0;
-  let dy = 0;
-  let dz = 0;
-
-  // 2. Edge corrections (Coons patch blend)
-  // Edge AB (u + v)
-  if (u + v > 0.0001) {
-    const tAB = v / (u + v);
-    evalCubicBezierEdge(nodeA, nodeB, tAB, _pA);
-    const linX = (1 - tAB) * A.x + tAB * B.x;
-    const linY = (1 - tAB) * A.y + tAB * B.y;
-    const linZ = (1 - tAB) * A.z + tAB * B.z;
-    dx += (u + v) * (_pA.x - linX);
-    dy += (u + v) * (_pA.y - linY);
-    dz += (u + v) * (_pA.z - linZ);
+  // 2. Per edge: Coons blend of the edge curve, and the edge's cross-tangent field for the bulge.
+  // With only corners, sum((a + b) / 2 * cross) reduces to u*cA + v*cB + w*cC.
+  _bA.set(0, 0, 0);
+  const edges = [
+    [u, v, A, B],
+    [v, w, B, C],
+    [w, u, C, A],
+  ] as const;
+  for (let e = 0; e < 3; e++) {
+    const [wa, wb, start, end] = edges[e];
+    const sum = wa + wb;
+    if (sum <= 0.0001) {continue;}
+    const t = wb / sum;
+    evalEdge(params, e, t, _pA);
+    out.x += sum * (_pA.x - ((1 - t) * start.x + t * end.x));
+    out.y += sum * (_pA.y - ((1 - t) * start.y + t * end.y));
+    out.z += sum * (_pA.z - ((1 - t) * start.z + t * end.z));
+    evalCross(params, e, t, _pB);
+    _bA.addScaledVector(_pB, sum / 2);
   }
 
-  // Edge BC (v + w)
-  if (v + w > 0.0001) {
-    const tBC = w / (v + w);
-    evalCubicBezierEdge(nodeB, nodeC, tBC, _pB);
-    const linX = (1 - tBC) * B.x + tBC * C.x;
-    const linY = (1 - tBC) * B.y + tBC * C.y;
-    const linZ = (1 - tBC) * B.z + tBC * C.z;
-    dx += (v + w) * (_pB.x - linX);
-    dy += (v + w) * (_pB.y - linY);
-    dz += (v + w) * (_pB.z - linZ);
-  }
-
-  // Edge CA (w + u)
-  if (w + u > 0.0001) {
-    const tCA = u / (w + u);
-    evalCubicBezierEdge(nodeC, nodeA, tCA, _pC);
-    const linX = (1 - tCA) * C.x + tCA * A.x;
-    const linY = (1 - tCA) * C.y + tCA * A.y;
-    const linZ = (1 - tCA) * C.z + tCA * A.z;
-    dx += (w + u) * (_pC.x - linX);
-    dy += (w + u) * (_pC.y - linY);
-    dz += (w + u) * (_pC.z - linZ);
-  }
-
-  // 3. Central bulge (cross-tangent interior deformation)
-  const centerBulge = 27.0 * u * v * w * 0.65;
-  _bA.set(nodeA.handleCrossIn.x - A.x, nodeA.handleCrossIn.y - A.y, nodeA.handleCrossIn.z - A.z).multiplyScalar(u);
-  _bB.set(nodeB.handleCrossIn.x - B.x, nodeB.handleCrossIn.y - B.y, nodeB.handleCrossIn.z - B.z).multiplyScalar(v);
-  _bC.set(nodeC.handleCrossIn.x - C.x, nodeC.handleCrossIn.y - C.y, nodeC.handleCrossIn.z - C.z).multiplyScalar(w);
-
-  out.x = lx + dx + (_bA.x + _bB.x + _bC.x) * centerBulge;
-  out.y = ly + dy + (_bA.y + _bB.y + _bC.y) * centerBulge;
-  out.z = lz + dz + (_bA.z + _bB.z + _bC.z) * centerBulge;
-
+  // 3. Central bulge, zero on the boundary so the edges stay exact
+  out.addScaledVector(_bA, 27.0 * u * v * w * 0.65);
   return out;
 }
 
@@ -132,7 +152,6 @@ export function buildTrianglePatchGeometry(params: TrianglePatchParams): BufferG
   const gridIndex: number[][] = [];
   let vCounter = 0;
   const pt = new Vector3();
-  const corners = getPatchCorners(params);
 
   for (let i = 0; i <= divisions; i++) {
     gridIndex[i] = [];
@@ -143,7 +162,7 @@ export function buildTrianglePatchGeometry(params: TrianglePatchParams): BufferG
       const v = j / divisions;
       const w = (divisions - i - j) / divisions;
 
-      evalPatchSurfacePoint(corners, u, v, w, pt);
+      evalPatchSurfacePoint(params, u, v, w, pt);
 
       const pIdx = vCounter * 3;
       positions[pIdx] = pt.x;
