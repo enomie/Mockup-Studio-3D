@@ -1572,3 +1572,4 @@ Kurze Historie: **wie** wir uns entschieden haben (Warum, Alternativen). Require
 ### 2026-10-07 — Dev-Server
 - **Entscheidung:** Vite Port **4040**; Dev-Server startet **User**, Agent **nie** `npm run dev`.
 - **Grund:** HMR läuft dauerhaft; Agent soll Server nicht doppelt starten.
+- **Update 2026-10-30 — Ausnahme Cloud-Sessions:** In einer Cloud-Session (eigener Container, nicht Johanns Rechner) darf der Agent für Test-Renders und Browser-Checks einen eigenen Vite-Server starten — auf einem **anderen Port** als 4040, und danach wieder beenden. Lokal gilt die Regel unverändert.
