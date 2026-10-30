@@ -1,7 +1,7 @@
 import type { Material } from 'three/webgpu';
 import { finishToMaterialId, resolveImageSurfaceSettings } from '@/scene/image-surface';
 import {
-  defaultRotationalPrintSettings,
+  resolveRotationalPrintSettings,
   type RotationalPrintAssetKind,
 } from '@/scene/rotational-print';
 import type { MaterialResolveOptions } from '@/engine/material-resolver';
@@ -62,6 +62,6 @@ export function resolveRotationalPrintBodyMaterial(
     ),
     surface,
     finishPreset: resolver.resolvePreset(finishToMaterialId(surface.finish)),
-    settings: defaultRotationalPrintSettings(input.assetKind),
+    settings: resolveRotationalPrintSettings(surface, input.assetKind),
   });
 }

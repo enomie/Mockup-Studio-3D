@@ -1,4 +1,5 @@
 import type { AssetKind } from './asset-kind';
+import type { ImageSurfaceSettings } from './image-surface';
 
 /** Assets whose image is printed around the lathe axis into the body material. */
 export type RotationalPrintAssetKind = 'beverage-can' | 'tin-can' | 'wine-bottle' | 'pen';
@@ -28,4 +29,16 @@ export function defaultRotationalPrintSettings(
   assetKind: RotationalPrintAssetKind,
 ): RotationalPrintSettings {
   return { substrate: DEFAULT_SUBSTRATE[assetKind], inkOpacity: 1 };
+}
+
+/** Stored values from the label surface, falling back to the asset defaults. */
+export function resolveRotationalPrintSettings(
+  surface: Pick<ImageSurfaceSettings, 'substrate' | 'inkOpacity'>,
+  assetKind: RotationalPrintAssetKind,
+): RotationalPrintSettings {
+  const defaults = defaultRotationalPrintSettings(assetKind);
+  return {
+    substrate: surface.substrate ?? defaults.substrate,
+    inkOpacity: surface.inkOpacity ?? defaults.inkOpacity,
+  };
 }

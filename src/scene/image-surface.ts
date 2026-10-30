@@ -16,6 +16,10 @@ export interface ImageSurfaceSettings {
   passepartoutColor: Rgb;
   passepartoutOffsetM: number;
   passepartoutFinish: ImageSurfaceFinish;
+  /** Rotational assets only: 0 = paper label, 1 = direct print. Unset → per-asset default. */
+  substrate?: number;
+  /** Rotational assets only: scales the image alpha. Unset → 1. */
+  inkOpacity?: number;
 }
 
 interface ImageSurfaceMigrationInput {

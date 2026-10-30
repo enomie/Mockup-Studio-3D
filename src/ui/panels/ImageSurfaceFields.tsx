@@ -14,6 +14,10 @@ import {
   NORMALIZED_DECIMALS,
   NORMALIZED_STEP,
 } from '@/units/normalized';
+import {
+  isRotationalPrintAssetKind,
+  resolveRotationalPrintSettings,
+} from '@/scene/rotational-print';
 import { ColorPicker } from '@/ui/components/ColorPicker';
 import { PanelAxisField } from '@/ui/components/PanelAxisField/PanelAxisField';
 import { PanelCheckbox } from '@/ui/components/PanelCheckbox';
@@ -109,6 +113,10 @@ export function ImageSurfaceFields({
     faceId,
     assetKind ? { assetKind } : undefined,
   );
+  const printSettings =
+    assetKind !== undefined && isRotationalPrintAssetKind(assetKind)
+      ? resolveRotationalPrintSettings(surface, assetKind)
+      : null;
   const showPassepartout =
     assetKind !== undefined && imageSurfaceSupportsPassepartout(assetKind);
 
@@ -132,6 +140,35 @@ export function ImageSurfaceFields({
           setImageSurface(entityId, faceId, { finish });
         }}
       />
+
+      {printSettings ? (
+        <>
+          <RangeSlider
+            label="Substrate (Paper ↔ Direct)"
+            min={0}
+            max={1}
+            step={NORMALIZED_STEP}
+            value={printSettings.substrate}
+            valueInputLabel="Substrate"
+            valueInputDecimals={NORMALIZED_DECIMALS}
+            onChange={(value) => {
+              setImageSurface(entityId, faceId, { substrate: value });
+            }}
+          />
+          <RangeSlider
+            label="Ink opacity"
+            min={0}
+            max={1}
+            step={NORMALIZED_STEP}
+            value={printSettings.inkOpacity}
+            valueInputLabel="Ink opacity"
+            valueInputDecimals={NORMALIZED_DECIMALS}
+            onChange={(value) => {
+              setImageSurface(entityId, faceId, { inkOpacity: value });
+            }}
+          />
+        </>
+      ) : null}
 
       <PanelCheckbox
         label="Emissive"
