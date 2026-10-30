@@ -159,7 +159,7 @@ User-Panel (Geometries): **Radius (mm)** und **Höhe (mm)** — Änderung → **
 | 4 | **Dimensions** — **Size** (`sizeScale`); **Radius** / **Height** (m → `bodyRadiusM`, `bodyHeightM`) |
 | 5 | **Position** |
 
-**Kein** Bead-Prozent-Slider in v1 — **fix** 10 % / 80 % / 10 % Mantel. Rebuild bei Params + `sizeScale` unabhängig vom Bild. → [`improve-04-asset-settings.md`](../improve/improve-04-asset-settings.md), [`TinCanFields.tsx`](../../src/ui/panels/entity-fields/TinCanFields.tsx).
+**Kein** Bead-Prozent-Slider in v1 — **fix** 10 % / 80 % / 10 % Mantel. Rebuild bei Params + `sizeScale` unabhängig vom Bild. → [`TinCanFields.tsx`](../../src/ui/panels/entity-fields/TinCanFields.tsx).
 
 ---
 

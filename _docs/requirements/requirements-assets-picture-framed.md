@@ -18,7 +18,7 @@ Parametrischer **Bilderrahmen** um eine bildgetriebene Opening — Bild aus der 
 
 **Category:** Assets — Picture framed  
 **Title:** Image-driven sizing  
-**Description:** Wie [`requirements-assets.md`](./requirements-assets.md): **Nie Bilder verzerren.** Das zugewiesene Bild (`screenImageId` → `ImageAsset.width` / `height`) definiert **Opening-Seitenverhältnis** und Orientierung. **Referenzkante:** Opening-**Breite** **0,500 m** (50 cm). Höhe = Breite / Aspect-Ratio. **Uniform scale:** `sizeScale` (Default `1`, Range `0.05`–`5`) multipliziert alle mm-Maße und die Referenzbreite proportional — Ratio bleibt bildgetrieben. Panel **Dimensions:** nur **Width (m)** und **Height (m)** (gekoppelt; **kein** Size-Feld); Gizmo-Scale unverändert; `setAssetSizeScale` ändert **nicht** `transform.position.y`. Szene-Panel-Reihenfolge → [`improve-04-asset-settings.md`](../improve/improve-04-asset-settings.md).
+**Description:** Wie [`requirements-assets.md`](./requirements-assets.md): **Nie Bilder verzerren.** Das zugewiesene Bild (`screenImageId` → `ImageAsset.width` / `height`) definiert **Opening-Seitenverhältnis** und Orientierung. **Referenzkante:** Opening-**Breite** **0,500 m** (50 cm). Höhe = Breite / Aspect-Ratio. **Uniform scale:** `sizeScale` (Default `1`, Range `0.05`–`5`) multipliziert alle mm-Maße und die Referenzbreite proportional — Ratio bleibt bildgetrieben. Panel **Dimensions:** nur **Width (m)** und **Height (m)** (gekoppelt; **kein** Size-Feld); Gizmo-Scale unverändert; `setAssetSizeScale` ändert **nicht** `transform.position.y`.
 
 | Zustand | Aspect-Ratio |
 |---|---|

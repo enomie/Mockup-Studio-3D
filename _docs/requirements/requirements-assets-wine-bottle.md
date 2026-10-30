@@ -400,7 +400,7 @@ Alternative Darstellung in UI: Slider „**von unten**“ oder „**Mitte Y**“
 **Title:** Etikett — Mesh, Material, UI  
 **Description:** Separates **Label-Mantel-Mesh** (leicht radial versetzt) mit **`screenImageId`** + `imageSurfaces.label`; Glas-Körper darunter. **Material:** `createImagePbrMaterial` + Cover-UV aus Label-Rechteckmaßen — bei PNG **Transparenz → Glas**, kein deckendes Underlay. **Ohne Bild:** **kein** Label-Mesh. **`geometryVisibility.label` aus** → Label aus, auch wenn Bild gesetzt. (Dosen: separates Label + `createCanLabelMaterial` — anderer Alpha-Pfad.)
 
-**Right Panel (Ist):** `ImageSurfaceFields` + Sektionen in [`WineBottleFields.tsx`](../../src/ui/panels/entity-fields/WineBottleFields.tsx). Footer **Dimensions** + **Position** → [`improve-04-asset-settings.md`](../improve/improve-04-asset-settings.md). **Label** (im Panel):
+**Right Panel (Ist):** `ImageSurfaceFields` + Sektionen in [`WineBottleFields.tsx`](../../src/ui/panels/entity-fields/WineBottleFields.tsx). Footer **Dimensions** + **Position**. **Label** (im Panel):
 
 - `labelWrap` — Full / Partial  
 - `labelSizeMode` — Width / Height  

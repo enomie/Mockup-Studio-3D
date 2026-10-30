@@ -190,7 +190,7 @@ type WallpaperPattern = {
 3. **Dimensions** — Width, Height, Thickness (m)
 4. **Position** — Pos / Rot (Gizmo + Felder; kein Transform-Block)
 
-Footer-Muster → [`improve-04-asset-settings.md`](../../improve/improve-04-asset-settings.md). Gilt für `wall` und `wall-door`.
+Gilt für `wall` und `wall-door`.
 
 `wall-door`: keine extra Türmaß-Felder in v1 (Öffnung fest). Hinweis-Label „Door opening 2 × 2,5 m, 1 m from left“ (read-only).
 

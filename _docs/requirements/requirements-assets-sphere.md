@@ -93,7 +93,7 @@ type SphereParams = {
 
 **API:** `addAsset('sphere')`, `setSphereParams`, `setEntityMaterial`, `setPhysicsBodyMode`, `setPhysicsDensityKgPerM3`.
 
-**Szene-Panel:** **Material** → **Physics** (Mode, Density, Weight read-only) → **Dimensions** (Radius) → **Position** (Pos/Rot). Footer-Muster → [`improve-04-asset-settings.md`](../../improve/improve-04-asset-settings.md).
+**Szene-Panel:** **Material** → **Physics** (Mode, Density, Weight read-only) → **Dimensions** (Radius) → **Position** (Pos/Rot).
 
 ---
 

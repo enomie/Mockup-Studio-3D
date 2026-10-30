@@ -217,7 +217,7 @@ type FabricClothParams = {
 - `setFabricClothParams(entityId, partial: Partial<FabricClothParams>)`
 - `setEntityMaterial(entityId, 'fabricClothMaterialId', materialId)`
 
-**Szene-Panel (Right):** **Image** → **Material** (Fabric drape Presets) → **Border** → **Dimensions** (Width, Height gekoppelt — **kein** Size-Feld) → **Position** (Pos/Rot). Verformung nur **Physics → Start** (Rapier). Footer-Muster → [`improve-04-asset-settings.md`](../../improve/improve-04-asset-settings.md).
+**Szene-Panel (Right):** **Image** → **Material** (Fabric drape Presets) → **Border** → **Dimensions** (Width, Height gekoppelt — **kein** Size-Feld) → **Position** (Pos/Rot). Verformung nur **Physics → Start** (Rapier).
 
 ---
 

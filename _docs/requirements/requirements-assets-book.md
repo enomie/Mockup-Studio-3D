@@ -237,7 +237,7 @@ Ohne Spine-Bild: Rücken zeigt **Einband-Material/Farbe** (`coverMaterialId`).
 
 **Category:** Assets — Book  
 **Title:** Geometrie & Panel (UI-Ziel)  
-**Description:** Right Sub bei selektierter Book-Entity (Footer wie [`improve-04-asset-settings.md`](../improve/improve-04-asset-settings.md)):
+**Description:** Right Sub bei selektierter Book-Entity:
 
 | Reihenfolge | Sektion |
 |-------------|---------|

@@ -2,7 +2,7 @@
 
 Zentraler Katalog pro **`AssetKind`** — ersetzt parallele `is*` / `set*Params` / Create-Slices in Engine und Scene, **ohne** das persistierte `AssetEntity`-Schema in v1 zu ändern.
 
-Verknüpft: [`requirements-architecture.md`](./requirements-architecture.md), [`requirements-scene-placement.md`](./requirements-scene-placement.md), [`requirements-assets.md`](./requirements-assets.md). Audit: [`improve-vereinheitlichen.md`](../../improve-vereinheitlichen.md) (Phase 3).
+Verknüpft: [`requirements-architecture.md`](./requirements-architecture.md), [`requirements-scene-placement.md`](./requirements-scene-placement.md), [`requirements-assets.md`](./requirements-assets.md).
 
 **Status:** Phasen **3a–3e** umgesetzt (Registry v1 komplett). Phase **3f** (`geometryParts` + UI) umgesetzt (Registry v1.5).
 

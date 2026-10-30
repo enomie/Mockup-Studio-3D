@@ -168,7 +168,7 @@ type WheelCarParams = {
 
 **API (Ziel):** `addAsset('wheel-car')`, `setWheelCarParams`, `setEntityMaterial` (pro Slot), `setPhysicsBodyMode`, `setPhysicsDensity`.
 
-**Szene-Panel:** **Materials** (Tire, Rim) → **Physics** (Mode, Density, Weight read-only) → **Dimensions** (`outerRadiusM`, **Tire width (from SVG)** read-only, `rimInsetM`, `hubRadiusM`, `hubDepthM`) → **Position** (Pos/Rot). Footer-Muster → [`improve-04-asset-settings.md`](../../improve/improve-04-asset-settings.md).
+**Szene-Panel:** **Materials** (Tire, Rim) → **Physics** (Mode, Density, Weight read-only) → **Dimensions** (`outerRadiusM`, **Tire width (from SVG)** read-only, `rimInsetM`, `hubRadiusM`, `hubDepthM`) → **Position** (Pos/Rot).
 
 ---
 

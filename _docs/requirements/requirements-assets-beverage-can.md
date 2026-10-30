@@ -361,7 +361,7 @@ Dropdown: alle Material-Presets erlaubt; Metall-Slots typisch **Chrome**, **Alum
 
 **Category:** Assets — Beverage can  
 **Title:** Szene-Panel (Ist)  
-**Description:** Label / Image → Geometries → Body profile → Materials → Footer **Dimensions** (Size + gekoppeltes W/H) → **Position**. Kein Transform-Block. Advanced mm (Höhe/Durchmesser) im Panel **nicht** in v1 — nur `sizeScale` + Footprint. Inventar → [`improve-04-asset-settings.md`](../improve/improve-04-asset-settings.md).
+**Description:** Label / Image → Geometries → Body profile → Materials → Footer **Dimensions** (Size + gekoppeltes W/H) → **Position**. Kein Transform-Block. Advanced mm (Höhe/Durchmesser) im Panel **nicht** in v1 — nur `sizeScale` + Footprint.
 
 ---
 

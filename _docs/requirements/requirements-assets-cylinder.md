@@ -111,7 +111,7 @@ type PhysicsBodyMode = 'fixed' | 'dynamic';
 
 **API (Ziel):** `addAsset('cylinder')`, `setCylinderParams`, `setEntityMaterial`, `setPhysicsBodyMode`, `setPhysicsDensity`.
 
-**Szene-Panel:** **Material** → **Physics** (Mode, Density kg/m³, Weight kg read-only) → **Dimensions** (Radius, Height, Corner radius) → **Position** (Pos/Rot). Footer-Muster → [`improve-04-asset-settings.md`](../../improve/improve-04-asset-settings.md).
+**Szene-Panel:** **Material** → **Physics** (Mode, Density kg/m³, Weight kg read-only) → **Dimensions** (Radius, Height, Corner radius) → **Position** (Pos/Rot).
 
 ---
 

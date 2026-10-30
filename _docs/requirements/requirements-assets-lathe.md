@@ -37,7 +37,7 @@
 
 **Category:** Assets — Lathe  
 **Title:** Szene-Panel — Dimensions + Position (Ist)  
-**Description:** Right Sub **Szene** für Lathe-/Packaging-Kinds (umgesetzt → [`improve-04-asset-settings.md`](../improve/improve-04-asset-settings.md)):
+**Description:** Right Sub **Szene** für Lathe-/Packaging-Kinds:
 
 1. Asset-spezifische Sektionen **oben** (Image/Label, Geometries, Profil-Auswahl, Material, …).
 2. **Dimensions** — **`sizeScale` (Size)** plus **Width** und **Height** in m als **gekoppelte** Anzeige/Steuerung:

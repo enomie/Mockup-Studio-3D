@@ -212,7 +212,7 @@ Nach Rebuild: `applyAssetShadowFlags(group)`; Screen-Cap `FrontSide` + `polygonO
 3. **Dimensions** — **Width (m)** und **Height (m)** (Screen-Öffnung, bildgetrieben, gekoppelt; kein Size-Feld); **Corner radius**, **Bezel width**, **Edge roundness** (`screenCornerRadiusMm`, `bezelWidthMm`, `outerEdgeRadiusMm`)
 4. **Position** — Pos / Rot (kein Transform-Block)
 
-Footer-Muster → [`improve-04-asset-settings.md`](../../improve/improve-04-asset-settings.md).
+
 
 `bodyDepthMm` v1: nur Default pro Kind, kein UI-Feld (später optional).
 

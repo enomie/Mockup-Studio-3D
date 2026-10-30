@@ -4,7 +4,7 @@ Fertige **3D-Bausteine** zum Reindroppen in die Arbeitsfläche — Geräte, Prin
 
 **Abgrenzung:** **Assets** = *was* in der Szene steht (Box, Buch, Flyer, Smartphone, Monitor, Bilderrahmen, …). **Images** = *welches 2D-Bild* auf Screen, Flyer, Rahmen, Ground, … referenziert wird (`imageId`). Kein versteckter Upload in Assets.
 
-**Status:** v1 **Kern implementiert** — alle Built-in-Bausteine im Katalog platzierbar; EntityRegistry, Gizmo, Materials, **Szene-Panel Footer Runde 1** (Dimensions + Position, kein Transform-Block) → [`improve-04-asset-settings.md`](../improve/improve-04-asset-settings.md). Packaging/Lathe: **`beverage-can`**, **`tin-can`**, **`wine-bottle`** (UI **Bottle Wine**), **`pen`** → jeweilige Asset-Docs. **Offen (kein Panel-Thema):** Drag Image → Viewport, Scene Save, Katalog-Polish.
+**Status:** v1 **Kern implementiert** — alle Built-in-Bausteine im Katalog platzierbar; EntityRegistry, Gizmo, Materials, **Szene-Panel Footer Runde 1** (Dimensions + Position, kein Transform-Block). Packaging/Lathe: **`beverage-can`**, **`tin-can`**, **`wine-bottle`** (UI **Bottle Wine**), **`pen`** → jeweilige Asset-Docs. **Offen (kein Panel-Thema):** Drag Image → Viewport, Scene Save, Katalog-Polish.
 
 **v1-Scope:** Katalog (Built-in), Drop/Add in Szene, Selection (Outline), Transform (Move/Rotate/**uniform Scale** — Gizmo + Panel), Screen-Bild per Picker, **image-driven sizing** + **`sizeScale`** (kein Stretch). App-Start: **Picture Frame**, **Print (A5)**, **Device Smartphone**, **Device Tablet**, **Device Desktop** als Default-Szene (Portfolio-Layout). **Gebaktes Fabric cloth** als **User-Asset** in derselben Assets-Liste (nach Freeze + Bake, steif) → [`requirements-assets-fabric-cloth.md`](./requirements-assets-fabric-cloth.md). **Später:** Drag Image → Screen im Viewport, weitere User-Asset-Typen, Kategorien-Filter, Layers-Panel, erweiterte Params (Bezel, Material).
 
@@ -101,7 +101,7 @@ Einheitlicher Maßstab über Szene — Agentur-Layouts wirken zusammengehörig.
 | **Dimensions** | Maß/Scale — je `assetKind`: z. B. gekoppeltes **Width/Height** (mit oder ohne **Size**-Feld), oder **Radius/Height** in `*Params` (Block, Cylinder, Wheel, …) |
 | **Position** | **Pos** X/Y/Z, **Rot** — bidirektional mit Gizmo → [`requirements-scene-placement.md`](./requirements-scene-placement.md). **Kein** Scale im `transform`; uniforme Größe über `sizeScale` oder kind-spezifische Params |
 
-**Kein** Panel-Abschnitt **Transform** mehr (alle Built-in-Kinds). Reihenfolge und Ausnahmen pro Kind → [`improve-04-asset-settings.md`](../improve/improve-04-asset-settings.md). Lathe/Packaging: **Size** + gekoppeltes W/H, Aspect aus Profil — [`requirements-assets-lathe.md`](./requirements-assets-lathe.md).
+**Kein** Panel-Abschnitt **Transform** mehr (alle Built-in-Kinds). Lathe/Packaging: **Size** + gekoppeltes W/H, Aspect aus Profil — [`requirements-assets-lathe.md`](./requirements-assets-lathe.md).
 
 **Category:** Assets  
 **Title:** Szene-Panel — Liste & Selection  
@@ -185,7 +185,7 @@ Texture-Load: `resolveImageTexture(imageId)` intern → [`requirements-images.md
 
 **Category:** Assets  
 **Title:** Print — Corner radius  
-**Description:** `assetKind: print`: Panel-Feld **Corner radius (mm)**, Default **0,5 mm** (`0,0005` m in UI). Bei Radius > 0: Front-/Rücksilhouette = **Rounded Rectangle** (Kreisbögen wie Handheld); Seiten = verkürzte Streifen + 4 Eck-Viertelzylinder entlang Tiefe. `printParams.cornerRadiusMm` auf Entity; API `setPrintParams`. Passepartout auf Bild-Faces: bei Offset > 0 Innenradius `max(0, R − offset)` aus diesem Radius — → [`requirements-image-surfaces.md`](./requirements-image-surfaces.md). Picture framed **ohne** Corner-Radius → [`requirements-assets-picture-framed.md`](./requirements-assets-picture-framed.md). UI-Längen global **4 Dezimalstellen** (0,0001 m). **Szene-Panel:** **Faces** → **Dimensions** (Width/Height gekoppelt, kein Size; Corner radius; Depth) → **Position** — [`improve-04-asset-settings.md`](../improve/improve-04-asset-settings.md).
+**Description:** `assetKind: print`: Panel-Feld **Corner radius (mm)**, Default **0,5 mm** (`0,0005` m in UI). Bei Radius > 0: Front-/Rücksilhouette = **Rounded Rectangle** (Kreisbögen wie Handheld); Seiten = verkürzte Streifen + 4 Eck-Viertelzylinder entlang Tiefe. `printParams.cornerRadiusMm` auf Entity; API `setPrintParams`. Passepartout auf Bild-Faces: bei Offset > 0 Innenradius `max(0, R − offset)` aus diesem Radius — → [`requirements-image-surfaces.md`](./requirements-image-surfaces.md). Picture framed **ohne** Corner-Radius → [`requirements-assets-picture-framed.md`](./requirements-assets-picture-framed.md). UI-Längen global **4 Dezimalstellen** (0,0001 m). **Szene-Panel:** **Faces** → **Dimensions** (Width/Height gekoppelt, kein Size; Corner radius; Depth) → **Position**.
 
 ---
 

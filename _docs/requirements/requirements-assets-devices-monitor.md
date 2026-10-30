@@ -263,7 +263,7 @@ Loch/CSG/Button-Geometrie: siehe Handheld-Doc. Kein Power-Button v1.
 3. **Dimensions** — **Width (m)** und **Height (m)** (Screen, bildgetrieben, gekoppelt; kein Size-Feld); **Corner radius**, **Bezel width**, **Edge roundness**; **Display tilt** (`displayTiltDeg`); **Mount height** (`displayMountHeightMm`)
 4. **Position** — Pos / Rot (kein Transform-Block)
 
-Footer-Muster → [`improve-04-asset-settings.md`](../../improve/improve-04-asset-settings.md).
+
 
 Stand-Footprint-/Fuß-mm v1: Defaults im Code; UI-Felder optional später (oder Advanced-Section).
 

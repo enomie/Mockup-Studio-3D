@@ -127,7 +127,7 @@ type BlockParams = {
 - `setEntityMaterial(entityId, 'blockMaterialId', materialId)`
 - `setPhysicsBodyMode`, `setPhysicsDensity` (oder kombiniert)
 
-Szene-Panel (Right): **Material** → **Physics** (Mode, Density, Weight read-only) → **Dimensions** (Width, Height, Depth, Corner radius) → **Position** (Pos/Rot; kein Transform-Block) → [`requirements-physics.md`](./requirements-physics.md). Footer-Muster Pilot → [`improve-04-asset-settings.md`](../../improve/improve-04-asset-settings.md).
+Szene-Panel (Right): **Material** → **Physics** (Mode, Density, Weight read-only) → **Dimensions** (Width, Height, Depth, Corner radius) → **Position** (Pos/Rot; kein Transform-Block) → [`requirements-physics.md`](./requirements-physics.md).
 
 ---
 
