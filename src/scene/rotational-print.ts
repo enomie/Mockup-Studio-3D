@@ -9,6 +9,8 @@ export interface RotationalPrintSettings {
   substrate: number;
   /** Scales the PNG alpha (0 = no ink). */
   inkOpacity: number;
+  /** 0 = matt print, 1 = glossy lacquer. */
+  gloss: number;
 }
 
 /** Defaults per asset: printed metal can and pen shaft, paper labels on tin can and bottle. */
@@ -28,17 +30,21 @@ export function isRotationalPrintAssetKind(
 export function defaultRotationalPrintSettings(
   assetKind: RotationalPrintAssetKind,
 ): RotationalPrintSettings {
-  return { substrate: DEFAULT_SUBSTRATE[assetKind], inkOpacity: 1 };
+  return { substrate: DEFAULT_SUBSTRATE[assetKind], inkOpacity: 1, gloss: 1 };
 }
 
-/** Stored values from the label surface, falling back to the asset defaults. */
+/** Stored values from the label surface, falling back to the asset defaults. Gloss falls back to `finish`. */
 export function resolveRotationalPrintSettings(
-  surface: Pick<ImageSurfaceSettings, 'substrate' | 'inkOpacity'>,
+  surface: Pick<ImageSurfaceSettings, 'substrate' | 'inkOpacity' | 'gloss' | 'finish'>,
   assetKind: RotationalPrintAssetKind,
 ): RotationalPrintSettings {
   const defaults = defaultRotationalPrintSettings(assetKind);
   return {
     substrate: surface.substrate ?? defaults.substrate,
     inkOpacity: surface.inkOpacity ?? defaults.inkOpacity,
+    gloss: surface.gloss ?? (surface.finish === 'matt' ? 0 : 1),
   };
 }
+
+/** Image surface fields that only drive print uniforms (slider changes, no rebuild). */
+export const ROTATIONAL_PRINT_UNIFORM_FIELDS = ['substrate', 'inkOpacity', 'gloss'] as const;

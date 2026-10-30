@@ -61,7 +61,8 @@ export function resolveRotationalPrintBodyMaterial(
       context.imageHeight,
     ),
     surface,
-    finishPreset: resolver.resolvePreset(finishToMaterialId(surface.finish)),
+    mattPreset: resolver.resolvePreset(finishToMaterialId('matt')),
+    glossyPreset: resolver.resolvePreset(finishToMaterialId('glossy')),
     settings: resolveRotationalPrintSettings(surface, input.assetKind),
   });
 }

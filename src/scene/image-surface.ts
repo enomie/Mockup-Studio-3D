@@ -20,6 +20,8 @@ export interface ImageSurfaceSettings {
   substrate?: number;
   /** Rotational assets only: scales the image alpha. Unset → 1. */
   inkOpacity?: number;
+  /** Rotational assets only: 0 = matt, 1 = glossy lacquer. Unset → from `finish`. */
+  gloss?: number;
 }
 
 interface ImageSurfaceMigrationInput {

@@ -1,4 +1,10 @@
-import { Group, type Scene } from 'three/webgpu';
+import { Group, type Material, type Scene } from 'three/webgpu';
+import {
+  isRotationalPrintAssetKind,
+  resolveRotationalPrintSettings,
+  ROTATIONAL_PRINT_UNIFORM_FIELDS,
+} from '@/scene/rotational-print';
+import { updateRotationalPrintMaterial } from './rotational-print-material';
 import {
   kindAcceptsParamFamily,
   type KindParamsByFamily,
@@ -86,7 +92,7 @@ import {
   wallpaperStripHeightM,
   type WallpaperPattern,
 } from '@/scene/asset-wall';
-import type { ImageSurfaceSettings } from '@/scene/image-surface';
+import { resolveImageSurfaceSettings, type ImageSurfaceSettings } from '@/scene/image-surface';
 import {
   assetGroundCenterY,
   clampSizeScale,
@@ -832,7 +838,39 @@ export class AssetSystem {
     if (!runtime) {return;}
 
     this.registry.setImageSurface(entityId, faceId, partial);
+    if (this.applyPrintUniformsInPlace(entityId, faceId, partial)) {return;}
     await rebuildEntity(this.rebuildCtx, entityId);
+  }
+
+  /** Slider-only changes on a rotational print update shader uniforms instead of rebuilding. */
+  private applyPrintUniformsInPlace(
+    entityId: string,
+    faceId: AssetImageSurfaceId,
+    partial: Partial<ImageSurfaceSettings>,
+  ): boolean {
+    const runtime = this.registry.getRuntime(entityId);
+    const assetKind = runtime?.entity.assetKind;
+    if (!runtime || !assetKind || !isRotationalPrintAssetKind(assetKind)) {return false;}
+    const keys = Object.keys(partial);
+    const uniformFields: readonly string[] = ROTATIONAL_PRINT_UNIFORM_FIELDS;
+    if (keys.length === 0 || !keys.every((key) => uniformFields.includes(key))) {return false;}
+
+    const settings = resolveRotationalPrintSettings(
+      resolveImageSurfaceSettings(runtime.entity.imageSurfaces, faceId, { assetKind }),
+      assetKind,
+    );
+    const materials: Material[] = [];
+    runtime.object.traverse((child) => {
+      const material = (child as { material?: Material | Material[] }).material;
+      if (material) {materials.push(...(Array.isArray(material) ? material : [material]));}
+    });
+    const updated = materials
+      .map((material) => updateRotationalPrintMaterial(material, settings))
+      .some(Boolean);
+    if (updated) {
+      this.viewportInvalidation?.invalidate();
+    }
+    return updated;
   }
 }
 

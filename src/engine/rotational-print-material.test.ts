@@ -11,7 +11,10 @@ import {
 import { DEFAULT_IMAGE_SURFACE } from '@/scene/image-surface';
 import { createMaterialFromPreset } from './material-resolver';
 import { rotationalPrintFit } from './rotational-print-mapping';
-import { createRotationalPrintMaterial } from './rotational-print-material';
+import {
+  createRotationalPrintMaterial,
+  updateRotationalPrintMaterial,
+} from './rotational-print-material';
 
 function presetById(id: string) {
   const preset = MATERIAL_PRESETS.find((entry) => entry.id === id);
@@ -33,8 +36,9 @@ function build(baseId: string, finish: 'matt' | 'glossy', substrate: number) {
       texture: new Texture(),
       fit: rotationalPrintFit('wrap-width', 0.2, 0.1, 2000, 1000),
       surface: { ...DEFAULT_IMAGE_SURFACE, finish },
-      finishPreset: presetById(finish === 'matt' ? MATERIAL_PAPER_ID : MATERIAL_GLOSSY_PRINT_ID),
-      settings: { substrate, inkOpacity: 1 },
+      mattPreset: presetById(MATERIAL_PAPER_ID),
+      glossyPreset: presetById(MATERIAL_GLOSSY_PRINT_ID),
+      settings: { substrate, inkOpacity: 1, gloss: finish === 'glossy' ? 1 : 0 },
     }),
   };
 }
@@ -68,6 +72,18 @@ describe('createRotationalPrintMaterial', () => {
     expect(material.opacityNode).not.toBeNull();
     expect(material.depthWrite).toBe(depthWrite);
     expect(material.side).toBe(side);
+  });
+
+  it('updates slider values in place through uniforms', () => {
+    const { material } = build(MATERIAL_PLASTIC_MATTE_ID, 'matt', 0);
+    expect(updateRotationalPrintMaterial(material, { substrate: 0.7, inkOpacity: 0.5, gloss: 1 })).toBe(true);
+    const uniforms = material.userData.rotationalPrintUniforms as Record<string, { value: number }>;
+    expect(uniforms.substrate.value).toBeCloseTo(0.7, 6);
+    expect(uniforms.inkOpacity.value).toBeCloseTo(0.5, 6);
+    expect(uniforms.gloss.value).toBe(1);
+    expect(updateRotationalPrintMaterial(new MeshStandardNodeMaterial(), {
+      substrate: 0, inkOpacity: 1, gloss: 0,
+    })).toBe(false);
   });
 
   it('only sets emissive when the surface asks for it', () => {

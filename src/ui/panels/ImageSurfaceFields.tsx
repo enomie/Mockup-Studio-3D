@@ -132,17 +132,31 @@ export function ImageSurfaceFields({
         />
       ) : null}
 
-      <ImageFinishSelect
-        id={`${entityId}-${faceId}-finish`}
-        label="Finish"
-        value={surface.finish}
-        onChange={(finish) => {
-          setImageSurface(entityId, faceId, { finish });
-        }}
-      />
+      {printSettings ? null : (
+        <ImageFinishSelect
+          id={`${entityId}-${faceId}-finish`}
+          label="Finish"
+          value={surface.finish}
+          onChange={(finish) => {
+            setImageSurface(entityId, faceId, { finish });
+          }}
+        />
+      )}
 
       {printSettings ? (
         <>
+          <RangeSlider
+            label="Finish (Matt ↔ Glossy)"
+            min={0}
+            max={1}
+            step={NORMALIZED_STEP}
+            value={printSettings.gloss}
+            valueInputLabel="Gloss"
+            valueInputDecimals={NORMALIZED_DECIMALS}
+            onChange={(value) => {
+              setImageSurface(entityId, faceId, { gloss: value });
+            }}
+          />
           <RangeSlider
             label="Substrate (Paper ↔ Direct)"
             min={0}
