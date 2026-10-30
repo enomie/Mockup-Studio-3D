@@ -7,7 +7,7 @@ import {
   trackFillWidthCss,
   valueToRatio,
 } from './dual-range-slider-utils';
-import { SliderValueField } from './SliderValueField';
+import { SliderValueInput } from './SliderValueField';
 
 interface RangeSliderProps {
   label?: string;
@@ -19,7 +19,7 @@ interface RangeSliderProps {
   disabled?: boolean;
   /** When set, show an editable text input with this many decimal places. */
   valueInputDecimals?: number;
-  /** Left label for the value input row (e.g. "Near"). */
+  /** Accessible name for the value input; defaults to `label`. */
   valueInputLabel?: string;
   /** Optional unit suffix (e.g. "%", "m"). */
   valueUnit?: string;
@@ -163,11 +163,30 @@ export function RangeSlider({
       role="group"
       aria-labelledby={label ? labelId : undefined}
     >
-      {label ? (
-        <span id={labelId} className="panel-slider__label">
-          {label}
+      <div className="panel-field-row">
+        {label ? (
+          <span id={labelId} className="panel-field-label">
+            {label}
+          </span>
+        ) : null}
+        <span className="panel-field-controls">
+          {showInput && resolvedValueInputLabel ? (
+            <SliderValueInput
+              id={inputId}
+              label={resolvedValueInputLabel}
+              value={displayValue}
+              unit={valueUnit}
+              invalid={inputInvalid}
+              disabled={disabled}
+              onFocus={handleInputFocus}
+              onChange={handleInputChange}
+              onBlur={handleInputBlur}
+            />
+          ) : (
+            <span className="panel-slider__value-readout">{displayValue}</span>
+          )}
         </span>
-      ) : null}
+      </div>
 
       <div
         ref={trackRef}
@@ -198,22 +217,6 @@ export function RangeSlider({
           onPointerCancel={handleThumbPointerUp}
         />
       </div>
-
-      {showInput && resolvedValueInputLabel ? (
-        <SliderValueField
-          id={inputId}
-          label={resolvedValueInputLabel}
-          value={displayValue}
-          unit={valueUnit}
-          invalid={inputInvalid}
-          disabled={disabled}
-          onFocus={handleInputFocus}
-          onChange={handleInputChange}
-          onBlur={handleInputBlur}
-        />
-      ) : (
-        <span className="panel-slider__value-readout">{displayValue}</span>
-      )}
     </div>
   );
 }

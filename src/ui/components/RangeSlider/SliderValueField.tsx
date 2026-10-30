@@ -10,7 +10,8 @@ interface SliderValueFieldProps {
   onBlur: () => void;
 }
 
-export function SliderValueField({
+/** Value input + optional unit, without its own row or visible label. */
+export function SliderValueInput({
   id,
   label,
   value,
@@ -22,23 +23,32 @@ export function SliderValueField({
   onBlur,
 }: SliderValueFieldProps) {
   return (
-    <label className="panel-field-row" htmlFor={id}>
-      <span className="panel-field-label">{label}</span>
+    <>
+      <input
+        id={id}
+        type="text"
+        inputMode="decimal"
+        aria-label={label}
+        className={`panel-field-input${invalid ? ' panel-field-input--invalid' : ''}`}
+        value={value}
+        disabled={disabled}
+        spellCheck={false}
+        onFocus={onFocus}
+        onChange={(event) => { onChange(event.target.value); }}
+        onBlur={onBlur}
+      />
+      {unit ? <span className="panel-field-unit">{unit}</span> : null}
+    </>
+  );
+}
+
+/** Labeled value row (label left, input right), e.g. "Near" / "Far" below a dual slider. */
+export function SliderValueField(props: SliderValueFieldProps) {
+  return (
+    <label className="panel-field-row" htmlFor={props.id}>
+      <span className="panel-field-label">{props.label}</span>
       <span className="panel-field-controls">
-        <input
-          id={id}
-          type="text"
-          inputMode="decimal"
-          aria-label={label}
-          className={`panel-field-input${invalid ? ' panel-field-input--invalid' : ''}`}
-          value={value}
-          disabled={disabled}
-          spellCheck={false}
-          onFocus={onFocus}
-          onChange={(event) => { onChange(event.target.value); }}
-          onBlur={onBlur}
-        />
-        {unit ? <span className="panel-field-unit">{unit}</span> : null}
+        <SliderValueInput {...props} />
       </span>
     </label>
   );

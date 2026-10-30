@@ -171,6 +171,8 @@ SubPanel (.sub-panel --form|--list, --left|--right)
 
 **Felder:** `.panel-field-input` (schmal, Zahlen, monospace) · `.panel-field-input .panel-field-input--full` (Text, volle Breite) · `.panel-field-select`. Selects haben einen eigenen Chevron (`--icon-chevron-down` in `tokens.css`, `appearance: none`) statt des Browser-Pfeils. Alle teilen eine Basis: Höhe `--control-h-sm`, Hover = stärkerer Rahmen, **Fokus = Akzent-Rahmen**, Disabled = `--opacity-disabled`, Fehler = `--invalid`.
 
+**Slider:** `RangeSlider` = 2 Zeilen – oben `.panel-field-row` mit Name links und Wert rechts, darunter der Track in voller Breite. Name nur einmal (`label`); `valueInputLabel` ist nur noch der Screenreader-Name des Feldes. `DualRangeSlider` (z. B. Nebel Near/Far): Track, darunter je eine beschriftete Zeile pro Wert.
+
 **Navigation:** aktiver Eintrag = `aria-current="page"` (keine `--active`-Klasse).
 
 **Neue Tokens:** `--control-h-lg` 32 · `--row-h` 24 · `--tile-h` 36 · `--opacity-disabled` 0.45 · `--opacity-hidden` 0.5.
@@ -285,4 +287,5 @@ Jeder Schritt: besprechen → umsetzen → Teil A aktualisieren → Häkchen.
 | 2026-10-30 | Inline-Styles geprüft: nur dynamische Werte übrig; fixer Abstand in `ViewportFrame` → `.viewport__gate-text`. |
 | 2026-10-30 | 7b: Rest-Duplikate entfernt (Patch-Inspector, Color-Picker-Felder, Scrollbars). Fix: `--invalid` gewinnt jetzt auch bei Fokus. |
 | 2026-10-30 | Selects: eigener Chevron statt Browser-Pfeil (Icon als Token, da SVG keine CSS-Variablen liest). |
+| 2026-10-30 | Slider: Name + Wert in einer Zeile über dem Track (Figma-Stil), Name nicht mehr doppelt. Dual-Slider unverändert (keine Doppelung, zu schmal für 2 Felder neben dem Namen). |
 | 2026-10-30 | `app.css` in 9 Dateien aufgeteilt. Geprüft: alle 201 Regeln identisch, berechnete Styles von 2513 Elementen in 11 UI-Zuständen vorher = nachher. |
