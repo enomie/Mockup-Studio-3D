@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Copy, Plus, Shuffle, Trash2 } from 'lucide-react';
 import {
   DEFAULT_TILE_SCALE_GRID_PAPER,
@@ -474,36 +473,35 @@ export function MaterialsPanel() {
   const materials = useAppStore((s) => s.materials);
   const sortedMaterials = sortByDisplayName(materials, (material) => material.name);
   const selectedMaterialId = useAppStore((s) => s.selectedMaterialId);
-  const selected = materials.find((material) => material.id === selectedMaterialId);
-  const [detailCollapsed, setDetailCollapsed] = useState(false);
-
-  const handleSelectMaterial = (materialId: string): void => {
-    if (selectedMaterialId === materialId && detailCollapsed) {
-      setDetailCollapsed(false);
-    } else if (selectedMaterialId !== materialId) {
-      setDetailCollapsed(false);
-    }
-    selectMaterial(materialId);
-  };
 
   return (
     <SubPanel
-      layout="split"
       title="Materials"
       side="left"
-      detailCollapsed={detailCollapsed}
-      onCollapseDetail={() => { setDetailCollapsed(true); }}
-      detailTitle="Editor"
-      primary={
-        <ul className="material-list">
-          {sortedMaterials.map((material) => (
+      width="list"
+      footer={
+        <button
+          type="button"
+          className="image-add-btn"
+          aria-label="Add material"
+          onClick={() => addMaterial('solid-pbr')}
+        >
+          <Icon icon={Plus} />
+          Add material
+        </button>
+      }
+    >
+      <ul className="material-list">
+        {sortedMaterials.map((material) => {
+          const isSelected = selectedMaterialId === material.id;
+          return (
             <li key={material.id}>
               <button
                 type="button"
-                className={`material-tile${selectedMaterialId === material.id ? ' material-tile--selected' : ''}`}
+                className={`material-tile${isSelected ? ' material-tile--selected' : ''}`}
                 aria-label={material.name}
                 title={material.name}
-                onClick={() => { handleSelectMaterial(material.id); }}
+                onClick={() => { selectMaterial(isSelected ? null : material.id); }}
               >
                 <span
                   className="material-tile__swatch"
@@ -515,21 +513,26 @@ export function MaterialsPanel() {
                 </span>
               </button>
             </li>
-          ))}
-        </ul>
-      }
-      primaryFooter={
-        <button
-          type="button"
-          className="image-add-btn"
-          aria-label="Add material"
-          onClick={() => addMaterial('solid-pbr')}
-        >
-          <Icon icon={Plus} />
-          Add material
-        </button>
-      }
-      detail={selected ? <MaterialEditor preset={selected} /> : null}
-    />
+          );
+        })}
+      </ul>
+    </SubPanel>
+  );
+}
+
+/** Editor for the selected material; opens next to the Materials list. */
+export function MaterialDetailPanel() {
+  const materials = useAppStore((s) => s.materials);
+  const selectedMaterialId = useAppStore((s) => s.selectedMaterialId);
+  const selected = materials.find((material) => material.id === selectedMaterialId);
+
+  if (!selected) {
+    return null;
+  }
+
+  return (
+    <SubPanel title={selected.name} side="left">
+      <MaterialEditor key={selected.id} preset={selected} />
+    </SubPanel>
   );
 }

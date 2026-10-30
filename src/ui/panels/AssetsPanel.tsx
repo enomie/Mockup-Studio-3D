@@ -15,7 +15,7 @@ export function AssetsPanel() {
   const sortedUserBaked = sortByDisplayName(userBakedAssets, (entry) => entry.name);
 
   return (
-    <SubPanel title="Assets" side="left">
+    <SubPanel title="Assets" side="left" width="list">
       <ul className="image-list">
         {SORTED_ASSET_CATALOG.map((entry) => (
           <li key={entry.kind}>

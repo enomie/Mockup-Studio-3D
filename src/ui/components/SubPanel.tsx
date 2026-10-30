@@ -1,87 +1,23 @@
-import { useEffect, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { SubPanelCollapseRow } from '@/ui/components/SubPanelCollapseRow';
-import { SubPanelSplit } from '@/ui/components/SubPanelSplit';
-import { useShellSubPanel } from '@/ui/components/shell-sub-panel-context';
 
-interface SubPanelStackProps {
-  layout?: 'stack';
+/** `list`: shrinks to its content (clamped); `form`: fixed width for label + field rows. */
+export type SubPanelWidth = 'list' | 'form';
+
+interface SubPanelProps {
   title: string;
   side: 'left' | 'right';
+  width?: SubPanelWidth;
   children: ReactNode;
   footer?: ReactNode;
 }
 
-interface SubPanelSplitProps {
-  layout: 'split';
-  title: string;
-  side: 'left' | 'right';
-  primary: ReactNode;
-  primaryFooter?: ReactNode;
-  detail: ReactNode | null;
-  detailTitle?: string;
-  detailCollapsed: boolean;
-  onCollapseDetail: () => void;
-}
-
-export type SubPanelProps = SubPanelStackProps | SubPanelSplitProps;
-
-function isSplitProps(props: SubPanelProps): props is SubPanelSplitProps {
-  return props.layout === 'split';
-}
-
-export function SubPanel(props: SubPanelProps) {
-  const shell = useShellSubPanel();
-  const side = props.side;
-  const title = props.title;
-
-  const splitMode =
-    isSplitProps(props) && props.detail !== null && !props.detailCollapsed;
-
-  useEffect(() => {
-    if (!shell) {return;}
-    shell.requestSubWidth(splitMode ? 'split' : 'default');
-    return () => {
-      shell.requestSubWidth('default');
-    };
-  }, [shell, splitMode]);
-
-  if (isSplitProps(props)) {
-    const {
-      primary,
-      primaryFooter,
-      detail,
-      detailTitle = 'Editor',
-      detailCollapsed,
-      onCollapseDetail,
-    } = props;
-
-    const detailVisible = detail !== null && !detailCollapsed;
-
-    return (
-      <aside className={`sub-panel sub-panel--${side}`} aria-label={title}>
-        <div className="sub-panel__body sub-panel__body--split-host">
-          <SubPanelSplit
-            primary={primary}
-            primaryFooter={primaryFooter}
-            detail={detail}
-            detailTitle={detailTitle}
-            detailCollapsed={detailCollapsed}
-            showDetailColumn={detail !== null}
-          />
-        </div>
-        <SubPanelCollapseRow
-          side={side}
-          showDetailCollapse={detailVisible}
-          onCollapseDetail={onCollapseDetail}
-        />
-      </aside>
-    );
-  }
-
-  const { children, footer } = props;
-
+export function SubPanel({ title, side, width = 'form', children, footer }: SubPanelProps) {
   return (
-    <aside className={`sub-panel sub-panel--${side}`} aria-label={title}>
+    <aside
+      className={`sub-panel sub-panel--${side} sub-panel--${width}`}
+      aria-label={title}
+    >
       <div
         className="sub-panel__body panel-stack"
         onWheel={(event) => { event.stopPropagation(); }}

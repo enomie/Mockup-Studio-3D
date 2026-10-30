@@ -1,8 +1,8 @@
 import { useCallback, useState } from 'react';
-import type { SubPanelWidthMode } from '@/ui/components/shell-sub-panel-context';
 import { ViewportFrame } from '@/ui/components/ViewportFrame';
 import { useCameraViewShortcuts } from '@/ui/hooks/useCameraViewShortcuts';
 import { useViewportToolShortcuts } from '@/ui/hooks/useViewportToolShortcuts';
+import { LeftDetailPanel } from '@/ui/shell/LeftDetailPanel';
 import { LeftMainPanel } from '@/ui/shell/LeftMainPanel';
 import { LeftSubPanel } from '@/ui/shell/LeftSubPanel';
 import { RightMainPanel } from '@/ui/shell/RightMainPanel';
@@ -22,11 +22,6 @@ export function AppShell() {
   const [rightMainCollapsed, setRightMainCollapsed] = useState(false);
   const [leftSubCollapsed, setLeftSubCollapsed] = useState(false);
   const [rightSubCollapsed, setRightSubCollapsed] = useState(false);
-  const [leftSubWidthMode, setLeftSubWidthMode] = useState<SubPanelWidthMode>('default');
-
-  const handleLeftSubWidthMode = useCallback((mode: SubPanelWidthMode) => {
-    setLeftSubWidthMode(mode);
-  }, []);
 
   const handleLeftSelect = useCallback((id: string) => {
     setLeftSelected(id);
@@ -43,14 +38,7 @@ export function AppShell() {
       <TopMainBar />
       <TopSubBar />
 
-      <div
-        className="app-shell__middle"
-        data-left-main-collapsed={leftMainCollapsed ? '' : undefined}
-        data-right-main-collapsed={rightMainCollapsed ? '' : undefined}
-        data-left-sub-collapsed={leftSubCollapsed ? '' : undefined}
-        data-right-sub-collapsed={rightSubCollapsed ? '' : undefined}
-        data-left-sub-split={leftSubWidthMode === 'split' ? '' : undefined}
-      >
+      <div className="app-shell__middle">
         <LeftMainPanel
           selectedId={leftSelected}
           collapsed={leftMainCollapsed}
@@ -65,20 +53,22 @@ export function AppShell() {
             });
           }}
         />
-        <div className="app-shell__sub-slot app-shell__sub-slot--left">
+        <div className="app-shell__sub-slot">
           {!leftSubCollapsed ? (
             <LeftSubPanel
               selectedId={leftSelected}
               onToggleShellCollapse={() => { setLeftSubCollapsed(true); }}
-              onSubWidthModeChange={handleLeftSubWidthMode}
             />
           ) : null}
         </div>
+        <div className="app-shell__sub-slot">
+          {!leftSubCollapsed ? <LeftDetailPanel selectedId={leftSelected} /> : null}
+        </div>
         <ViewportFrame />
-        <div className="app-shell__sub-slot app-shell__sub-slot--right-detail">
+        <div className="app-shell__sub-slot">
           {!rightSubCollapsed ? <RightDetailPanel selectedId={rightSelected} /> : null}
         </div>
-        <div className="app-shell__sub-slot app-shell__sub-slot--right">
+        <div className="app-shell__sub-slot">
           {!rightSubCollapsed ? (
             <RightSubPanel
               selectedId={rightSelected}

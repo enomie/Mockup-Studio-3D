@@ -17,7 +17,7 @@ export function SceneSubPanel() {
   }, [selectedEntityId]);
 
   return (
-    <SubPanel title="Scene" side="right">
+    <SubPanel title="Scene" side="right" width="list">
       {entities.length === 0 ? (
         <p className="placeholder">No items — add from Assets.</p>
       ) : (

@@ -4,21 +4,16 @@ import { EnvironmentsPanel } from '@/ui/panels/EnvironmentsPanel';
 import { LightRigsPanel } from '@/ui/panels/LightRigsPanel';
 import { ImagesPanel } from '@/ui/panels/ImagesPanel';
 import { MaterialsPanel } from '@/ui/panels/MaterialsPanel';
-import {
-  ShellSubPanelProvider,
-  type SubPanelWidthMode,
-} from '@/ui/components/shell-sub-panel-context';
+import { ShellSubPanelProvider } from '@/ui/components/shell-sub-panel-context';
 
 interface LeftSubPanelProps {
   selectedId: string;
   onToggleShellCollapse: () => void;
-  onSubWidthModeChange: (mode: SubPanelWidthMode) => void;
 }
 
 export function LeftSubPanel({
   selectedId,
   onToggleShellCollapse,
-  onSubWidthModeChange,
 }: LeftSubPanelProps) {
   let content = null;
 
@@ -41,11 +36,7 @@ export function LeftSubPanel({
   }
 
   return (
-    <ShellSubPanelProvider
-      side="left"
-      onToggleShellCollapse={onToggleShellCollapse}
-      onSubWidthModeChange={onSubWidthModeChange}
-    >
+    <ShellSubPanelProvider side="left" onToggleShellCollapse={onToggleShellCollapse}>
       {content}
     </ShellSubPanelProvider>
   );
