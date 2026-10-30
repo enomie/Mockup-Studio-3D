@@ -73,9 +73,9 @@ import type {
 } from '@/scene/image-surface';
 import { resolveBuiltinMaterialPreset } from '@/data/material-presets';
 import { cloneAssetMaterials, type MaterialPresetResolver } from '@/scene/material-types';
-import { applyAtmosphereSnapshot as applyAtmosphereSnapshotToApi } from '@/scene/atmosphere-snapshot';
+import { applyEnvironmentSnapshot as applyEnvironmentSnapshotToApi } from '@/scene/environment-snapshot';
 import type { CaptureViewportImageOptions } from '@/scene/export-image';
-import type { AtmosphereSnapshot } from '@/scene/environment-preset-types';
+import type { EnvironmentSnapshot } from '@/scene/environment-preset-types';
 
 import {
   clampGravityScale,
@@ -725,9 +725,9 @@ export class MockupEngine implements SceneApi {
     this.invalidateViewport();
   }
 
-  applyAtmosphereSnapshot(snapshot: AtmosphereSnapshot): void {
+  applyEnvironmentSnapshot(snapshot: EnvironmentSnapshot): void {
     this.commitVisualState(() => {
-      applyAtmosphereSnapshotToApi(this, snapshot);
+      applyEnvironmentSnapshotToApi(this, snapshot);
     });
   }
 

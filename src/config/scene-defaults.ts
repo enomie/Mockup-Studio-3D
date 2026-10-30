@@ -51,6 +51,8 @@ export interface CameraDefaults {
 
 export type ViewportHelpersDefaults = ViewportHelpersState;
 
+const SKY_HORIZON_NEUTRAL = parseHexColorRequired('#D8DCE0');
+const SKY_ZENITH_NEUTRAL = parseHexColorRequired('#A8B0B8');
 const AMBIENT_COLOR = parseHexColorRequired('#FFF9F5');
 const KEY_COLOR = parseHexColorRequired('#FFF5EB');
 const FILL_COLOR = parseHexColorRequired('#F0F4FA');
@@ -59,19 +61,16 @@ const FILL_COLOR = parseHexColorRequired('#F0F4FA');
 export const SCENE_DEFAULTS = {
   environment: {
     skyEnabled: true,
-    /** Blue-gray at horizon and nadir — #A8C7DB */
-    skyHorizonColor: { r: 0.66, g: 0.78, b: 0.86 },
-    /** Deeper blue at zenith */
-    skyZenithColor: { r: 0.12, g: 0.38, b: 0.72 },
-    /** Mid fade — visible gradient without sharp horizon band */
-    skyGradientFade: 0.35,
-    fogEnabled: true,
-    /** Blue-gray haze matching sky — not white-out */
-    fogColor: { r: 0.66, g: 0.78, b: 0.86 },
+    /** Neutral light gray studio backdrop — does not tint glass or metal. */
+    skyHorizonColor: { ...SKY_HORIZON_NEUTRAL },
+    skyZenithColor: { ...SKY_ZENITH_NEUTRAL },
+    skyGradientFade: 0.45,
+    fogEnabled: false,
+    fogColor: { ...SKY_HORIZON_NEUTRAL },
     fogNear: 25,
     fogFar: 100,
     reflectionEnabled: true,
-    reflectionIntensity: 0.85,
+    reflectionIntensity: 0.5,
     reflectionSource: 'studio',
   },
   ground: {

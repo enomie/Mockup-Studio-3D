@@ -15,7 +15,7 @@ import type {
   Vec3,
 } from './entity-types';
 import type { AssetImageSurfaceId, ImageSurfaceSettings } from './image-surface';
-import type { AtmosphereSnapshot } from './environment-preset-types';
+import type { EnvironmentSnapshot } from './environment-preset-types';
 import type { CaptureViewportImageOptions } from './export-image';
 import type { MaterialPresetResolver } from './material-types';
 import type { EditablePhysicsSettings, PhysicsSettings } from './physics-settings';
@@ -176,7 +176,7 @@ export interface SceneApi {
   toggleWorldPhysicsPause(): void;
   resetWorldPhysics(): void;
   applyEnvironment(state: EnvironmentState): void;
-  applyAtmosphereSnapshot(snapshot: AtmosphereSnapshot): void;
+  applyEnvironmentSnapshot(snapshot: EnvironmentSnapshot): void;
   setEnvironment(partial: Partial<EnvironmentState>): void;
   applyGround(state: GroundSettings): void;
   setGround(partial: Partial<GroundSettings>): void;

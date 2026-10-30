@@ -5,7 +5,7 @@ import {
   resolveBuiltinEnvironmentPreset,
 } from '@/data/builtin-environments';
 import {
-  cloneAtmosphereSnapshot,
+  cloneEnvironmentSnapshot,
   type EnvironmentPreset,
 } from '@/scene/environment-preset-types';
 
@@ -35,8 +35,8 @@ function nextEnvironmentSaveName(): string {
 export function loadEnvironment(id: string): void {
   const preset = getEnvironmentPresetById(id);
   if (!preset) {return;}
-  store.applyAtmosphereToStateAndScene(
-    cloneAtmosphereSnapshot(preset.snapshot),
+  store.applyEnvironmentToStateAndScene(
+    cloneEnvironmentSnapshot(preset.snapshot),
     id,
   );
 }
@@ -48,7 +48,7 @@ export function saveCurrentAsEnvironment(): string {
     name: nextEnvironmentSaveName(),
     source: 'user',
     createdAt: new Date().toISOString(),
-    snapshot: store.captureAtmosphereFromState(),
+    snapshot: store.captureEnvironmentFromState(),
   };
 
   store.setAppState({
@@ -96,7 +96,7 @@ export function duplicateEnvironment(id: string): string | null {
     environments: [...store.state.environments, copy],
     activeEnvironmentId: newId,
   });
-  store.applyAtmosphereToStateAndScene(cloneAtmosphereSnapshot(copy.snapshot), newId);
+  store.applyEnvironmentToStateAndScene(cloneEnvironmentSnapshot(copy.snapshot), newId);
   return newId;
 }
 

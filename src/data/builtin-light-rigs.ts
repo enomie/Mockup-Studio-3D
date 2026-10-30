@@ -51,7 +51,7 @@ export function lightingFromSceneDefaults(): LightingSettings {
   });
 }
 
-/** Keep lighting branch in sync with builtin-environments buildSoftboxSnapshot. */
+/** Soft shadows, low ambient, strong fill. */
 function buildSoftboxLighting(): LightingSettings {
   const base = lightingFromSceneDefaults();
   return cloneLightingSettings({
@@ -73,7 +73,7 @@ function buildSoftboxLighting(): LightingSettings {
   });
 }
 
-/** Keep lighting branch in sync with builtin-environments buildDarkStageSnapshot. */
+/** Strong key, weak fill, no fill shadow. */
 function buildDramaticLighting(): LightingSettings {
   const base = lightingFromSceneDefaults();
   return cloneLightingSettings({
@@ -109,14 +109,14 @@ export const LIGHTING_PRESETS: LightingPreset[] = [
     id: BUILTIN_LIGHT_SOFTBOX_ID,
     name: 'Softbox',
     source: 'builtin',
-    description: 'Soft shadows — lighting only (no sky/ground).',
+    description: 'Soft shadows, strong fill.',
     snapshot: buildSoftboxLighting(),
   },
   {
     id: BUILTIN_LIGHT_DRAMATIC_ID,
     name: 'Dramatic',
     source: 'builtin',
-    description: 'Strong key, weak fill — lighting only.',
+    description: 'Strong key, weak fill.',
     snapshot: buildDramaticLighting(),
   },
 ];

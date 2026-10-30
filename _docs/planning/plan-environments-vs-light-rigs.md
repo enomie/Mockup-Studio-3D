@@ -1,6 +1,6 @@
 # Plan: Environments und Light Rigs trennen
 
-Status: Entwurf, wartet auf Freigabe (2026-10-30)
+Status: freigegeben (2026-10-30). Defaults wie in Schritt 3; Viewport helpers wandern ins Panel „Scene“ (Funktion bleibt).
 
 ## Ziel
 
@@ -55,8 +55,8 @@ Environments (nur Umgebung):
 
 | Preset | Himmel | Nebel | Reflexionen | Boden |
 |---|---|---|---|---|
-| **Default** | hellgrau neutral (wie heute Softbox: `#D8DCE0` → `#A8B0B8`) | aus | Studio 0,85 | Print Matt |
-| **Blue Sky** (heute „Default“) | blaugrau (`#A8C7DB` → blau) | an, 25–100 m | Studio 0,85 | Print Matt |
+| **Default** | hellgrau neutral (wie heute Softbox: `#D8DCE0` → `#A8B0B8`) | aus | Studio 0,5 | Print Matt |
+| **Blue Sky** (heute „Default“) | blaugrau (`#A8C7DB` → blau) | an, 25–100 m | Studio 0,5 | Print Matt |
 | **Dark Stage** | dunkel (`#2A3038` → `#0A0E14`) | an, 30–120 m | Studio 0,35 | Plastic Matte |
 
 Begründung:

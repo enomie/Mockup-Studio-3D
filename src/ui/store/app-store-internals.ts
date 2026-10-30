@@ -15,10 +15,10 @@ import {
   resolveBuiltinLightingPreset,
 } from '@/data/builtin-light-rigs';
 import { cloneMaterialPreset, MATERIAL_PRESETS } from '@/data/material-presets';
-import { applyAtmosphereSnapshot } from '@/scene/atmosphere-snapshot';
+import { applyEnvironmentSnapshot } from '@/scene/environment-snapshot';
 import {
-  cloneAtmosphereSnapshot,
-  type AtmosphereSnapshot,
+  cloneEnvironmentSnapshot,
+  type EnvironmentSnapshot,
   type EnvironmentPreset,
 } from '@/scene/environment-preset-types';
 import { defaultExportSizeSettings, type ExportSizeSettings } from '@/scene/export-size';
@@ -204,19 +204,19 @@ export function getEnvironmentState(): EnvironmentState {
   };
 }
 
-export function captureAtmosphereFromState(): AtmosphereSnapshot {
-  return cloneAtmosphereSnapshot({
+export function captureEnvironmentFromState(): EnvironmentSnapshot {
+  return cloneEnvironmentSnapshot({
     environment: getEnvironmentState(),
     ground: cloneGround(state.ground),
-    lighting: cloneLightingSettings(state.lighting),
   });
 }
 
-export function applyAtmosphereToStateAndScene(
-  snapshot: AtmosphereSnapshot,
+/** Loads sky, reflections, fog and ground; lights and the active light rig stay as they are. */
+export function applyEnvironmentToStateAndScene(
+  snapshot: EnvironmentSnapshot,
   activeEnvironmentId?: string,
 ): void {
-  const { environment, ground, lighting } = snapshot;
+  const { environment, ground } = snapshot;
   state = {
     ...state,
     skyEnabled: environment.skyEnabled,
@@ -231,13 +231,12 @@ export function applyAtmosphereToStateAndScene(
     reflectionIntensity: environment.reflectionIntensity,
     reflectionSource: environment.reflectionSource,
     ground: cloneGround(ground),
-    lighting: cloneLightingSettings(lighting),
     ...(activeEnvironmentId !== undefined
       ? { activeEnvironmentId }
       : {}),
   };
   if (sceneApi) {
-    applyAtmosphereSnapshot(sceneApi, snapshot);
+    applyEnvironmentSnapshot(sceneApi, snapshot);
   }
   emit();
 }

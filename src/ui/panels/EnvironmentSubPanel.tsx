@@ -3,23 +3,12 @@ import { GroundSettingsSection } from './GroundSettingsSection';
 import { SceneEntityBlock } from './SceneEntityBlock';
 import { ColorPicker } from '@/ui/components/ColorPicker';
 import { DualRangeSlider, RangeSlider } from '@/ui/components/RangeSlider';
-import { PanelCheckbox } from '@/ui/components/PanelCheckbox';
 import { PanelSelect } from '@/ui/components/PanelSelect';
 import type { ReflectionSource } from '@/scene/scene-api';
 import { SubPanel } from '@/ui/components/SubPanel';
 import { LENGTH_DECIMALS, LENGTH_STEP_M } from '@/units/length';
 import { NORMALIZED_DECIMALS, NORMALIZED_STEP } from '@/units/normalized';
-import {
-  setGroundVisible,
-  setViewportHelperFloorGrid,
-  setViewportHelperCompassArrows,
-  setViewportHelperQuadrantGrid,
-  setViewportHelperLightHandles,
-  setViewportHelperWorldOrigin,
-  isAnyViewportHelperEnabled,
-  toggleViewportHelpersAll,
-  setEnvironment,
-} from '@/ui/store/app-store';
+import { setGroundVisible, setEnvironment } from '@/ui/store/app-store';
 import { useAppStore } from '@/ui/store/use-app-store';
 
 const ENV_BLOCK_IDS = {
@@ -27,7 +16,6 @@ const ENV_BLOCK_IDS = {
   reflections: 'env-reflections',
   fog: 'env-fog',
   ground: 'env-ground',
-  viewportHelpers: 'env-viewport-helpers',
 } as const;
 
 export function EnvironmentSubPanel() {
@@ -43,7 +31,6 @@ export function EnvironmentSubPanel() {
   const reflectionIntensity = useAppStore((s) => s.reflectionIntensity);
   const reflectionSource = useAppStore((s) => s.reflectionSource);
   const groundVisible = useAppStore((s) => s.ground.visible);
-  const viewportHelpers = useAppStore((s) => s.viewportHelpers);
 
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(() => new Set());
 
@@ -163,40 +150,6 @@ export function EnvironmentSubPanel() {
           onToggleEnabled={() => { setGroundVisible(!groundVisible); }}
         >
           <GroundSettingsSection disabled={!groundVisible} />
-        </SceneEntityBlock>
-
-        <SceneEntityBlock
-          title="Viewport helpers"
-          enabled={isAnyViewportHelperEnabled(viewportHelpers)}
-          collapsed={collapsedIds.has(ENV_BLOCK_IDS.viewportHelpers)}
-          onToggleCollapse={() => { toggleCollapsed(ENV_BLOCK_IDS.viewportHelpers); }}
-          onToggleEnabled={toggleViewportHelpersAll}
-        >
-          <PanelCheckbox
-            label="Floor grid"
-            checked={viewportHelpers.floorGrid}
-            onChange={setViewportHelperFloorGrid}
-          />
-          <PanelCheckbox
-            label="Quadrant grid"
-            checked={viewportHelpers.quadrantGrid}
-            onChange={setViewportHelperQuadrantGrid}
-          />
-          <PanelCheckbox
-            label="World origin"
-            checked={viewportHelpers.worldOrigin}
-            onChange={setViewportHelperWorldOrigin}
-          />
-          <PanelCheckbox
-            label="Compass arrows"
-            checked={viewportHelpers.compassArrows}
-            onChange={setViewportHelperCompassArrows}
-          />
-          <PanelCheckbox
-            label="Spot beams"
-            checked={viewportHelpers.lightHandles}
-            onChange={setViewportHelperLightHandles}
-          />
         </SceneEntityBlock>
       </div>
     </SubPanel>

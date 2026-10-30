@@ -1,87 +1,48 @@
 import { parseHexColorRequired } from '@/colors/color-format';
 import { SCENE_DEFAULTS } from '@/config/scene-defaults';
-import { SHADOW_SOFTNESS_DEFAULT } from '@/constants';
+import { MATERIAL_PLASTIC_MATTE_ID } from '@/scene/material-ids';
 import {
-  MATERIAL_GLOSSY_PRINT_ID,
-  MATERIAL_PLASTIC_MATTE_ID,
-} from '@/scene/material-ids';
-import { defaultTransform } from '@/scene/entity-types';
-import {
-  cloneAtmosphereSnapshot,
   cloneEnvironmentPreset,
-  type AtmosphereSnapshot,
+  cloneEnvironmentSnapshot,
   type EnvironmentPreset,
+  type EnvironmentSnapshot,
 } from '@/scene/environment-preset-types';
-import { cloneLightingSettings } from '@/scene/lighting-preset-types';
 
 export const BUILTIN_ENV_DEFAULT_ID = 'builtin-env-default';
-export const BUILTIN_ENV_SOFTBOX_ID = 'builtin-env-softbox';
+export const BUILTIN_ENV_BLUE_SKY_ID = 'builtin-env-blue-sky';
 export const BUILTIN_ENV_DARK_STAGE_ID = 'builtin-env-dark-stage';
 
-/** Snapshot aligned with SCENE_DEFAULTS — single source for the Default preset. */
-export function atmosphereFromSceneDefaults(): AtmosphereSnapshot {
-  const { environment, ground, lighting } = SCENE_DEFAULTS;
-  return cloneAtmosphereSnapshot({
+/** Snapshot aligned with SCENE_DEFAULTS — single source for the Default environment. */
+export function environmentFromSceneDefaults(): EnvironmentSnapshot {
+  const { environment, ground } = SCENE_DEFAULTS;
+  return cloneEnvironmentSnapshot({
     environment: {
-      skyEnabled: environment.skyEnabled,
+      ...environment,
       skyHorizonColor: { ...environment.skyHorizonColor },
       skyZenithColor: { ...environment.skyZenithColor },
-      skyGradientFade: environment.skyGradientFade,
-      fogEnabled: environment.fogEnabled,
       fogColor: { ...environment.fogColor },
-      fogNear: environment.fogNear,
-      fogFar: environment.fogFar,
-      reflectionEnabled: environment.reflectionEnabled,
-      reflectionIntensity: environment.reflectionIntensity,
-      reflectionSource: environment.reflectionSource,
     },
-    ground: {
-      visible: ground.visible,
-      materialId: ground.materialId,
-      receiveShadow: ground.receiveShadow,
-      mirrorEnabled: ground.mirrorEnabled,
-      mirrorOpacity: ground.mirrorOpacity,
-    },
-    lighting: cloneLightingSettings(lighting),
+    ground: { ...ground },
   });
 }
 
-const SKY_HORIZON_NEUTRAL = parseHexColorRequired('#D8DCE0');
-const SKY_ZENITH_NEUTRAL = parseHexColorRequired('#A8B0B8');
+const SKY_HORIZON_BLUE = parseHexColorRequired('#A8C7DB');
+const SKY_ZENITH_BLUE = parseHexColorRequired('#1F61B8');
 
-/** Soft shadows on light gray — lower IBL so contact shadows read on devices. */
-function buildSoftboxSnapshot(): AtmosphereSnapshot {
-  const base = atmosphereFromSceneDefaults();
-  return cloneAtmosphereSnapshot({
+/** Blue-gray sky with distant haze (former app default). */
+function buildBlueSkySnapshot(): EnvironmentSnapshot {
+  const base = environmentFromSceneDefaults();
+  return cloneEnvironmentSnapshot({
+    ...base,
     environment: {
       ...base.environment,
-      skyHorizonColor: { ...SKY_HORIZON_NEUTRAL },
-      skyZenithColor: { ...SKY_ZENITH_NEUTRAL },
-      skyGradientFade: 0.45,
-      fogEnabled: false,
-      reflectionEnabled: true,
-      reflectionIntensity: 0.42,
-    },
-    ground: {
-      ...base.ground,
-      materialId: MATERIAL_GLOSSY_PRINT_ID,
-    },
-    lighting: {
-      ...base.lighting,
-      ambient: {
-        ...base.lighting.ambient,
-        intensity: 0.06,
-      },
-      key: {
-        ...base.lighting.key,
-        shadowSoftness: 10,
-      },
-      fill: {
-        ...base.lighting.fill,
-        intensityRatio: 0.62,
-        distance: 0.85,
-        shadowSoftness: 10,
-      },
+      skyHorizonColor: { ...SKY_HORIZON_BLUE },
+      skyZenithColor: { ...SKY_ZENITH_BLUE },
+      skyGradientFade: 0.35,
+      fogEnabled: true,
+      fogColor: { ...SKY_HORIZON_BLUE },
+      fogNear: 25,
+      fogFar: 100,
     },
   });
 }
@@ -89,10 +50,10 @@ function buildSoftboxSnapshot(): AtmosphereSnapshot {
 const SKY_HORIZON_DARK = parseHexColorRequired('#2A3038');
 const SKY_ZENITH_DARK = parseHexColorRequired('#0A0E14');
 
-/** Dramatic product shot — dark floor, subdued IBL, harder key. */
-function buildDarkStageSnapshot(): AtmosphereSnapshot {
-  const base = atmosphereFromSceneDefaults();
-  return cloneAtmosphereSnapshot({
+/** Dark floor and sky, subdued reflections. */
+function buildDarkStageSnapshot(): EnvironmentSnapshot {
+  const base = environmentFromSceneDefaults();
+  return cloneEnvironmentSnapshot({
     environment: {
       ...base.environment,
       skyHorizonColor: { ...SKY_HORIZON_DARK },
@@ -102,30 +63,11 @@ function buildDarkStageSnapshot(): AtmosphereSnapshot {
       fogColor: { ...SKY_HORIZON_DARK },
       fogNear: 30,
       fogFar: 120,
-      reflectionIntensity: 0.25,
+      reflectionIntensity: 0.35,
     },
     ground: {
       ...base.ground,
       materialId: MATERIAL_PLASTIC_MATTE_ID,
-    },
-    lighting: {
-      ...base.lighting,
-      ambient: {
-        ...base.lighting.ambient,
-        intensity: 0.04,
-      },
-      key: {
-        ...base.lighting.key,
-        shadowSoftness: SHADOW_SOFTNESS_DEFAULT,
-        intensity: 1.15,
-      },
-      fill: {
-        ...base.lighting.fill,
-        intensityRatio: 0.28,
-        castShadow: false,
-        shadowSoftness: SHADOW_SOFTNESS_DEFAULT,
-        transformOffset: defaultTransform(),
-      },
     },
   });
 }
@@ -135,21 +77,21 @@ export const ENVIRONMENT_PRESETS: EnvironmentPreset[] = [
     id: BUILTIN_ENV_DEFAULT_ID,
     name: 'Default',
     source: 'builtin',
-    description: 'App start — Print Matt ground, blue-gray sky.',
-    snapshot: atmosphereFromSceneDefaults(),
+    description: 'Neutral light gray studio, Print Matt ground, studio reflections.',
+    snapshot: environmentFromSceneDefaults(),
   },
   {
-    id: BUILTIN_ENV_SOFTBOX_ID,
-    name: 'Softbox',
+    id: BUILTIN_ENV_BLUE_SKY_ID,
+    name: 'Blue Sky',
     source: 'builtin',
-    description: 'Light gray studio, soft shadows, moderate reflections.',
-    snapshot: buildSoftboxSnapshot(),
+    description: 'Blue-gray sky with distant haze, Print Matt ground.',
+    snapshot: buildBlueSkySnapshot(),
   },
   {
     id: BUILTIN_ENV_DARK_STAGE_ID,
     name: 'Dark Stage',
     source: 'builtin',
-    description: 'Dark floor and sky, stronger key, low IBL.',
+    description: 'Dark floor and sky, subdued reflections.',
     snapshot: buildDarkStageSnapshot(),
   },
 ];
