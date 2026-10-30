@@ -55,7 +55,7 @@ Links: Main außen → Sub innen (Richtung Viewport). Rechts: Sub innen → Main
 
 **Category:** App Layout  
 **Title:** Mittelzeile — Spaltenreihenfolge  
-**Description:** Feste Reihenfolge links → rechts: **`MainLeft` · `SubLeft` · `Viewport` · `SubRight` · `MainRight`**. Viewport nimmt **flexiblen Rest** (`flex: 1` / `1fr`). Side-Panels feste oder min/max-Breiten aus Layout-Config. Kein vertikales Stapeln von Main/Sub auf Desktop.
+**Description:** Feste Reihenfolge links → rechts: **`MainLeft` · `SubLeft` · `DetailLeft` · `Viewport` · `DetailRight` · `SubRight` · `MainRight`**. Detail-Spalten öffnen sich immer **zum Viewport hin** (links: rechts neben Sub, rechts: links neben Sub). Viewport nimmt den **flexiblen Rest** (`minmax(0, 1fr)`); alle anderen Spalten sind `auto` und so breit wie ihr Panel (→ *Panel-Breiten*). Leere bzw. eingeklappte Spalten haben 0 Breite. Kein vertikales Stapeln von Main/Sub auf Desktop.
 
 ---
 
@@ -79,7 +79,7 @@ Links: Main außen → Sub innen (Richtung Viewport). Rechts: Sub innen → Main
 
 **Category:** App Layout  
 **Title:** Side-Panels — scrollbar (Pflicht)  
-**Description:** **Main Left, Sub Left, Main Right, Sub Right** — jede Spalte mit **eigenem vertikal scrollbarem Inhalt**. Viewport-Höhe ist fix (Mittelzeile); Panel-Inhalt darf beliebig wachsen (Environment, Ground, Camera, Lights, …). **Header** der Spalte (Titel, Collapse) bleibt **sticky** oben; darunter **scroll body** (`overflow-y: auto`). Kein Page-Scroll der ganzen App für Panel-Inhalte. Horizontal: Panels selbst nicht scrollen (außer interne Listen mit eigener Mini-Scroll).
+**Description:** **Main Left, Sub Left, Main Right, Sub Right** — jede Spalte mit **eigenem vertikal scrollbarem Inhalt**. Viewport-Höhe ist fix (Mittelzeile); Panel-Inhalt darf beliebig wachsen (Environment, Ground, Camera, Lights, …). Sub- und Detail-Panels haben **keinen Titel-Header** — welcher Bereich offen ist, zeigt der aktive Main-Nav-Eintrag. Das Panel besteht aus **scroll body** (`overflow-y: auto`), optionalem Footer und Collapse-Zeile unten. Kein Page-Scroll der ganzen App für Panel-Inhalte. Horizontal: Panels selbst nicht scrollen (außer interne Listen mit eigener Mini-Scroll).
 
 ---
 
@@ -109,13 +109,19 @@ Links: Main außen → Sub innen (Richtung Viewport). Rechts: Sub innen → Main
 
 **Category:** App Layout  
 **Title:** Sub-Panel — Collapse (Shell & Detail)  
-**Description:** **Left Sub** und **Right Sub** unabhängig voneinander und von Main **vollständig einklappbar** (`0px` via `--left-sub-width` / `--right-sub-width` in `AppShell`). **Hierarchie:** (1) **Main** — `main-nav__collapse` unten; beim Einklappen zusätzlich **Sub derselben Seite** schließen. (2) **Sub (Shell)** — gesamte Sub-Spalte zu (Liste + Detail); Schließen über **linken** Button in `sub-panel__collapse-row` (spaltenbündig unter Primary). (3) **Detail (Sub-Sub)** — nur Editor-Spalte im Split zu; **rechter** Button in derselben Zeile. **Wieder öffnen Sub:** Klick auf **Main-Nav-Eintrag** (öffnet Sub, auch bei bereits aktivem Tab). **Kein** Reopen-Streifen am Viewport. Selection im Store bleibt bei Sub- und Detail-Close. Session-State in `AppShell` (Sub) bzw. lokal im Feature-Panel (Detail, z. B. `MaterialsPanel`). Add-/Action-Footer **oberhalb** der Collapse-Zeile (`sub-panel__footer` oder `sub-panel-split__primary-footer`).
+**Description:** Jedes Sub- und Detail-Panel hat **unten genau einen** Collapse-Button (`sub-panel__collapse-row`). **Hierarchie:** (1) **Main** — `main-nav__collapse` unten; klappt auf Icon-only (44px) und schließt zusätzlich **Sub + Detail derselben Seite**. (2) **Sub** — schließt Sub **und** Detail derselben Seite (Session-State in `AppShell`). (3) **Detail** — schließt das Detail-Panel durch **Aufheben der Auswahl** (z. B. `setSelectedEntity(null)`, `selectMaterial(null)`). **Wieder öffnen Sub:** Klick auf **Main-Nav-Eintrag**. **Kein** Reopen-Streifen am Viewport. Add-/Action-Footer **oberhalb** der Collapse-Zeile (`sub-panel__footer`).
 
 ---
 
 **Category:** App Layout  
-**Title:** Sub-Panel — List + Detail Split  
-**Description:** **Kein** drittes Shell-Segment — **Primary | Detail** horizontal **in** der Sub-Spalte (`SubPanel` `layout="split"`, `SubPanelSplit`). **Primary** links (zur Main-Nav), **Detail** rechts (zum Viewport); auf der rechten Seite spiegelbildlich (Primary am Viewport). Je Spalte eigener Scroll (`sub-panel-split__scroll`); Sub-Header sticky. **Breite:** Stack **220px**; Split mit offenem Detail **320px** (`data-left-sub-split` / `--panel-sub-split-total-width`); nur Primary **220px**. Wheel in Panels stoppt Propagation. **Split:** **Materials** (live). **Geplant gleiches Muster:** Colors, Images (Left); Scene (Right). **Stack:** Camera, Physics, Export, Environment, Assets; Environments / Light rigs / Scenes nur Primary. UI-Bausteine → [`requirements-architecture.md`](./requirements-architecture.md); CSS → [`requirements-look-and-feel.md`](./requirements-look-and-feel.md).
+**Title:** Detail-Panel (Sub-Sub)  
+**Description:** **Eigenes Panel** neben dem Sub-Panel — **kein** Split innerhalb einer Sub-Spalte. Sub zeigt nur die **Übersicht/Liste**; Klick auf einen Eintrag wählt ihn aus und öffnet daneben das Detail-Panel mit allen Einstellungen. **Öffnen:** Auswahl in der Liste **oder** im Viewport. **Schließen:** zweiter Klick auf den gewählten Eintrag oder Collapse-Button im Detail (hebt Auswahl auf). Erste Zeile im Detail = **Name** des gewählten Eintrags. Shell: `LeftDetailPanel` / `RightDetailPanel` (`src/ui/shell/`) wählen das Detail passend zum aktiven Main-Nav-Eintrag. **Live:** Scene (`SceneSubPanel` → `SceneDetailPanel`), Materials (`MaterialsPanel` → `MaterialDetailPanel`). **Bewusst ohne Detail-Panel:** Lighting (alle Lichter gleichzeitig sichtbar). **Kandidaten:** Images, Colors, Environments, Light rigs.
+
+---
+
+**Category:** App Layout  
+**Title:** Panel-Breiten (list / form)  
+**Description:** Panels sind **nicht breiter als nötig**. **Main-Nav:** `max-content` (längster Eintrag), eingeklappt `--panel-main-collapsed-width` (44px). **Sub/Detail:** `SubPanel` Prop `width`: **`list`** = `max-content`, begrenzt durch `--panel-list-min-width` (140px) / `--panel-list-max-width` (260px) — für reine Listen (Assets, Materials, Scene); **`form`** (Default) = feste `--panel-form-width` (220px) — für Label + Feld-Zeilen (Details, Camera, Lighting, Physics, Export, Environment, …). Keine weiteren Breiten-Modi.
 
 ---
 

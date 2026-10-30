@@ -6,6 +6,19 @@ Kurze Historie: **wie** wir uns entschieden haben (Warum, Alternativen). Require
 
 ## Einträge
 
+### 2026-10-30 — Git: nur noch `main`
+- **Entscheidung:** Ein Branch (`main`). Agent-Arbeit wird nach Tests/Lint/Build sofort nach `main` gemergt; User testet mit `git pull`.
+- **Grund:** Drei parallele Agent-Branches (Fabric-Fixes, Engine-Refactor, Panel-Umbau) waren nie gemergt — Fixes schienen „verschwunden“, Arbeit wurde doppelt gemacht (Bake-Upsampling). Alle drei in `main` zusammengeführt, Branches gelöscht.
+
+### 2026-10-30 — Panels: Detail-Panel statt Split, kein Titel-Header, Breite nach Inhalt
+- **Entscheidung:** Listen-Sub-Panel + eigenes Detail-Panel zum Viewport hin (Scene, Materials). Sub-Panel-Titelzeile entfernt. Spalten `auto`; `SubPanel width="list" | "form"`; Main-Nav `max-content`.
+- **Grund:** Scene-Accordion war unübersichtlich; Split quetschte den Material-Editor (~160px) und machte Listen zu breit; Titel doppelt zum aktiven Main-Nav-Eintrag.
+- **Verworfen:** Split auf der rechten Seite gespiegelt (`SubPanelSplit` gelöscht).
+
+### 2026-10-30 — Einheitliche Bedienelemente in Entity-Settings
+- **Entscheidung:** Auswahlfelder immer `PanelSelect` (Fabric: Pinned corners, Active pin, Fabric behavior); keine `btn btn-xs`-Button-Gruppen, keine Status-Hinweise wie „Preset: Linen“.
+- **Grund:** Ein einfacher, einheitlicher Look statt Elementen, die pro Asset anders aussehen.
+
 ### 2026-10-30 — Fabric cloth — Verlet-Solver neu, fester Substep-Ablauf
 - **Entscheidung:** Substep = Predict → (Constraints → Collide) × Iterationen → **Reibung** → Pins. Reibung **nur** dort, auf der tangentialen Substep-Verschiebung, mit Haftreibung; Boden = Collider mit Normale (0,1,0). Sleep nach 30 Ruhe-Frames, Wake per Fingerprint.
 - **Grund:** Tuch rutschte am Boden weg und wurde schneller. Ursachen: Slip-Formel addierte die Geschwindigkeit doppelt; danach verschoben Constraint-/Projektions-Pässe Kontakt-Vertices ungebremst (Drift ~20 cm in 10 s über Box).

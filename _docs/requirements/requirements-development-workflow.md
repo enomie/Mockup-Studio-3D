@@ -47,3 +47,9 @@ Siehe auch: [`requirements-code.md`](./requirements-code.md) (technische Regeln)
 **Description:** Größere Modell- oder Architekturwechsel **zuerst** in einem **Übergangsdoc** planen (Ist/Soll, Phasen, offene Punkte, Checkliste welche Requirement-Dateien folgen) — **ohne** sofort die normativen Kategorie-Dateien zu überschreiben. Beispiel: [`../planning/transition-material-profile-and-entity-albedo.md`](../planning/transition-material-profile-and-entity-albedo.md). Nach Freigabe: Inhalt in `requirements-architecture.md` und betroffene Kategorien **überführen**; Übergangsdoc als erledigt markieren oder archivieren. Index-Verweis in `requirements-and-project-description.md`.
 
 ---
+
+**Category:** Workflow  
+**Title:** Git — nur `main`  
+**Description:** Es gibt **nur den Branch `main`** — dort ist immer der aktuelle Stand, den der User lokal testet (`git checkout main` → `git pull` → `npm run dev`). Der Agent darf technisch auf einem Arbeitsbranch entwickeln, **merged aber am Ende jeder Aufgabe** nach `npm run lint`, `npm test`, `npm run build` (und Browser-Check bei UI) **direkt in `main`**, pusht und nennt dem User den Commit. **Keine** liegengebliebenen Seiten-Branches; parallele Sessions arbeiten nie auf eigenen Langläufer-Branches. Vor Beginn einer Aufgabe: `git pull` auf `main`, damit nicht auf einem veralteten Stand gebaut wird.
+
+---
