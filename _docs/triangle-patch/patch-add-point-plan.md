@@ -1,6 +1,7 @@
 # Plan: Patch – Punkte hinzufügen („Add Point“)
 
-Status: **Schritt 1–6 erledigt.**
+Status: **Fertig (Schritt 1–6 umgesetzt und vom User getestet, 2026-10-30).**
+Einstieg für den nächsten Thread: Abschnitt 11 (Ist-Stand & Code-Landkarte) und 12 (mögliche nächste Schritte).
 Scope: **nur** neue Punkte auf den Patch-Kanten setzen, umbenennen, löschen – inkl. Wölbung durch jeden Punkt.
 Nicht im Scope: Snap/Copy-Paste von Tangenten, Symmetrie, Hebel-Kontinuitäts-Modi (glatt/spitz-Kopplung), Mitte-der-Kante-Shortcut (Idee gemerkt, später).
 
@@ -143,3 +144,32 @@ Der Faktor `u·v·w` hält den Rand exakt auf der Kantenkurve.
 2. Rand: Punkte mit u, v oder w = 0 liegen auf `evalEdge`.
 3. Segmente: `evalEdge` trifft bei `t = edgeParams[id]` genau den Anker des Kantenpunkts.
 4. Wirkung: `handleCrossIn` eines Kantenpunkts verschieben ändert das Innere, den Rand nicht.
+
+---
+
+## 11. Ist-Stand & Code-Landkarte
+
+| Bereich | Datei | Inhalt |
+| :--- | :--- | :--- |
+| Datenmodell | `src/scene/asset-triangle-patch.ts` | `PatchPoint`, `TrianglePatchParams` (`points`, `cornerIds`, `edgeParams`), `PatchHandleSelection` (per `pointId`), Helfer `getPatchCorners`, `getPatchEdgePoints`, `locatePatchEdgeSegment`, `replacePatchPoint`, Default (Point 1–3, Hebel ×0.5) |
+| Einfügen/Löschen | `src/scene/triangle-patch-point-edit.ts` | `insertPatchPoint` (de Casteljau, formgleich, Nummer aus `pt-N`-ids), `removePatchPoint` (Ecken geschützt) |
+| Anker drehen/schieben | `src/scene/triangle-patch-node-edit.ts` | Hebel wandern mit / rotieren um Anker |
+| Geometrie | `src/engine/triangle-patch-geometry.ts` | `evalEdge`, `evalCross`, `evalPatchSurfacePoint` (Coons-Blend + Wölbung über Quertangenten-Feld aller Kanten), `buildTrianglePatchGeometry` |
+| Gizmo | `src/engine/triangle-patch-gizmo-controller.ts` | Helfer je Punkt (Ecken blau, Kantenpunkte lila), Wippe, Längen-Ring, `commitParams` |
+| Add-Point-Modus | `src/engine/triangle-patch-add-point-tool.ts` | Kanten-Highlight, Vorschau-Kugel, Hit-Test in Bildschirm-Pixeln (14 px) |
+| Verdrahtung | `mockup-engine.ts`, `selection-controller.ts`, `viewport-input-controller.ts`, `gizmo-interaction-controller.ts` | `setPatchAddPointMode`, Klick/Hover/Esc, Gizmo aus im Modus |
+| Store | `app-store-internals.ts`, `app-store-asset-params.ts` | `patchHandleSelection`, `patchAddPointEntityId`, `selectPatchHandle`, `setPatchAddPointMode` |
+| Panel | `src/ui/panels/entity-fields/TrianglePatchFields.tsx` | Punktliste (Farbpunkt, Name inline, Trash), „Add Point“, Hebel-Dropdown, XYZ, Rot, Länge ±10 % |
+
+Verhalten: Viewport-Klick auf Anker/Hebel ↔ Panel-Auswahl synchron. Nach „Add Point“ ist der neue Anker gewählt, Modus endet. Löschen des gewählten Punkts wählt den vorherigen im Umlauf.
+
+Bekannte Grenzen:
+- `handleCrossOut` ist formneutral (nur Wippen-Gegenseite).
+- Löschen eines Kantenpunkts verändert die Kante (Segmente werden ohne Anpassung zusammengelegt).
+- Undo für Patch-Änderungen hängt am allgemeinen History-Stand.
+
+## 12. Mögliche nächste Schritte (nicht beauftragt)
+
+- „Mitte der Kante“ als Shortcut beim Einfügen (Idee des Users).
+- Aus dem Prototyp, klein: Hebel umkehren, Y nivellieren, Gizmo-Raum Lokal/Tangente, relativer Vektor dX/dY/dZ.
+- Später: Tangenten kopieren/einfügen, Snap auf Zielpunkt (G0+G1) – sinnvoll erst mit mehreren Patches.

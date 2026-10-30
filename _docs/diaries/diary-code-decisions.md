@@ -6,6 +6,11 @@ Kurze Historie: **wie** wir uns entschieden haben (Warum, Alternativen). Require
 
 ## Einträge
 
+### 2026-10-30 — Triangle Patch: Punktliste statt fester Ecken
+- **Entscheidung:** Patch-Rand als geschlossener Umlauf `points` mit `cornerIds` + `edgeParams`; jeder Punkt hat alle 4 Hebel. Wölbung = Summe der Quertangenten-Felder der 3 Kanten (bei nur Ecken bit-gleich zur alten Formel). Einfügen per de Casteljau formgleich; Add-Point als Viewport-Modus (Klick auf Kante).
+- **Grund:** „Jeder Punkt kann alles“ ohne Sonderfälle im Code; gespeicherte Kantenparameter verhindern den Formsprung des Prototyps beim Einfügen.
+- **Verworfen:** Einfügen per Button in Kantenmitte / per Dropdown (User will Klick auf Stelle). Details: `_docs/triangle-patch/patch-add-point-plan.md`.
+
 ### 2026-10-30 — Git: nur noch `main`
 - **Entscheidung:** Ein Branch (`main`). Agent-Arbeit wird nach Tests/Lint/Build sofort nach `main` gemergt; User testet mit `git pull`.
 - **Grund:** Drei parallele Agent-Branches (Fabric-Fixes, Engine-Refactor, Panel-Umbau) waren nie gemergt — Fixes schienen „verschwunden“, Arbeit wurde doppelt gemacht (Bake-Upsampling). Alle drei in `main` zusammengeführt, Branches gelöscht.
