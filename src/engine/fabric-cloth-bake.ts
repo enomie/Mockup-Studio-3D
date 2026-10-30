@@ -3,7 +3,6 @@ import {
   type BufferGeometry,
   PlaneGeometry,
   type Mesh,
-  type Object3D,
 } from 'three/webgpu';
 import {
   FABRIC_CLOTH_BAKE_CELL_SIZE_M,
@@ -15,7 +14,6 @@ import { FABRIC_CLOTH_REST_PLANE_XY_ATTR } from '@/scene/asset-fabric-cloth';
 import type { FabricClothBakedMeshPayload } from '@/scene/user-baked-asset';
 import { writeFabricClothGridNormalsFromPositions } from '@/physics/fabric-cloth-grid-normals';
 import { readFabricClothMeshGrid } from './fabric-cloth-geometry';
-import { alignFabricClothBakePayloadToSourceMesh } from './fabric-cloth-bake-align';
 import {
   fabricClothMeshLocalCenterlineFromBinding,
   type FabricClothVerletBinding,
@@ -126,22 +124,59 @@ export function fabricClothRestPlaneFootprintM(
   return { planeWidthM, planeHeightM };
 }
 
+const BASE_PIVOT_EPSILON_M = 1e-6;
+
 /**
- * Aligns `planeWidthM` / `planeHeightM` with `restPlaneXY` (source of truth for border mask).
- * Repairs legacy payloads where declared plane size drifted from baked rest coordinates.
+ * Offset that moves baked vertices to the base pivot: footprint centered on the
+ * entity origin (X/Z) with the lowest point at entity Y = 0. Positions are cloth-mesh
+ * local, the mesh is rotated −90° about X, so entity X = x, Y = z, Z = −y.
+ */
+function basePivotOffset(positions: readonly number[]): [number, number, number] {
+  let minX = Infinity;
+  let maxX = -Infinity;
+  let minY = Infinity;
+  let maxY = -Infinity;
+  let minZ = Infinity;
+  for (let i = 0; i < positions.length; i += 3) {
+    minX = Math.min(minX, positions[i]);
+    maxX = Math.max(maxX, positions[i]);
+    minY = Math.min(minY, positions[i + 1]);
+    maxY = Math.max(maxY, positions[i + 1]);
+    minZ = Math.min(minZ, positions[i + 2]);
+  }
+  if (positions.length === 0) {
+    return [0, 0, 0];
+  }
+  return [-(minX + maxX) * 0.5, -(minY + maxY) * 0.5, -minZ];
+}
+
+/**
+ * Canonical baked payload: plane size matches `restPlaneXY` (source of truth for the
+ * border mask) and vertices sit on the base pivot, so the cloth rests on the ground
+ * at entity Y = 0 and the gizmo sits at its base. Also repairs legacy payloads that
+ * kept the pre-drop entity origin (cloth below ground, gizmo above it).
  */
 export function normalizeFabricClothBakedMeshPayload(
   payload: FabricClothBakedMeshPayload,
 ): FabricClothBakedMeshPayload {
   const footprint = fabricClothRestPlaneFootprintM(payload.restPlaneXY);
-  if (
+  const [ox, oy, oz] = basePivotOffset(payload.positions);
+  const sizeMatches =
     Math.abs(payload.planeWidthM - footprint.planeWidthM) < REST_PLANE_EXTENT_EPSILON_M &&
-    Math.abs(payload.planeHeightM - footprint.planeHeightM) < REST_PLANE_EXTENT_EPSILON_M
-  ) {
+    Math.abs(payload.planeHeightM - footprint.planeHeightM) < REST_PLANE_EXTENT_EPSILON_M;
+  const pivotMatches =
+    Math.abs(ox) < BASE_PIVOT_EPSILON_M &&
+    Math.abs(oy) < BASE_PIVOT_EPSILON_M &&
+    Math.abs(oz) < BASE_PIVOT_EPSILON_M;
+  if (sizeMatches && pivotMatches) {
     return payload;
   }
+  const positions = pivotMatches
+    ? payload.positions
+    : payload.positions.map((v, i) => v + (i % 3 === 0 ? ox : i % 3 === 1 ? oy : oz));
   return {
     ...payload,
+    positions,
     planeWidthM: footprint.planeWidthM,
     planeHeightM: footprint.planeHeightM,
   };
@@ -251,7 +286,6 @@ function readCoarseBakeSource(
 
 export function bakeFabricClothMeshFromVerletBinding(
   binding: FabricClothVerletBinding,
-  entityRoot: Object3D,
   subdivFactor: number = FABRIC_CLOTH_BAKE_SUBDIV_FACTOR,
 ): FabricClothBakedMeshPayload {
   const centerline = fabricClothMeshLocalCenterlineFromBinding(binding);
@@ -260,8 +294,7 @@ export function bakeFabricClothMeshFromVerletBinding(
     subdivFactor,
     centerline,
   );
-  alignFabricClothBakePayloadToSourceMesh(binding.clothMesh, entityRoot, payload);
-  return payload;
+  return normalizeFabricClothBakedMeshPayload(payload);
 }
 
 export function bakeFabricClothMeshFromDeformed(

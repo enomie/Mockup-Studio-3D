@@ -84,7 +84,7 @@ describe('fabric-cloth-bake', () => {
     const [wx, wy, wz] = vec3Get(binding.pos, 0);
     vec3Set(binding.pos, 0, wx, wy - 0.05, wz);
     flushBindingPlane(binding);
-    const payload = bakeFabricClothMeshFromVerletBinding(binding, root, 2);
+    const payload = bakeFabricClothMeshFromVerletBinding(binding, 2);
     expect(payload.planeWidthM).toBeCloseTo(0.4);
     expect(payload.positions.length).toBeGreaterThan(25 * 3);
     mesh.geometry.dispose();
@@ -217,6 +217,36 @@ describe('fabric-cloth-bake', () => {
     expect(fixed.planeHeightM).toBeCloseTo(payload.planeHeightM);
     const geometry = buildBufferGeometryFromBakedMeshPayload(legacy);
     geometry.dispose();
+    mesh.geometry.dispose();
+  });
+});
+
+describe('normalizeFabricClothBakedMeshPayload base pivot', () => {
+  it('moves a legacy payload (pre-drop origin) onto the base pivot', () => {
+    const mesh = buildFabricClothMeshFromOptions({
+      faceWidth: 0.4,
+      faceHeight: 0.3,
+      material: new MeshBasicMaterial(),
+      segments: { segmentsW: 4, segmentsH: 4 },
+    });
+    const payload = bakeFabricClothMeshFromDeformed(mesh, 2);
+    // Legacy: cloth fell 0.5 m below its origin (mesh-local z = entity Y) and drifted.
+    const legacy = {
+      ...payload,
+      positions: payload.positions.map((v, i) => v + (i % 3 === 0 ? 0.1 : i % 3 === 2 ? -0.5 : 0)),
+    };
+    const fixed = normalizeFabricClothBakedMeshPayload(legacy);
+    let minZ = Infinity;
+    let minX = Infinity;
+    let maxX = -Infinity;
+    for (let i = 0; i < fixed.positions.length; i += 3) {
+      minX = Math.min(minX, fixed.positions[i]);
+      maxX = Math.max(maxX, fixed.positions[i]);
+      minZ = Math.min(minZ, fixed.positions[i + 2]);
+    }
+    expect(minZ).toBeCloseTo(0, 6);
+    expect(minX + maxX).toBeCloseTo(0, 6);
+    expect(normalizeFabricClothBakedMeshPayload(fixed)).toBe(fixed);
     mesh.geometry.dispose();
   });
 });

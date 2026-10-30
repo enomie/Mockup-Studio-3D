@@ -101,7 +101,7 @@ describe('fabric cloth bake roundtrip (entity-local AABB)', () => {
     flushBindingPlane(binding);
 
     const referenceBounds = centerlineEntityLocalBounds(binding, entityRoot);
-    const payload = bakeFabricClothMeshFromVerletBinding(binding, entityRoot, 2);
+    const payload = bakeFabricClothMeshFromVerletBinding(binding, 2);
     const bakedGeometry = buildBufferGeometryFromBakedMeshPayload(payload);
     const bakedMesh = new Mesh(bakedGeometry, new MeshBasicMaterial());
     bakedMesh.rotation.x = -Math.PI / 2;
@@ -110,19 +110,17 @@ describe('fabric cloth bake roundtrip (entity-local AABB)', () => {
     const bakedBounds = meshEntityLocalBounds(bakedMesh, entityRoot);
 
     const epsilon = 0.02;
-    expect(bakedBounds.min.x).toBeCloseTo(referenceBounds.min.x, 1);
-    expect(bakedBounds.max.x).toBeCloseTo(referenceBounds.max.x, 1);
-    expect(bakedBounds.min.y).toBeCloseTo(referenceBounds.min.y, 1);
-    expect(bakedBounds.max.y).toBeCloseTo(referenceBounds.max.y, 1);
-    expect(bakedBounds.min.z).toBeCloseTo(referenceBounds.min.z, 1);
-    expect(bakedBounds.max.z).toBeCloseTo(referenceBounds.max.z, 1);
-
-    expect(Math.abs(bakedBounds.min.x - referenceBounds.min.x)).toBeLessThan(epsilon);
-    expect(Math.abs(bakedBounds.max.x - referenceBounds.max.x)).toBeLessThan(epsilon);
-    expect(Math.abs(bakedBounds.min.y - referenceBounds.min.y)).toBeLessThan(epsilon);
-    expect(Math.abs(bakedBounds.max.y - referenceBounds.max.y)).toBeLessThan(epsilon);
-    expect(Math.abs(bakedBounds.min.z - referenceBounds.min.z)).toBeLessThan(epsilon);
-    expect(Math.abs(bakedBounds.max.z - referenceBounds.max.z)).toBeLessThan(epsilon);
+    // Same footprint as the simulated cloth…
+    const bakedSize = bakedBounds.getSize(new Vector3());
+    const referenceSize = referenceBounds.getSize(new Vector3());
+    expect(Math.abs(bakedSize.x - referenceSize.x)).toBeLessThan(epsilon);
+    expect(Math.abs(bakedSize.y - referenceSize.y)).toBeLessThan(epsilon);
+    expect(Math.abs(bakedSize.z - referenceSize.z)).toBeLessThan(epsilon);
+    // …but re-pivoted: centered in X/Z, lowest point at entity Y = 0 (rests on ground).
+    const bakedCenter = bakedBounds.getCenter(new Vector3());
+    expect(bakedCenter.x).toBeCloseTo(0, 5);
+    expect(bakedCenter.z).toBeCloseTo(0, 5);
+    expect(bakedBounds.min.y).toBeCloseTo(0, 5);
 
     bakedGeometry.dispose();
     sourceMesh.geometry.dispose();
