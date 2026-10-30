@@ -35,7 +35,7 @@ export function PanelTextField({
   const fieldId = id ?? generatedId;
   const inputClassName = layout === 'row'
     ? `panel-field-input${invalid ? ' panel-field-input--invalid' : ''}`
-    : `panel-field-input--full${invalid ? ' panel-field-input--invalid' : ''}`;
+    : `panel-field-input panel-field-input--full${invalid ? ' panel-field-input--invalid' : ''}`;
 
   if (layout === 'row') {
     return (

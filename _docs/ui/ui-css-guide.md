@@ -139,6 +139,38 @@ Verwendet in: Assets, Images, Materials, Colors, Environments, Light rigs.
 
 **Kamera-Slots** (`.camera-slot-card`) bleiben eigenes Karten-Muster (enthält Formular + Aktionen).
 
+### A7. Panels, Sections & Felder (Schritt 6 – umgesetzt 2026-10-30)
+
+**Aufbau eines Seitenpanels** – immer über die Komponenten, nie selbst nachbauen:
+
+```
+SubPanel (.sub-panel --form|--list, --left|--right)
+├─ .sub-panel__body           ← scrollt, Padding --panel-pad-y/-x
+│   └─ .panel-stack           ← Abstand --panel-stack-gap
+│       ├─ SubPanelSection    ← Titel (10px, uppercase) + Body; Trennlinie zwischen Sections automatisch
+│       │   └─ .panel-field-row   ← Label links, Control rechts, min. --row-h
+│       │   └─ .panel-field-stack ← Label oben, Control volle Breite
+│       └─ <p class="panel-hint"> ← Hinweistext
+├─ .sub-panel__footer         ← optional, fix unten
+└─ SubPanelCollapseBar/Row    ← Einklappen
+```
+
+**Felder:** `.panel-field-input` (schmal, Zahlen, monospace) · `.panel-field-input .panel-field-input--full` (Text, volle Breite) · `.panel-field-select`. Alle teilen eine Basis: Höhe `--control-h-sm`, Hover = stärkerer Rahmen, **Fokus = Akzent-Rahmen**, Disabled = `--opacity-disabled`, Fehler = `--invalid`.
+
+**Navigation:** aktiver Eintrag = `aria-current="page"` (keine `--active`-Klasse).
+
+**Neue Tokens:** `--control-h-lg` 32 · `--row-h` 24 · `--tile-h` 36 · `--opacity-disabled` 0.45 · `--opacity-hidden` 0.5.
+
+**Zustände – Übersicht:**
+
+| Zustand | Wie |
+|---|---|
+| Button an/aus | `aria-pressed` |
+| Ausgewählt in Liste | `aria-current="true"` |
+| Aktive Navigation | `aria-current="page"` |
+| Deaktiviert | `disabled` → `--opacity-disabled` |
+| Ungültig | `--invalid`-Modifier → `--color-danger` |
+
 ### A5. Checkliste für neue Features
 - [ ] Bestehende Komponente aus `src/ui/components/` verwendet?
 - [ ] Nur Tokens, keine neuen Hex-/px-Magic-Numbers?
@@ -184,7 +216,7 @@ Jeder Schritt: besprechen → umsetzen → Teil A aktualisieren → Häkchen.
 - [x] **3. Buttons** – eine Button-Basis (`.btn` + Varianten icon/chip/danger) oder Komponente; Active-State vereinheitlichen (`aria-pressed` / `--active`).
 - [x] **4. Toggles/Segmente** (mit Schritt 3 erledigt) – `side-toggle`, `panel-toggle-group`, Projection-Toggle zusammenführen.
 - [x] **5. Listen & Tiles** – gemeinsames Tile/Row-Muster.
-- [ ] **6. Panels & Sections** – Header/Body/Footer-Abstände konsistent.
+- [x] **6. Panels & Sections** – Header/Body/Footer-Abstände konsistent.
 - [ ] **7. Inline-Styles** – auf dynamische Werte reduzieren.
 - [ ] **8. Datei-Struktur** – app.css aufteilen.
 - [ ] **9. Responsive/Touch** – Entscheidung, was davon jetzt wirklich gilt.
@@ -199,3 +231,4 @@ Jeder Schritt: besprechen → umsetzen → Teil A aktualisieren → Häkchen.
 | 2026-10-30 | Skalen umgesetzt: 6 Spacing-, 4 Font-, 4 Radius-Stufen, 2 Control-Höhen. |
 | 2026-10-30 | Buttons: ~25 Klassen → `.btn` + 6 Modifier; Aktiv-Zustand einheitlich über `aria-pressed`. Ungenutzte `.sub-panel__icon-btn` entfernt. |
 | 2026-10-30 | Tiles: `image-tile` + `material-tile` → `.tile`; Auswahl über `aria-current`. Scene-Header-Buttons → `__action`. Ungenutzt entfernt: `light-role-block`, `simple-list`, `preset-list`. |
+| 2026-10-30 | Panels: Inputs/Selects mit gemeinsamer Basis + Fokus-Rahmen; Nav-Aktiv über `aria-current`; Collapse-Leisten zusammengelegt; Höhen/Opacity als Tokens. |

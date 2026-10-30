@@ -71,7 +71,7 @@ export function CameraSubPanel() {
                   <span className="camera-slot-card__badge">{slotDef.shortcut}</span>
                   {occupied ? (
                     <input
-                      className="camera-slot-card__name panel-field-input--full"
+                      className="camera-slot-card__name panel-field-input panel-field-input--full"
                       type="text"
                       value={slot?.name ?? ''}
                       placeholder={slotDef.label}

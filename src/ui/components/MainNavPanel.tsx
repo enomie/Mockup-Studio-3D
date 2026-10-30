@@ -40,7 +40,7 @@ export function MainNavPanel({
             <li key={item.id}>
               <button
                 type="button"
-                className={`main-nav__item${active ? ' main-nav__item--active' : ''}`}
+                className="main-nav__item"
                 aria-current={active ? 'page' : undefined}
                 aria-label={item.label}
                 title={item.label}
