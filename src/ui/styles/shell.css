@@ -8,11 +8,49 @@
 }
 
 .app-shell__middle {
-  /* Columns size to their panels: main | sub | detail | viewport | detail | sub | main. */
+  /* Icon rail | viewport | icon rail. Expanded nav, sub and detail panels overlay the viewport,
+     so opening panels never resizes the viewport (stable export frame). */
+  position: relative;
   display: grid;
-  grid-template-columns: auto auto auto minmax(0, 1fr) auto auto auto;
+  grid-template-columns: var(--panel-main-collapsed-width) minmax(0, 1fr) var(--panel-main-collapsed-width);
   min-height: 0;
   overflow: hidden;
+}
+
+.app-shell__middle > .viewport {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.app-shell__overlay {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 10;
+  display: flex;
+  max-width: 100%;
+  /* Empty overlay area lets pointer input through to the viewport. */
+  pointer-events: none;
+}
+
+.app-shell__overlay > * {
+  pointer-events: auto;
+}
+
+.app-shell__overlay--left {
+  left: 0;
+}
+
+.app-shell__overlay--right {
+  right: 0;
+}
+
+.app-shell__overlay > .app-shell__sub-slot:empty {
+  display: none;
+}
+
+.app-shell__overlay > .app-shell__sub-slot:not(:empty) {
+  box-shadow: var(--shadow-md);
 }
 
 .app-shell__sub-slot {

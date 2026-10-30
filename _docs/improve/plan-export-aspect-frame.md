@@ -1,6 +1,6 @@
 # Plan — Export-Seitenverhältnis, Format-Rahmen & feste Auflösung
 
-Status: **Umgesetzt & vom User getestet** (Rahmen, Size-Section, feste Auflösung). Panel-Overlay offen. Normativ → [`requirements-export.md`](../requirements/requirements-export.md) (Abschnitt „Size“). Entscheidung → `diary-code-decisions.md`.
+Status: **Umgesetzt & vom User getestet** (Rahmen, Size-Section, feste Auflösung). Panel-Overlay ebenfalls umgesetzt. Normativ → [`requirements-export.md`](../requirements/requirements-export.md) (Abschnitt „Size“). Entscheidung → `diary-code-decisions.md`.
 
 **Abweichung vom Plan:** Landscape = lange Seite horizontal für alle Presets — 4:5 im Landscape-Modus ergibt 5:4, echtes 4:5 über Portrait.
 
@@ -124,7 +124,7 @@ Alle UI-Strings Englisch (AGENTS.md).
 
 ---
 
-## Später (eigener Schritt): Panel-Overlay-Layout
+## Panel-Overlay-Layout (umgesetzt)
 
 - Grid nur noch: `Left-Icon-Rail | Viewport | Right-Icon-Rail`.
 - Aufgeklappte Main-Nav, Sub- und Detail-Panels liegen `position: absolute` **über** dem Viewport.

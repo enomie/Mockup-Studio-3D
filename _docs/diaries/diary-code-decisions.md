@@ -6,6 +6,11 @@ Kurze Historie: **wie** wir uns entschieden haben (Warum, Alternativen). Require
 
 ## Einträge
 
+### 2026-10-30 — Panels als Overlay über dem Viewport
+- **Entscheidung:** Mittelzeile = `Icon-Rail | Viewport | Icon-Rail`. Ausgeklappte Main-Nav, Sub- und Detail-Panels liegen absolut **über** dem Viewport (`.app-shell__overlay`), statt eigene Grid-Spalten zu belegen.
+- **Grund:** Viewport-Größe sprang bei jedem Panel-Wechsel (auto-Spalten, `max-content`-Listen) — Export-Rahmen und Komposition wurden unruhig.
+- **Trade-off:** Panels verdecken Teile der Szene bzw. des Export-Rahmens; Rahmen bleibt auf den ganzen Viewport bezogen.
+
 ### 2026-10-30 — Export: Format-Rahmen + feste Auflösung
 - **Entscheidung:** Export-Panel-Section **Size** (Viewport · 16:9 · 4:3 · 1:1 · 4:5 · Custom, Landscape/Portrait, gekoppelte Width/Height, max. 8192 px). Viewport zeigt größten zentrierten Rahmen (DOM-Overlay, abgedunkelter Rand). Export rendert Drawing-Buffer in Zielgröße; Kamera-Frustum wird auf den Rahmen beschnitten (Perspektive über FOV, Ortho über halfH) → Bild = Rahmen-Inhalt. Default `Viewport` = altes Verhalten.
 - **Grund:** Export war bisher der Live-Canvas — Format und Auflösung hingen von Panels, Fenster und Zoom ab, Zielformate (16:9, 9:16 …) nicht planbar.

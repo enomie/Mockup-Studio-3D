@@ -55,7 +55,7 @@ Links: Main außen → Sub innen (Richtung Viewport). Rechts: Sub innen → Main
 
 **Category:** App Layout  
 **Title:** Mittelzeile — Spaltenreihenfolge  
-**Description:** Feste Reihenfolge links → rechts: **`MainLeft` · `SubLeft` · `DetailLeft` · `Viewport` · `DetailRight` · `SubRight` · `MainRight`**. Detail-Spalten öffnen sich immer **zum Viewport hin** (links: rechts neben Sub, rechts: links neben Sub). Viewport nimmt den **flexiblen Rest** (`minmax(0, 1fr)`); alle anderen Spalten sind `auto` und so breit wie ihr Panel (→ *Panel-Breiten*). Leere bzw. eingeklappte Spalten haben 0 Breite. Kein vertikales Stapeln von Main/Sub auf Desktop.
+**Description:** Feste Reihenfolge links → rechts: **`MainLeft` · `SubLeft` · `DetailLeft` · `Viewport` · `DetailRight` · `SubRight` · `MainRight`**. Detail-Spalten öffnen sich immer **zum Viewport hin** (links: rechts neben Sub, rechts: links neben Sub). **Overlay-Layout (seit 2026-10-30):** Grid hat nur `Rail (--panel-main-collapsed-width) | Viewport (minmax(0, 1fr)) | Rail`. Die eingeklappte Main-Nav (nur Icons) füllt genau die Rail. Ausgeklappte Main-Nav, Sub- und Detail-Panels liegen als `.app-shell__overlay` (`position: absolute`, Schatten) **über** dem Viewport — Viewport-Größe ändert sich nur mit dem Fenster, nicht beim Auf-/Zuklappen (stabiler Export-Rahmen). Leere Overlay-Fläche lässt Pointer-Input zum Viewport durch. Kein vertikales Stapeln von Main/Sub auf Desktop.
 
 ---
 
