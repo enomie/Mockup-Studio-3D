@@ -4,34 +4,19 @@ import {
   resolveBuiltinMaterialPreset,
 } from '@/data/material-presets';
 import type { SceneApi } from '@/scene/scene-api';
-import { wireAppStoreAssetParams } from './app-store-asset-params';
 import * as store from './app-store-internals';
 
 export type { AppState } from './app-store-internals';
 
 export {
-  setBeverageCanParams,
-  setBlockParams,
-  setCylinderParams,
-  setSphereParams,
-  setWheelCarParams,
+  setKindParams,
   setPhysicsBodyMode,
   setPhysicsDensityKgPerM3,
-  setFabricClothParams,
   setFabricClothActivePinCorner,
-  setBookParams,
   setBookBackCoverImageId,
   setBookSpineImageId,
   setBookMaterialTint,
-  setHandheldParams,
-  setMonitorParams,
-  setPrintParams,
-  setTinCanParams,
-  setWallParams,
   setWallpaperPattern,
-  setWineBottleParams,
-  setPenParams,
-  setTrianglePatchParams,
   selectPatchHandle,
 } from './app-store-asset-params';
 
@@ -113,20 +98,12 @@ export {
 } from './app-store-lighting-live';
 
 export {
-  setSkyEnabled,
-  setSkyHorizonColor,
-  setSkyZenithColor,
-  setSkyGradientFade,
+  setEnvironment,
   setGroundMaterialId,
   setGroundVisible,
   setGroundReceiveShadow,
   setGroundMirrorEnabled,
   setGroundMirrorOpacity,
-  setFogEnabled,
-  setFogColor,
-  setFogDistances,
-  setReflectionEnabled,
-  setReflectionIntensity,
 } from './app-store-atmosphere';
 
 export {
@@ -185,12 +162,6 @@ export {
 export const initAppStore = store.initAppStore;
 export const getAppState = store.getAppState;
 export const subscribe = store.subscribe;
-
-wireAppStoreAssetParams({
-  getEntities: () => store.state.entities,
-  patchEntity: store.patchEntity,
-  getSceneApi: () => store.sceneApi,
-});
 
 export function setSceneApi(api: SceneApi | null): void {
   store.engineUnsubscribe?.();

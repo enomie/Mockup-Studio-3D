@@ -1,4 +1,4 @@
-import { type Mesh, type Object3D, Scene, type WebGPURenderer } from 'three/webgpu';
+import { type Mesh, Scene, type WebGPURenderer } from 'three/webgpu';
 import type { Rgb } from '@/colors/rgb';
 import { SCENE_DEFAULTS } from '@/config/scene-defaults';
 import { FIXTURE_DISC_LAYER, GROUND_PLANE_SIZE } from '@/constants';
@@ -47,38 +47,18 @@ import type {
   AssetFaceId,
   AssetGeometryPart,
   EntityTransform,
-  HandheldDeviceParams,
-  MonitorDeviceParams,
   MaterialEntitySlot,
-  PrintDeviceParams,
-  BeverageCanParams,
-  TinCanParams,
-  WineBottleParams,
-  PenParams,
-  BlockParams,
-  CylinderParams,
-  SphereParams,
-  WheelCarParams,
-  FabricClothParams,
-  BookParams,
-  TrianglePatchParams,
   PatchHandleTarget,
-  WallParams,
   WallpaperPattern,
   Vec3,
 } from '@/scene/entity-types';
-import { isWallAssetKind } from '@/scene/asset-wall';
+
 import {
   cloneFabricClothParams,
   defaultFabricClothParams,
-  isFabricClothAssetKind,
 } from '@/scene/asset-fabric-cloth';
 import { canBakeEntity } from '@/scene/bake-registry';
 import { bakeFabricClothMeshFromVerletBinding } from './fabric-cloth-bake';
-import {
-  fabricClothPinCornerIndex,
-  fabricClothPinEntityId,
-} from './fabric-cloth-pins';
 import { getAssetKindDefinition } from '@/scene/asset-kind-registry';
 import type {
   BakeFabricClothDraft,
@@ -95,17 +75,22 @@ import { cloneAssetMaterials, type MaterialPresetResolver } from '@/scene/materi
 import { applyAtmosphereSnapshot as applyAtmosphereSnapshotToApi } from '@/scene/atmosphere-snapshot';
 import type { CaptureViewportImageOptions } from '@/scene/export-image';
 import type { AtmosphereSnapshot } from '@/scene/environment-preset-types';
-import { clampSizeScale } from '@/scene/asset-sizing';
+
 import {
-  clonePhysicsSettings,
-  defaultPhysicsSettings,
-  mergePhysicsSettings,
+  clampGravityScale,
+  DEFAULT_GRAVITY_SCALE,
+  type EditablePhysicsSettings,
   type PhysicsSettings,
 } from '@/scene/physics-settings';
+import type {
+  KindParamFamily,
+  KindParamsByFamily,
+} from '@/scene/kind-param-families';
 import { EntityRegistry } from './entity-registry';
 import { AssetSystem } from './asset-system';
 import { ImageTextureLoader } from './image-texture-loader';
 import { GizmoController } from './gizmo-controller';
+import { GizmoInteractionController } from './gizmo-interaction-controller';
 import {
   TrianglePatchGizmoController,
 } from './triangle-patch-gizmo-controller';
@@ -121,92 +106,44 @@ import { ViewportHelpersSystem } from './viewport-helpers/viewport-helpers-syste
 const GROUND_PHYSICS_ID = 'ground';
 
 export class MockupEngine implements SceneApi {
-  private readonly container: HTMLElement;
-  private readonly renderer: WebGPURenderer;
-  private readonly cameras: CameraController;
-  private readonly scene: Scene;
-  private readonly skybox: Skybox;
-  private readonly environment: EnvironmentSystem;
-  private readonly lighting: LightingSystem;
-  private readonly physics: PhysicsWorld;
-  private readonly rigidPrimitivePhysics: RigidPrimitivePhysicsColliders;
-  private readonly fabricClothSimulation: FabricClothSimulationParticipant;
-  private readonly rigidTest: PhysicsRigidTestController;
-  private readonly worldPhysics: WorldPhysicsSessionController;
-  private readonly ground: Mesh;
-  private readonly groundMaterial: GroundMaterial;
   private readonly resizeObserver: ResizeObserver;
-  private readonly registry: EntityRegistry;
-  private readonly textureLoader: ImageTextureLoader;
-  private readonly assets: AssetSystem;
   private readonly patchGizmo: TrianglePatchGizmoController;
-  private readonly gizmo: GizmoController;
-  private readonly selection: SelectionController;
-  private readonly selectionHighlight: SelectionHighlight;
-  private readonly viewportInput: ViewportInputController;
-  private readonly viewportPipeline: ViewportRenderPipeline;
   private readonly viewportInvalidation: ViewportInvalidation;
-  private readonly viewportHelpers: ViewportHelpersSystem;
   private readonly listeners = new Set<SceneApiListener>();
 
   private appMode: AppMode = 'select';
   private cameraSlots: [CameraSlot, CameraSlot, CameraSlot] = [null, null, null];
   private disposed = false;
   private lastTime = performance.now();
-  private scaleDragBase = 1;
-  private scaleCommitPending = false;
-  private physicsSettings: PhysicsSettings = defaultPhysicsSettings();
-  private readonly fabricClothActivePinCorner = new Map<string, number>();
+  private gravityScale = DEFAULT_GRAVITY_SCALE;
+  private readonly gizmoInteraction: GizmoInteractionController;
 
   private constructor(
-    container: HTMLElement,
-    renderer: WebGPURenderer,
-    cameras: CameraController,
-    scene: Scene,
-    skybox: Skybox,
-    environment: EnvironmentSystem,
-    lighting: LightingSystem,
-    physics: PhysicsWorld,
-    rigidPrimitivePhysics: RigidPrimitivePhysicsColliders,
-    fabricClothSimulation: FabricClothSimulationParticipant,
-    rigidTest: PhysicsRigidTestController,
-    worldPhysics: WorldPhysicsSessionController,
-    ground: Mesh,
-    groundMaterial: GroundMaterial,
-    registry: EntityRegistry,
-    textureLoader: ImageTextureLoader,
-    assets: AssetSystem,
-    gizmo: GizmoController,
-    selection: SelectionController,
-    selectionHighlight: SelectionHighlight,
-    viewportInput: ViewportInputController,
-    viewportPipeline: ViewportRenderPipeline,
-    viewportHelpers: ViewportHelpersSystem,
+    private readonly container: HTMLElement,
+    private readonly renderer: WebGPURenderer,
+    private readonly cameras: CameraController,
+    private readonly scene: Scene,
+    private readonly skybox: Skybox,
+    private readonly environment: EnvironmentSystem,
+    private readonly lighting: LightingSystem,
+    private readonly physics: PhysicsWorld,
+    private readonly rigidPrimitivePhysics: RigidPrimitivePhysicsColliders,
+    private readonly fabricClothSimulation: FabricClothSimulationParticipant,
+    private readonly rigidTest: PhysicsRigidTestController,
+    private readonly worldPhysics: WorldPhysicsSessionController,
+    private readonly ground: Mesh,
+    private readonly groundMaterial: GroundMaterial,
+    private readonly registry: EntityRegistry,
+    private readonly textureLoader: ImageTextureLoader,
+    private readonly assets: AssetSystem,
+    private readonly gizmo: GizmoController,
+    private readonly selection: SelectionController,
+    private readonly selectionHighlight: SelectionHighlight,
+    private readonly viewportInput: ViewportInputController,
+    private readonly viewportPipeline: ViewportRenderPipeline,
+    private readonly viewportHelpers: ViewportHelpersSystem,
   ) {
-    this.container = container;
-    this.renderer = renderer;
-    this.cameras = cameras;
-    this.scene = scene;
-    this.skybox = skybox;
-    this.environment = environment;
-    this.lighting = lighting;
-    this.physics = physics;
-    this.rigidPrimitivePhysics = rigidPrimitivePhysics;
-    this.fabricClothSimulation = fabricClothSimulation;
-    this.rigidTest = rigidTest;
-    this.worldPhysics = worldPhysics;
-    this.ground = ground;
-    this.groundMaterial = groundMaterial;
-    this.registry = registry;
-    this.textureLoader = textureLoader;
-    this.assets = assets;
     this.patchGizmo = new TrianglePatchGizmoController(scene, registry);
-    this.gizmo = gizmo;
-    this.selection = selection;
-    this.selectionHighlight = selectionHighlight;
-    this.viewportInput = viewportInput;
-    this.viewportPipeline = viewportPipeline;
-    this.viewportHelpers = viewportHelpers;
     this.viewportInvalidation = new ViewportInvalidation(renderer, (time) => { this.onFrame(time); },
     );
     this.assets.setViewportInvalidation(this.viewportInvalidation);
@@ -220,85 +157,24 @@ export class MockupEngine implements SceneApi {
       this.emit();
     });
 
-    this.gizmo.setCallbacks({
-      onTransform: () => {
-        const selectedLightId = this.lighting.getSelectedLightId();
-        if (selectedLightId) {
-          this.lighting.syncOffsetFromHelper(selectedLightId);
-          this.lighting.updateFrame();
-          this.emit();
-          return;
-        }
-
-        const attached = this.gizmo.getAttachedObject();
-        if (attached && this.handleFabricClothPinTransform(attached)) {
-          return;
-        }
-
-        if (this.patchGizmo.getActiveTarget()) {
-          const mode = this.appMode === 'rotate' ? 'rotate' : 'translate';
-          const handled = this.patchGizmo.applyHandleTransform(mode);
-          if (handled) {
-            this.emit();
-            this.invalidateViewport();
-            return;
-          }
-        }
-
-        const selected = this.registry.getSelectedRuntime();
-        if (!selected) {return;}
-
-        if (this.appMode === 'scale') {
-          this.gizmo.enforceUniformScale();
-          this.scaleCommitPending = true;
-          return;
-        }
-
-        this.registry.syncTransformFromObject(selected.entity.id);
-        this.syncRigidPrimitivePoseFromRuntimeIfFixed(selected.entity.id);
-        this.emit();
-      },
-      onDraggingChanged: (dragging) => {
-        this.cameras.setOrbitEnabled(!dragging);
-        this.viewportInvalidation.setContinuous(
-          dragging || this.cameras.isInteracting(),
-        );
-
-        if (this.appMode !== 'scale') {return;}
-
-        const selected = this.registry.getSelectedRuntime();
-        if (!selected) {return;}
-
-        if (dragging) {
-          this.scaleDragBase = selected.entity.sizeScale;
-          selected.object.scale.set(1, 1, 1);
-          this.scaleCommitPending = false;
-          return;
-        }
-
-        if (!this.scaleCommitPending) {return;}
-
-        const uniform =
-          (selected.object.scale.x + selected.object.scale.y + selected.object.scale.z) / 3;
-        selected.object.scale.set(1, 1, 1);
-        const entityId = selected.entity.id;
-        if (isRigidPrimitiveAssetKind(selected.entity.assetKind)) {
-          this.applyAssetMutation(
-            () => this.assets.applyRigidPrimitiveUniformScale(entityId, uniform),
-            { refreshGizmo: true },
-          );
-        } else {
-          const nextScale = clampSizeScale(this.scaleDragBase * uniform);
-          this.applyAssetMutation(() =>
-            this.assets.setAssetSizeScale(entityId, nextScale),
-          );
-        }
-        this.scaleCommitPending = false;
-      },
+    this.gizmoInteraction = new GizmoInteractionController({
+      gizmo,
+      cameras,
+      registry,
+      lighting,
+      patchGizmo: this.patchGizmo,
+      assets,
+      worldPhysics,
+      fabricClothSimulation,
+      viewportInvalidation: this.viewportInvalidation,
+      getMode: () => this.appMode,
+      emit: () => { this.emit(); },
+      syncFixedRigidPose: (entityId) => { this.syncRigidPrimitivePoseFromRuntimeIfFixed(entityId); },
+      applyAssetMutation: (mutation, options) => { this.applyAssetMutation(mutation, options); },
     });
 
     scene.add(gizmo.getHelper());
-    this.applyGizmoMode(this.appMode);
+    this.gizmoInteraction.refresh();
 
     registry.subscribeEntities(() => { this.notifySceneApiListeners(); });
     registry.subscribeSelection(() => { this.notifySceneApiListeners(); });
@@ -387,7 +263,6 @@ export class MockupEngine implements SceneApi {
     const gizmo = new GizmoController(cameras.camera, renderer.domElement);
     const selection = new SelectionController(renderer.domElement, registry);
     const selectionHighlight = new SelectionHighlight(registry, lightingSystem);
-    const gizmoForInput = gizmo;
 
     const engine = new MockupEngine(
       container,
@@ -414,7 +289,7 @@ export class MockupEngine implements SceneApi {
         renderer.domElement,
         cameras,
         selection,
-        gizmoForInput,
+        gizmo,
       ),
       viewportPipeline,
       viewportHelpersSystem,
@@ -427,7 +302,7 @@ export class MockupEngine implements SceneApi {
       (handleMesh) => {
         const target = engine.patchGizmo.selectHandleByMesh(handleMesh as Mesh);
         if (target) {
-          engine.applyGizmoMode(engine.appMode);
+          engine.gizmoInteraction.refresh();
           engine.emit();
           return true;
         }
@@ -488,7 +363,7 @@ export class MockupEngine implements SceneApi {
   setMode(mode: AppMode): void {
     this.commitVisualState(() => {
       this.appMode = mode;
-      this.applyGizmoMode(mode);
+      this.gizmoInteraction.refresh();
     });
   }
 
@@ -559,7 +434,7 @@ export class MockupEngine implements SceneApi {
 
   removeEntity(entityId: string): void {
     this.assets.removeAsset(entityId);
-    this.applyGizmoMode(this.appMode);
+    this.gizmoInteraction.refresh();
     this.emit();
   }
 
@@ -610,7 +485,7 @@ export class MockupEngine implements SceneApi {
 
   setEntityVisible(entityId: string, visible: boolean): void {
     this.registry.setEntityVisible(entityId, visible);
-    this.applyGizmoMode(this.appMode);
+    this.gizmoInteraction.refresh();
     this.emit();
   }
 
@@ -648,45 +523,26 @@ export class MockupEngine implements SceneApi {
     );
   }
 
-  setHandheldParams(
+  setKindParams<F extends KindParamFamily>(
+    family: F,
     entityId: string,
-    partial: Partial<HandheldDeviceParams>,
+    partial: Partial<KindParamsByFamily[F]>,
   ): void {
-    this.applyAssetMutation(() => this.assets.setHandheldParams(entityId, partial));
-  }
-
-  setMonitorParams(
-    entityId: string,
-    partial: Partial<MonitorDeviceParams>,
-  ): void {
-    this.applyAssetMutation(() => this.assets.setMonitorParams(entityId, partial));
-  }
-
-  setPrintParams(
-    entityId: string,
-    partial: Partial<PrintDeviceParams>,
-  ): void {
-    this.applyAssetMutation(() => this.assets.setPrintParams(entityId, partial));
-  }
-
-  setWallParams(entityId: string, partial: Partial<WallParams>): void {
-    this.applyAssetMutation(() => this.assets.setWallParams(entityId, partial));
-  }
-
-  setBlockParams(entityId: string, partial: Partial<BlockParams>): void {
-    this.applyAssetMutation(() => this.assets.setBlockParams(entityId, partial));
-  }
-
-  setCylinderParams(entityId: string, partial: Partial<CylinderParams>): void {
-    this.applyAssetMutation(() => this.assets.setCylinderParams(entityId, partial));
-  }
-
-  setSphereParams(entityId: string, partial: Partial<SphereParams>): void {
-    this.applyAssetMutation(() => this.assets.setSphereParams(entityId, partial));
-  }
-
-  setWheelCarParams(entityId: string, partial: Partial<WheelCarParams>): void {
-    this.applyAssetMutation(() => this.assets.setWheelCarParams(entityId, partial));
+    this.applyAssetMutation(async () => {
+      switch (family) {
+        case 'print':
+          await this.assets.setPrintParams(entityId, partial);
+          return;
+        case 'fabricCloth':
+          await this.assets.setFabricClothParams(entityId, partial);
+          return;
+        default:
+          await this.assets.setKindParams(family, entityId, partial);
+          if (family === 'trianglePatch') {
+            this.patchGizmo.syncHelpersFromEntity();
+          }
+      }
+    });
   }
 
   setPhysicsBodyMode(entityId: string, mode: PhysicsBodyMode): void {
@@ -701,36 +557,14 @@ export class MockupEngine implements SceneApi {
     });
   }
 
-  setFabricClothParams(
-    entityId: string,
-    partial: Partial<FabricClothParams>,
-  ): void {
-    this.applyAssetMutation(() =>
-      this.assets.setFabricClothParams(entityId, partial),
-    );
-  }
-
   setFabricClothActivePinCorner(entityId: string, cornerIndex: number): void {
-    const runtime = this.registry.getRuntime(entityId);
-    if (!runtime || !isFabricClothAssetKind(runtime.entity.assetKind)) {return;}
-    const count =
-      runtime.entity.fabricClothParams?.sim.pinnedCornersCount ?? 0;
-    if (count <= 0) {return;}
-    const clamped = Math.max(0, Math.min(3, Math.floor(cornerIndex)));
-    if (clamped >= count) {return;}
-    this.fabricClothActivePinCorner.set(entityId, clamped);
-    this.applyGizmoMode(this.appMode);
-    this.emit();
+    if (this.gizmoInteraction.setFabricClothActivePinCorner(entityId, cornerIndex)) {
+      this.emit();
+    }
   }
 
   getFabricClothActivePinCorner(entityId: string): number {
-    const stored = this.fabricClothActivePinCorner.get(entityId);
-    if (stored !== undefined) {return stored;}
-    return 0;
-  }
-
-  setBookParams(entityId: string, partial: Partial<BookParams>): void {
-    this.applyAssetMutation(() => this.assets.setBookParams(entityId, partial));
+    return this.gizmoInteraction.getFabricClothActivePinCorner(entityId);
   }
 
   setBookBackCoverImageId(entityId: string, imageId: string | null): void {
@@ -753,43 +587,10 @@ export class MockupEngine implements SceneApi {
     );
   }
 
-  setBeverageCanParams(
-    entityId: string,
-    partial: Partial<BeverageCanParams>,
-  ): void {
-    this.applyAssetMutation(() =>
-      this.assets.setBeverageCanParams(entityId, partial),
-    );
-  }
-
-  setTinCanParams(entityId: string, partial: Partial<TinCanParams>): void {
-    this.applyAssetMutation(() => this.assets.setTinCanParams(entityId, partial));
-  }
-
-  setWineBottleParams(
-    entityId: string,
-    partial: Partial<WineBottleParams>,
-  ): void {
-    this.applyAssetMutation(() =>
-      this.assets.setWineBottleParams(entityId, partial),
-    );
-  }
-
-  setPenParams(entityId: string, partial: Partial<PenParams>): void {
-    this.applyAssetMutation(() => this.assets.setPenParams(entityId, partial));
-  }
-
-  setTrianglePatchParams(entityId: string, partial: Partial<TrianglePatchParams>): void {
-    this.applyAssetMutation(async () => {
-      await this.assets.setTrianglePatchParams(entityId, partial);
-      this.patchGizmo.syncHelpersFromEntity();
-    });
-  }
-
   selectPatchHandle(entityId: string, nodeIndex: number, targetKey: PatchHandleTarget): void {
     this.patchGizmo.setActiveEntity(entityId);
     this.patchGizmo.selectTarget({ entityId, nodeIndex, targetKey });
-    this.applyGizmoMode(this.appMode);
+    this.gizmoInteraction.refresh();
     this.emit();
     this.invalidateViewport();
   }
@@ -816,21 +617,19 @@ export class MockupEngine implements SceneApi {
 
   getPhysicsSettings(): PhysicsSettings {
     return {
-      ...clonePhysicsSettings(this.physicsSettings),
+      gravityScale: this.gravityScale,
+      lastFabricClothBakeSummary: null,
       rigidTestPhase: this.rigidTest.getPhase(),
       worldPhysicsPhase: this.worldPhysics.getPhase(),
       worldPhysicsHasSnapshot: this.worldPhysics.hasSnapshot(),
     };
   }
 
-  setPhysicsSettings(partial: Partial<PhysicsSettings>): void {
-    const rest = { ...partial };
-    delete rest.rigidTestPhase;
-    delete rest.worldPhysicsPhase;
-    delete rest.worldPhysicsHasSnapshot;
-    delete rest.lastFabricClothBakeSummary;
-    this.physicsSettings = mergePhysicsSettings(this.physicsSettings, rest);
-    this.physics.setGravityScale(this.physicsSettings.gravityScale);
+  setPhysicsSettings(partial: Partial<EditablePhysicsSettings>): void {
+    if (partial.gravityScale !== undefined) {
+      this.gravityScale = clampGravityScale(partial.gravityScale);
+    }
+    this.physics.setGravityScale(this.gravityScale);
     this.notifySceneApiListeners();
   }
 
@@ -865,30 +664,15 @@ export class MockupEngine implements SceneApi {
     this.invalidateViewport();
   }
 
+  setEnvironment(partial: Partial<EnvironmentState>): void {
+    this.environment.setEnvironment(partial);
+    this.invalidateViewport();
+  }
+
   applyAtmosphereSnapshot(snapshot: AtmosphereSnapshot): void {
     this.commitVisualState(() => {
       applyAtmosphereSnapshotToApi(this, snapshot);
     });
-  }
-
-  setSkyEnabled(enabled: boolean): void {
-    this.environment.setSkyEnabled(enabled);
-    this.invalidateViewport();
-  }
-
-  setSkyHorizonColor(rgb: Rgb): void {
-    this.environment.setSkyHorizonColor(rgb);
-    this.invalidateViewport();
-  }
-
-  setSkyZenithColor(rgb: Rgb): void {
-    this.environment.setSkyZenithColor(rgb);
-    this.invalidateViewport();
-  }
-
-  setSkyGradientFade(fade: number): void {
-    this.environment.setSkyGradientFade(fade);
-    this.invalidateViewport();
   }
 
   applyGround(state: GroundSettings): void {
@@ -921,31 +705,6 @@ export class MockupEngine implements SceneApi {
 
   getViewportHelpers(): ViewportHelpersState {
     return this.viewportHelpers.getState();
-  }
-
-  setFogEnabled(enabled: boolean): void {
-    this.environment.setFogEnabled(enabled);
-    this.invalidateViewport();
-  }
-
-  setFogColor(rgb: Rgb): void {
-    this.environment.setFogColor(rgb);
-    this.invalidateViewport();
-  }
-
-  setFogDistances(near: number, far: number): void {
-    this.environment.setFogDistances(near, far);
-    this.invalidateViewport();
-  }
-
-  setReflectionEnabled(enabled: boolean): void {
-    this.environment.setReflectionEnabled(enabled);
-    this.invalidateViewport();
-  }
-
-  setReflectionIntensity(intensity: number): void {
-    this.environment.setReflectionIntensity(intensity);
-    this.invalidateViewport();
   }
 
   loadBuiltinView(id: BuiltinCameraViewId): void {
@@ -1138,127 +897,10 @@ export class MockupEngine implements SceneApi {
       }
       this.patchGizmo.setActiveEntity(entityId);
       if (entityId) {
-        this.clampFabricClothActivePinForEntity(entityId);
+        this.gizmoInteraction.clampFabricClothActivePinForEntity(entityId);
       }
-      this.applyGizmoMode(this.appMode);
+      this.gizmoInteraction.refresh();
     });
-  }
-
-  private clampFabricClothActivePinForEntity(entityId: string): void {
-    const runtime = this.registry.getRuntime(entityId);
-    if (!runtime || !isFabricClothAssetKind(runtime.entity.assetKind)) {return;}
-    const count =
-      runtime.entity.fabricClothParams?.sim.pinnedCornersCount ?? 0;
-    if (count <= 0) {
-      this.fabricClothActivePinCorner.delete(entityId);
-      return;
-    }
-    const current = this.getFabricClothActivePinCorner(entityId);
-    this.fabricClothActivePinCorner.set(
-      entityId,
-      Math.min(current, count - 1),
-    );
-  }
-
-  private handleFabricClothPinTransform(attached: Object3D): boolean {
-    const entityId = fabricClothPinEntityId(attached);
-    const cornerIndex = fabricClothPinCornerIndex(attached);
-    if (entityId === null || cornerIndex === null) {return false;}
-
-    const phase = this.worldPhysics.getPhase();
-    if (phase === 'simulating') {
-      this.fabricClothSimulation.applyPinDrag(entityId, cornerIndex, attached);
-    } else if (phase === 'paused') {
-      this.fabricClothSimulation.previewPinDragWhenPaused(
-        entityId,
-        cornerIndex,
-        attached,
-      );
-    } else {
-      return false;
-    }
-    this.invalidateViewport();
-    return true;
-  }
-
-  private applyGizmoMode(mode: AppMode): void {
-    const selectedLightId = this.lighting.getSelectedLightId();
-    const selectedAsset = this.registry.getSelectedRuntime();
-    const selectedAssetObject =
-      selectedAsset?.entity.visible !== false ? selectedAsset?.object ?? null : null;
-    const activePatchHandle = this.patchGizmo.getActiveHandleMesh();
-    const gizmoTarget =
-      activePatchHandle ??
-      ((selectedLightId ? this.lighting.getHelperObject(selectedLightId) : null) ??
-      selectedAssetObject);
-
-    const worldPhase = this.worldPhysics.getPhase();
-    const clothSimLocked =
-      selectedAsset != null &&
-      isFabricClothAssetKind(selectedAsset.entity.assetKind) &&
-      (worldPhase === 'simulating' || worldPhase === 'paused');
-
-    if (clothSimLocked) {
-      const pinned =
-        selectedAsset.entity.fabricClothParams?.sim.pinnedCornersCount ?? 0;
-      if (
-        mode === 'translate' &&
-        pinned > 0 &&
-        this.fabricClothSimulation.hasBinding(selectedAsset.entity.id)
-      ) {
-        const corner = this.getFabricClothActivePinCorner(selectedAsset.entity.id);
-        const activeCorner = Math.min(corner, pinned - 1);
-        const pinMesh = this.fabricClothSimulation.getPinMesh(
-          selectedAsset.entity.id,
-          activeCorner,
-        );
-        if (pinMesh) {
-          this.gizmo.setTransformMode('translate');
-          this.gizmo.attach(pinMesh);
-          this.gizmo.setEnabled(true);
-          return;
-        }
-      }
-      this.gizmo.setEnabled(false);
-      this.gizmo.attach(null);
-      return;
-    }
-
-    if (mode === 'translate') {
-      this.gizmo.setTransformMode('translate');
-      this.gizmo.attach(gizmoTarget);
-      this.gizmo.setEnabled(Boolean(gizmoTarget));
-      return;
-    }
-
-    if (mode === 'rotate') {
-      if (selectedLightId) {
-        this.gizmo.setEnabled(false);
-        return;
-      }
-      this.gizmo.setTransformMode('rotate');
-      this.gizmo.attach(gizmoTarget);
-      this.gizmo.setEnabled(Boolean(gizmoTarget));
-      return;
-    }
-
-    if (mode === 'scale') {
-      if (
-        selectedLightId ||
-        !selectedAsset ||
-        isWallAssetKind(selectedAsset.entity.assetKind)
-      ) {
-        this.gizmo.setEnabled(false);
-        return;
-      }
-      selectedAsset.object.scale.set(1, 1, 1);
-      this.gizmo.setTransformMode('scale');
-      this.gizmo.attach(gizmoTarget);
-      this.gizmo.setEnabled(true);
-      return;
-    }
-
-    this.gizmo.setEnabled(false);
   }
 
   private syncRigidPrimitivePoseFromRuntimeIfFixed(entityId: string): void {
@@ -1273,9 +915,13 @@ export class MockupEngine implements SceneApi {
     options?: { refreshGizmo?: boolean },
   ): void {
     void (async () => {
-      await mutation();
+      try {
+        await mutation();
+      } catch (error: unknown) {
+        console.error('Asset mutation failed', error);
+      }
       if (options?.refreshGizmo) {
-        this.applyGizmoMode(this.appMode);
+        this.gizmoInteraction.refresh();
       }
       this.emit();
     })();

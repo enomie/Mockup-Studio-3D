@@ -3,7 +3,7 @@ import { MATERIAL_PAPER_ID } from '@/scene/material-ids';
 import { formatLengthMeters, LENGTH_DECIMALS, parseLengthMetersInput } from '@/units/length';
 import { PanelAxisField } from '@/ui/components/PanelAxisField/PanelAxisField';
 import { SubPanelSection } from '@/ui/components/SubPanelSection';
-import { setSphereParams } from '@/ui/store/app-store';
+import { setKindParams } from '@/ui/store/app-store';
 import { useAppStore } from '@/ui/store/use-app-store';
 import { MaterialSelect } from '@/ui/panels/MaterialSelect';
 import { RigidBodyPhysicsFields } from './RigidBodyPhysicsFields';
@@ -38,7 +38,7 @@ export function SphereFields({ entity }: SphereFieldsProps) {
           format={(value) => formatLengthMeters(value, LENGTH_DECIMALS)}
           parse={parseLengthMetersInput}
           onChange={(value) => {
-            if (value > 0) {setSphereParams(entity.id, { radiusM: value });}
+            if (value > 0) {setKindParams('sphere', entity.id, { radiusM: value });}
           }}
         />
       </SubPanelSection>

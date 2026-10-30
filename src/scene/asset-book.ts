@@ -33,7 +33,7 @@ export function bookTotalThicknessM(params: BookParams): number {
   return params.pagesThicknessM + 2 * params.coverThicknessM;
 }
 
-export function isBookAssetKind(kind: AssetKind): boolean {
+export function isBookAssetKind(kind: AssetKind): kind is 'book-softcover' | 'book-hardcover' {
   return kind === 'book-softcover' || kind === 'book-hardcover';
 }
 

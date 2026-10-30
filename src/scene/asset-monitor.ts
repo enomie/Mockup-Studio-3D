@@ -34,7 +34,7 @@ export type MonitorDeviceParams = HandheldDeviceParams & {
   displayMountHeightMm: number;
 };
 
-export function isMonitorAssetKind(kind: AssetKind): boolean {
+export function isMonitorAssetKind(kind: AssetKind): kind is 'monitor' {
   return kind === 'monitor';
 }
 

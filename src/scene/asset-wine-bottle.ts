@@ -109,7 +109,7 @@ export function cloneWineBottleParams(params: WineBottleParams): WineBottleParam
   return { ...params };
 }
 
-export function isWineBottleAssetKind(kind: AssetKind): boolean {
+export function isWineBottleAssetKind(kind: AssetKind): kind is 'wine-bottle' {
   return kind === 'wine-bottle';
 }
 

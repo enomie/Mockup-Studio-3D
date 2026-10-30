@@ -306,16 +306,18 @@ export function migrateFabricClothParams(
   };
 }
 
-export function isFabricClothAssetKind(kind: AssetKind): boolean {
+export function isFabricClothAssetKind(kind: AssetKind): kind is 'fabric-cloth' {
   return kind === 'fabric-cloth';
 }
 
-export function isFabricClothBakedAssetKind(kind: AssetKind): boolean {
+export function isFabricClothBakedAssetKind(kind: AssetKind): kind is 'fabric-cloth-baked' {
   return kind === 'fabric-cloth-baked';
 }
 
 /** Simulatable flat cloth or stiff baked placement — shared image/material UI. */
-export function isFabricClothFamilyAssetKind(kind: AssetKind): boolean {
+export function isFabricClothFamilyAssetKind(
+  kind: AssetKind,
+): kind is 'fabric-cloth' | 'fabric-cloth-baked' {
   return isFabricClothAssetKind(kind) || isFabricClothBakedAssetKind(kind);
 }
 

@@ -53,7 +53,7 @@ export function cloneWheelCarParams(params: WheelCarParams): WheelCarParams {
   return { ...params };
 }
 
-export function isWheelCarAssetKind(kind: AssetKind): boolean {
+export function isWheelCarAssetKind(kind: AssetKind): kind is 'wheel-car' {
   return kind === 'wheel-car';
 }
 

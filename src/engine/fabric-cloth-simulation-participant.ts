@@ -149,7 +149,7 @@ export class FabricClothSimulationParticipant {
     );
     const currentSim =
       runtime.entity.fabricClothParams?.sim ?? defaultFabricClothParams().sim;
-    this.registry.setFabricClothParams(entityId, {
+    this.registry.setKindParams('fabricCloth', entityId, {
       sim: { ...currentSim, pinCorners },
     });
   }
@@ -185,7 +185,7 @@ export class FabricClothSimulationParticipant {
       );
       const currentSim =
         runtime.entity.fabricClothParams?.sim ?? defaultFabricClothParams().sim;
-      this.registry.setFabricClothParams(entityId, {
+      this.registry.setKindParams('fabricCloth', entityId, {
         sim: { ...currentSim, pinCorners },
       });
       applyPinWorldPositionsToBinding(

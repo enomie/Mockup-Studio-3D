@@ -16,7 +16,7 @@ import { formatMmAsMeters } from '@/units/length';
 import { PanelAxisField } from '@/ui/components/PanelAxisField/PanelAxisField';
 import { SubPanelSection } from '@/ui/components/SubPanelSection';
 import { ImageSurfaceFields } from '@/ui/panels/ImageSurfaceFields';
-import { setAssetScreenImage, setMonitorParams } from '@/ui/store/app-store';
+import { setKindParams, setAssetScreenImage } from '@/ui/store/app-store';
 import { useAppStore } from '@/ui/store/use-app-store';
 import { GeometryPartsSection } from '@/ui/panels/GeometryPartsSection';
 import { AssetDimensionsFields } from '@/ui/panels/entity-fields/EntityDimensionsSection';
@@ -86,7 +86,7 @@ export function MonitorFields({
           format={formatMmAsMeters}
           parse={parseMmInput}
           onChange={(value) => {
-            setMonitorParams(entity.id, { screenCornerRadiusMm: value });
+            setKindParams('monitor', entity.id, { screenCornerRadiusMm: value });
           }}
         />
         <PanelAxisField
@@ -96,7 +96,7 @@ export function MonitorFields({
           format={formatMmAsMeters}
           parse={parseMmInput}
           onChange={(value) => {
-            setMonitorParams(entity.id, { bezelWidthMm: value });
+            setKindParams('monitor', entity.id, { bezelWidthMm: value });
           }}
         />
         <PanelAxisField
@@ -107,7 +107,7 @@ export function MonitorFields({
           parse={parseMmInput}
           onChange={(value) => {
             const bodyDepthMm = resolveBodyDepthMm(entity.assetKind, params);
-            setMonitorParams(entity.id, {
+            setKindParams('monitor', entity.id, {
               outerEdgeRadiusMm: clampOuterEdgeRadiusMm(value, bodyDepthMm),
             });
           }}
@@ -123,7 +123,7 @@ export function MonitorFields({
               MONITOR_DISPLAY_TILT_MIN_DEG,
               Math.min(MONITOR_DISPLAY_TILT_MAX_DEG, value),
             );
-            setMonitorParams(entity.id, { displayTiltDeg: clamped });
+            setKindParams('monitor', entity.id, { displayTiltDeg: clamped });
           }}
         />
         <PanelAxisField
@@ -137,7 +137,7 @@ export function MonitorFields({
               0,
               Math.min(params.standFootHeightMm, value),
             );
-            setMonitorParams(entity.id, { displayMountHeightMm: clamped });
+            setKindParams('monitor', entity.id, { displayMountHeightMm: clamped });
           }}
         />
       </SubPanelSection>

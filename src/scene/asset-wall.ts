@@ -103,7 +103,7 @@ export function cloneWallpaperPattern(pattern: WallpaperPattern): WallpaperPatte
   return { ...pattern };
 }
 
-export function isWallAssetKind(kind: AssetKind): boolean {
+export function isWallAssetKind(kind: AssetKind): kind is 'wall' | 'wall-door' {
   return kind === 'wall' || kind === 'wall-door';
 }
 

@@ -39,6 +39,7 @@ import {
   clonePhysicsSettings,
   defaultPhysicsSettings,
   mergePhysicsSettings,
+  type EditablePhysicsSettings,
   type PhysicsSettings,
 } from '@/scene/physics-settings';
 import type {
@@ -79,7 +80,7 @@ export interface AppState {
   activeEnvironmentId: string;
   lightingPresets: LightingPreset[];
   activeLightingPresetId: string;
-  entities: AssetEntity[];
+  entities: readonly AssetEntity[];
   userBakedAssets: UserBakedAsset[];
   selectedEntityId: string | null;
   camera: CameraSettings;
@@ -144,22 +145,6 @@ const pendingMaterialInvalidations = new Set<string>();
 
 export function emit(): void {
   listeners.forEach((listener) => { listener(); });
-}
-
-export function patchEntity(
-  entityId: string,
-  updater: (entity: AssetEntity) => AssetEntity,
-): void {
-  const index = state.entities.findIndex((entry) => entry.id === entityId);
-  if (index < 0) {return;}
-
-  state = {
-    ...state,
-    entities: state.entities.map((entry, i) =>
-      i === index ? updater(entry) : entry,
-    ),
-  };
-  emit();
 }
 
 export function cloneGround(settings: GroundSettings): GroundSettings {
@@ -269,7 +254,7 @@ export function syncEngineStateFromEngine(): void {
       ...clonePhysicsSettings(sceneApi.getPhysicsSettings()),
       lastFabricClothBakeSummary: state.physics.lastFabricClothBakeSummary,
     },
-    entities: [...sceneApi.getEntities()],
+    entities: sceneApi.getEntities(),
     selectedEntityId: sceneApi.getSelectedEntityId(),
     camera: cloneCameraSettings(sceneApi.getCameraSettings()),
   };
@@ -290,7 +275,7 @@ export function patchViewportHelpers(partial: Partial<ViewportHelpersState>): vo
   emit();
 }
 
-export function patchPhysics(partial: Partial<PhysicsSettings>): void {
+export function patchPhysics(partial: Partial<EditablePhysicsSettings>): void {
   const nextPhysics = mergePhysicsSettings(state.physics, partial);
   state = { ...state, physics: nextPhysics };
   sceneApi?.setPhysicsSettings(partial);

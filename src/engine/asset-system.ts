@@ -1,12 +1,16 @@
 import { Group, type Scene } from 'three/webgpu';
 import {
+  kindAcceptsParamFamily,
+  type KindParamsByFamily,
+  type RebuildOnlyKindParamFamily,
+} from '@/scene/kind-param-families';
+import {
   defaultHandheldParams,
   isHandheldAssetKind,
 } from '@/scene/asset-handheld';
 import {
   defaultMonitorParams,
   isMonitorAssetKind,
-  type MonitorDeviceParams,
 } from '@/scene/asset-monitor';
 import {
   defaultFacesForKind,
@@ -19,13 +23,7 @@ import type {
   AssetGeometryPart,
   AssetImageSurfaceId,
   AssetKind,
-  BlockParams,
   FabricClothParams,
-  TrianglePatchParams,
-  BookParams,
-  BeverageCanParams,
-  TinCanParams,
-  HandheldDeviceParams,
   ImageResolver,
   MaterialEntitySlot,
   PrintDeviceParams,
@@ -36,13 +34,6 @@ import {
   usesAsyncPackagingRebuild,
 } from '@/scene/asset-kind-registry';
 import { defaultPrintParams } from '@/scene/asset-print';
-import { isBeverageCanAssetKind } from '@/scene/asset-beverage-can';
-import { isTinCanAssetKind } from '@/scene/asset-tin-can';
-import {
-  isWineBottleAssetKind,
-  type WineBottleParams,
-} from '@/scene/asset-wine-bottle';
-import { isPenAssetKind, type PenParams } from '@/scene/asset-pen';
 import {
   defaultBlockParams,
   isBlockAssetKind,
@@ -50,18 +41,16 @@ import {
 import {
   defaultCylinderParams,
   isCylinderAssetKind,
-  type CylinderParams,
 } from '@/scene/asset-cylinder';
 import {
   defaultSphereParams,
   isSphereAssetKind,
-  type SphereParams,
 } from '@/scene/asset-sphere';
 import {
   defaultTrianglePatchParams,
   isTrianglePatchAssetKind,
 } from '@/scene/asset-triangle-patch';
-import { isWheelCarAssetKind, type WheelCarParams } from '@/scene/asset-wheel-car';
+import { isWheelCarAssetKind } from '@/scene/asset-wheel-car';
 import { isRigidPrimitiveAssetKind } from '@/scene/rigid-primitive-asset';
 import {
   resolvePhysicsBodyMode,
@@ -95,7 +84,6 @@ import {
   isWallAssetKind,
   migrateWallpaperPattern,
   wallpaperStripHeightM,
-  type WallParams,
   type WallpaperPattern,
 } from '@/scene/asset-wall';
 import type { ImageSurfaceSettings } from '@/scene/image-surface';
@@ -377,7 +365,7 @@ export class AssetSystem {
       printParams,
     );
     if (fabricClothSpawnParams) {
-      this.registry.setFabricClothParams(id, fabricClothSpawnParams);
+      this.registry.setKindParams('fabricCloth', id, fabricClothSpawnParams);
     }
     if (usesAsyncPackagingRebuild(assetKind)) {
       void rebuildEntity(this.rebuildCtx, id);
@@ -555,25 +543,19 @@ export class AssetSystem {
     await rebuildEntity(this.rebuildCtx, entityId);
   }
 
-  async setHandheldParams(
+  /**
+   * Patches kind params and rebuilds the entity. Print and fabric cloth have
+   * extra behavior and use setPrintParams / setFabricClothParams instead.
+   */
+  async setKindParams<F extends RebuildOnlyKindParamFamily>(
+    family: F,
     entityId: string,
-    partial: Partial<HandheldDeviceParams>,
+    partial: Partial<KindParamsByFamily[F]>,
   ): Promise<void> {
     const runtime = this.registry.getRuntime(entityId);
-    if (!runtime || !isHandheldAssetKind(runtime.entity.assetKind)) {return;}
+    if (!runtime || !kindAcceptsParamFamily(runtime.entity.assetKind, family)) {return;}
 
-    this.registry.setHandheldParams(entityId, partial);
-    await rebuildEntity(this.rebuildCtx, entityId);
-  }
-
-  async setMonitorParams(
-    entityId: string,
-    partial: Partial<MonitorDeviceParams>,
-  ): Promise<void> {
-    const runtime = this.registry.getRuntime(entityId);
-    if (!runtime || !isMonitorAssetKind(runtime.entity.assetKind)) {return;}
-
-    this.registry.setMonitorParams(entityId, partial);
+    this.registry.setKindParams(family, entityId, partial);
     await rebuildEntity(this.rebuildCtx, entityId);
   }
 
@@ -592,7 +574,7 @@ export class AssetSystem {
     }
 
     const footY = footWorldY(runtime.entity, this.imageResolver);
-    this.registry.setPrintParams(entityId, partial);
+    this.registry.setKindParams('print', entityId, partial);
     const updated = this.registry.getRuntime(entityId);
     if (!updated?.entity.faces || updated.entity.depth === undefined) {return;}
 
@@ -604,14 +586,6 @@ export class AssetSystem {
     syncEntityYForFoot(this.rebuildCtx, entityId, footY);
   }
 
-  async setWallParams(entityId: string, partial: Partial<WallParams>): Promise<void> {
-    const runtime = this.registry.getRuntime(entityId);
-    if (!runtime || !isWallAssetKind(runtime.entity.assetKind)) {return;}
-
-    this.registry.setWallParams(entityId, partial);
-    await rebuildEntity(this.rebuildCtx, entityId);
-  }
-
   async setWallpaperPattern(
     entityId: string,
     partial: Partial<WallpaperPattern>,
@@ -620,14 +594,6 @@ export class AssetSystem {
     if (!runtime || !isWallAssetKind(runtime.entity.assetKind)) {return;}
 
     this.registry.setWallpaperPattern(entityId, partial);
-    await rebuildEntity(this.rebuildCtx, entityId);
-  }
-
-  async setBlockParams(entityId: string, partial: Partial<BlockParams>): Promise<void> {
-    const runtime = this.registry.getRuntime(entityId);
-    if (!runtime || !isBlockAssetKind(runtime.entity.assetKind)) {return;}
-
-    this.registry.setBlockParams(entityId, partial);
     await rebuildEntity(this.rebuildCtx, entityId);
   }
 
@@ -651,30 +617,6 @@ export class AssetSystem {
     }
   }
 
-  async setCylinderParams(entityId: string, partial: Partial<CylinderParams>): Promise<void> {
-    const runtime = this.registry.getRuntime(entityId);
-    if (!runtime || !isCylinderAssetKind(runtime.entity.assetKind)) {return;}
-
-    this.registry.setCylinderParams(entityId, partial);
-    await rebuildEntity(this.rebuildCtx, entityId);
-  }
-
-  async setSphereParams(entityId: string, partial: Partial<SphereParams>): Promise<void> {
-    const runtime = this.registry.getRuntime(entityId);
-    if (!runtime || !isSphereAssetKind(runtime.entity.assetKind)) {return;}
-
-    this.registry.setSphereParams(entityId, partial);
-    await rebuildEntity(this.rebuildCtx, entityId);
-  }
-
-  async setWheelCarParams(entityId: string, partial: Partial<WheelCarParams>): Promise<void> {
-    const runtime = this.registry.getRuntime(entityId);
-    if (!runtime || !isWheelCarAssetKind(runtime.entity.assetKind)) {return;}
-
-    this.registry.setWheelCarParams(entityId, partial);
-    await rebuildEntity(this.rebuildCtx, entityId);
-  }
-
   async setFabricClothParams(
     entityId: string,
     partial: Partial<FabricClothParams>,
@@ -686,7 +628,7 @@ export class AssetSystem {
       runtime.entity.fabricClothParams?.sim.pinnedCornersCount ?? 0;
     const runtimeTuning = isFabricRuntimeTuningPatch(partial);
 
-    this.registry.setFabricClothParams(entityId, partial);
+    this.registry.setKindParams('fabricCloth', entityId, partial);
     const nextSim = runtime.entity.fabricClothParams?.sim;
     if (partial.sim !== undefined && nextSim) {
       this.fabricClothSimulation?.onSimPinsChanged(entityId, prevCount, nextSim);
@@ -768,14 +710,6 @@ export class AssetSystem {
     return id;
   }
 
-  async setBookParams(entityId: string, partial: Partial<BookParams>): Promise<void> {
-    const runtime = this.registry.getRuntime(entityId);
-    if (!runtime || !isBookAssetKind(runtime.entity.assetKind)) {return;}
-
-    this.registry.setBookParams(entityId, partial);
-    await rebuildEntity(this.rebuildCtx, entityId);
-  }
-
   async setBookBackCoverImageId(entityId: string, imageId: string | null): Promise<void> {
     const runtime = this.registry.getRuntime(entityId);
     if (!runtime || !isBookAssetKind(runtime.entity.assetKind)) {return;}
@@ -801,61 +735,6 @@ export class AssetSystem {
     if (!runtime || !isBookAssetKind(runtime.entity.assetKind)) {return;}
 
     this.registry.setBookMaterialTint(entityId, part, tint);
-    await rebuildEntity(this.rebuildCtx, entityId);
-  }
-
-  async setBeverageCanParams(
-    entityId: string,
-    partial: Partial<BeverageCanParams>,
-  ): Promise<void> {
-    const runtime = this.registry.getRuntime(entityId);
-    if (!runtime || !isBeverageCanAssetKind(runtime.entity.assetKind)) {return;}
-
-    this.registry.setBeverageCanParams(entityId, partial);
-    await rebuildEntity(this.rebuildCtx, entityId);
-  }
-
-  async setTinCanParams(
-    entityId: string,
-    partial: Partial<TinCanParams>,
-  ): Promise<void> {
-    const runtime = this.registry.getRuntime(entityId);
-    if (!runtime || !isTinCanAssetKind(runtime.entity.assetKind)) {return;}
-
-    this.registry.setTinCanParams(entityId, partial);
-    await rebuildEntity(this.rebuildCtx, entityId);
-  }
-
-  async setWineBottleParams(
-    entityId: string,
-    partial: Partial<WineBottleParams>,
-  ): Promise<void> {
-    const runtime = this.registry.getRuntime(entityId);
-    if (!runtime || !isWineBottleAssetKind(runtime.entity.assetKind)) {return;}
-
-    this.registry.setWineBottleParams(entityId, partial);
-    await rebuildEntity(this.rebuildCtx, entityId);
-  }
-
-  async setPenParams(
-    entityId: string,
-    partial: Partial<PenParams>,
-  ): Promise<void> {
-    const runtime = this.registry.getRuntime(entityId);
-    if (!runtime || !isPenAssetKind(runtime.entity.assetKind)) {return;}
-
-    this.registry.setPenParams(entityId, partial);
-    await rebuildEntity(this.rebuildCtx, entityId);
-  }
-
-  async setTrianglePatchParams(
-    entityId: string,
-    partial: Partial<TrianglePatchParams>,
-  ): Promise<void> {
-    const runtime = this.registry.getRuntime(entityId);
-    if (!runtime || !isTrianglePatchAssetKind(runtime.entity.assetKind)) {return;}
-
-    this.registry.setTrianglePatchParams(entityId, partial);
     await rebuildEntity(this.rebuildCtx, entityId);
   }
 

@@ -8,15 +8,6 @@ import { SubPanel } from '@/ui/components/SubPanel';
 import { LENGTH_DECIMALS, LENGTH_STEP_M } from '@/units/length';
 import { NORMALIZED_DECIMALS, NORMALIZED_STEP } from '@/units/normalized';
 import {
-  setFogColor,
-  setFogDistances,
-  setFogEnabled,
-  setReflectionEnabled,
-  setReflectionIntensity,
-  setSkyEnabled,
-  setSkyGradientFade,
-  setSkyHorizonColor,
-  setSkyZenithColor,
   setGroundVisible,
   setViewportHelperFloorGrid,
   setViewportHelperForwardArrow,
@@ -24,6 +15,7 @@ import {
   setViewportHelperWorldOrigin,
   isAnyViewportHelperEnabled,
   toggleViewportHelpersAll,
+  setEnvironment,
 } from '@/ui/store/app-store';
 import { useAppStore } from '@/ui/store/use-app-store';
 
@@ -71,19 +63,19 @@ export function EnvironmentSubPanel() {
           enabled={skyEnabled}
           collapsed={collapsedIds.has(ENV_BLOCK_IDS.sky)}
           onToggleCollapse={() => { toggleCollapsed(ENV_BLOCK_IDS.sky); }}
-          onToggleEnabled={() => { setSkyEnabled(!skyEnabled); }}
+          onToggleEnabled={() => { setEnvironment({ skyEnabled: !skyEnabled }); }}
         >
           <ColorPicker
             label="Horizon color"
             value={skyHorizonColor}
             disabled={!skyEnabled}
-            onChange={setSkyHorizonColor}
+            onChange={(value) => { setEnvironment({ skyHorizonColor: value }); }}
           />
           <ColorPicker
             label="Zenith color"
             value={skyZenithColor}
             disabled={!skyEnabled}
-            onChange={setSkyZenithColor}
+            onChange={(value) => { setEnvironment({ skyZenithColor: value }); }}
           />
           <RangeSlider
             label="Horizon fade"
@@ -96,7 +88,7 @@ export function EnvironmentSubPanel() {
             valueUnit="%"
             valueDisplayScale={100}
             disabled={!skyEnabled}
-            onChange={setSkyGradientFade}
+            onChange={(value) => { setEnvironment({ skyGradientFade: value }); }}
           />
         </SceneEntityBlock>
 
@@ -105,7 +97,7 @@ export function EnvironmentSubPanel() {
           enabled={reflectionEnabled}
           collapsed={collapsedIds.has(ENV_BLOCK_IDS.reflections)}
           onToggleCollapse={() => { toggleCollapsed(ENV_BLOCK_IDS.reflections); }}
-          onToggleEnabled={() => { setReflectionEnabled(!reflectionEnabled); }}
+          onToggleEnabled={() => { setEnvironment({ reflectionEnabled: !reflectionEnabled }); }}
         >
           <RangeSlider
             label="Reflection intensity"
@@ -116,7 +108,7 @@ export function EnvironmentSubPanel() {
             valueInputLabel="Intensity"
             valueInputDecimals={NORMALIZED_DECIMALS}
             disabled={!reflectionEnabled}
-            onChange={setReflectionIntensity}
+            onChange={(value) => { setEnvironment({ reflectionIntensity: value }); }}
           />
         </SceneEntityBlock>
 
@@ -125,13 +117,13 @@ export function EnvironmentSubPanel() {
           enabled={fogEnabled}
           collapsed={collapsedIds.has(ENV_BLOCK_IDS.fog)}
           onToggleCollapse={() => { toggleCollapsed(ENV_BLOCK_IDS.fog); }}
-          onToggleEnabled={() => { setFogEnabled(!fogEnabled); }}
+          onToggleEnabled={() => { setEnvironment({ fogEnabled: !fogEnabled }); }}
         >
           <ColorPicker
             label="Fog color"
             value={fogColor}
             disabled={!fogEnabled}
-            onChange={setFogColor}
+            onChange={(value) => { setEnvironment({ fogColor: value }); }}
           />
           <DualRangeSlider
             min={LENGTH_STEP_M}
@@ -144,7 +136,7 @@ export function EnvironmentSubPanel() {
             valueInputDecimals={LENGTH_DECIMALS}
             valueUnit="m"
             disabled={!fogEnabled}
-            onChange={({ low, high }) => { setFogDistances(low, high); }}
+            onChange={({ low, high }) => { setEnvironment({ fogNear: low, fogFar: high }); }}
           />
         </SceneEntityBlock>
 

@@ -10,7 +10,7 @@ import { formatLengthMeters, LENGTH_DECIMALS, parseLengthMetersInput } from '@/u
 import { PanelAxisField } from '@/ui/components/PanelAxisField/PanelAxisField';
 import { SubPanelSection } from '@/ui/components/SubPanelSection';
 import { ImageSurfaceFields } from '@/ui/panels/ImageSurfaceFields';
-import { setAssetScreenImage, setWallParams, setWallpaperPattern } from '@/ui/store/app-store';
+import { setKindParams, setAssetScreenImage, setWallpaperPattern } from '@/ui/store/app-store';
 import { useAppStore } from '@/ui/store/use-app-store';
 import { MaterialSelect } from '@/ui/panels/MaterialSelect';
 import type { WallFieldsProps } from './entity-fields-types';
@@ -118,7 +118,7 @@ export function WallFields({ entity, images, screenImageFieldId }: WallFieldsPro
           format={(value) => formatLengthMeters(value, LENGTH_DECIMALS)}
           parse={parseLengthMetersInput}
           onChange={(value) => {
-            if (value > 0) {setWallParams(entity.id, { widthM: value });}
+            if (value > 0) {setKindParams('wall', entity.id, { widthM: value });}
           }}
         />
         <PanelAxisField
@@ -128,7 +128,7 @@ export function WallFields({ entity, images, screenImageFieldId }: WallFieldsPro
           format={(value) => formatLengthMeters(value, LENGTH_DECIMALS)}
           parse={parseLengthMetersInput}
           onChange={(value) => {
-            if (value > 0) {setWallParams(entity.id, { heightM: value });}
+            if (value > 0) {setKindParams('wall', entity.id, { heightM: value });}
           }}
         />
         <PanelAxisField
@@ -138,7 +138,7 @@ export function WallFields({ entity, images, screenImageFieldId }: WallFieldsPro
           format={(value) => formatLengthMeters(value, LENGTH_DECIMALS)}
           parse={parseLengthMetersInput}
           onChange={(value) => {
-            if (value > 0) {setWallParams(entity.id, { thicknessM: value });}
+            if (value > 0) {setKindParams('wall', entity.id, { thicknessM: value });}
           }}
         />
       </SubPanelSection>

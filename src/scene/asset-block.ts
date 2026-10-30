@@ -27,7 +27,7 @@ export function cloneBlockParams(params: BlockParams): BlockParams {
   return { ...params };
 }
 
-export function isBlockAssetKind(kind: AssetKind): boolean {
+export function isBlockAssetKind(kind: AssetKind): kind is 'block' {
   return kind === 'block';
 }
 

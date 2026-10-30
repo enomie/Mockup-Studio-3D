@@ -2,38 +2,23 @@ import type { Object3D } from 'three/webgpu';
 import {
   cloneAssetFaces,
   cloneFaceContent,
-  isPrintAssetKind,
   type AssetFaceContent,
   type AssetFaceId,
   type AssetFaces,
 } from '@/scene/asset-faces';
-import {
-  cloneBeverageCanParams,
-  isBeverageCanAssetKind,
-} from '@/scene/asset-beverage-can';
-import { cloneBlockParams, isBlockAssetKind } from '@/scene/asset-block';
+
+
 import { isRigidPrimitiveAssetKind } from '@/scene/rigid-primitive-asset';
 import { buildRigidPrimitiveUniformScalePartial } from '@/scene/rigid-primitive-uniform-scale';
-import type { CylinderParams } from '@/scene/asset-cylinder';
-import type { SphereParams } from '@/scene/asset-sphere';
-import type { WheelCarParams } from '@/scene/asset-wheel-car';
 import {
   clampPhysicsDensityKgPerM3,
   normalizePhysicsBodyMode,
   type PhysicsBodyMode,
 } from '@/scene/physics-rigid-body';
-import {
-  cloneFabricClothParams,
-  isFabricClothFamilyAssetKind,
-  type FabricClothParams,
-} from '@/scene/asset-fabric-cloth';
-import { isBookAssetKind, type BookParams } from '@/scene/asset-book';
-import type { TrianglePatchParams } from '@/scene/asset-triangle-patch';
+
+import { isBookAssetKind } from '@/scene/asset-book';
 import type { BookMaterialTintPart } from '@/scene/book-material-tints';
-import {
-  cloneHandheldParams,
-  isHandheldAssetKind,
-} from '@/scene/asset-handheld';
+import { cloneHandheldParams } from '@/scene/asset-handheld';
 import {
   getAssetKindDefinition,
   mergeKindParamPatch,
@@ -44,18 +29,12 @@ import {
   isMonitorAssetKind,
 } from '@/scene/asset-monitor';
 import { clonePrintParams } from '@/scene/asset-print';
-import { cloneTinCanParams, isTinCanAssetKind } from '@/scene/asset-tin-can';
+
 import {
-  cloneWallParams,
-  cloneWallpaperPattern,
   isWallAssetKind,
-  migrateWallpaperPattern,
 } from '@/scene/asset-wall';
-import {
-  cloneWineBottleParams,
-  isWineBottleAssetKind,
-} from '@/scene/asset-wine-bottle';
-import { clonePenParams, isPenAssetKind } from '@/scene/asset-pen';
+
+
 import {
   cloneTransform,
   DEFAULT_SIZE_SCALE,
@@ -68,12 +47,6 @@ import {
   type MonitorDeviceParams,
   type MaterialEntitySlot,
   type PrintDeviceParams,
-  type BeverageCanParams,
-  type TinCanParams,
-  type WineBottleParams,
-  type PenParams,
-  type BlockParams,
-  type WallParams,
   type WallpaperPattern,
   type AssetImageSurfaceId,
 } from '@/scene/entity-types';
@@ -98,6 +71,11 @@ import {
 } from '@/scene/material-types';
 import type { Rgb } from '@/colors/rgb';
 import { assetKindLabel } from '@/data/asset-catalog';
+import {
+  kindAcceptsParamFamily,
+  type KindParamFamily,
+  type KindParamsByFamily,
+} from '@/scene/kind-param-families';
 
 export interface EntityRuntime {
   entity: AssetEntity;
@@ -118,6 +96,7 @@ export class EntityRegistry {
   private spawnIndex = 0;
 
   private readonly entityListeners = new Set<EntityChangeListener>();
+  private entitiesSnapshot: readonly AssetEntity[] | null = null;
   private readonly selectionListeners = new Set<SelectionChangeListener>();
 
   subscribeEntities(listener: EntityChangeListener): () => void {
@@ -141,61 +120,12 @@ export class EntityRegistry {
     return roots;
   }
 
+  /** Cached, frozen snapshot; the same array is returned until an entity changes. */
   getEntities(): readonly AssetEntity[] {
-    return [...this.entities.values()].map((entry) => ({
-      ...entry.entity,
-      transform: cloneTransform(entry.entity.transform),
-      faces: entry.entity.faces ? cloneAssetFaces(entry.entity.faces) : undefined,
-      depth: entry.entity.depth,
-      sizeScale: entry.entity.sizeScale,
-      materials: entry.entity.materials
-        ? migrateMaterialSlots(cloneAssetMaterials(entry.entity.materials))
-        : undefined,
-      geometryVisibility: migrateGeometryVisibility(
-        entry.entity.assetKind,
-        entry.entity.geometryVisibility
-          ? cloneGeometryVisibility(entry.entity.geometryVisibility)
-          : undefined,
-        entry.entity.materials,
-      ),
-      params: entry.entity.params
-        ? isMonitorAssetKind(entry.entity.assetKind)
-          ? cloneMonitorParams(entry.entity.params as MonitorDeviceParams)
-          : cloneHandheldParams(entry.entity.params)
-        : undefined,
-      printParams: entry.entity.printParams
-        ? clonePrintParams(entry.entity.printParams)
-        : undefined,
-      wallParams: entry.entity.wallParams
-        ? cloneWallParams(entry.entity.wallParams)
-        : undefined,
-      wallpaperPattern: entry.entity.wallpaperPattern
-        ? cloneWallpaperPattern(
-            migrateWallpaperPattern(entry.entity.wallpaperPattern),
-          )
-        : undefined,
-      blockParams: entry.entity.blockParams
-        ? cloneBlockParams(entry.entity.blockParams)
-        : undefined,
-      physicsBodyMode: entry.entity.physicsBodyMode,
-      physicsDensityKgPerM3: entry.entity.physicsDensityKgPerM3,
-      beverageCanParams: entry.entity.beverageCanParams
-        ? cloneBeverageCanParams(entry.entity.beverageCanParams)
-        : undefined,
-      tinCanParams: entry.entity.tinCanParams
-        ? cloneTinCanParams(entry.entity.tinCanParams)
-        : undefined,
-      wineBottleParams: entry.entity.wineBottleParams
-        ? cloneWineBottleParams(entry.entity.wineBottleParams)
-        : undefined,
-      penParams: entry.entity.penParams
-        ? clonePenParams(entry.entity.penParams)
-        : undefined,
-      fabricClothParams: entry.entity.fabricClothParams
-        ? cloneFabricClothParams(entry.entity.fabricClothParams)
-        : undefined,
-      visible: entry.entity.visible,
-    }));
+    this.entitiesSnapshot ??= Object.freeze(
+      [...this.entities.values()].map((entry) => entry.entity),
+    );
+    return this.entitiesSnapshot;
   }
 
   getSelectedEntityId(): string | null {
@@ -298,9 +228,10 @@ export class EntityRegistry {
     object.userData.entityId = id;
     this.applyTransformToObject(object, transform);
 
-    this.entities.set(id, { entity, object });
-    this.emitEntities();
-    return entity;
+    const frozen = freezeInDev(entity);
+    this.entities.set(id, { entity: frozen, object });
+    this.markEntitiesChanged();
+    return frozen;
   }
 
   removeEntity(entityId: string): void {
@@ -309,7 +240,7 @@ export class EntityRegistry {
     if (this.selectedEntityId === entityId) {
       this.setSelectedEntityId(null);
     }
-    this.emitEntities();
+    this.markEntitiesChanged();
   }
 
   // --- Selection & transform ---
@@ -333,46 +264,40 @@ export class EntityRegistry {
       next.rotation = { ...partial.rotation };
     }
 
-    runtime.entity.transform = next;
     this.applyTransformToObject(runtime.object, next);
-    this.emitEntities();
+    this.updateEntity(runtime, { transform: next });
   }
 
   syncTransformFromObject(entityId: string): void {
     const runtime = this.entities.get(entityId);
     if (!runtime) {return;}
 
-    runtime.entity.transform = readTransformFromObject(runtime.object);
-    this.emitEntities();
+    this.updateEntity(runtime, { transform: readTransformFromObject(runtime.object) });
   }
 
   setScreenImageId(entityId: string, imageId: string | null): void {
     const runtime = this.entities.get(entityId);
     if (!runtime) {return;}
-    runtime.entity.screenImageId = imageId;
-    this.emitEntities();
+    this.updateEntity(runtime, { screenImageId: imageId });
   }
 
   setAssetDepth(entityId: string, depth: number): void {
     const runtime = this.entities.get(entityId);
     if (!runtime) {return;}
-    runtime.entity.depth = depth;
-    this.emitEntities();
+    this.updateEntity(runtime, { depth });
   }
 
   setSizeScale(entityId: string, sizeScale: number): void {
     const runtime = this.entities.get(entityId);
     if (!runtime) {return;}
-    runtime.entity.sizeScale = sizeScale;
-    this.emitEntities();
+    this.updateEntity(runtime, { sizeScale });
   }
 
   setEntityVisible(entityId: string, visible: boolean): void {
     const runtime = this.entities.get(entityId);
     if (!runtime) {return;}
-    runtime.entity.visible = visible;
     runtime.object.visible = visible;
-    this.emitEntities();
+    this.updateEntity(runtime, { visible });
   }
 
   setEntityMaterialSlot(
@@ -387,68 +312,19 @@ export class EntityRegistry {
       runtime.entity.materials ?? defaultMaterialsForKind(runtime.entity.assetKind),
     );
     materials[slot] = materialId;
-    runtime.entity.materials = materials;
-    this.emitEntities();
+    this.updateEntity(runtime, { materials });
   }
 
   // --- Kind param patches ---
 
-  setPrintParams(
+  setKindParams<F extends KindParamFamily>(
+    family: F,
     entityId: string,
-    partial: Partial<PrintDeviceParams>,
+    partial: Partial<KindParamsByFamily[F]>,
   ): void {
     const runtime = this.entities.get(entityId);
-    if (!runtime || !isPrintAssetKind(runtime.entity.assetKind)) {return;}
-
-    Object.assign(
-      runtime.entity,
-      mergeKindParamPatch(runtime.entity.assetKind, runtime.entity, partial),
-    );
-    this.emitEntities();
-  }
-
-  setWallParams(entityId: string, partial: Partial<WallParams>): void {
-    const runtime = this.entities.get(entityId);
-    if (!runtime || !isWallAssetKind(runtime.entity.assetKind)) {return;}
-
-    Object.assign(
-      runtime.entity,
-      mergeKindParamPatch(runtime.entity.assetKind, runtime.entity, partial),
-    );
-    this.emitEntities();
-  }
-
-  setBlockParams(entityId: string, partial: Partial<BlockParams>): void {
-    const runtime = this.entities.get(entityId);
-    if (!runtime || !isBlockAssetKind(runtime.entity.assetKind)) {return;}
-
-    Object.assign(
-      runtime.entity,
-      mergeKindParamPatch(runtime.entity.assetKind, runtime.entity, partial),
-    );
-    this.emitEntities();
-  }
-
-  setCylinderParams(entityId: string, partial: Partial<CylinderParams>): void {
-    const runtime = this.entities.get(entityId);
-    if (runtime?.entity.assetKind !== 'cylinder') {return;}
-
-    Object.assign(
-      runtime.entity,
-      mergeKindParamPatch(runtime.entity.assetKind, runtime.entity, partial),
-    );
-    this.emitEntities();
-  }
-
-  setSphereParams(entityId: string, partial: Partial<SphereParams>): void {
-    const runtime = this.entities.get(entityId);
-    if (runtime?.entity.assetKind !== 'sphere') {return;}
-
-    Object.assign(
-      runtime.entity,
-      mergeKindParamPatch(runtime.entity.assetKind, runtime.entity, partial),
-    );
-    this.emitEntities();
+    if (!runtime || !kindAcceptsParamFamily(runtime.entity.assetKind, family)) {return;}
+    this.applyKindParamPatch(runtime, partial);
   }
 
   applyRigidPrimitiveUniformScale(entityId: string, factor: number): boolean {
@@ -462,80 +338,40 @@ export class EntityRegistry {
       return false;
     }
 
-    Object.assign(
-      runtime.entity,
-      mergeKindParamPatch(runtime.entity.assetKind, runtime.entity, partial),
-    );
-    this.emitEntities();
+    this.applyKindParamPatch(runtime, partial);
     return true;
-  }
-
-  setWheelCarParams(entityId: string, partial: Partial<WheelCarParams>): void {
-    const runtime = this.entities.get(entityId);
-    if (runtime?.entity.assetKind !== 'wheel-car') {return;}
-
-    Object.assign(
-      runtime.entity,
-      mergeKindParamPatch(runtime.entity.assetKind, runtime.entity, partial),
-    );
-    this.emitEntities();
   }
 
   setPhysicsBodyMode(entityId: string, mode: PhysicsBodyMode): void {
     const runtime = this.entities.get(entityId);
     if (!runtime) {return;}
-    runtime.entity.physicsBodyMode = normalizePhysicsBodyMode(mode);
-    this.emitEntities();
+    this.updateEntity(runtime, { physicsBodyMode: normalizePhysicsBodyMode(mode) });
   }
 
   setPhysicsDensityKgPerM3(entityId: string, densityKgPerM3: number): void {
     const runtime = this.entities.get(entityId);
     if (!runtime) {return;}
-    runtime.entity.physicsDensityKgPerM3 = clampPhysicsDensityKgPerM3(densityKgPerM3);
-    this.emitEntities();
+    this.updateEntity(runtime, {
+      physicsDensityKgPerM3: clampPhysicsDensityKgPerM3(densityKgPerM3),
+    });
   }
 
   patchEntityFields(entityId: string, partial: Partial<AssetEntity>): void {
     const runtime = this.entities.get(entityId);
     if (!runtime) {return;}
-    Object.assign(runtime.entity, partial);
-    this.emitEntities();
-  }
-
-  setFabricClothParams(entityId: string, partial: Partial<FabricClothParams>): void {
-    const runtime = this.entities.get(entityId);
-    if (!runtime || !isFabricClothFamilyAssetKind(runtime.entity.assetKind)) {return;}
-
-    Object.assign(
-      runtime.entity,
-      mergeKindParamPatch(runtime.entity.assetKind, runtime.entity, partial),
-    );
-    this.emitEntities();
-  }
-
-  setBookParams(entityId: string, partial: Partial<BookParams>): void {
-    const runtime = this.entities.get(entityId);
-    if (!runtime || !isBookAssetKind(runtime.entity.assetKind)) {return;}
-
-    Object.assign(
-      runtime.entity,
-      mergeKindParamPatch(runtime.entity.assetKind, runtime.entity, partial),
-    );
-    this.emitEntities();
+    this.updateEntity(runtime, partial);
   }
 
   setBookBackCoverImageId(entityId: string, imageId: string | null): void {
     const runtime = this.entities.get(entityId);
     if (!runtime || !isBookAssetKind(runtime.entity.assetKind)) {return;}
-    runtime.entity.bookBackCoverImageId = imageId;
-    this.emitEntities();
+    this.updateEntity(runtime, { bookBackCoverImageId: imageId });
   }
 
   setBookSpineImageId(entityId: string, imageId: string | null): void {
     const runtime = this.entities.get(entityId);
     if (!runtime || !isBookAssetKind(runtime.entity.assetKind)) {return;}
-    runtime.entity.bookSpineImageId = imageId;
-    this.emitEntities();
+    this.updateEntity(runtime, { bookSpineImageId: imageId });
   }
 
   setBookMaterialTint(
@@ -554,63 +390,7 @@ export class EntityRegistry {
     } else {
       materials.bookCoverTint = { ...tint };
     }
-    runtime.entity.materials = materials;
-    this.emitEntities();
-  }
-
-  setBeverageCanParams(entityId: string, partial: Partial<BeverageCanParams>): void {
-    const runtime = this.entities.get(entityId);
-    if (!runtime || !isBeverageCanAssetKind(runtime.entity.assetKind)) {return;}
-
-    Object.assign(
-      runtime.entity,
-      mergeKindParamPatch(runtime.entity.assetKind, runtime.entity, partial),
-    );
-    this.emitEntities();
-  }
-
-  setTinCanParams(entityId: string, partial: Partial<TinCanParams>): void {
-    const runtime = this.entities.get(entityId);
-    if (!runtime || !isTinCanAssetKind(runtime.entity.assetKind)) {return;}
-
-    Object.assign(
-      runtime.entity,
-      mergeKindParamPatch(runtime.entity.assetKind, runtime.entity, partial),
-    );
-    this.emitEntities();
-  }
-
-  setWineBottleParams(entityId: string, partial: Partial<WineBottleParams>): void {
-    const runtime = this.entities.get(entityId);
-    if (!runtime || !isWineBottleAssetKind(runtime.entity.assetKind)) {return;}
-
-    Object.assign(
-      runtime.entity,
-      mergeKindParamPatch(runtime.entity.assetKind, runtime.entity, partial),
-    );
-    this.emitEntities();
-  }
-
-  setPenParams(entityId: string, partial: Partial<PenParams>): void {
-    const runtime = this.entities.get(entityId);
-    if (!runtime || !isPenAssetKind(runtime.entity.assetKind)) {return;}
-
-    Object.assign(
-      runtime.entity,
-      mergeKindParamPatch(runtime.entity.assetKind, runtime.entity, partial),
-    );
-    this.emitEntities();
-  }
-
-  setTrianglePatchParams(entityId: string, partial: Partial<TrianglePatchParams>): void {
-    const runtime = this.entities.get(entityId);
-    if (!runtime || runtime.entity.assetKind !== 'triangle-patch') {return;}
-
-    Object.assign(
-      runtime.entity,
-      mergeKindParamPatch(runtime.entity.assetKind, runtime.entity, partial),
-    );
-    this.emitEntities();
+    this.updateEntity(runtime, { materials });
   }
 
   setWallpaperPattern(
@@ -620,39 +400,17 @@ export class EntityRegistry {
     const runtime = this.entities.get(entityId);
     if (!runtime || !isWallAssetKind(runtime.entity.assetKind)) {return;}
 
-    Object.assign(
-      runtime.entity,
+    this.updateEntity(
+      runtime,
       mergeKindWallpaperPatternPatch(runtime.entity.assetKind, runtime.entity, partial),
     );
-    this.emitEntities();
   }
 
-  setHandheldParams(
-    entityId: string,
-    partial: Partial<HandheldDeviceParams>,
-  ): void {
-    const runtime = this.entities.get(entityId);
-    if (!runtime || !isHandheldAssetKind(runtime.entity.assetKind)) {return;}
-
-    Object.assign(
-      runtime.entity,
+  private applyKindParamPatch(runtime: EntityRuntime, partial: unknown): void {
+    this.updateEntity(
+      runtime,
       mergeKindParamPatch(runtime.entity.assetKind, runtime.entity, partial),
     );
-    this.emitEntities();
-  }
-
-  setMonitorParams(
-    entityId: string,
-    partial: Partial<MonitorDeviceParams>,
-  ): void {
-    const runtime = this.entities.get(entityId);
-    if (!runtime || !isMonitorAssetKind(runtime.entity.assetKind)) {return;}
-
-    Object.assign(
-      runtime.entity,
-      mergeKindParamPatch(runtime.entity.assetKind, runtime.entity, partial),
-    );
-    this.emitEntities();
   }
 
   setGeometryVisible(
@@ -671,8 +429,7 @@ export class EntityRegistry {
       runtime.entity.materials,
     );
     visibility[part] = visible;
-    runtime.entity.geometryVisibility = visibility;
-    this.emitEntities();
+    this.updateEntity(runtime, { geometryVisibility: visibility });
   }
 
   setImageSurface(
@@ -688,11 +445,12 @@ export class EntityRegistry {
       faceId,
       { assetKind: runtime.entity.assetKind },
     );
-    runtime.entity.imageSurfaces = {
-      ...runtime.entity.imageSurfaces,
-      [faceId]: { ...current, ...partial },
-    };
-    this.emitEntities();
+    this.updateEntity(runtime, {
+      imageSurfaces: {
+        ...runtime.entity.imageSurfaces,
+        [faceId]: { ...current, ...partial },
+      },
+    });
   }
 
   setFaceTint(entityId: string, faceId: AssetFaceId, tint: Rgb): void {
@@ -706,8 +464,7 @@ export class EntityRegistry {
       ...materials.faceTints,
       [faceId]: { ...tint },
     };
-    runtime.entity.materials = materials;
-    this.emitEntities();
+    this.updateEntity(runtime, { materials });
   }
 
   setAssetFaceContent(
@@ -718,17 +475,12 @@ export class EntityRegistry {
     const runtime = this.entities.get(entityId);
     if (!runtime?.entity.faces) {return;}
 
-    runtime.entity.faces = {
-      ...runtime.entity.faces,
-      [faceId]: cloneFaceContent(content),
-    };
-
-    if (faceId === 'front') {
-      runtime.entity.screenImageId =
-        content.mode === 'image' ? content.imageId : null;
-    }
-
-    this.emitEntities();
+    this.updateEntity(runtime, {
+      faces: { ...runtime.entity.faces, [faceId]: cloneFaceContent(content) },
+      ...(faceId === 'front'
+        ? { screenImageId: content.mode === 'image' ? content.imageId : null }
+        : {}),
+    });
   }
 
   private applyTransformToObject(object: Object3D, transform: EntityTransform): void {
@@ -744,12 +496,42 @@ export class EntityRegistry {
     );
   }
 
+  /** Replaces the entity with an updated copy; entities are never mutated in place. */
+  private updateEntity(runtime: EntityRuntime, patch: Partial<AssetEntity>): void {
+    runtime.entity = freezeInDev({ ...runtime.entity, ...patch });
+    this.markEntitiesChanged();
+  }
+
+  private markEntitiesChanged(): void {
+    this.entitiesSnapshot = null;
+    this.emitEntities();
+  }
+
   private emitEntities(): void {
     this.entityListeners.forEach((listener) => { listener(); });
   }
 }
 
 export { cloneTransform } from '@/scene/entity-types';
+
+/**
+ * Deep-freezes entities in development builds and tests so accidental in-place
+ * mutation (which would bypass change notification) throws instead of going unnoticed.
+ */
+function freezeInDev<T>(value: T): T {
+  if (import.meta.env.DEV) {
+    deepFreeze(value);
+  }
+  return value;
+}
+
+function deepFreeze(value: unknown): void {
+  if (value === null || typeof value !== 'object' || Object.isFrozen(value)) {return;}
+  Object.freeze(value);
+  for (const child of Object.values(value)) {
+    deepFreeze(child);
+  }
+}
 
 export function readTransformFromObject(object: Object3D): EntityTransform {
   return {

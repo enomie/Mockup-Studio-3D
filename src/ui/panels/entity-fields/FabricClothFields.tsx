@@ -35,10 +35,10 @@ import { MaterialSelect } from '@/ui/panels/MaterialSelect';
 import { EntityDimensionsSection } from '@/ui/panels/entity-fields/EntityDimensionsSection';
 import { parseMmInput } from '@/ui/panels/entity-fields/field-input-helpers';
 import {
+  setKindParams,
   setAssetScreenImage,
   setAssetSizeScale,
   setFabricClothActivePinCorner,
-  setFabricClothParams,
 } from '@/ui/store/app-store';
 import { useAppStore } from '@/ui/store/use-app-store';
 import type { PictureFieldsProps } from './entity-fields-types';
@@ -151,7 +151,7 @@ export function FabricClothFields({
                 entityId: entity.id,
                 corner: Math.min(prev.corner, Math.max(0, count - 1)),
               }));
-              setFabricClothParams(entity.id, {
+              setKindParams('fabricCloth', entity.id, {
                 sim: { ...fabricClothParams.sim, pinnedCornersCount: count },
               });
             }}
@@ -184,7 +184,7 @@ export function FabricClothFields({
             }
             onChange={(value) => {
               if (value === 'custom') {return;}
-              setFabricClothParams(entity.id, {
+              setKindParams('fabricCloth', entity.id, {
                 physics: fabricClothPhysicsParamsFromPresetKey(value as FabricPhysicsPresetKey),
               });
             }}
@@ -198,7 +198,7 @@ export function FabricClothFields({
             value={physics.bendingStiffness}
             valueInputDecimals={FABRIC_CLOTH_PHYSICS_TUNING.bendingStiffness.decimals}
             onChange={(value) => {
-              setFabricClothParams(entity.id, {
+              setKindParams('fabricCloth', entity.id, {
                 physics: fabricClothPhysicsWithCustomScalar(physics, 'bendingStiffness', value),
               });
             }}
@@ -211,7 +211,7 @@ export function FabricClothFields({
             value={physics.gravityMagnitude}
             valueInputDecimals={FABRIC_CLOTH_PHYSICS_TUNING.gravityMagnitude.decimals}
             onChange={(value) => {
-              setFabricClothParams(entity.id, {
+              setKindParams('fabricCloth', entity.id, {
                 physics: fabricClothPhysicsWithCustomScalar(physics, 'gravityMagnitude', value),
               });
             }}
@@ -224,7 +224,7 @@ export function FabricClothFields({
             value={physics.damping}
             valueInputDecimals={FABRIC_CLOTH_PHYSICS_TUNING.damping.decimals}
             onChange={(value) => {
-              setFabricClothParams(entity.id, {
+              setKindParams('fabricCloth', entity.id, {
                 physics: fabricClothPhysicsWithCustomScalar(physics, 'damping', value),
               });
             }}
@@ -237,7 +237,7 @@ export function FabricClothFields({
             value={physics.friction}
             valueInputDecimals={FABRIC_CLOTH_PHYSICS_TUNING.friction.decimals}
             onChange={(value) => {
-              setFabricClothParams(entity.id, {
+              setKindParams('fabricCloth', entity.id, {
                 physics: fabricClothPhysicsWithCustomScalar(physics, 'friction', value),
               });
             }}
@@ -255,7 +255,7 @@ export function FabricClothFields({
           label="Enable"
           checked={fabricClothParams.borderEnabled}
           onChange={(checked) => {
-            setFabricClothParams(entity.id, { borderEnabled: checked });
+            setKindParams('fabricCloth', entity.id, { borderEnabled: checked });
           }}
         />
         {fabricClothParams.borderEnabled ? (
@@ -267,14 +267,14 @@ export function FabricClothFields({
               format={(mm) => formatMmAsMeters(mm, LENGTH_DECIMALS)}
               parse={parseMmInput}
               onChange={(mm) => {
-                setFabricClothParams(entity.id, { borderWidthM: mmToM(mm) });
+                setKindParams('fabricCloth', entity.id, { borderWidthM: mmToM(mm) });
               }}
             />
             <ColorPicker
               label="Color"
               value={borderRgb}
               onChange={(color) => {
-                setFabricClothParams(entity.id, { borderColor: rgbToHex(color) });
+                setKindParams('fabricCloth', entity.id, { borderColor: rgbToHex(color) });
               }}
             />
           </>
@@ -292,12 +292,12 @@ export function FabricClothFields({
               onWidthChange: (widthM: number) => {
                 const nextScale = sizeScaleFromFaceWidth(entity.assetKind, widthM, aspect, entity);
                 if (nextScale === null) {return;}
-                setFabricClothParams(entity.id, { placeholderAspect: widthM / faceSize.height });
+                setKindParams('fabricCloth', entity.id, { placeholderAspect: widthM / faceSize.height });
                 setAssetSizeScale(entity.id, nextScale);
               },
               onHeightChange: (heightM: number) => {
                 if (heightM <= 0) {return;}
-                setFabricClothParams(entity.id, { placeholderAspect: faceSize.width / heightM });
+                setKindParams('fabricCloth', entity.id, { placeholderAspect: faceSize.width / heightM });
               },
             }
           : {})}

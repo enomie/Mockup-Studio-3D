@@ -124,7 +124,7 @@ export function cloneBeverageCanParams(params: BeverageCanParams): BeverageCanPa
   return { ...params };
 }
 
-export function isBeverageCanAssetKind(kind: AssetKind): boolean {
+export function isBeverageCanAssetKind(kind: AssetKind): kind is 'beverage-can' {
   return kind === 'beverage-can';
 }
 

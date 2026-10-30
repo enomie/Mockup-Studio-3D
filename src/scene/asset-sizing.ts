@@ -233,10 +233,6 @@ export function resolveAssetAspectRatio(
     case 'wall-door':
       return 1;
     case 'block':
-    case 'beverage-can':
-    case 'tin-can':
-    case 'wine-bottle':
-    case 'pen':
       return 1;
     case 'fabric-cloth':
       return entity?.fabricClothParams?.placeholderAspect ?? FABRIC_CLOTH_PLACEHOLDER_ASPECT;

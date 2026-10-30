@@ -1,12 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { SubPanelSection } from '@/ui/components/SubPanelSection';
 import { PanelAxisField } from '@/ui/components/PanelAxisField/PanelAxisField';
 import { MaterialSelect } from '@/ui/panels/MaterialSelect';
 import { useAppStore } from '@/ui/store/use-app-store';
 import {
+  setKindParams,
   selectPatchHandle,
-  setTrianglePatchParams,
-} from '@/ui/store/app-store';
+  } from '@/ui/store/app-store';
 import {
   defaultTrianglePatchParams,
   type PatchHandleTarget,
@@ -52,16 +52,13 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
   const [selectedTargetKey, setSelectedTargetKey] = useState<PatchHandleTarget>('pos');
   const [anchorHandleRotRad, setAnchorHandleRotRad] = useState({ x: 0, y: 0, z: 0 });
 
-  useEffect(() => {
-    setAnchorHandleRotRad({ x: 0, y: 0, z: 0 });
-  }, [selectedCornerIdx, selectedTargetKey]);
-
   const activeNode = patchParams.nodes[selectedCornerIdx] ?? patchParams.nodes[0];
   const activeVec = activeNode[selectedTargetKey];
 
   const handleSelectTarget = (cornerIdx: number, targetKey: PatchHandleTarget) => {
     setSelectedCornerIdx(cornerIdx);
     setSelectedTargetKey(targetKey);
+    setAnchorHandleRotRad({ x: 0, y: 0, z: 0 });
     selectPatchHandle(entity.id, cornerIdx, targetKey);
   };
 
@@ -115,7 +112,7 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
       updatedNodes[selectedCornerIdx] = nodeCopy;
     }
 
-    setTrianglePatchParams(entity.id, { nodes: updatedNodes });
+    setKindParams('trianglePatch', entity.id, { nodes: updatedNodes });
   };
 
   const updateAnchorHandleRotation = (axis: 'x' | 'y' | 'z', radians: number): void => {
@@ -138,7 +135,7 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
         activeNode,
         deltaEuler,
       );
-      setTrianglePatchParams(entity.id, { nodes: updatedNodes });
+      setKindParams('trianglePatch', entity.id, { nodes: updatedNodes });
 
       return { ...prev, [axis]: radians };
     });
@@ -184,7 +181,7 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
     }
 
     updatedNodes[selectedCornerIdx] = nodeCopy;
-    setTrianglePatchParams(entity.id, { nodes: updatedNodes });
+    setKindParams('trianglePatch', entity.id, { nodes: updatedNodes });
   };
 
   const handleLen = selectedTargetKey !== 'pos'

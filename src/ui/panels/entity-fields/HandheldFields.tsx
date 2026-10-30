@@ -15,7 +15,7 @@ import { formatMmAsMeters } from '@/units/length';
 import { PanelAxisField } from '@/ui/components/PanelAxisField/PanelAxisField';
 import { SubPanelSection } from '@/ui/components/SubPanelSection';
 import { ImageSurfaceFields } from '@/ui/panels/ImageSurfaceFields';
-import { setAssetScreenImage, setHandheldParams } from '@/ui/store/app-store';
+import { setKindParams, setAssetScreenImage } from '@/ui/store/app-store';
 import { useAppStore } from '@/ui/store/use-app-store';
 import { GeometryPartsSection } from '@/ui/panels/GeometryPartsSection';
 import { AssetDimensionsFields } from '@/ui/panels/entity-fields/EntityDimensionsSection';
@@ -85,7 +85,7 @@ export function HandheldFields({
           format={formatMmAsMeters}
           parse={parseMmInput}
           onChange={(value) => {
-            setHandheldParams(entity.id, { screenCornerRadiusMm: value });
+            setKindParams('handheld', entity.id, { screenCornerRadiusMm: value });
           }}
         />
         <PanelAxisField
@@ -95,7 +95,7 @@ export function HandheldFields({
           format={formatMmAsMeters}
           parse={parseMmInput}
           onChange={(value) => {
-            setHandheldParams(entity.id, { bezelWidthMm: value });
+            setKindParams('handheld', entity.id, { bezelWidthMm: value });
           }}
         />
         <PanelAxisField
@@ -106,7 +106,7 @@ export function HandheldFields({
           parse={parseMmInput}
           onChange={(value) => {
             const bodyDepthMm = resolveBodyDepthMm(entity.assetKind, params);
-            setHandheldParams(entity.id, {
+            setKindParams('handheld', entity.id, {
               outerEdgeRadiusMm: clampOuterEdgeRadiusMm(value, bodyDepthMm),
             });
           }}

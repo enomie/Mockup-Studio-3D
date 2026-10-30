@@ -43,7 +43,7 @@ export function cloneTinCanParams(params: TinCanParams): TinCanParams {
   return { ...params };
 }
 
-export function isTinCanAssetKind(kind: AssetKind): boolean {
+export function isTinCanAssetKind(kind: AssetKind): kind is 'tin-can' {
   return kind === 'tin-can';
 }
 
