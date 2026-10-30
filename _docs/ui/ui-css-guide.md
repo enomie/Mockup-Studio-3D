@@ -31,6 +31,49 @@ Neue Werte **immer** über Tokens, keine Hex-Codes direkt in Regeln.
 | Panel-Abstände | `--panel-pad-x/-y`, `--panel-gap`, `--panel-stack-gap` | Rest nutzt freie px-Werte |
 | Typo / Radius | – | siehe A3 |
 
+### A2a. Palettenvorschlag (Schritt 1 – zur Abstimmung)
+
+Ziel: 51 rohe Farbwerte → **16 Tokens** + klar abgegrenzte Ausnahmen.
+
+| Token | Wert | Ersetzt (Ist-Werte, Anzahl) | Wofür |
+|---|---|---|---|
+| **Flächen** ||||
+| `--color-bg` | `#ffffff` | `#fff` (21) | Panels, Inputs, Karten |
+| `--color-surface-subtle` | `#fafafa` | `#fafafa` (8), `#f8fafc`, `#f7f7f7`, `#f5f5f5` (3) | Sektions-/Listen-Hintergrund |
+| `--color-surface-hover` | `#f0f0f0` | `#f0f0f0` (5), `#f3f3f3` (2), `#f3f4f6` (2), `#eee` als Fläche | Hover auf neutralen Elementen |
+| **Rahmen** ||||
+| `--color-border` | `#e5e5e5` | `#e5e5e5`, `#e8e8e8`, `#eee` als Linie | Standard-Trennlinie (merged mit `--color-border-light`) |
+| `--color-border-strong` | `#d0d0d0` | `#e0e0e0` (8), `#ddd`, `#d0d0d0` (2), `#ccc` (2) | Input-/Button-Rahmen |
+| **Text** ||||
+| `--color-text` | `#1a1a1a` | `#1a1a1a`, `#000`, `#333` (6), `#444` (3) | Haupttext, Icon-Hover |
+| `--color-text-secondary` | `#666666` | `#666` | Labels |
+| `--color-text-muted` | `#8a8a8a` | `#888`, `#94a3b8` | Hints, Platzhalter, Meta |
+| **Akzent (Auswahl/Aktiv/Fokus)** ||||
+| `--color-accent` | `#2f6bff` | `#4a7dff` (3), `#0284c7` (3) | Aktiver Toggle, Fokusring |
+| `--color-accent-text` | `#1a56db` | `#1a56db` | Text/Icon auf Akzent-BG |
+| `--color-accent-bg` | `#eef4ff` | `#eef4ff`, `#eef6fc` (4), `#eef3ff`, `#f2f5ff`, `#e0f2fe`, `#e4f0f9` | Selected-Hintergrund |
+| `--color-accent-border` | `#93b4ff` | `#93b4ff` (2), `#7eb8e8` (8) | Selected-Rahmen |
+| **Danger** ||||
+| `--color-danger` | `#d93636` | `#e55353` (3), `#b33` (3), `#922`, `#f00` (als Text) | Löschen, Fehler |
+| `--color-danger-bg` | `#fdf0f0` | `#fdf0f0` (2), `#fce8e8` | Danger-Hover |
+| **Scrollbar** ||||
+| `--color-scrollbar` | `#c4c4c4` | `#c4c4c4` (4) | laut Look & Feel |
+| `--color-scrollbar-hover` | `#a8a8a8` | `#a8a8a8` | |
+
+**Schatten** (keine Farben, aber gleiche Logik):
+`--shadow-sm: 0 1px 2px rgb(0 0 0 / 8%)` · `--shadow-md: 0 2px 8px rgb(0 0 0 / 12%)` · `--shadow-popover: 0 4px 16px rgb(0 0 0 / 18%)` (ersetzt 8/12/18/35 %).
+
+**Bewusste Ausnahmen (bleiben, aber als eigene Tokens):**
+- Color-Picker-Hue-Verlauf (`#f00 #ff0 #0f0 #0ff #00f #f0f`) – Spektrum, gehört so.
+- Patch-Punkt-Markierungen (`#0284c7`, `#a855f7`, `#ec4899`, `#eab308`) – sind *Daten-/Annotationsfarben*, nicht UI-Chrome → `--color-mark-*`.
+
+**Größte Änderung:** Heute gibt es zwei „Auswahl-Welten“ – ein *helles Himmelblau* (`#7eb8e8`/`#eef6fc` bei Materials, Lights, Scene-Entities) und ein *kräftiges Blau* (`#4a7dff`/`#93b4ff`/`#eef4ff` bei Toggles und den bestehenden Tokens). Vorschlag: alles auf **eine** Akzentfamilie (die kräftige). → Auswahl sieht überall gleich aus.
+
+**Offene Fragen:**
+1. Akzent: kräftiges Blau `#2f6bff` (Vorschlag) oder Figma-Blau `#0d99ff`?
+2. `--color-border-light` mit `--color-border` zusammenlegen (Vorschlag: ja)?
+3. Dark Mode jetzt schon mitdenken? (Mit Tokens später nur ein zweiter `:root`-Block.)
+
 ### A3. Skalen (Vorschlag, noch zu entscheiden)
 - **Font-size** – Ist: 10 / 11 / 12 / 13 px. Vorschlag: 3 Stufen (`--font-xs` 10?, `--font-sm` 11, `--font-md` 12) + Body 13.
 - **Radius** – Ist: 2 / 3 / 4 / 5 / 6 / 8 / 50 %. Vorschlag: `--radius-sm` 3, `--radius-md` 4/6, `--radius-round` 50 %.
