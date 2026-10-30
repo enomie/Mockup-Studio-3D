@@ -53,10 +53,40 @@ export function cloneTrianglePatchParams(params: TrianglePatchParams): TriangleP
   };
 }
 
+/** Shrinks the authored default handles so a freshly placed patch is only gently curved. */
+const DEFAULT_HANDLE_LENGTH_SCALE = 0.5;
+
+const NODE_HANDLE_KEYS = ['handleNext', 'handlePrev', 'handleCrossIn', 'handleCrossOut'] as const;
+
+/** Scales every tangent handle's offset from its anchor by `factor`. */
+export function scalePatchNodeHandles(node: PatchNodeData, factor: number): PatchNodeData {
+  const next = clonePatchNode(node);
+  for (const key of NODE_HANDLE_KEYS) {
+    next[key] = {
+      x: node.pos.x + (node[key].x - node.pos.x) * factor,
+      y: node.pos.y + (node[key].y - node.pos.y) * factor,
+      z: node.pos.z + (node[key].z - node.pos.z) * factor,
+    };
+  }
+  return next;
+}
+
 /**
  * Default initial geometry for a triangle patch.
  */
 export function defaultTrianglePatchParams(): TrianglePatchParams {
+  const params = authoredTrianglePatchParams();
+  return {
+    divisions: params.divisions,
+    nodes: [
+      scalePatchNodeHandles(params.nodes[0], DEFAULT_HANDLE_LENGTH_SCALE),
+      scalePatchNodeHandles(params.nodes[1], DEFAULT_HANDLE_LENGTH_SCALE),
+      scalePatchNodeHandles(params.nodes[2], DEFAULT_HANDLE_LENGTH_SCALE),
+    ],
+  };
+}
+
+function authoredTrianglePatchParams(): TrianglePatchParams {
   return {
     divisions: 24,
     nodes: [
