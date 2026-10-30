@@ -169,7 +169,7 @@ SubPanel (.sub-panel --form|--list, --left|--right)
 └─ SubPanelCollapseBar/Row    ← Einklappen
 ```
 
-**Felder:** `.panel-field-input` (schmal, Zahlen, monospace) · `.panel-field-input .panel-field-input--full` (Text, volle Breite) · `.panel-field-select`. Alle teilen eine Basis: Höhe `--control-h-sm`, Hover = stärkerer Rahmen, **Fokus = Akzent-Rahmen**, Disabled = `--opacity-disabled`, Fehler = `--invalid`.
+**Felder:** `.panel-field-input` (schmal, Zahlen, monospace) · `.panel-field-input .panel-field-input--full` (Text, volle Breite) · `.panel-field-select`. Selects haben einen eigenen Chevron (`--icon-chevron-down` in `tokens.css`, `appearance: none`) statt des Browser-Pfeils. Alle teilen eine Basis: Höhe `--control-h-sm`, Hover = stärkerer Rahmen, **Fokus = Akzent-Rahmen**, Disabled = `--opacity-disabled`, Fehler = `--invalid`.
 
 **Navigation:** aktiver Eintrag = `aria-current="page"` (keine `--active`-Klasse).
 
@@ -284,4 +284,5 @@ Jeder Schritt: besprechen → umsetzen → Teil A aktualisieren → Häkchen.
 | 2026-10-30 | Panels: Inputs/Selects mit gemeinsamer Basis + Fokus-Rahmen; Nav-Aktiv über `aria-current`; Collapse-Leisten zusammengelegt; Höhen/Opacity als Tokens. |
 | 2026-10-30 | Inline-Styles geprüft: nur dynamische Werte übrig; fixer Abstand in `ViewportFrame` → `.viewport__gate-text`. |
 | 2026-10-30 | 7b: Rest-Duplikate entfernt (Patch-Inspector, Color-Picker-Felder, Scrollbars). Fix: `--invalid` gewinnt jetzt auch bei Fokus. |
+| 2026-10-30 | Selects: eigener Chevron statt Browser-Pfeil (Icon als Token, da SVG keine CSS-Variablen liest). |
 | 2026-10-30 | `app.css` in 9 Dateien aufgeteilt. Geprüft: alle 201 Regeln identisch, berechnete Styles von 2513 Elementen in 11 UI-Zuständen vorher = nachher. |

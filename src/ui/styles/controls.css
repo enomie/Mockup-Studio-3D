@@ -240,8 +240,14 @@
 .panel-field-select {
   width: 100%;
   padding: 0 var(--space-6) 0 var(--space-3);
+  appearance: none;
+  background-image: var(--icon-chevron-down);
+  background-repeat: no-repeat;
+  background-position: right var(--space-3) center;
+  background-size: 12px;
   font-family: inherit;
   font-size: var(--font-md);
+  cursor: pointer;
 }
 
 .panel-checkbox__input {
