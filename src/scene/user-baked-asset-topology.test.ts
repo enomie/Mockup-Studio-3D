@@ -14,7 +14,7 @@ describe('fabricClothBakedMeshTopology', () => {
     expect(topology.triangleCount).toBe(128);
   });
 
-  it('bakes at simulation resolution', () => {
+  it('upsamples 3x on bake', () => {
     const mesh = buildFabricClothMeshFromOptions({
       faceWidth: 0.04,
       faceHeight: 0.04,
@@ -22,11 +22,11 @@ describe('fabricClothBakedMeshTopology', () => {
       segments: { segmentsW: 4, segmentsH: 4 },
     });
     const payload = bakeFabricClothMeshFromDeformed(mesh);
-    expect(payload.segmentsW).toBe(4);
-    expect(payload.segmentsH).toBe(4);
+    expect(payload.segmentsW).toBe(12);
+    expect(payload.segmentsH).toBe(12);
     const topology = fabricClothBakedMeshTopology(payload);
-    expect(topology.triangleCount).toBe(32);
-    expect(formatFabricClothBakedMeshSubtitle(payload)).toBe('4×4 · 32 tris');
+    expect(topology.triangleCount).toBe(288);
+    expect(formatFabricClothBakedMeshSubtitle(payload)).toBe('12×12 · 288 tris');
     mesh.geometry.dispose();
   });
 });

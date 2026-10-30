@@ -6,7 +6,12 @@ import {
 } from 'three/webgpu';
 import { FABRIC_CLOTH_REST_PLANE_XY_ATTR } from '@/scene/asset-fabric-cloth';
 import type { FabricClothBakedMeshPayload } from '@/scene/user-baked-asset';
+import { upsampleGridCatmullRom } from '@/physics/cloth/catmull-rom-grid';
 import { writeClothGridNormals } from '@/physics/cloth/plane-vertices';
+import {
+  FABRIC_CLOTH_BAKE_MAX_VERTICES,
+  FABRIC_CLOTH_BAKE_SUBDIV_FACTOR,
+} from '@/physics/constants';
 import { readFabricClothMeshGrid } from './fabric-cloth-geometry';
 import {
   fabricClothMeshLocalCenterlineFromBinding,
@@ -216,9 +221,21 @@ function liveGridRowsToPlaneGeometryOrder(
   return out;
 }
 
+function bakeSubdivFactor(nx: number, ny: number): number {
+  let factor = Math.max(1, FABRIC_CLOTH_BAKE_SUBDIV_FACTOR);
+  while (
+    factor > 1 &&
+    ((nx - 1) * factor + 1) * ((ny - 1) * factor + 1) > FABRIC_CLOTH_BAKE_MAX_VERTICES
+  ) {
+    factor -= 1;
+  }
+  return factor;
+}
+
 /**
- * Freezes the cloth at simulation resolution: same grid, positions and normals as
- * the live mesh, so the bake looks exactly like the simulated cloth.
+ * Freezes the cloth: the sim grid is upsampled with Catmull-Rom splines (passes through
+ * every sim vertex, smooth in between), normals come from the dense grid with the same
+ * routine the live mesh uses, then rows are flipped into PlaneGeometry order.
  */
 export function bakeFabricClothMeshFromDeformed(
   clothMesh: Mesh,
@@ -231,29 +248,36 @@ export function bakeFabricClothMeshFromDeformed(
     meshLocalCenterline,
   );
 
-  const geometry = new PlaneGeometry(planeWidthM, planeHeightM, segmentsW, segmentsH);
+  const dense = upsampleGridCatmullRom(
+    coarsePositions,
+    segmentsW + 1,
+    segmentsH + 1,
+    bakeSubdivFactor(segmentsW + 1, segmentsH + 1),
+  );
+  const denseSegmentsW = dense.nx - 1;
+  const denseSegmentsH = dense.ny - 1;
+
+  const geometry = new PlaneGeometry(planeWidthM, planeHeightM, denseSegmentsW, denseSegmentsH);
   const posAttr = geometry.getAttribute('position') as BufferAttribute;
   const restPlane = new Float32Array(posAttr.count * 2);
   for (let i = 0; i < posAttr.count; i++) {
     restPlane[i * 2] = posAttr.getX(i);
     restPlane[i * 2 + 1] = posAttr.getY(i);
   }
-
-  const nx = segmentsW + 1;
-  const ny = segmentsH + 1;
-  const liveNormals = new Float32Array(coarsePositions.length);
-  writeClothGridNormals(coarsePositions, liveNormals, nx, ny);
   const uvs = Array.from(geometry.getAttribute('uv').array as Float32Array);
   geometry.dispose();
 
+  const denseNormals = new Float32Array(dense.values.length);
+  writeClothGridNormals(dense.values, denseNormals, dense.nx, dense.ny);
+
   const footprint = fabricClothRestPlaneFootprintM(restPlane);
   return {
-    positions: liveGridRowsToPlaneGeometryOrder(coarsePositions, nx, ny),
-    normals: liveGridRowsToPlaneGeometryOrder(liveNormals, nx, ny),
+    positions: liveGridRowsToPlaneGeometryOrder(dense.values, dense.nx, dense.ny),
+    normals: liveGridRowsToPlaneGeometryOrder(denseNormals, dense.nx, dense.ny),
     uvs,
     restPlaneXY: Array.from(restPlane),
-    segmentsW,
-    segmentsH,
+    segmentsW: denseSegmentsW,
+    segmentsH: denseSegmentsH,
     planeWidthM: footprint.planeWidthM,
     planeHeightM: footprint.planeHeightM,
   };

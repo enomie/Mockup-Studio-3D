@@ -38,3 +38,8 @@ export const FABRIC_CLOTH_SIM_MAX_SEGMENTS_PER_AXIS = 64;
 export const FABRIC_CLOTH_SYNC_NORMALS_EVERY_N_FRAMES = 1;
 export const FABRIC_CLOTH_SYNC_BOUNDS_EVERY_N_FRAMES = 2;
 
+/** Catmull-Rom upsampling per axis when baking fabric cloth (smooth folds between sim vertices). */
+export const FABRIC_CLOTH_BAKE_SUBDIV_FACTOR = 3;
+/** Cap baked cloth vertices; the factor is lowered until the dense grid fits. */
+export const FABRIC_CLOTH_BAKE_MAX_VERTICES = 65536;
+
