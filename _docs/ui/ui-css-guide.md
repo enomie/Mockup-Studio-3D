@@ -169,6 +169,12 @@ SubPanel (.sub-panel --form|--list, --left|--right)
 └─ SubPanelCollapseBar/Row    ← Einklappen
 ```
 
+**Sections (Figma-Stil):**
+- Jede `SubPanelSection` bestimmt ihren Abstand selbst: oben `--section-pad-top` (8px), unten `--section-pad-bottom` (12px); erste Section ohne oben, letzte ohne unten.
+- Vor jeder Section, vor der etwas steht, kommt eine 1px-Linie **über die volle Container-Breite** – unabhängig von der Verschachtelung im Code.
+- Container, in denen Sections stehen, setzen `--section-bleed` = ihr seitliches Padding (heute: `.sub-panel__body`, `.scene-entity-block__body`). **Neuer Container mit Sections → `--section-bleed` setzen**, sonst endet die Linie am Padding.
+- Inhalt einer Section beeinflusst die Linie nie; keine eigenen Ränder/Margins für Abstände zwischen Sections.
+
 **Felder:** `.panel-field-input` (schmal, Zahlen, monospace) · `.panel-field-input .panel-field-input--full` (Text, volle Breite) · `.panel-field-select`. Selects haben einen eigenen Chevron (`--icon-chevron-down` in `tokens.css`, `appearance: none`) statt des Browser-Pfeils. Alle teilen eine Basis: Höhe `--control-h-sm`, Hover = stärkerer Rahmen, **Fokus = Akzent-Rahmen**, Disabled = `--opacity-disabled`, Fehler = `--invalid`.
 
 **Slider:** `RangeSlider` = 2 Zeilen – oben `.panel-field-row` mit Name links und Wert rechts, darunter der Track in voller Breite. Name nur einmal (`label`); `valueInputLabel` ist nur noch der Screenreader-Name des Feldes. `DualRangeSlider` (z. B. Nebel Near/Far): Track, darunter je eine beschriftete Zeile pro Wert.
@@ -288,4 +294,5 @@ Jeder Schritt: besprechen → umsetzen → Teil A aktualisieren → Häkchen.
 | 2026-10-30 | 7b: Rest-Duplikate entfernt (Patch-Inspector, Color-Picker-Felder, Scrollbars). Fix: `--invalid` gewinnt jetzt auch bei Fokus. |
 | 2026-10-30 | Selects: eigener Chevron statt Browser-Pfeil (Icon als Token, da SVG keine CSS-Variablen liest). |
 | 2026-10-30 | Slider: Name + Wert in einer Zeile über dem Track (Figma-Stil), Name nicht mehr doppelt. Dual-Slider unverändert (keine Doppelung, zu schmal für 2 Felder neben dem Namen). |
+| 2026-10-30 | Sections: Option C (Figma-Stil) – feste Abstände 8/12px, Trennlinie über volle Breite; vorher klebte die Linie am Inhalt (0px unten / 6px oben). Verworfen: A ohne Linie, B Linie mittig, D Titel-Band. |
 | 2026-10-30 | `app.css` in 9 Dateien aufgeteilt. Geprüft: alle 201 Regeln identisch, berechnete Styles von 2513 Elementen in 11 UI-Zuständen vorher = nachher. |

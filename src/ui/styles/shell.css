@@ -215,6 +215,7 @@
   overflow-x: hidden;
   overflow-y: auto;
   padding: var(--panel-pad-y) var(--panel-pad-x);
+  --section-bleed: var(--panel-pad-x);
 }
 
 .panel-stack {
@@ -223,10 +224,30 @@
   gap: var(--panel-stack-gap);
 }
 
-.panel-stack > .sub-panel-section + .sub-panel-section {
-  margin-top: calc(-1 * var(--panel-stack-gap));
-  padding-top: var(--panel-stack-gap);
+/* Sections (Figma-style): each section owns its spacing; a divider spans the full
+   container width. Containers set --section-bleed to their horizontal padding.
+   See _docs/ui/ui-css-guide.md (A7). */
+.sub-panel-section {
+  margin-inline: calc(-1 * var(--section-bleed, 0px));
+  padding: var(--section-pad-top) var(--section-bleed, 0px) var(--section-pad-bottom);
+}
+
+.sub-panel-section:first-child {
+  padding-top: 0;
+}
+
+.sub-panel-section:last-child {
+  padding-bottom: 0;
+}
+
+* + .sub-panel-section {
   border-top: 1px solid var(--color-border);
+}
+
+/* Section padding replaces the stack gap around sections. */
+.panel-stack > * + .sub-panel-section,
+.panel-stack > .sub-panel-section + * {
+  margin-top: calc(-1 * var(--panel-stack-gap));
 }
 
 .sub-panel-section__header {

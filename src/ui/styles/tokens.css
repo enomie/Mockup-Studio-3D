@@ -38,6 +38,10 @@
   --row-h: 24px;
   --tile-h: 36px;
 
+  /* Section spacing (see .sub-panel-section) */
+  --section-pad-top: var(--space-4);
+  --section-pad-bottom: var(--space-5);
+
   /* States */
   --opacity-disabled: 0.45;
   --opacity-hidden: 0.5;

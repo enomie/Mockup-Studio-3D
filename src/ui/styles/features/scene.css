@@ -114,6 +114,7 @@
 
 .scene-entity-block__body {
   padding: var(--panel-stack-gap);
+  --section-bleed: var(--panel-stack-gap);
 }
 
 .material-editor-actions {
