@@ -69,6 +69,7 @@ input[type='range'] {
     var(--left-main-width, var(--panel-main-width))
     var(--left-sub-width)
     minmax(0, 1fr)
+    var(--right-detail-width, 0px)
     var(--right-sub-width)
     var(--right-main-width, var(--panel-main-width));
   min-height: 0;
@@ -95,8 +96,8 @@ input[type='range'] {
   --left-sub-width: var(--panel-sub-split-total-width);
 }
 
-.app-shell__middle[data-right-sub-split]:not([data-right-sub-collapsed]) {
-  --right-sub-width: var(--panel-sub-split-total-width);
+.app-shell__middle:has(.app-shell__sub-slot--right-detail > .sub-panel) {
+  --right-detail-width: var(--panel-sub-width);
 }
 
 .app-shell__sub-slot {
@@ -486,30 +487,6 @@ input[type='range'] {
   border-left: 1px solid var(--color-border);
 }
 
-.sub-panel__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  flex-shrink: 0;
-  padding: var(--panel-pad-y) var(--panel-pad-x);
-  font-size: 11px;
-  font-weight: 600;
-  background: #fff;
-  border-bottom: 1px solid var(--color-border-light);
-}
-
-.sub-panel__title {
-  min-width: 0;
-}
-
-.sub-panel__header-action {
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  gap: 4px;
-}
-
 .sub-panel__icon-btn {
   display: flex;
   align-items: center;
@@ -594,16 +571,6 @@ input[type='range'] {
 
 .sub-panel-split__detail {
   border-left: 1px solid var(--color-border-light);
-}
-
-/* Right side opens toward the viewport: detail column left of the list. */
-.sub-panel--right .sub-panel-split {
-  flex-direction: row-reverse;
-}
-
-.sub-panel--right .sub-panel-split__detail {
-  border-left: none;
-  border-right: 1px solid var(--color-border-light);
 }
 
 .sub-panel-split__primary-footer {
@@ -739,15 +706,6 @@ input[type='range'] {
 
 .sub-panel__collapse-row--multiple .sub-panel__collapse:first-child {
   border-right: 1px solid var(--color-border-light);
-}
-
-.sub-panel--right .sub-panel__collapse-row {
-  flex-direction: row-reverse;
-}
-
-.sub-panel--right .sub-panel__collapse-row--multiple .sub-panel__collapse:first-child {
-  border-right: none;
-  border-left: 1px solid var(--color-border-light);
 }
 
 .viewport {
@@ -931,6 +889,12 @@ input[type='range'] {
 
 .scene-entity-list--rows .scene-entity-block__header {
   border-bottom: none;
+}
+
+.scene-detail__title {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 0 4px;
 }
 
 .scene-entity-block--selected .scene-entity-block__header {

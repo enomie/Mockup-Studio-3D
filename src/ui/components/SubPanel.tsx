@@ -9,7 +9,6 @@ interface SubPanelStackProps {
   side: 'left' | 'right';
   children: ReactNode;
   footer?: ReactNode;
-  headerAction?: ReactNode;
 }
 
 interface SubPanelSplitProps {
@@ -22,7 +21,6 @@ interface SubPanelSplitProps {
   detailTitle?: string;
   detailCollapsed: boolean;
   onCollapseDetail: () => void;
-  headerAction?: ReactNode;
 }
 
 export type SubPanelProps = SubPanelStackProps | SubPanelSplitProps;
@@ -35,7 +33,6 @@ export function SubPanel(props: SubPanelProps) {
   const shell = useShellSubPanel();
   const side = props.side;
   const title = props.title;
-  const headerAction = props.headerAction;
 
   const splitMode =
     isSplitProps(props) && props.detail !== null && !props.detailCollapsed;
@@ -62,12 +59,6 @@ export function SubPanel(props: SubPanelProps) {
 
     return (
       <aside className={`sub-panel sub-panel--${side}`} aria-label={title}>
-        <div className="sub-panel__header">
-          <span className="sub-panel__title">{title}</span>
-          {headerAction ? (
-            <div className="sub-panel__header-action">{headerAction}</div>
-          ) : null}
-        </div>
         <div className="sub-panel__body sub-panel__body--split-host">
           <SubPanelSplit
             primary={primary}
@@ -91,12 +82,6 @@ export function SubPanel(props: SubPanelProps) {
 
   return (
     <aside className={`sub-panel sub-panel--${side}`} aria-label={title}>
-      <div className="sub-panel__header">
-        <span className="sub-panel__title">{title}</span>
-        {headerAction ? (
-          <div className="sub-panel__header-action">{headerAction}</div>
-        ) : null}
-      </div>
       <div
         className="sub-panel__body panel-stack"
         onWheel={(event) => { event.stopPropagation(); }}

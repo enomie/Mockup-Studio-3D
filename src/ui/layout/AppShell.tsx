@@ -6,6 +6,7 @@ import { useViewportToolShortcuts } from '@/ui/hooks/useViewportToolShortcuts';
 import { LeftMainPanel } from '@/ui/shell/LeftMainPanel';
 import { LeftSubPanel } from '@/ui/shell/LeftSubPanel';
 import { RightMainPanel } from '@/ui/shell/RightMainPanel';
+import { RightDetailPanel } from '@/ui/shell/RightDetailPanel';
 import { RightSubPanel } from '@/ui/shell/RightSubPanel';
 import { StatusBar } from '@/ui/shell/StatusBar';
 import { TopMainBar } from '@/ui/shell/TopMainBar';
@@ -22,14 +23,9 @@ export function AppShell() {
   const [leftSubCollapsed, setLeftSubCollapsed] = useState(false);
   const [rightSubCollapsed, setRightSubCollapsed] = useState(false);
   const [leftSubWidthMode, setLeftSubWidthMode] = useState<SubPanelWidthMode>('default');
-  const [rightSubWidthMode, setRightSubWidthMode] = useState<SubPanelWidthMode>('default');
 
   const handleLeftSubWidthMode = useCallback((mode: SubPanelWidthMode) => {
     setLeftSubWidthMode(mode);
-  }, []);
-
-  const handleRightSubWidthMode = useCallback((mode: SubPanelWidthMode) => {
-    setRightSubWidthMode(mode);
   }, []);
 
   const handleLeftSelect = useCallback((id: string) => {
@@ -54,7 +50,6 @@ export function AppShell() {
         data-left-sub-collapsed={leftSubCollapsed ? '' : undefined}
         data-right-sub-collapsed={rightSubCollapsed ? '' : undefined}
         data-left-sub-split={leftSubWidthMode === 'split' ? '' : undefined}
-        data-right-sub-split={rightSubWidthMode === 'split' ? '' : undefined}
       >
         <LeftMainPanel
           selectedId={leftSelected}
@@ -80,12 +75,14 @@ export function AppShell() {
           ) : null}
         </div>
         <ViewportFrame />
+        <div className="app-shell__sub-slot app-shell__sub-slot--right-detail">
+          {!rightSubCollapsed ? <RightDetailPanel selectedId={rightSelected} /> : null}
+        </div>
         <div className="app-shell__sub-slot app-shell__sub-slot--right">
           {!rightSubCollapsed ? (
             <RightSubPanel
               selectedId={rightSelected}
               onToggleShellCollapse={() => { setRightSubCollapsed(true); }}
-              onSubWidthModeChange={handleRightSubWidthMode}
             />
           ) : null}
         </div>
