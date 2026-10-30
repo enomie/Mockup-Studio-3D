@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Trash2 } from 'lucide-react';
 import { Icon } from '@/ui/components/Icon';
 import { removePatchPoint } from '@/scene/triangle-patch-point-edit';
-import { PanelCheckbox } from '@/ui/components/PanelCheckbox';
+import { PanelToggleGroup, type PanelToggleOption } from '@/ui/components/PanelToggleGroup';
 import { SubPanelSection } from '@/ui/components/SubPanelSection';
 import { PanelAxisField } from '@/ui/components/PanelAxisField/PanelAxisField';
 import { MaterialSelect } from '@/ui/panels/MaterialSelect';
@@ -34,6 +34,12 @@ import { formatDegrees, parseDegreesInput } from './field-input-helpers';
 interface TrianglePatchFieldsProps {
   entity: AssetEntity;
 }
+
+const MIRROR_OPTIONS: PanelToggleOption<keyof PatchMirror>[] = [
+  { key: 'x', label: 'X', title: 'Mirror across the YZ plane (flips X)' },
+  { key: 'y', label: 'Y', title: 'Mirror across the XZ plane (flips Y); the copy may sit below the ground' },
+  { key: 'z', label: 'Z', title: 'Mirror across the XY plane (flips Z)' },
+];
 
 const TARGETS: { key: PatchHandleTarget; label: string; color: string }[] = [
   { key: 'pos', label: 'Anchor Point', color: '#0284c7' },
@@ -233,9 +239,7 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
       </SubPanelSection>
 
       <SubPanelSection title="Mirror">
-        <PanelCheckbox label="Mirror X" checked={mirror.x} onChange={(checked) => { setMirrorAxis('x', checked); }} />
-        <PanelCheckbox label="Mirror Y" checked={mirror.y} onChange={(checked) => { setMirrorAxis('y', checked); }} />
-        <PanelCheckbox label="Mirror Z" checked={mirror.z} onChange={(checked) => { setMirrorAxis('z', checked); }} />
+        <PanelToggleGroup label="Axes" options={MIRROR_OPTIONS} active={mirror} onToggle={setMirrorAxis} />
       </SubPanelSection>
 
       <SubPanelSection title="Point & Handle Inspector">
