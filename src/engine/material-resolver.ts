@@ -9,13 +9,11 @@ import {
   type Texture,
 } from 'three/webgpu';
 import {
-  clamp,
   float,
   floor,
   mix,
   mod,
   positionLocal,
-  step,
   texture,
   uv,
   vec2,
@@ -27,7 +25,8 @@ import {
   imageFormatMayHaveAlpha,
   resolveImageFileName,
 } from './image-surface-alpha';
-import { labelImageUSpan } from './beverage-can-label-unfold';
+import { rotationalPrintFit, type RotationalPrintFit } from './rotational-print-mapping';
+import { rotationalPrintNodes } from './rotational-print-nodes';
 import { finishToMaterialId, type ImageSurfaceSettings } from '@/scene/image-surface';
 import { multiplyRgb, type Rgb } from '@/colors/rgb';
 import { createTexturedMaterial } from '@/materials/procedural';
@@ -427,82 +426,15 @@ export function createWallpaperImageMaterial(
   return material;
 }
 
-function fitHeightLabelColorNode(
+/** Mantle band color: print over underlay where the band is covered (PNG alpha included). */
+function bandPrintColorNode(
   tex: Texture,
-  planeW: number,
-  planeH: number,
-  imageW: number,
-  imageH: number,
+  fit: RotationalPrintFit,
   underlayRgb: Rgb,
 ): ShaderColorNode {
-  const uSpan = labelImageUSpan(planeW, planeH, imageW, imageH);
-  const bandU = uv().x;
-  const bandV = uv().y;
-  const half = float(0.5);
-  const uSpanNode = float(uSpan);
-
-  const sNarrow = bandU.sub(half).div(uSpanNode).add(half);
-  const sWide = bandU.sub(half).mul(uSpanNode).add(half);
-  const useWide = step(float(1), uSpanNode);
-  const s = mix(sNarrow, sWide, useWide);
-  const t = bandV;
-
-  const sClamped = clamp(s, float(0), float(1));
-  const texColor = asTextureRgba(texture(tex, vec2(sClamped, t)));
-
-  const inTextureS = step(float(0), s).mul(step(s, float(1)));
-  const inTextureT = step(float(0), t).mul(step(t, float(1)));
-  const isNarrow = step(uSpanNode, float(1));
-  const showTexture = mix(inTextureT, inTextureS.mul(inTextureT), isNarrow);
-  const underlay = rgbColorNode(underlayRgb);
-  const blend = showTexture.mul(texColor.a);
-
-  return mix(underlay, texColor.rgb, blend);
-}
-
-function spanMappedBandCoord(band: ReturnType<typeof uv>['x'], span: number) {
-  const half = float(0.5);
-  const spanNode = float(span);
-  const narrow = band.sub(half).div(spanNode).add(half);
-  const wide = band.sub(half).mul(spanNode).add(half);
-  const useWide = step(float(1), spanNode);
-  return mix(narrow, wide, useWide);
-}
-
-/** Pen body wrap: image height → circumference (U), image width → shaft length (V). */
-export function fitPenBodyWrapColorNode(
-  tex: Texture,
-  planeW: number,
-  planeH: number,
-  imageW: number,
-  imageH: number,
-  underlayRgb: Rgb,
-): ShaderColorNode {
-  const tSpan = labelImageUSpan(planeW, planeH, imageH, imageW);
-  const sSpan = labelImageUSpan(planeH, planeW, imageW, imageH);
-  const bandU = uv().x;
-  const bandV = uv().y;
-  const bandUCirc = float(1).sub(bandU);
-
-  const tMapped = spanMappedBandCoord(bandUCirc, tSpan);
-  const sMapped = spanMappedBandCoord(bandV, sSpan);
-  const s = float(1).sub(sMapped);
-  const t = float(1).sub(tMapped);
-
-  const sClamped = clamp(s, float(0), float(1));
-  const tClamped = clamp(t, float(0), float(1));
-  const texColor = asTextureRgba(texture(tex, vec2(sClamped, tClamped)));
-
-  const inTextureS = step(float(0), s).mul(step(s, float(1)));
-  const inTextureT = step(float(0), t).mul(step(t, float(1)));
-  const showFromCirc = mix(inTextureT, float(1), step(float(1), float(tSpan)));
-  const showFromLength = mix(inTextureS, float(1), step(float(1), float(sSpan)));
-  const showTexture = showFromCirc.mul(showFromLength);
-
-  const underlay = rgbColorNode(underlayRgb);
-  const blend = showTexture.mul(texColor.a);
-
-  return mix(underlay, texColor.rgb, blend);
+  const { sampleUv, inBandMask } = rotationalPrintNodes(fit, uv());
+  const texColor = asTextureRgba(texture(tex, sampleUv));
+  return mix(rgbColorNode(underlayRgb), texColor.rgb, inBandMask.mul(texColor.a));
 }
 
 /**
@@ -537,7 +469,11 @@ export function createPenBodyWrapMaterial(
     imageH > 0;
 
   const colorNode: ShaderColorNode = hasImageSize
-    ? fitPenBodyWrapColorNode(tex, planeW, planeH, imageW, imageH, underlay)
+    ? bandPrintColorNode(
+        tex,
+        rotationalPrintFit('wrap-height', planeW, planeH, imageW, imageH),
+        underlay,
+      )
     : (texture(tex));
   material.colorNode = colorNode;
 
@@ -581,7 +517,11 @@ export function createCanLabelMaterial(
     imageH > 0;
 
   const colorNode: ShaderColorNode = hasImageSize
-    ? fitHeightLabelColorNode(tex, planeW, planeH, imageW, imageH, underlay)
+    ? bandPrintColorNode(
+        tex,
+        rotationalPrintFit('wrap-width', planeW, planeH, imageW, imageH),
+        underlay,
+      )
     : (texture(tex));
   material.colorNode = colorNode;
 

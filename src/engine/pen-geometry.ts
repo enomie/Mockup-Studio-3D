@@ -1,5 +1,4 @@
 import {
-  BufferAttribute,
   LatheGeometry,
   Mesh,
   type BufferGeometry,
@@ -11,7 +10,7 @@ import {
   isGeometryVisible,
   type AssetGeometryVisibility,
 } from '@/scene/geometry-visibility';
-import { cylindricalLabelUv } from './cylindrical-label-uv';
+import { applyRotationalPrintUv } from './rotational-print-mapping';
 import {
   FULL_LATHE_PHI_LENGTH,
   LATHE_SEAM_PHI_START,
@@ -34,24 +33,6 @@ export function buildPenLatheGeometry(points: Vector2[]): BufferGeometry {
   geometry.computeVertexNormals();
   ensureGeometryTangents(geometry);
   return geometry;
-}
-
-function applyCylindricalUvToGeometry(
-  geometry: BufferGeometry,
-  y0: number,
-  y1: number,
-): void {
-  const position = geometry.getAttribute('position') as BufferAttribute;
-  const uvs = new Float32Array(position.count * 2);
-  for (let i = 0; i < position.count; i += 1) {
-    const x = position.getX(i);
-    const y = position.getY(i);
-    const z = position.getZ(i);
-    const [u, v] = cylindricalLabelUv(x, y, z, y0, y1);
-    uvs[i * 2] = u;
-    uvs[i * 2 + 1] = v;
-  }
-  geometry.setAttribute('uv', new BufferAttribute(uvs, 2));
 }
 
 export interface PenMeshBuildInput {
@@ -94,7 +75,8 @@ export async function buildPenMeshes(
 
   const { y0, y1 } = penBodyYBounds(profiles.body);
   if (input.bodyPrintVisible) {
-    applyCylindricalUvToGeometry(bodyGeometry, y0, y1);
+    // Step 4 moves the pen print to `printUv`; the wrap material still reads `uv`.
+    applyRotationalPrintUv(bodyGeometry, { y0, y1 }, 'uv');
   }
 
   const capMesh = new Mesh(capGeometry, input.capMaterial);
