@@ -12,11 +12,25 @@ Verwandt: [`requirements-look-and-feel.md`](../requirements/requirements-look-an
 
 ## A. Regeln (Stand: Entwurf – wird pro Schritt festgezurrt)
 
-### A1. Wo CSS lebt
-- Eine Datei: `src/ui/styles/app.css` (aktuell ~1660 Zeilen). Kein Tailwind, keine CSS-in-JS-Lib.
-- Naming: BEM-artig `.block__element--modifier`.
-- Inline `style={{…}}` nur für **dynamische Werte** (z. B. Farbe eines Swatches, Slider-Position) – nie für Layout/Abstände.
-- 🔲 *Offen:* app.css in Abschnitte/Dateien aufteilen? (Tokens / Shell / Panels / Controls / Feature-spezifisch)
+### A1. Wo CSS lebt (Schritt 8 – umgesetzt 2026-10-30)
+
+`src/ui/styles/app.css` ist nur noch der Einstieg und importiert in fester Reihenfolge (spätere Dateien dürfen frühere überschreiben):
+
+| Datei | Inhalt | Neue Regeln hierhin, wenn … |
+|---|---|---|
+| `tokens.css` | alle Variablen (`:root`) | neuer Farb-/Größenwert gebraucht wird – erst prüfen, ob ein bestehender passt |
+| `base.css` | Reset, `html/body/#root` | fast nie |
+| `shell.css` | Top-Bars, Navigation, Seitenpanels, Sections, Viewport, Statuszeile | es um den App-Rahmen geht |
+| `controls.css` | `.btn`, Felder, Selects, Checkbox, Toggle-Group, Slider | ein wiederverwendbares Bedienelement entsteht |
+| `lists.css` | `.tile-list`, `.tile` | – (Muster ist fertig) |
+| `features/camera.css` | Kamera-Leiste, Projektion, Slots | |
+| `features/scene.css` | Szenen-Blöcke, Entity-Detail | |
+| `features/patch-inspector.css` | Patch-Punkt-Inspector | |
+| `features/color-picker.css` | Color-Picker + Popover | |
+
+- **Neues Feature mit eigenem Look** → eigene Datei unter `features/` + `@import` in `app.css` anhängen.
+- Naming: BEM-artig `.block__element--modifier`. Ein Block lebt in genau einer Datei.
+- Kein Tailwind, keine CSS-in-JS-Lib. Inline-Styles: siehe A8.
 
 ### A2. Design Tokens (`:root`)
 Neue Werte **immer** über Tokens, keine Hex-Codes direkt in Regeln.
@@ -197,7 +211,7 @@ Erlaubte Fälle (Stand heute, alle geprüft):
 ## B. Bestandsaufnahme (2026-10-30)
 
 ### B1. Zahlen
-- 1 CSS-Datei, 1664 Zeilen, **0 `@media`-Queries** (Responsive-Anforderung aus Look & Feel aktuell nicht umgesetzt).
+- (Stand vor Cleanup) 1 CSS-Datei, 1664 Zeilen, **0 `@media`-Queries** (Responsive-Anforderung aus Look & Feel aktuell nicht umgesetzt).
 - **51** verschiedene rohe Farbwerte (Hex/rgba) neben den Tokens.
 - Inline-Styles in 7 Dateien: `ColorPicker.tsx`, `ColorPickerPopover.tsx`, `ViewportFrame.tsx`, `RangeSlider.tsx`, `DualRangeSlider.tsx`, `ColorsPanel.tsx`, `MaterialsPanel.tsx`.
 
@@ -257,7 +271,7 @@ Jeder Schritt: besprechen → umsetzen → Teil A aktualisieren → Häkchen.
 - [x] **6. Panels & Sections** – Header/Body/Footer-Abstände konsistent.
 - [x] **7. Inline-Styles** – auf dynamische Werte reduzieren.
 - [x] **7b. Rest-Duplikate** (siehe B5)
-- [ ] **8. Datei-Struktur** – app.css aufteilen.
+- [x] **8. Datei-Struktur** – app.css aufteilen.
 - [ ] **9. Responsive/Touch** – Entscheidung, was davon jetzt wirklich gilt.
 
 ---
@@ -273,3 +287,4 @@ Jeder Schritt: besprechen → umsetzen → Teil A aktualisieren → Häkchen.
 | 2026-10-30 | Panels: Inputs/Selects mit gemeinsamer Basis + Fokus-Rahmen; Nav-Aktiv über `aria-current`; Collapse-Leisten zusammengelegt; Höhen/Opacity als Tokens. |
 | 2026-10-30 | Inline-Styles geprüft: nur dynamische Werte übrig; fixer Abstand in `ViewportFrame` → `.viewport__gate-text`. |
 | 2026-10-30 | 7b: Rest-Duplikate entfernt (Patch-Inspector, Color-Picker-Felder, Scrollbars). Fix: `--invalid` gewinnt jetzt auch bei Fokus. |
+| 2026-10-30 | `app.css` in 9 Dateien aufgeteilt. Geprüft: alle 201 Regeln identisch, berechnete Styles von 2513 Elementen in 11 UI-Zuständen vorher = nachher. |

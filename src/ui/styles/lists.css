@@ -1,0 +1,115 @@
+/* Selectable list tiles. See _docs/ui/ui-css-guide.md. */
+
+/* ---------- Tiles (selectable list items) ----------
+   .tile-list > li > button.tile. Selected = aria-current="true".
+   See _docs/ui/ui-css-guide.md (A6). */
+.tile-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--panel-gap);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tile-list__row {
+  display: flex;
+  gap: var(--space-2);
+  align-items: stretch;
+}
+
+.tile-list__row .tile {
+  flex: 1;
+  min-width: 0;
+}
+
+.tile {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: var(--tile-h);
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  color: inherit;
+}
+
+.tile:hover {
+  background: var(--color-surface-subtle);
+}
+
+.tile[aria-current='true'] {
+  border-color: var(--color-accent-border);
+  box-shadow: 0 0 0 1px var(--color-accent-border);
+  background: var(--color-accent-bg);
+}
+
+.tile:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -2px;
+}
+
+.tile__thumb,
+.tile__swatch {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.tile__thumb {
+  background: var(--color-surface-hover);
+}
+
+.tile__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.tile__thumb--icon {
+  color: var(--color-text-muted);
+}
+
+.tile__swatch {
+  border: 1px solid var(--color-border);
+}
+
+.tile__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.tile__name {
+  font-size: var(--font-sm);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.tile__detail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+  font-size: var(--font-xs);
+  color: var(--color-text-muted);
+}
+
+.tile__detail-text {
+  overflow: hidden;
+  max-width: 100%;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}

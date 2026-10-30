@@ -1,0 +1,139 @@
+/* Scene entity blocks and entity detail panel. See _docs/ui/ui-css-guide.md. */
+
+.scene-entity-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--panel-stack-gap);
+}
+
+.scene-entity-block {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--color-bg);
+}
+
+.scene-entity-block--selected {
+  border-color: var(--color-accent-border);
+  box-shadow: 0 0 0 1px var(--color-accent-border);
+}
+
+.scene-entity-block__header {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface-subtle);
+}
+
+.scene-entity-block--collapsed .scene-entity-block__header {
+  border-bottom: none;
+}
+
+.scene-entity-list--rows .scene-entity-block__header {
+  border-bottom: none;
+}
+
+.scene-detail__title {
+  font-size: var(--font-sm);
+  font-weight: 600;
+  padding: var(--space-1) 0 var(--space-2);
+}
+
+.scene-entity-block--selected .scene-entity-block__header {
+  background: var(--color-accent-bg);
+}
+
+.scene-entity-block__action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: var(--control-h);
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.scene-entity-block__action:first-child {
+  border-right: 1px solid var(--color-border);
+}
+
+.scene-entity-block__header > * + .scene-entity-block__action {
+  border-left: 1px solid var(--color-border);
+}
+
+.scene-entity-block__action:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+}
+
+.scene-entity-block__action[aria-pressed='false'] {
+  color: var(--color-text-muted);
+}
+
+.scene-entity-block--selected .scene-entity-block__title:hover,
+.scene-entity-block--selected .scene-entity-block__action:hover {
+  background: var(--color-accent-bg);
+}
+
+.scene-entity-block__action--danger:hover,
+.scene-entity-block--selected .scene-entity-block__action--danger:hover {
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+}
+
+.scene-entity-block__title {
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-3) var(--space-4);
+  border: none;
+  background: transparent;
+  font-size: var(--font-sm);
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.scene-entity-block__title--static {
+  cursor: default;
+}
+
+.scene-entity-block__title:hover {
+  background: var(--color-surface-hover);
+}
+
+.scene-entity-block--hidden .scene-entity-block__title {
+  opacity: var(--opacity-hidden);
+}
+
+.scene-entity-block__body {
+  padding: var(--panel-stack-gap);
+}
+
+.material-editor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin-top: var(--space-2);
+}
+
+.material-editor-actions .btn {
+  font-size: var(--font-sm);
+}
+
+.geometry-part-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--panel-gap);
+  margin-bottom: var(--panel-stack-gap);
+}
+
+.geometry-part-row:last-child {
+  margin-bottom: 0;
+}
