@@ -1,5 +1,4 @@
 import { Brush, Evaluator, SUBTRACTION } from 'three-bvh-csg';
-import { toCreasedNormals } from 'three/addons/utils/BufferGeometryUtils.js';
 import {
   MeshBasicMaterial,
   type BufferGeometry,
@@ -37,7 +36,6 @@ export function subtractGeometries(
   const resultGeometry = frameBrush.geometry;
   frameBrush.disposeCacheData();
   baseGeometry.dispose();
-  toCreasedNormals(resultGeometry, Math.PI / 2);
 
   return resultGeometry;
 }

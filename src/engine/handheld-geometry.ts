@@ -1,4 +1,3 @@
-import { toCreasedNormals } from 'three/addons/utils/BufferGeometryUtils.js';
 import {
   BufferAttribute,
   ExtrudeGeometry,
@@ -192,7 +191,6 @@ function extrudeShapeAlongZ(
   if (effectiveBevel > 0) {
     alignExtrusionFrontToZZero(geometry);
   }
-  toCreasedNormals(geometry, Math.PI / 2);
   ensureGeometryTangents(geometry);
   return geometry;
 }
@@ -327,7 +325,6 @@ function extrudePillAlongNegativeX(
   });
   geometry.translate(0, 0, -depthX);
   geometry.rotateY(Math.PI / 2);
-  toCreasedNormals(geometry, Math.PI / 2);
   ensureGeometryTangents(geometry);
   return geometry;
 }

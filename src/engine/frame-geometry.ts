@@ -1,4 +1,3 @@
-import { toCreasedNormals } from 'three/addons/utils/BufferGeometryUtils.js';
 import {
   BufferAttribute,
   ExtrudeGeometry,
@@ -181,7 +180,6 @@ export function createExtrudedFrameGeometry(
     frameDepth,
   };
   assignExtrudedFrameUvs(geometry, params);
-  toCreasedNormals(geometry, Math.PI / 2);
   ensureGeometryTangents(geometry);
 
   return geometry;
@@ -207,7 +205,6 @@ export function createRectangularGlassSlabGeometry(
     bevelEnabled: false,
   });
   geometry.translate(0, 0, -thickness);
-  toCreasedNormals(geometry, Math.PI / 2);
   ensureGeometryTangents(geometry);
   return geometry;
 }
