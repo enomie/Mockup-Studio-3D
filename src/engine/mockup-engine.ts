@@ -554,7 +554,7 @@ export class MockupEngine implements SceneApi {
           return;
         default:
           await this.assets.setKindParams(family, entityId, partial);
-          if (family === 'trianglePatch') {
+          if (family === 'patch') {
             this.patchGizmo.syncHelpersFromEntity();
           }
       }
@@ -630,7 +630,7 @@ export class MockupEngine implements SceneApi {
   /** Places a point on the edge under the pointer, selects its anchor and ends the mode. */
   private commitPatchAddPoint(pointer: ViewportPointer, camera: Camera): void {
     const entityId = this.patchAddPoint.getEntityId();
-    const params = entityId ? this.registry.getRuntime(entityId)?.entity.trianglePatchParams : undefined;
+    const params = entityId ? this.registry.getRuntime(entityId)?.entity.patchParams : undefined;
     const hit = this.patchAddPoint.hitAt(pointer, camera);
     if (!entityId || !params || !hit) {return;}
 

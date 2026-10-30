@@ -4,7 +4,7 @@ import {
   defaultTrianglePatchParams,
   getPatchCorners,
   type PatchPoint,
-  type TrianglePatchParams,
+  type PatchParams,
 } from '@/scene/asset-triangle-patch';
 import {
   buildTrianglePatchGeometry,
@@ -82,7 +82,7 @@ describe('triangle-patch-geometry', () => {
     for (const [u, v] of [[0.2, 0.3], [0.5, 0.25], [0.1, 0.1], [0.6, 0.35], [1 / 3, 1 / 3]]) {
       const w = 1 - u - v;
       evalPatchSurfacePoint(params, u, v, w, pt);
-      const ref = cornerOnlyReference(getPatchCorners(params), u, v, w);
+      const ref = cornerOnlyReference(getPatchCorners(params) as [PatchPoint, PatchPoint, PatchPoint], u, v, w);
       expect(pt.distanceTo(ref)).toBeLessThan(1e-9);
     }
   });
@@ -129,7 +129,7 @@ describe('triangle-patch-geometry', () => {
 });
 
 /** Default patch with a point on edge 1 (between corner 1 and corner 2) at parameter `t`. */
-function patchWithEdgePoint(t: number): TrianglePatchParams {
+function patchWithEdgePoint(t: number): PatchParams {
   const params = defaultTrianglePatchParams();
   const [, b, c] = getPatchCorners(params);
   const extra: PatchPoint = {

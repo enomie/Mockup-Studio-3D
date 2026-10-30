@@ -129,6 +129,7 @@ export function referenceFaceWidth(assetKind: AssetKind): number {
     case 'book-hardcover':
       return BOOK_REF_COVER_WIDTH_M;
     case 'triangle-patch':
+    case 'quad-patch':
       return 1.0;
   }
 }
@@ -487,6 +488,7 @@ export function assetFootprintHeight(
     case 'book-hardcover':
       return face.height;
     case 'triangle-patch':
+    case 'quad-patch':
       return 0.5;
   }
 }

@@ -13,13 +13,14 @@ import {
   setPatchAddPointMode,
   } from '@/ui/store/app-store';
 import {
-  defaultTrianglePatchParams,
+  defaultPatchParamsForKind,
+  isPatchAssetKind,
   isPatchCorner,
   replacePatchPoint,
   type PatchHandleTarget,
   type PatchMirror,
   type PatchPoint,
-  type TrianglePatchParams,
+  type PatchParams,
 } from '@/scene/asset-triangle-patch';
 import {
   rotatePatchNodeHandlesAroundAnchor,
@@ -46,7 +47,8 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
   const materials = useAppStore((s) => s.materials);
   const slots = entity.materials;
 
-  const patchParams: TrianglePatchParams = entity.trianglePatchParams ?? defaultTrianglePatchParams();
+  const patchParams: PatchParams = entity.patchParams ??
+    defaultPatchParamsForKind(isPatchAssetKind(entity.assetKind) ? entity.assetKind : 'triangle-patch');
   // The viewport pick wins; local state covers the case where nothing is picked yet.
   const viewportEntityId = useAppStore((s) => s.patchHandleSelection?.entityId);
   const viewportPointId = useAppStore((s) => s.patchHandleSelection?.pointId);
@@ -78,7 +80,7 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
   };
 
   const commitPoint = (point: PatchPoint) => {
-    setKindParams('trianglePatch', entity.id, { points: replacePatchPoint(patchParams.points, point) });
+    setKindParams('patch', entity.id, { points: replacePatchPoint(patchParams.points, point) });
   };
 
   const renamePoint = (point: PatchPoint, input: HTMLInputElement) => {
@@ -95,7 +97,7 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
     const index = patchParams.points.findIndex((point) => point.id === pointId);
     const next = removePatchPoint(patchParams, pointId);
     if (next === patchParams) {return;}
-    setKindParams('trianglePatch', entity.id, { points: next.points, edgeParams: next.edgeParams });
+    setKindParams('patch', entity.id, { points: next.points, edgeParams: next.edgeParams });
     if (pointId === selectedPointId) {
       const previous = patchParams.points[(index - 1 + patchParams.points.length) % patchParams.points.length];
       handleSelectTarget(previous.id, 'pos');
@@ -212,7 +214,7 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
 
   const mirror: PatchMirror = patchParams.mirror ?? { x: false, y: false, z: false };
   const setMirrorAxis = (axis: keyof PatchMirror, checked: boolean) => {
-    setKindParams('trianglePatch', entity.id, { mirror: { ...mirror, [axis]: checked } });
+    setKindParams('patch', entity.id, { mirror: { ...mirror, [axis]: checked } });
   };
 
   const handleLen = selectedTargetKey !== 'pos'

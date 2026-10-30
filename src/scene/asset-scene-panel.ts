@@ -2,7 +2,7 @@ import type { AssetKind } from './asset-kind';
 import {
   isBeverageCanAssetKind,
   isPenAssetKind,
-  isTrianglePatchAssetKind,
+  isPatchAssetKind,
   isWheelCarAssetKind,
   isWineBottleAssetKind,
 } from './asset-kind-predicates';
@@ -22,7 +22,7 @@ export function usesWheelCarPositionFooter(kind: AssetKind): boolean {
 }
 
 export function usesTrianglePatchPositionFooter(kind: AssetKind): boolean {
-  return isTrianglePatchAssetKind(kind);
+  return isPatchAssetKind(kind);
 }
 
 export function usesScenePositionFooter(kind: AssetKind): boolean {

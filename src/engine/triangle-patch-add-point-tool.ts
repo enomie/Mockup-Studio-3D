@@ -10,12 +10,18 @@ import {
   type Camera,
   type Scene,
 } from 'three/webgpu';
-import type { TrianglePatchParams } from '@/scene/asset-triangle-patch';
+import {
+  getPatchEdgeCount,
+  isPatchAssetKind,
+  type PatchParams,
+} from '@/scene/asset-triangle-patch';
 import { evalEdge } from './triangle-patch-geometry';
 import type { EntityRegistry } from './entity-registry';
 
 /** Samples per edge for hover hit testing and the edge highlight lines. */
 const EDGE_SAMPLES = 64;
+/** Highlight lines are pooled for the largest patch (quad). */
+const MAX_PATCH_EDGES = 4;
 /** How close (screen pixels) the pointer must be to an edge to place a point. */
 const HOVER_RADIUS_PX = 14;
 
@@ -104,7 +110,7 @@ export class TrianglePatchAddPointTool {
       depthWrite: false,
       toneMapped: false,
     });
-    for (let e = 0; e < 3; e++) {
+    for (let e = 0; e < MAX_PATCH_EDGES; e++) {
       const points = Array.from({ length: EDGE_SAMPLES + 1 }, () => new Vector3());
       const line = new Line(new BufferGeometry().setFromPoints(points), lineMaterial);
       line.renderOrder = 997;
@@ -124,7 +130,8 @@ export class TrianglePatchAddPointTool {
   }
 
   start(entityId: string): void {
-    if (this.registry.getRuntime(entityId)?.entity.assetKind !== 'triangle-patch') {return;}
+    const kind = this.registry.getRuntime(entityId)?.entity.assetKind;
+    if (!kind || !isPatchAssetKind(kind)) {return;}
     this.entityId = entityId;
     this.preview.visible = false;
     this.syncEdgeLines();
@@ -159,7 +166,7 @@ export class TrianglePatchAddPointTool {
     camera.updateMatrixWorld();
 
     const screenEdges: (Vector2 | null)[][] = [];
-    for (let e = 0; e < 3; e++) {
+    for (let e = 0; e < getPatchEdgeCount(params); e++) {
       const samples: (Vector2 | null)[] = [];
       for (let i = 0; i <= EDGE_SAMPLES; i++) {
         evalEdge(params, e, i / EDGE_SAMPLES, _world).applyMatrix4(matrix).project(camera);
@@ -190,7 +197,12 @@ export class TrianglePatchAddPointTool {
       return;
     }
     const matrix = this.getMatrixWorld();
+    const edgeCount = getPatchEdgeCount(params);
     this.edgeLines.forEach((line, e) => {
+      if (e >= edgeCount) {
+        line.visible = false;
+        return;
+      }
       const points = Array.from({ length: EDGE_SAMPLES + 1 }, (_, i) =>
         evalEdge(params, e, i / EDGE_SAMPLES).applyMatrix4(matrix),
       );
@@ -208,9 +220,9 @@ export class TrianglePatchAddPointTool {
     }
   }
 
-  private getParams(): TrianglePatchParams | null {
+  private getParams(): PatchParams | null {
     if (!this.entityId) {return null;}
-    return this.registry.getRuntime(this.entityId)?.entity.trianglePatchParams ?? null;
+    return this.registry.getRuntime(this.entityId)?.entity.patchParams ?? null;
   }
 
   private getMatrixWorld() {

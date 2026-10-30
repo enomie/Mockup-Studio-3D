@@ -27,12 +27,12 @@ export interface PatchHandleSelection {
   targetKey: PatchHandleTarget;
 }
 
-export interface TrianglePatchParams {
+export interface PatchParams {
   divisions: number;
   /** Closed loop around the patch boundary; the order is also the panel list order. */
   points: PatchPoint[];
-  /** The three points that are the triangle corners, in loop order. Edge e runs corner e -> corner e+1. */
-  cornerIds: [string, string, string];
+  /** Corner points in loop order: three for a triangle patch, four for a quad patch. Edge e runs corner e -> corner e+1. */
+  cornerIds: string[];
   /** Edge parameter t in (0, 1) of every non-corner point on its edge. */
   edgeParams: Record<string, number>;
   /** Live mirror copies across the local YZ / XZ / XY planes through the pivot; absent means none. */
@@ -67,8 +67,15 @@ export function getPatchMirrorSigns(mirror: PatchMirror | undefined): Vec3[] {
   return signs;
 }
 
-export function isTrianglePatchAssetKind(kind: AssetKind): kind is 'triangle-patch' {
-  return kind === 'triangle-patch';
+export type PatchAssetKind = 'triangle-patch' | 'quad-patch';
+
+/** Triangle and quad patches share params, gizmo, add-point mode and panel. */
+export function isPatchAssetKind(kind: AssetKind): kind is PatchAssetKind {
+  return kind === 'triangle-patch' || kind === 'quad-patch';
+}
+
+export function isQuadPatchParams(params: PatchParams): boolean {
+  return params.cornerIds.length === 4;
 }
 
 export function clonePatchPoint(point: PatchPoint): PatchPoint {
@@ -83,7 +90,7 @@ export function clonePatchPoint(point: PatchPoint): PatchPoint {
   };
 }
 
-export function cloneTrianglePatchParams(params: TrianglePatchParams): TrianglePatchParams {
+export function clonePatchParams(params: PatchParams): PatchParams {
   return {
     divisions: params.divisions,
     points: params.points.map(clonePatchPoint),
@@ -93,30 +100,34 @@ export function cloneTrianglePatchParams(params: TrianglePatchParams): TriangleP
   };
 }
 
-export function findPatchPoint(params: TrianglePatchParams, pointId: string): PatchPoint | undefined {
+export function findPatchPoint(params: PatchParams, pointId: string): PatchPoint | undefined {
   return params.points.find((point) => point.id === pointId);
 }
 
-export function isPatchCorner(params: TrianglePatchParams, pointId: string): boolean {
+export function isPatchCorner(params: PatchParams, pointId: string): boolean {
   return params.cornerIds.includes(pointId);
 }
 
-export function getPatchCorners(params: TrianglePatchParams): [PatchPoint, PatchPoint, PatchPoint] {
-  const corner = (id: string): PatchPoint => {
+export function getPatchCorners(params: PatchParams): PatchPoint[] {
+  return params.cornerIds.map((id) => {
     const point = findPatchPoint(params, id);
-    if (!point) {throw new Error(`triangle patch corner ${id} is missing`);}
+    if (!point) {throw new Error(`patch corner ${id} is missing`);}
     return point;
-  };
-  return [corner(params.cornerIds[0]), corner(params.cornerIds[1]), corner(params.cornerIds[2])];
+  });
 }
 
-/** Points of edge `edgeIndex` (0–2) in loop order, from its start corner to its end corner inclusive. */
-export function getPatchEdgePoints(params: TrianglePatchParams, edgeIndex: number): PatchPoint[] {
+/** Number of edges (= corners) of the patch. */
+export function getPatchEdgeCount(params: PatchParams): number {
+  return params.cornerIds.length;
+}
+
+/** Points of edge `edgeIndex` in loop order, from its start corner to its end corner inclusive. */
+export function getPatchEdgePoints(params: PatchParams, edgeIndex: number): PatchPoint[] {
   const { points, cornerIds } = params;
-  const startId = cornerIds[edgeIndex % 3];
-  const endId = cornerIds[(edgeIndex + 1) % 3];
+  const startId = cornerIds[edgeIndex % cornerIds.length];
+  const endId = cornerIds[(edgeIndex + 1) % cornerIds.length];
   const startIdx = points.findIndex((point) => point.id === startId);
-  if (startIdx < 0) {throw new Error(`triangle patch corner ${startId} is missing`);}
+  if (startIdx < 0) {throw new Error(`patch corner ${startId} is missing`);}
 
   const edge: PatchPoint[] = [];
   for (let step = 0; step < points.length; step++) {
@@ -124,7 +135,7 @@ export function getPatchEdgePoints(params: TrianglePatchParams, edgeIndex: numbe
     edge.push(point);
     if (step > 0 && point.id === endId) {return edge;}
   }
-  throw new Error(`triangle patch corner ${endId} is missing`);
+  throw new Error(`patch corner ${endId} is missing`);
 }
 
 export interface PatchEdgeSegment {
@@ -139,7 +150,7 @@ export interface PatchEdgeSegment {
  * their `edgeParams` value; out-of-order params are clamped so the knots stay monotonic.
  */
 export function locatePatchEdgeSegment(
-  params: TrianglePatchParams,
+  params: PatchParams,
   edgeIndex: number,
   t: number,
 ): PatchEdgeSegment {
@@ -157,7 +168,7 @@ export function locatePatchEdgeSegment(
     }
     knotStart = knotEnd;
   }
-  throw new Error('triangle patch edge has no segment');
+  throw new Error('patch edge has no segment');
 }
 
 /** Returns a new point list with the point of the same id swapped in. */
@@ -186,7 +197,7 @@ export function scalePatchPointHandles(point: PatchPoint, factor: number): Patch
 /**
  * Default initial geometry for a triangle patch: three corner points, no edge points.
  */
-export function defaultTrianglePatchParams(): TrianglePatchParams {
+export function defaultTrianglePatchParams(): PatchParams {
   const points = authoredCornerPoints().map((point) =>
     scalePatchPointHandles(point, DEFAULT_HANDLE_LENGTH_SCALE),
   );
@@ -230,3 +241,43 @@ function authoredCornerPoints(): PatchPoint[] {
   ];
 }
 
+
+/**
+ * Default initial geometry for a quad patch: four corner points on a 1 x 1 square,
+ * handles at a third of each edge, cross handles lifting the middle gently.
+ */
+export function defaultQuadPatchParams(): PatchParams {
+  const y = 0.3;
+  const half = 0.5;
+  const third = 1 / 3;
+  const lift = 0.15;
+  const corners: [number, number][] = [
+    [-half, half],
+    [half, half],
+    [half, -half],
+    [-half, -half],
+  ];
+  const points: PatchPoint[] = corners.map(([x, z], index) => {
+    const [nx, nz] = corners[(index + 1) % 4];
+    const [px, pz] = corners[(index + 3) % 4];
+    return {
+      id: `pt-${index + 1}`,
+      name: `Point ${index + 1}`,
+      pos: { x, y, z },
+      handleNext: { x: x + (nx - x) * third, y, z: z + (nz - z) * third },
+      handlePrev: { x: x + (px - x) * third, y, z: z + (pz - z) * third },
+      handleCrossIn: { x: x * (1 - third), y: y + lift, z: z * (1 - third) },
+      handleCrossOut: { x: x * (1 + third), y: y - lift, z: z * (1 + third) },
+    };
+  });
+  return {
+    divisions: 24,
+    points,
+    cornerIds: points.map((point) => point.id),
+    edgeParams: {},
+  };
+}
+
+export function defaultPatchParamsForKind(kind: PatchAssetKind): PatchParams {
+  return kind === 'quad-patch' ? defaultQuadPatchParams() : defaultTrianglePatchParams();
+}

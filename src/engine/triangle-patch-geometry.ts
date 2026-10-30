@@ -7,7 +7,7 @@ import {
   getPatchCorners,
   locatePatchEdgeSegment,
   type PatchPoint,
-  type TrianglePatchParams,
+  type PatchParams,
 } from '@/scene/asset-triangle-patch';
 import { ensureGeometryTangents } from '@/engine/geometry-tangents';
 
@@ -41,7 +41,7 @@ export function evalCubicBezierEdge(
 
 /** Evaluates edge `edgeIndex` (corner e -> corner e+1) at `t` in [0, 1], across all its segments. */
 export function evalEdge(
-  params: TrianglePatchParams,
+  params: PatchParams,
   edgeIndex: number,
   t: number,
   out: Vector3 = new Vector3(),
@@ -52,7 +52,7 @@ export function evalEdge(
 
 /** Cross-tangent offset (`handleCrossIn - pos`) along edge `edgeIndex`, interpolated between its points. */
 export function evalCross(
-  params: TrianglePatchParams,
+  params: PatchParams,
   edgeIndex: number,
   t: number,
   out: Vector3 = new Vector3(),
@@ -69,7 +69,7 @@ export function evalCross(
  * weighting corner 0, 1, 2. Edge 0: corner 0 -> 1, edge 1: 1 -> 2, edge 2: 2 -> 0.
  */
 export function evalPatchSurfacePoint(
-  params: TrianglePatchParams,
+  params: PatchParams,
   u: number,
   v: number,
   w: number,
@@ -112,7 +112,7 @@ export function evalPatchSurfacePoint(
 /**
  * Creates BufferGeometry for a triangle patch based on parameters.
  */
-export function buildTrianglePatchGeometry(params: TrianglePatchParams): BufferGeometry {
+export function buildTrianglePatchGeometry(params: PatchParams): BufferGeometry {
   const divisions = Math.max(2, Math.min(64, params.divisions || 24));
   const totalVerts = ((divisions + 1) * (divisions + 2)) / 2;
 

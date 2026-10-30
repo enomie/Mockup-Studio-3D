@@ -18,4 +18,5 @@ export type AssetKind =
   | 'wheel-car'
   | 'book-softcover'
   | 'book-hardcover'
-  | 'triangle-patch';
+  | 'triangle-patch'
+  | 'quad-patch';

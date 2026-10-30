@@ -7,11 +7,11 @@ import {
   getPatchMirrorSigns,
   isPatchCorner,
   replacePatchPoint,
-  type TrianglePatchParams,
+  type PatchParams,
 } from './asset-triangle-patch';
 
 /** Default patch with one extra point between corner 2 and corner 3 (edge 1). */
-function patchWithEdgePoint(): TrianglePatchParams {
+function patchWithEdgePoint(): PatchParams {
   const params = defaultTrianglePatchParams();
   const extra = { ...clonePatchPoint(params.points[1]), id: 'pt-4', name: 'Point 4' };
   params.points.splice(2, 0, extra);

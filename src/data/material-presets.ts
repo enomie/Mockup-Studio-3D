@@ -440,7 +440,7 @@ export function defaultMaterialsForKind(assetKind: AssetKind): AssetMaterialSlot
   if (assetKind === 'tin-can') {return defaultBeverageCanMaterials();}
   if (assetKind === 'wine-bottle') {return defaultWineBottleMaterials();}
   if (assetKind === 'pen') {return defaultPenMaterials();}
-  if (assetKind === 'triangle-patch') {return defaultTrianglePatchMaterials();}
+  if (assetKind === 'triangle-patch' || assetKind === 'quad-patch') {return defaultTrianglePatchMaterials();}
   return {};
 }
 

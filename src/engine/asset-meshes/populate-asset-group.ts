@@ -28,7 +28,7 @@ import {
 import { addBook } from './populate-book';
 import { resolveBookParams } from '@/scene/asset-book';
 import { addTrianglePatch } from './populate-triangle-patch';
-import { defaultTrianglePatchParams } from '@/scene/asset-triangle-patch';
+import { defaultPatchParamsForKind } from '@/scene/asset-triangle-patch';
 
 export function populateAssetGroup(
   group: Group,
@@ -198,11 +198,12 @@ export function populateAssetGroup(
       );
       break;
     case 'triangle-patch':
+    case 'quad-patch':
       addTrianglePatch(
         group,
         resolver,
         materials,
-        context.trianglePatchParams ?? defaultTrianglePatchParams(),
+        context.patchParams ?? defaultPatchParamsForKind(assetKind),
       );
       break;
     case 'book-softcover':

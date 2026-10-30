@@ -8,7 +8,7 @@ import type { WheelCarParams } from '@/scene/asset-wheel-car';
 import type { FabricClothParams } from '@/scene/asset-fabric-cloth';
 import type { FabricClothBakedMeshPayload } from '@/scene/user-baked-asset';
 import type { BookParams } from '@/scene/asset-book';
-import type { TrianglePatchParams } from '@/scene/asset-triangle-patch';
+import type { PatchParams } from '@/scene/asset-triangle-patch';
 import type { BookTextures } from '@/engine/asset-meshes/populate-book';
 import type { HandheldDeviceParams } from '@/scene/asset-handheld';
 import type { MonitorDeviceParams } from '@/scene/asset-monitor';
@@ -63,7 +63,7 @@ export interface AssetBuildContext {
   tinCanParams?: TinCanParams;
   wineBottleParams?: WineBottleParams;
   penParams?: PenParams;
-  trianglePatchParams?: TrianglePatchParams;
+  patchParams?: PatchParams;
   assetKind?: AssetKind;
   imageSurfaces?: Partial<Record<AssetImageSurfaceId, ImageSurfaceSettings>>;
 }

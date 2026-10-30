@@ -48,6 +48,7 @@ const ALL_ASSET_KINDS: Record<AssetKind, true> = {
   'book-softcover': true,
   'book-hardcover': true,
   'triangle-patch': true,
+  'quad-patch': true,
 };
 
 const EXPECTED_METADATA: Record<
@@ -158,6 +159,11 @@ const EXPECTED_METADATA: Record<
     rebuildStrategy: 'sync-populateAssetGroup',
     screenImageRole: 'front',
   },
+  'quad-patch': {
+    family: 'block',
+    rebuildStrategy: 'sync-populateAssetGroup',
+    screenImageRole: 'front',
+  },
 };
 
 const EXPECTED_DEFAULT_SLICE_KEYS: Record<AssetKind, string[]> = {
@@ -180,7 +186,8 @@ const EXPECTED_DEFAULT_SLICE_KEYS: Record<AssetKind, string[]> = {
   'fabric-cloth-baked': ['fabricClothParams'],
   'book-softcover': ['bookParams', 'bookBackCoverImageId', 'bookSpineImageId'],
   'book-hardcover': ['bookParams', 'bookBackCoverImageId', 'bookSpineImageId'],
-  'triangle-patch': ['trianglePatchParams'],
+  'triangle-patch': ['patchParams'],
+  'quad-patch': ['patchParams'],
 };
 
 function minimalEntity(kind: AssetKind): AssetEntity {

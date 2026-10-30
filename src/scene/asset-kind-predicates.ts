@@ -18,4 +18,4 @@ export {
   isFabricClothFamilyAssetKind,
 } from './asset-fabric-cloth';
 export { isBookAssetKind, isBookHardcoverKind } from './asset-book';
-export { isTrianglePatchAssetKind } from './asset-triangle-patch';
+export { isPatchAssetKind } from './asset-triangle-patch';

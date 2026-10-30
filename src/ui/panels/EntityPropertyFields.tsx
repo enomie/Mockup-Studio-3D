@@ -17,7 +17,7 @@ import {
   isWallAssetKind,
   isWineBottleAssetKind,
   isPenAssetKind,
-  isTrianglePatchAssetKind,
+  isPatchAssetKind,
 } from '@/scene/asset-kind-predicates';
 import {
   usesPackagingDimensionsPositionFooter,
@@ -174,7 +174,7 @@ export function EntityPropertyFields({
           images={images}
           screenImageFieldId={screenImageFieldId}
         />
-      ) : isTrianglePatchAssetKind(entity.assetKind) ? (
+      ) : isPatchAssetKind(entity.assetKind) ? (
         <TrianglePatchFields entity={entity} />
       ) : (
         <PictureFields

@@ -2,7 +2,7 @@ import {
   isPatchCorner,
   locatePatchEdgeSegment,
   type PatchPoint,
-  type TrianglePatchParams,
+  type PatchParams,
 } from './asset-triangle-patch';
 import type { Vec3 } from './entity-types';
 
@@ -40,10 +40,10 @@ function nextPatchPointNumber(points: readonly PatchPoint[]): number {
  * de Casteljau, so the edge keeps its shape; the cross tangents are blended from the neighbors.
  */
 export function insertPatchPoint(
-  params: TrianglePatchParams,
+  params: PatchParams,
   edgeIndex: number,
   t: number,
-): { params: TrianglePatchParams; pointId: string } {
+): { params: PatchParams; pointId: string } {
   const { start, end, s: rawS } = locatePatchEdgeSegment(params, edgeIndex, t);
   const s = Math.min(1 - MIN_SEGMENT_SPLIT, Math.max(MIN_SEGMENT_SPLIT, rawS));
 
@@ -76,8 +76,8 @@ export function insertPatchPoint(
   points.splice(points.findIndex((point) => point.id === start.id) + 1, 0, inserted);
 
   // Store the edge parameter of the clamped split, not the raw click.
-  const knotStart = start.id === params.cornerIds[edgeIndex % 3] ? 0 : params.edgeParams[start.id];
-  const knotEnd = end.id === params.cornerIds[(edgeIndex + 1) % 3] ? 1 : params.edgeParams[end.id];
+  const knotStart = start.id === params.cornerIds[edgeIndex % params.cornerIds.length] ? 0 : params.edgeParams[start.id];
+  const knotEnd = end.id === params.cornerIds[(edgeIndex + 1) % params.cornerIds.length] ? 1 : params.edgeParams[end.id];
   const edgeT = knotStart + (knotEnd - knotStart) * s;
 
   return {
@@ -91,7 +91,7 @@ export function insertPatchPoint(
 }
 
 /** Removes an edge point; its two segments merge into one. Corners cannot be removed. */
-export function removePatchPoint(params: TrianglePatchParams, pointId: string): TrianglePatchParams {
+export function removePatchPoint(params: PatchParams, pointId: string): PatchParams {
   if (isPatchCorner(params, pointId) || !params.points.some((point) => point.id === pointId)) {
     return params;
   }

@@ -47,8 +47,8 @@ import {
   isSphereAssetKind,
 } from '@/scene/asset-sphere';
 import {
-  defaultTrianglePatchParams,
-  isTrianglePatchAssetKind,
+  defaultPatchParamsForKind,
+  isPatchAssetKind,
 } from '@/scene/asset-triangle-patch';
 import { isWheelCarAssetKind } from '@/scene/asset-wheel-car';
 import { isRigidPrimitiveAssetKind } from '@/scene/rigid-primitive-asset';
@@ -307,13 +307,13 @@ export class AssetSystem {
         materialResolver: this.materialResolver,
         sphereParams: defaultSphereParams(),
       });
-    } else if (isTrianglePatchAssetKind(assetKind)) {
+    } else if (isPatchAssetKind(assetKind)) {
       populateAssetGroup(root, assetKind, {
         sizeScale: 1,
         materials,
         materialResolver: this.materialResolver,
-        trianglePatchParams:
-          kindDefaults.trianglePatchParams ?? defaultTrianglePatchParams(),
+        patchParams:
+          kindDefaults.patchParams ?? defaultPatchParamsForKind(assetKind),
       });
     } else if (isWheelCarAssetKind(assetKind)) {
       // Meshes built asynchronously in rebuildEntity (SVG lathe).

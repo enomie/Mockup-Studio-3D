@@ -69,9 +69,10 @@ import {
   type PrintDeviceParams,
 } from './asset-print';
 import {
-  cloneTrianglePatchParams,
-  defaultTrianglePatchParams,
-  type TrianglePatchParams,
+  clonePatchParams,
+  defaultPatchParamsForKind,
+  type PatchAssetKind,
+  type PatchParams,
 } from './asset-triangle-patch';
 import {
   clampTinCanParams,
@@ -153,7 +154,7 @@ export type AssetKindDefaultEntitySlice = Partial<
     | 'bookParams'
     | 'bookBackCoverImageId'
     | 'bookSpineImageId'
-    | 'trianglePatchParams'
+    | 'patchParams'
     | 'physicsBodyMode'
     | 'physicsDensityKgPerM3'
   >
@@ -630,9 +631,14 @@ const ASSET_KIND_DEFINITIONS = {
         entity.penParams ? { penParams: clonePenParams(entity.penParams) } : {},
     },
   ),
-  'triangle-patch': withSharedHooks(
+  'triangle-patch': patchKindDefinition('triangle-patch'),
+  'quad-patch': patchKindDefinition('quad-patch'),
+} satisfies Record<AssetKind, AssetKindDefinition>;
+
+function patchKindDefinition(kind: PatchAssetKind): AssetKindDefinition {
+  return withSharedHooks(
     {
-      kind: 'triangle-patch',
+      kind,
       family: 'block',
       rebuildStrategy: 'sync-populateAssetGroup',
       screenImageRole: 'front',
@@ -640,24 +646,24 @@ const ASSET_KIND_DEFINITIONS = {
     },
     {
       getDefaultEntitySlice: () => ({
-        trianglePatchParams: defaultTrianglePatchParams(),
+        patchParams: defaultPatchParamsForKind(kind),
       }),
       mergeParamPatch: (entity, partial) => {
-        const current = entity.trianglePatchParams ?? defaultTrianglePatchParams();
+        const current = entity.patchParams ?? defaultPatchParamsForKind(kind);
         return {
-          trianglePatchParams: {
+          patchParams: {
             ...current,
-            ...(partial as Partial<TrianglePatchParams>),
+            ...(partial as Partial<PatchParams>),
           },
         };
       },
       cloneParamsFromEntity: (entity) =>
-        entity.trianglePatchParams
-          ? { trianglePatchParams: cloneTrianglePatchParams(entity.trianglePatchParams) }
+        entity.patchParams
+          ? { patchParams: clonePatchParams(entity.patchParams) }
           : {},
     },
-  ),
-} satisfies Record<AssetKind, AssetKindDefinition>;
+  );
+}
 
 function handheldDeviceHooks(): Pick<
   AssetKindDefinition,

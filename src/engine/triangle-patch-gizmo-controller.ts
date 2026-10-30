@@ -23,7 +23,8 @@ import {
   type PatchHandleSelection,
   type PatchHandleTarget,
   type PatchPoint,
-  type TrianglePatchParams,
+  type PatchParams,
+  isPatchAssetKind,
 } from '@/scene/asset-triangle-patch';
 import type { EntityRegistry } from './entity-registry';
 
@@ -141,7 +142,7 @@ export class TrianglePatchGizmoController {
   private readonly lengthRing: Mesh;
   private lengthDrag: LengthDragState | null = null;
 
-  private onPatchChange?: (entityId: string, params: TrianglePatchParams) => void;
+  private onPatchChange?: (entityId: string, params: PatchParams) => void;
 
   constructor(scene: Scene, registry: EntityRegistry) {
     this.scene = scene;
@@ -155,7 +156,7 @@ export class TrianglePatchGizmoController {
     this.lengthRing = this.createLengthRing();
   }
 
-  setPatchChangeListener(listener: (entityId: string, params: TrianglePatchParams) => void): void {
+  setPatchChangeListener(listener: (entityId: string, params: PatchParams) => void): void {
     this.onPatchChange = listener;
   }
 
@@ -220,7 +221,7 @@ export class TrianglePatchGizmoController {
   }
 
   /** Keeps exactly one helper set per patch point. */
-  private ensurePointHelpers(params: TrianglePatchParams): void {
+  private ensurePointHelpers(params: PatchParams): void {
     const { points } = params;
     const ids = new Set(points.map((point) => point.id));
     for (const [id, helpers] of this.pointHelpers) {
@@ -294,7 +295,7 @@ export class TrianglePatchGizmoController {
     if (!ray.intersectsSphere(this.lengthRingBoundingSphere())) {return false;}
 
     const runtime = this.activeEntityId ? this.registry.getRuntime(this.activeEntityId) : undefined;
-    const params = runtime?.entity.trianglePatchParams;
+    const params = runtime?.entity.patchParams;
     const node = params ? findPatchPoint(params, this.activeTarget.pointId) : undefined;
     if (!runtime || !node) {return false;}
 
@@ -321,7 +322,7 @@ export class TrianglePatchGizmoController {
     const drag = this.lengthDrag;
     if (!drag || !this.activeEntityId) {return;}
     const runtime = this.registry.getRuntime(this.activeEntityId);
-    const params = runtime?.entity.trianglePatchParams;
+    const params = runtime?.entity.patchParams;
     const node = params ? findPatchPoint(params, drag.pointId) : undefined;
     if (!runtime || !params || !node) {return;}
 
@@ -383,7 +384,7 @@ export class TrianglePatchGizmoController {
     }
 
     const runtime = this.registry.getRuntime(entityId);
-    if (runtime?.entity.assetKind !== 'triangle-patch') {
+    if (!runtime || !isPatchAssetKind(runtime.entity.assetKind)) {
       this.helperGroup.visible = false;
       this.activeTarget = null;
       return;
@@ -421,9 +422,9 @@ export class TrianglePatchGizmoController {
   syncHelpersFromEntity(): void {
     if (!this.activeEntityId) {return;}
     const runtime = this.registry.getRuntime(this.activeEntityId);
-    if (!runtime?.entity.trianglePatchParams) {return;}
+    if (!runtime?.entity.patchParams) {return;}
 
-    const params = runtime.entity.trianglePatchParams;
+    const params = runtime.entity.patchParams;
     const parentObject = runtime.object;
 
     // HelperGroup in the local or world space of the entity object
@@ -461,9 +462,9 @@ export class TrianglePatchGizmoController {
   applyHandleTransform(gizmoMode: 'translate' | 'rotate'): boolean {
     if (!this.activeEntityId || !this.activeTarget) {return false;}
     const runtime = this.registry.getRuntime(this.activeEntityId);
-    if (!runtime?.entity.trianglePatchParams) {return false;}
+    if (!runtime?.entity.patchParams) {return false;}
 
-    const params = runtime.entity.trianglePatchParams;
+    const params = runtime.entity.patchParams;
     const targetKey = this.activeTarget.targetKey;
     const currentNode = findPatchPoint(params, this.activeTarget.pointId);
     if (!currentNode) {return false;}
@@ -552,16 +553,16 @@ export class TrianglePatchGizmoController {
 
   /** Entities are immutable: replaces one point through the registry, then resyncs helpers. */
   private commitPoint(entityId: string, point: PatchPoint): void {
-    const params = this.registry.getRuntime(entityId)?.entity.trianglePatchParams;
+    const params = this.registry.getRuntime(entityId)?.entity.patchParams;
     if (!params) {return;}
     this.commitParams(entityId, { points: replacePatchPoint(params.points, point) });
   }
 
   /** Commits a params change through the registry, resyncs helpers and notifies the listener. */
-  commitParams(entityId: string, partial: Partial<TrianglePatchParams>): void {
-    this.registry.setKindParams('trianglePatch', entityId, partial);
+  commitParams(entityId: string, partial: Partial<PatchParams>): void {
+    this.registry.setKindParams('patch', entityId, partial);
     this.syncHelpersFromEntity();
-    const updatedParams = this.registry.getRuntime(entityId)?.entity.trianglePatchParams;
+    const updatedParams = this.registry.getRuntime(entityId)?.entity.patchParams;
     if (updatedParams) {
       this.onPatchChange?.(entityId, updatedParams);
     }

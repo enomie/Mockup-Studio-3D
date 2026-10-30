@@ -24,7 +24,7 @@ import {
   defaultSphereParams,
   isSphereAssetKind,
 } from '@/scene/asset-sphere';
-import { defaultTrianglePatchParams } from '@/scene/asset-triangle-patch';
+import { defaultPatchParamsForKind, isPatchAssetKind } from '@/scene/asset-triangle-patch';
 import {
   defaultWheelCarParams,
   isWheelCarAssetKind,
@@ -130,16 +130,17 @@ type EntityRebuilder = (
   entity: AssetEntity,
 ) => Promise<void>;
 
-function rebuildTrianglePatch(
+function rebuildPatch(
   ctx: AssetRebuildContext,
   root: Group,
   entity: AssetEntity,
 ): Promise<void> {
   const definition = getAssetKindDefinition(entity.assetKind);
-  populateAssetGroup(root, 'triangle-patch', {
+  if (!isPatchAssetKind(entity.assetKind)) {return Promise.resolve();}
+  populateAssetGroup(root, entity.assetKind, {
     materials: entity.materials ?? definition.getDefaultMaterials(),
     materialResolver: ctx.materialResolver,
-    trianglePatchParams: entity.trianglePatchParams ?? defaultTrianglePatchParams(),
+    patchParams: entity.patchParams ?? defaultPatchParamsForKind(entity.assetKind),
   });
   return Promise.resolve();
 }
@@ -165,7 +166,8 @@ const REBUILDERS: Record<AssetKind, EntityRebuilder> = {
   'fabric-cloth-baked': rebuildFabricClothBaked,
   'book-softcover': rebuildBook,
   'book-hardcover': rebuildBook,
-  'triangle-patch': rebuildTrianglePatch,
+  'triangle-patch': rebuildPatch,
+  'quad-patch': rebuildPatch,
 };
 
 async function rebuildEntityNow(ctx: AssetRebuildContext, entityId: string): Promise<void> {

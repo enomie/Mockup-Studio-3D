@@ -16,6 +16,7 @@ import {
   Wine,
   Pen,
   Triangle,
+  Square,
   type LucideIcon,
 } from 'lucide-react';
 import type { AssetKind } from '@/scene/entity-types';
@@ -45,7 +46,8 @@ export const ASSET_CATALOG: AssetCatalogEntry[] = [
   },
   { kind: 'picture', label: 'Picture Frame', category: 'print', icon: Image },
   { kind: 'block', label: 'Object Block', category: 'objects', icon: Box },
-  { kind: 'triangle-patch', label: 'Patch', category: 'objects', icon: Triangle },
+  { kind: 'triangle-patch', label: 'Patch Triangle', category: 'objects', icon: Triangle },
+  { kind: 'quad-patch', label: 'Patch Quad', category: 'objects', icon: Square },
   { kind: 'cylinder', label: 'Object Cylinder', category: 'objects', icon: Database },
   { kind: 'sphere', label: 'Object Sphere', category: 'objects', icon: Circle },
   { kind: 'wheel-car', label: 'Wheel Car', category: 'objects', icon: CircleDot },

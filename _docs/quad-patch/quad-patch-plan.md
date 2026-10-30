@@ -1,6 +1,6 @@
 # Plan: Quad Patch (Viereck-Patch)
 
-Stand: 2026-10-30 · Status: **Plan, noch nicht umgesetzt.**
+Stand: 2026-10-30 · Status: **Umgesetzt (V1).** Namen im Asset-Panel: „Patch Triangle“ und „Patch Quad“. Viewport-Test durch den User steht aus.
 Basis: Triangle Patch inkl. Add Point (`_docs/triangle-patch/patch-add-point-plan.md`) und Mirror (`_docs/triangle-patch/patch-mirror-plan.md`).
 
 ---
@@ -44,10 +44,10 @@ interface PatchParams {               // heute TrianglePatchParams, wird verallg
 }
 ```
 
-- `TrianglePatchParams` wird zu `PatchParams` umbenannt. Ein Alias `TrianglePatchParams = PatchParams` bleibt, damit der Diff klein bleibt.
+- `TrianglePatchParams` wurde zu `PatchParams` umbenannt (ohne Alias).
 - Kantenzahl = `cornerIds.length`. Kante e: Ecke e → Ecke (e+1) mod n.
 - Helfer, die heute fix 3 annehmen (`getPatchCorners`, Kantenschleifen in `getPatchEdgePoints` / `locatePatchEdgeSegment`, Add-Point-Hit-Test, Gizmo), werden auf **n Ecken** umgestellt.
-- Neues Asset-Kind **`quad-patch`** mit eigenem Entity-Feld `quadPatchParams: PatchParams`. Der Triangle Patch behält `trianglePatchParams`.
+- Neues Asset-Kind **`quad-patch`**. **Abweichend vom ersten Entwurf umgesetzt:** Beide Kinds nutzen *ein* gemeinsames Entity-Feld `patchParams` (vorher `trianglePatchParams`) und die Param-Familie `patch`. Dadurch laufen Gizmo, Panel, Store und Add-Point ohne Sonderfall. Die Geometrie wählt über `cornerIds.length` (`isQuadPatchParams`). `isPatchAssetKind` gilt für beide, `defaultPatchParamsForKind(kind)` liefert den passenden Default.
 - `defaultQuadPatchParams()`: 4 Ecken „Point 1–4“, ca. 1 × 1 groß, leicht gewölbt, Hebel auf ~1/3 der Kanten, gelbe Quertangenten zeigen leicht nach oben und innen.
 
 ---
@@ -105,10 +105,10 @@ Damit verhalten sich die gelben Hebel beim Quad **genauso** wie beim Dreieck: Je
 
 | Bereich | Datei | Inhalt |
 | :--- | :--- | :--- |
-| Default & Kind | `src/scene/asset-quad-patch.ts` | `defaultQuadPatchParams`, `isQuadPatchAssetKind` |
+| Default & Kind | `src/scene/asset-triangle-patch.ts` | `defaultQuadPatchParams`, `defaultPatchParamsForKind`, `PatchAssetKind`, `isQuadPatchParams` |
 | Geometrie | `src/engine/quad-patch-geometry.ts` | `evalQuadPatchSurfacePoint(params, s, t)`, `buildQuadPatchGeometry` |
-| Mesh | `src/engine/asset-meshes/populate-quad-patch.ts` | analog Triangle (inkl. Mirror-Kopien) |
-| Registry/Katalog | `asset-kind.ts`, `asset-kind-registry.ts`, `asset-catalog.ts` | Kind `quad-patch`, Asset-Icon **„Quad Patch“** (Icon `Square`) |
+| Mesh | `src/engine/asset-meshes/populate-triangle-patch.ts` | gemeinsam, wählt Quad- oder Dreieck-Geometrie (inkl. Mirror-Kopien) |
+| Registry/Katalog | `asset-kind.ts`, `asset-kind-registry.ts`, `asset-catalog.ts` | Kind `quad-patch`, Einträge **„Patch Triangle“** / **„Patch Quad“** (Icon `Square`) |
 
 ---
 
@@ -132,7 +132,7 @@ Damit verhalten sich die gelben Hebel beim Quad **genauso** wie beim Dreieck: Je
 
 ## 9. Offene Punkte (beim Umsetzen klären)
 
-- **Name im Asset-Panel:** neuer Eintrag „Quad Patch“. Soll der bestehende „Patch“ zur Unterscheidung in „Triangle Patch“ umbenannt werden? (Vorschlag: ja.)
+- Name im Asset-Panel: entschieden, „Patch Triangle“ und „Patch Quad“.
 - Exakte Gewichtung und Stärke der Wölbung: per Tests und Augenschein.
 
 ## 10. Später (nicht beauftragt)

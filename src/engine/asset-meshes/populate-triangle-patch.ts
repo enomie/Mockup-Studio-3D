@@ -7,9 +7,11 @@ import {
 import {
   defaultTrianglePatchParams,
   getPatchMirrorSigns,
-  type TrianglePatchParams,
+  isQuadPatchParams,
+  type PatchParams,
 } from '@/scene/asset-triangle-patch';
 import { buildTrianglePatchGeometry } from '@/engine/triangle-patch-geometry';
+import { buildQuadPatchGeometry } from '@/engine/quad-patch-geometry';
 import type { MaterialResolver } from '@/engine/material-resolver';
 import type { AssetMaterialSlots } from '@/scene/material-types';
 import { MATERIAL_ALUMINUM_BRUSHED_ID } from '@/scene/material-ids';
@@ -18,9 +20,11 @@ export function addTrianglePatch(
   group: Group,
   resolver: MaterialResolver | undefined,
   materials: AssetMaterialSlots = {},
-  patchParams: TrianglePatchParams = defaultTrianglePatchParams(),
+  patchParams: PatchParams = defaultTrianglePatchParams(),
 ): Mesh {
-  const geometry = buildTrianglePatchGeometry(patchParams);
+  const geometry = isQuadPatchParams(patchParams)
+    ? buildQuadPatchGeometry(patchParams)
+    : buildTrianglePatchGeometry(patchParams);
 
   // Resolve material or fallback to double-sided PBR material
   const materialId = materials.patchMaterialId ?? MATERIAL_ALUMINUM_BRUSHED_ID;

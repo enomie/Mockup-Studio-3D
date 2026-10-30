@@ -11,7 +11,7 @@ import { isPenAssetKind, type PenParams } from './asset-pen';
 import type { PrintDeviceParams } from './asset-print';
 import { isSphereAssetKind, type SphereParams } from './asset-sphere';
 import { isTinCanAssetKind, type TinCanParams } from './asset-tin-can';
-import { isTrianglePatchAssetKind, type TrianglePatchParams } from './asset-triangle-patch';
+import { isPatchAssetKind, type PatchParams } from './asset-triangle-patch';
 import { isWallAssetKind, type WallParams } from './asset-wall';
 import { isWheelCarAssetKind, type WheelCarParams } from './asset-wheel-car';
 import { isWineBottleAssetKind, type WineBottleParams } from './asset-wine-bottle';
@@ -32,7 +32,7 @@ export interface KindParamsByFamily {
   tinCan: TinCanParams;
   wineBottle: WineBottleParams;
   pen: PenParams;
-  trianglePatch: TrianglePatchParams;
+  patch: PatchParams;
 }
 
 export type KindParamFamily = keyof KindParamsByFamily;
@@ -56,7 +56,7 @@ export const KIND_PARAM_FAMILY_GUARDS: Record<KindParamFamily, (kind: AssetKind)
   tinCan: isTinCanAssetKind,
   wineBottle: isWineBottleAssetKind,
   pen: isPenAssetKind,
-  trianglePatch: isTrianglePatchAssetKind,
+  patch: isPatchAssetKind,
 };
 
 export function kindAcceptsParamFamily(kind: AssetKind, family: KindParamFamily): boolean {
