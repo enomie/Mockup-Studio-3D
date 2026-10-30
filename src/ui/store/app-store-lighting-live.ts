@@ -1,5 +1,5 @@
 import type { Rgb } from '@/colors/rgb';
-import type { AppMode, LightingReferenceMode, StudioLightSide } from '@/scene/scene-api';
+import type { AppMode, LightingReferenceMode } from '@/scene/scene-api';
 import * as store from './app-store-internals';
 
 export function setMode(mode: AppMode): void {
@@ -37,8 +37,23 @@ export function setAmbientEnabled(enabled: boolean): void {
 }
 
 
-export function setKeySide(side: StudioLightSide): void {
-  store.patchLighting({ key: { side } });
+export function setKeyAzimuth(azimuthDeg: number): void {
+  store.patchLighting({ key: { azimuthDeg } });
+}
+
+
+export function setKeyElevation(elevationDeg: number): void {
+  store.patchLighting({ key: { elevationDeg } });
+}
+
+
+export function setFillAzimuth(azimuthDeg: number): void {
+  store.patchLighting({ fill: { azimuthDeg } });
+}
+
+
+export function setFillElevation(elevationDeg: number): void {
+  store.patchLighting({ fill: { elevationDeg } });
 }
 
 
@@ -82,8 +97,8 @@ export function setFillColor(rgb: Rgb): void {
 }
 
 
-export function setFillIntensityRatio(intensityRatio: number): void {
-  store.patchLighting({ fill: { intensityRatio } });
+export function setFillIntensity(intensity: number): void {
+  store.patchLighting({ fill: { intensity } });
 }
 
 

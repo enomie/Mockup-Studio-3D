@@ -34,8 +34,7 @@ import type { SpotLightRig } from './light-rig';
 import { orientFixtureDiscToward, setFixtureDiscColor } from './light-fixture-disc';
 import {
   applyTransformOffset,
-  computeFillPose,
-  computeKeyPose,
+  computeOrbitPose,
   computeOffsetFromWorld,
   computeSceneCenter,
   type StudioPose,
@@ -59,7 +58,8 @@ function cloneLightingSettings(settings: LightingSettings): LightingSettings {
     },
     key: {
       enabled: settings.key.enabled,
-      side: settings.key.side,
+      azimuthDeg: settings.key.azimuthDeg,
+      elevationDeg: settings.key.elevationDeg,
       color: { ...settings.key.color },
       intensity: settings.key.intensity,
       castShadow: settings.key.castShadow,
@@ -69,7 +69,9 @@ function cloneLightingSettings(settings: LightingSettings): LightingSettings {
     fill: {
       enabled: settings.fill.enabled,
       color: { ...settings.fill.color },
-      intensityRatio: settings.fill.intensityRatio,
+      azimuthDeg: settings.fill.azimuthDeg,
+      elevationDeg: settings.fill.elevationDeg,
+      intensity: settings.fill.intensity,
       distance: settings.fill.distance,
       castShadow: settings.fill.castShadow,
       shadowSoftness: settings.fill.shadowSoftness,
@@ -366,9 +368,11 @@ export class LightingSystem {
     }
 
     if (lightId === LIGHT_KEY_ID) {
-      return computeKeyPose(center, this.settings.key.side);
+      const { key } = this.settings;
+      return computeOrbitPose(center, key.azimuthDeg, key.elevationDeg);
     }
-    return computeFillPose(center, this.settings.key.side, this.settings.fill.distance);
+    const { fill } = this.settings;
+    return computeOrbitPose(center, fill.azimuthDeg, fill.elevationDeg, fill.distance);
   }
 
   private getWorldPose(lightId: StudioLightId, centerAnchor: Group): StudioPose {
@@ -452,12 +456,12 @@ export class LightingSystem {
   }
 
   private applyFill(): void {
-    const { key, fill } = this.settings;
+    const { fill } = this.settings;
     const rig = this.getFillRig();
     const fillCastsShadow = fill.enabled && fill.castShadow;
 
     setLightColor(rig.light, fill.color);
-    rig.light.intensity = key.intensity * fill.intensityRatio;
+    rig.light.intensity = fill.intensity;
     // Shadow darkness scales with light contribution — decay 1.5 at studio distance (~8 m)
     // makes Fill shadows invisible even when castShadow is on. Use key-like falloff while casting.
     rig.light.decay = fillCastsShadow ? KEY_DECAY : FILL_DECAY;

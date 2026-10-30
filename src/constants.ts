@@ -56,6 +56,18 @@ export const SHADOW_SOFTNESS_MIN = 0;
 export const SHADOW_SOFTNESS_MAX = 100;
 export const SHADOW_SOFTNESS_DEFAULT = 4;
 export const SHADOW_SOFTNESS_STEP = 0.5;
+/** Studio light orbit (degrees). Azimuth 0 = +Z (front), 90 = +X. */
+export const LIGHT_AZIMUTH_MIN = 0;
+export const LIGHT_AZIMUTH_MAX = 360;
+export const LIGHT_ELEVATION_MIN = -10;
+export const LIGHT_ELEVATION_MAX = 90;
+export const LIGHT_ANGLE_STEP = 1;
+export const LIGHT_INTENSITY_MIN = 0;
+export const LIGHT_INTENSITY_MAX = 5;
+export const LIGHT_KEY_AZIMUTH_DEFAULT = 315;
+export const LIGHT_KEY_ELEVATION_DEFAULT = 45;
+export const LIGHT_FILL_AZIMUTH_DEFAULT = 45;
+export const LIGHT_FILL_ELEVATION_DEFAULT = 35;
 /**
  * Shadow map depth bias. Negative values → Peter Panning (gap under objects on ground).
  */

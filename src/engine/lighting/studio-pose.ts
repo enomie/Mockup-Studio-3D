@@ -1,5 +1,4 @@
 import type { EntityTransform, Vec3 } from '@/scene/entity-types';
-import type { StudioLightSide } from '@/scene/scene-api';
 import { DEG_TO_RAD } from '@/units/angle';
 
 const STUDIO_BASE_DISTANCE = 8;
@@ -55,27 +54,15 @@ function lookAtRotation(from: Vec3, to: Vec3): Vec3 {
   return { x: pitch, y: yaw, z: 0 };
 }
 
-export function computeKeyPose(
+/** Studio light pose on an orbit around `center`, aimed at `center`. */
+export function computeOrbitPose(
   center: Vec3,
-  side: StudioLightSide,
+  azimuthDeg: number,
+  elevationDeg: number,
   distanceMultiplier = 1,
 ): StudioPose {
-  const azimuth = side === 'left' ? -45 : 45;
   const distance = STUDIO_BASE_DISTANCE * distanceMultiplier;
-  const position = sphericalToPosition(center, azimuth, 45, distance);
-  const rotation = lookAtRotation(position, center);
-  return { position, rotation };
-}
-
-export function computeFillPose(
-  center: Vec3,
-  keySide: StudioLightSide,
-  distanceMultiplier = 1,
-): StudioPose {
-  const fillSide = keySide === 'left' ? 'right' : 'left';
-  const azimuth = fillSide === 'left' ? -45 : 45;
-  const distance = STUDIO_BASE_DISTANCE * distanceMultiplier;
-  const position = sphericalToPosition(center, azimuth, 35, distance);
+  const position = sphericalToPosition(center, azimuthDeg, elevationDeg, distance);
   const rotation = lookAtRotation(position, center);
   return { position, rotation };
 }

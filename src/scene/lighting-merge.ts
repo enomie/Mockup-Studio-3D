@@ -1,6 +1,6 @@
 import type { Rgb } from '@/colors/rgb';
 import { cloneTransform, defaultTransform, type EntityTransform } from './entity-types';
-import type { DeepPartial, LightingSettings } from './scene-api';
+import type { DeepPartial, LightingSettings, StudioLightSide } from './scene-api';
 
 function mergeRgb(current: Rgb, partial?: DeepPartial<Rgb>): Rgb {
   return {
@@ -29,19 +29,33 @@ function mergeTransform(
   };
 }
 
-/** Saved payloads may still carry root-level shadowSoftness before per-light split. */
-type LightingPartialWithRootShadowSoftness = DeepPartial<LightingSettings> & {
+/**
+ * Saved payloads may still carry legacy fields: root-level shadowSoftness (before per-light
+ * split), key.side (before orbit angles) and fill.intensityRatio (before independent intensity).
+ */
+type LegacyLightingPartial = DeepPartial<LightingSettings> & {
   shadowSoftness?: number;
+  key?: { side?: StudioLightSide };
+  fill?: { intensityRatio?: number };
 };
+
+const LEGACY_SIDE_KEY_AZIMUTH: Record<StudioLightSide, number> = { left: 315, right: 45 };
+const LEGACY_SIDE_FILL_AZIMUTH: Record<StudioLightSide, number> = { left: 45, right: 315 };
+
+function normalizeAzimuth(deg: number): number {
+  return ((deg % 360) + 360) % 360;
+}
 
 export function mergeLightingSettings(
   current: LightingSettings,
   partial: DeepPartial<LightingSettings>,
 ): LightingSettings {
-  const partialWithRootSoftness = partial as LightingPartialWithRootShadowSoftness;
-  const rootShadowSoftness = partialWithRootSoftness.shadowSoftness;
+  const legacy = partial as LegacyLightingPartial;
+  const rootShadowSoftness = legacy.shadowSoftness;
+  const legacySide = legacy.key?.side;
+  const legacyRatio = legacy.fill?.intensityRatio;
+  const keyIntensity = partial.key?.intensity ?? current.key.intensity;
 
-  const prevKeySide = current.key.side;
   const next: LightingSettings = {
     referenceMode: partial.referenceMode ?? current.referenceMode,
     showFixtures: partial.showFixtures ?? current.showFixtures,
@@ -54,9 +68,13 @@ export function mergeLightingSettings(
     },
     key: {
       enabled: partial.key?.enabled ?? current.key.enabled,
-      side: partial.key?.side ?? current.key.side,
+      azimuthDeg: normalizeAzimuth(
+        partial.key?.azimuthDeg ??
+          (legacySide ? LEGACY_SIDE_KEY_AZIMUTH[legacySide] : current.key.azimuthDeg),
+      ),
+      elevationDeg: partial.key?.elevationDeg ?? current.key.elevationDeg,
       color: mergeRgb(current.key.color, partial.key?.color),
-      intensity: partial.key?.intensity ?? current.key.intensity,
+      intensity: keyIntensity,
       castShadow: partial.key?.castShadow ?? current.key.castShadow,
       shadowSoftness:
         partial.key?.shadowSoftness ??
@@ -67,7 +85,14 @@ export function mergeLightingSettings(
     fill: {
       enabled: partial.fill?.enabled ?? current.fill.enabled,
       color: mergeRgb(current.fill.color, partial.fill?.color),
-      intensityRatio: partial.fill?.intensityRatio ?? current.fill.intensityRatio,
+      azimuthDeg: normalizeAzimuth(
+        partial.fill?.azimuthDeg ??
+          (legacySide ? LEGACY_SIDE_FILL_AZIMUTH[legacySide] : current.fill.azimuthDeg),
+      ),
+      elevationDeg: partial.fill?.elevationDeg ?? current.fill.elevationDeg,
+      intensity:
+        partial.fill?.intensity ??
+        (legacyRatio !== undefined ? keyIntensity * legacyRatio : current.fill.intensity),
       distance: partial.fill?.distance ?? current.fill.distance,
       castShadow: partial.fill?.castShadow ?? current.fill.castShadow,
       shadowSoftness:
@@ -78,8 +103,19 @@ export function mergeLightingSettings(
     },
   };
 
-  if (partial.key?.side !== undefined && partial.key.side !== prevKeySide) {
+  // Orbit change re-bases the light — drop stale gizmo offsets unless the patch sets them.
+  if (
+    partial.key?.transformOffset === undefined &&
+    (next.key.azimuthDeg !== current.key.azimuthDeg ||
+      next.key.elevationDeg !== current.key.elevationDeg)
+  ) {
     next.key.transformOffset = defaultTransform();
+  }
+  if (
+    partial.fill?.transformOffset === undefined &&
+    (next.fill.azimuthDeg !== current.fill.azimuthDeg ||
+      next.fill.elevationDeg !== current.fill.elevationDeg)
+  ) {
     next.fill.transformOffset = defaultTransform();
   }
 

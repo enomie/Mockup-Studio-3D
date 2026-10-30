@@ -6,6 +6,10 @@ import {
   CAMERA_FOV,
   CAMERA_ORBIT_DEFAULT_RADIUS,
   CAMERA_TARGET_Y,
+  LIGHT_FILL_AZIMUTH_DEFAULT,
+  LIGHT_FILL_ELEVATION_DEFAULT,
+  LIGHT_KEY_AZIMUTH_DEFAULT,
+  LIGHT_KEY_ELEVATION_DEFAULT,
   SHADOW_SOFTNESS_DEFAULT,
 } from '@/constants';
 import { DEG_TO_RAD } from '@/units/angle';
@@ -98,7 +102,8 @@ export const SCENE_DEFAULTS = {
     },
     key: {
       enabled: true,
-      side: 'left',
+      azimuthDeg: LIGHT_KEY_AZIMUTH_DEFAULT,
+      elevationDeg: LIGHT_KEY_ELEVATION_DEFAULT,
       color: { ...KEY_COLOR },
       intensity: 1,
       castShadow: true,
@@ -108,7 +113,9 @@ export const SCENE_DEFAULTS = {
     fill: {
       enabled: true,
       color: { ...FILL_COLOR },
-      intensityRatio: 0.5,
+      azimuthDeg: LIGHT_FILL_AZIMUTH_DEFAULT,
+      elevationDeg: LIGHT_FILL_ELEVATION_DEFAULT,
+      intensity: 0.5,
       distance: 1,
       castShadow: true,
       shadowSoftness: SHADOW_SOFTNESS_DEFAULT,

@@ -25,7 +25,8 @@ export function cloneLightingSettings(
     },
     key: {
       enabled: settings.key.enabled,
-      side: settings.key.side,
+      azimuthDeg: settings.key.azimuthDeg,
+      elevationDeg: settings.key.elevationDeg,
       color: { ...settings.key.color },
       intensity: settings.key.intensity,
       castShadow: settings.key.castShadow,
@@ -38,7 +39,9 @@ export function cloneLightingSettings(
     fill: {
       enabled: settings.fill.enabled,
       color: { ...settings.fill.color },
-      intensityRatio: settings.fill.intensityRatio,
+      azimuthDeg: settings.fill.azimuthDeg,
+      elevationDeg: settings.fill.elevationDeg,
+      intensity: settings.fill.intensity,
       distance: settings.fill.distance,
       castShadow: settings.fill.castShadow,
       shadowSoftness: settings.fill.shadowSoftness,

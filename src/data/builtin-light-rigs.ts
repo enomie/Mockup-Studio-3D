@@ -26,7 +26,8 @@ export function lightingFromSceneDefaults(): LightingSettings {
     },
     key: {
       enabled: lighting.key.enabled,
-      side: lighting.key.side,
+      azimuthDeg: lighting.key.azimuthDeg,
+      elevationDeg: lighting.key.elevationDeg,
       color: { ...lighting.key.color },
       intensity: lighting.key.intensity,
       castShadow: lighting.key.castShadow,
@@ -39,7 +40,9 @@ export function lightingFromSceneDefaults(): LightingSettings {
     fill: {
       enabled: lighting.fill.enabled,
       color: { ...lighting.fill.color },
-      intensityRatio: lighting.fill.intensityRatio,
+      azimuthDeg: lighting.fill.azimuthDeg,
+      elevationDeg: lighting.fill.elevationDeg,
+      intensity: lighting.fill.intensity,
       distance: lighting.fill.distance,
       castShadow: lighting.fill.castShadow,
       shadowSoftness: lighting.fill.shadowSoftness,
@@ -66,7 +69,7 @@ function buildSoftboxLighting(): LightingSettings {
     },
     fill: {
       ...base.fill,
-      intensityRatio: 0.62,
+      intensity: 0.62,
       distance: 0.85,
       shadowSoftness: 10,
     },
@@ -89,7 +92,7 @@ function buildDramaticLighting(): LightingSettings {
     },
     fill: {
       ...base.fill,
-      intensityRatio: 0.28,
+      intensity: 0.32,
       castShadow: false,
       shadowSoftness: SHADOW_SOFTNESS_DEFAULT,
       transformOffset: defaultTransform(),

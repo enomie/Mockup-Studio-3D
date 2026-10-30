@@ -75,6 +75,7 @@ export interface ViewportHelpersState {
 
 export type LightingReferenceMode = 'scene-center' | 'world-fixed';
 
+/** Legacy (pre-orbit) key side — only read when migrating saved payloads. */
 export type StudioLightSide = 'left' | 'right';
 
 export interface AmbientLightSettings {
@@ -85,7 +86,10 @@ export interface AmbientLightSettings {
 
 export interface KeyLightSettings {
   enabled: boolean;
-  side: StudioLightSide;
+  /** Orbit angle around the scene center, 0–360° (0 = +Z / front). */
+  azimuthDeg: number;
+  /** Height angle above the horizon, in degrees. */
+  elevationDeg: number;
   color: Rgb;
   intensity: number;
   castShadow: boolean;
@@ -96,8 +100,12 @@ export interface KeyLightSettings {
 
 export interface FillLightSettings {
   enabled: boolean;
+  /** Orbit angle around the scene center, 0–360° (0 = +Z / front). */
+  azimuthDeg: number;
+  /** Height angle above the horizon, in degrees. */
+  elevationDeg: number;
   color: Rgb;
-  intensityRatio: number;
+  intensity: number;
   distance: number;
   castShadow: boolean;
   /** PCF penumbra — maps to light.shadow.radius (0 = hard, 100 = very soft). */

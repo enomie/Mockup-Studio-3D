@@ -1,6 +1,13 @@
 import { useState } from 'react';
 import { LIGHT_AMBIENT_ID, LIGHT_FILL_ID, LIGHT_KEY_ID } from '@/scene/light-ids';
 import {
+  LIGHT_ANGLE_STEP,
+  LIGHT_AZIMUTH_MAX,
+  LIGHT_AZIMUTH_MIN,
+  LIGHT_ELEVATION_MAX,
+  LIGHT_ELEVATION_MIN,
+  LIGHT_INTENSITY_MAX,
+  LIGHT_INTENSITY_MIN,
   SHADOW_SOFTNESS_MAX,
   SHADOW_SOFTNESS_MIN,
   SHADOW_SOFTNESS_STEP,
@@ -20,14 +27,17 @@ import {
   setFillColor,
   setFillDistance,
   setFillEnabled,
-  setFillIntensityRatio,
+  setFillAzimuth,
+  setFillElevation,
+  setFillIntensity,
   setFillShadowSoftness,
   setKeyCastShadow,
   setKeyColor,
   setKeyEnabled,
   setKeyIntensity,
   setKeyShadowSoftness,
-  setKeySide,
+  setKeyAzimuth,
+  setKeyElevation,
   setFixturesReflectInMirror,
   setLightingReferenceMode,
   setSelectedEntity,
@@ -136,27 +146,26 @@ export function LightingSubPanel() {
           onTitleClick={() => { handleLightTitleClick(LIGHT_KEY_ID, selectedEntityId === LIGHT_KEY_ID); }
           }
         >
-          <div className="panel-field-row">
-            <span className="panel-field-label">Side</span>
-            <span className="panel-field-controls side-toggle">
-              <button
-                type="button"
-                className="btn btn--outline side-toggle__btn"
-                aria-pressed={lighting.key.side === 'left'}
-                onClick={() => { setKeySide('left'); }}
-              >
-                Left
-              </button>
-              <button
-                type="button"
-                className="btn btn--outline side-toggle__btn"
-                aria-pressed={lighting.key.side === 'right'}
-                onClick={() => { setKeySide('right'); }}
-              >
-                Right
-              </button>
-            </span>
-          </div>
+          <RangeSlider
+            label="Angle"
+            min={LIGHT_AZIMUTH_MIN}
+            max={LIGHT_AZIMUTH_MAX}
+            step={LIGHT_ANGLE_STEP}
+            value={lighting.key.azimuthDeg}
+            valueInputLabel="Angle (°)"
+            valueInputDecimals={0}
+            onChange={setKeyAzimuth}
+          />
+          <RangeSlider
+            label="Height"
+            min={LIGHT_ELEVATION_MIN}
+            max={LIGHT_ELEVATION_MAX}
+            step={LIGHT_ANGLE_STEP}
+            value={lighting.key.elevationDeg}
+            valueInputLabel="Height (°)"
+            valueInputDecimals={0}
+            onChange={setKeyElevation}
+          />
           <PanelCheckbox
             label="Cast shadows"
             checked={lighting.key.castShadow}
@@ -177,8 +186,8 @@ export function LightingSubPanel() {
           <ColorPicker label="Color" value={lighting.key.color} onChange={setKeyColor} />
           <RangeSlider
             label="Intensity"
-            min={0}
-            max={3}
+            min={LIGHT_INTENSITY_MIN}
+            max={LIGHT_INTENSITY_MAX}
             step={NORMALIZED_STEP}
             value={lighting.key.intensity}
             valueInputLabel="Intensity"
@@ -198,10 +207,26 @@ export function LightingSubPanel() {
           onTitleClick={() => { handleLightTitleClick(LIGHT_FILL_ID, selectedEntityId === LIGHT_FILL_ID); }
           }
         >
-          <div className="panel-field-row">
-            <span className="panel-field-label">Side</span>
-            <span className="panel-field-controls panel-field-value">Opposite of key</span>
-          </div>
+          <RangeSlider
+            label="Angle"
+            min={LIGHT_AZIMUTH_MIN}
+            max={LIGHT_AZIMUTH_MAX}
+            step={LIGHT_ANGLE_STEP}
+            value={lighting.fill.azimuthDeg}
+            valueInputLabel="Angle (°)"
+            valueInputDecimals={0}
+            onChange={setFillAzimuth}
+          />
+          <RangeSlider
+            label="Height"
+            min={LIGHT_ELEVATION_MIN}
+            max={LIGHT_ELEVATION_MAX}
+            step={LIGHT_ANGLE_STEP}
+            value={lighting.fill.elevationDeg}
+            valueInputLabel="Height (°)"
+            valueInputDecimals={0}
+            onChange={setFillElevation}
+          />
           <PanelCheckbox
             label="Cast shadows"
             checked={lighting.fill.castShadow}
@@ -221,14 +246,14 @@ export function LightingSubPanel() {
           />
           <ColorPicker label="Color" value={lighting.fill.color} onChange={setFillColor} />
           <RangeSlider
-            label="Ratio to key"
-            min={0}
-            max={1}
+            label="Intensity"
+            min={LIGHT_INTENSITY_MIN}
+            max={LIGHT_INTENSITY_MAX}
             step={NORMALIZED_STEP}
-            value={lighting.fill.intensityRatio}
-            valueInputLabel="Ratio"
+            value={lighting.fill.intensity}
+            valueInputLabel="Intensity"
             valueInputDecimals={NORMALIZED_DECIMALS}
-            onChange={setFillIntensityRatio}
+            onChange={setFillIntensity}
           />
           <RangeSlider
             label="Distance"
