@@ -44,12 +44,23 @@ export class GizmoController {
   }
 
   attach(object: Object3D | null): void {
-    this.attachedObject = object;
-    if (object) {
-      this.controls.attach(object);
+    // TransformControls requires a parent; removed objects (pins, deleted assets) are skipped.
+    const target = object?.parent ? object : null;
+    this.attachedObject = target;
+    if (target) {
+      this.controls.attach(target);
     } else {
       this.controls.detach();
     }
+  }
+
+  /** Detaches when the attached object was removed from the scene. Returns true if it detached. */
+  detachIfOrphaned(): boolean {
+    if (!this.attachedObject || this.attachedObject.parent) {
+      return false;
+    }
+    this.attach(null);
+    return true;
   }
 
   getAttachedObject(): Object3D | null {

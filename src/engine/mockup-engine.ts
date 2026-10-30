@@ -1051,6 +1051,9 @@ export class MockupEngine implements SceneApi {
     skyEnabled?: boolean;
     transparentBackground?: boolean;
   }): void {
+    if (this.gizmo.detachIfOrphaned()) {
+      this.gizmoInteraction.refresh();
+    }
     const camera = this.cameras.camera;
     this.viewportPipeline.renderFrame({
       skyScene: this.skybox.getScene(),
