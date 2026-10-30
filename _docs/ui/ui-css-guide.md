@@ -221,6 +221,28 @@ Erlaubte Fälle (Stand heute, alle geprüft):
 
 ---
 
+### B5. Komplexitäts-Analyse vor Schritt 8 (2026-10-30)
+
+Frage: Braucht `app.css` wirklich so viele Zeilen, oder ist sie aufgebläht?
+
+**Stand:** 1664 → **1486 Zeilen** nach Schritt 1–7, 203 Regeln.
+
+**Ergebnis:** Nach den Schritten 1–7 ist kaum noch Ballast übrig.
+- **Toter Code:** nur noch 1 Regel (`.panel-checkbox--disabled`). Alles andere wird verwendet (geprüft gegen alle Klassennamen in `src/`, inkl. per Template gebauter wie `main-nav--${side}`).
+- **Doppelte Selektoren / doppelte Properties:** keine.
+- **Die Länge kommt vom Umfang, nicht vom Stil:** ~25 Feature-Blöcke mit je 20–180 Zeilen, eine Deklaration pro Zeile. Größte Blöcke: Color-Picker-Popover 176, Navigation 121, Szenen-Block 109, Patch-Inspector 93, Tiles 91, Slider 91.
+
+**Was noch an Verdopplung übrig ist (≈ 80–100 Zeilen, ~6 %):**
+
+| Was | Problem | Lösung |
+|---|---|---|
+| Patch-Inspector | eigener Remove-Button, eigenes Namensfeld, Aktiv-Zustand per `--active`-Klasse | `.btn--icon`, `.panel-field-input`, `aria-current` |
+| Color-Picker-Felder | `.color-picker-popover__input` baut `.panel-field-input` nach | Basis-Klasse wiederverwenden |
+| Scrollbars | Navigation und Panel-Body definieren dünne Scrollbar je separat (5 px vs. 7 px) | eine gemeinsame Regel |
+| Kleinkram | `box-sizing: border-box` 2× (steht schon global), 1 tote Regel | löschen |
+
+**Fazit:** Kein Grund für einen Neuschrieb. Restliche Duplikate entfernen (Schritt 7b), dann aufteilen (Schritt 8) – das Aufteilen bringt mehr Übersicht als weiteres Kürzen.
+
 ## C. Cleanup-Roadmap (der Reihe nach)
 
 Jeder Schritt: besprechen → umsetzen → Teil A aktualisieren → Häkchen.
@@ -232,6 +254,7 @@ Jeder Schritt: besprechen → umsetzen → Teil A aktualisieren → Häkchen.
 - [x] **5. Listen & Tiles** – gemeinsames Tile/Row-Muster.
 - [x] **6. Panels & Sections** – Header/Body/Footer-Abstände konsistent.
 - [x] **7. Inline-Styles** – auf dynamische Werte reduzieren.
+- [ ] **7b. Rest-Duplikate** (siehe B5)
 - [ ] **8. Datei-Struktur** – app.css aufteilen.
 - [ ] **9. Responsive/Touch** – Entscheidung, was davon jetzt wirklich gilt.
 
