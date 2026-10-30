@@ -1,6 +1,6 @@
 # Plan: Patch – Punkte hinzufügen („Add Point“)
 
-Status: **Entwurf, noch nicht umgesetzt.**
+Status: **Schritt 1 erledigt**, Schritt 2 geplant (siehe 10).
 Scope: **nur** neue Punkte auf den Patch-Kanten setzen, umbenennen, löschen – inkl. Wölbung durch jeden Punkt.
 Nicht im Scope: Snap/Copy-Paste von Tangenten, Symmetrie, Hebel-Kontinuitäts-Modi (glatt/spitz-Kopplung), Mitte-der-Kante-Shortcut (Idee gemerkt, später).
 
@@ -118,3 +118,28 @@ Damit ist ein Kantenpunkt kein Sonderfall mehr: Jeder Punkt speist seinen Kanten
 
 - Exakte Gewichtsfunktion der Wölbung (Schritt 2, per Tests + Augenschein).
 - Ob Undo für Einfügen/Löschen/Umbenennen schon greift, hängt am History-Stand (`requirements-history.md`) – sonst später nachziehen.
+
+---
+
+## 10. Detailplan Schritt 2 – Geometrie
+
+**`evalEdge(params, e, t, out)`** (exportiert, später auch für Hover im Add-Point-Modus):
+- Punkte der Kante via `getPatchEdgePoints`, Knoten `t_0 = 0`, `edgeParams` der Kantenpunkte, `t_n = 1`.
+- Segment k mit `t_k ≤ t ≤ t_k+1` suchen, lokal `s = (t − t_k) / (t_k+1 − t_k)`, kubischer Bézier aus `P_k.pos, P_k.handleNext, P_k+1.handlePrev, P_k+1.pos`.
+- Ohne Kantenpunkte = genau eine Kurve = identisch zu heute. Nicht-monotone Parameter werden defensiv geklemmt.
+
+**`evalCross(params, e, t, out)`**: Quertangente `handleCrossIn − pos` der beiden Segmentpunkte, mit demselben `s` linear interpoliert.
+
+**Wölbung – die Formel von heute ist schon ein Spezialfall:**
+Heute: `bulge = 27·u·v·w·0.65 · (u·c_A + v·c_B + w·c_C)` (c = Quertangente einer Ecke).
+Neu: `bulge = 27·u·v·w·0.65 · Σ_Kanten ((Summe der zwei Baryzentrik-Werte der Kante) / 2) · evalCross(e, t_e)`.
+Für eine Kante AB mit nur zwei Ecken ist `evalCross = (u·c_A + v·c_B)/(u+v)`; mit dem Gewicht `(u+v)/2` summiert über alle 3 Kanten ergibt das exakt `u·c_A + v·c_B + w·c_C`. Ohne Kantenpunkte sieht der Patch also **bit-gleich** aus wie heute, und ein Kantenpunkt wirkt automatisch über seine Kante ins Innere. Kein Sonderfall im Code.
+Der Faktor `u·v·w` hält den Rand exakt auf der Kantenkurve.
+
+**Umbau:** `evalPatchSurfacePoint(params, u, v, w, out)` nimmt die ganzen Params statt 3 Ecken; der Coons-Blend ruft `evalEdge` statt `evalCubicBezierEdge`.
+
+**Tests:**
+1. Regression: ohne Kantenpunkte = alte Formel (Vergleich gegen die bisherige Implementierung an Stichproben).
+2. Rand: Punkte mit u, v oder w = 0 liegen auf `evalEdge`.
+3. Segmente: `evalEdge` trifft bei `t = edgeParams[id]` genau den Anker des Kantenpunkts.
+4. Wirkung: `handleCrossIn` eines Kantenpunkts verschieben ändert das Innere, den Rand nicht.
