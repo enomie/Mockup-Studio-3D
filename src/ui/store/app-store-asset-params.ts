@@ -53,6 +53,10 @@ export function selectPatchHandle(
   store.sceneApi?.selectPatchHandle(entityId, pointId, targetKey);
 }
 
+export function setPatchAddPointMode(entityId: string | null): void {
+  store.sceneApi?.setPatchAddPointMode(entityId);
+}
+
 export function setWallpaperPattern(entityId: string, partial: Partial<WallpaperPattern>): void {
   store.sceneApi?.setWallpaperPattern(entityId, partial);
 }

@@ -6,6 +6,9 @@ import type { SelectionController } from './selection-controller';
 
 type DragMode = 'orbit' | 'pan';
 
+/** Pending-click marker: the click belongs to the patch add-point mode. */
+const PATCH_ADD_POINT_CLICK = '__PATCH_ADD_POINT__';
+
 export class ViewportInputController {
   private readonly domElement: HTMLElement;
   private readonly camera: CameraController;
@@ -46,6 +49,18 @@ export class ViewportInputController {
 
     if (event.button !== 0) {return;}
 
+    // Add-point mode: a click places a point; a drag still orbits. Handles and gizmo are ignored.
+    if (this.selection.isPatchAddPointActive()) {
+      this.activePointerId = event.pointerId;
+      this.activeButton = 0;
+      this.pointerDownPos.set(event.clientX, event.clientY);
+      this.dragStarted = false;
+      this.dragMode = null;
+      this.pendingHitId = PATCH_ADD_POINT_CLICK;
+      this.gizmoConsumedPointer = false;
+      return;
+    }
+
     if (this.selection.beginPatchLengthDragAt(event.clientX, event.clientY)) {
       event.preventDefault();
       this.activePointerId = event.pointerId;
@@ -70,6 +85,9 @@ export class ViewportInputController {
   };
 
   private readonly onPointerMove = (event: PointerEvent): void => {
+    if (this.selection.isPatchAddPointActive() && !this.dragStarted) {
+      this.selection.hoverPatchAddPointAt(event.clientX, event.clientY);
+    }
     if (!this.pointers.has(event.pointerId)) {return;}
 
     this.pointers.set(event.pointerId, new Vector2(event.clientX, event.clientY));
@@ -151,7 +169,9 @@ export class ViewportInputController {
       this.pendingHitId !== undefined;
 
     if (wasClick) {
-      if (this.pendingHitId === '__PATCH_HANDLE_SELECTED__') {
+      if (this.pendingHitId === PATCH_ADD_POINT_CLICK) {
+        this.selection.commitPatchAddPointAt(event.clientX, event.clientY);
+      } else if (this.pendingHitId === '__PATCH_HANDLE_SELECTED__') {
         // Point handle was selected directly in pickAt
       } else if (this.pendingHitId) {
         this.selection.selectEntity(this.pendingHitId);

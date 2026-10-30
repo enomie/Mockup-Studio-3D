@@ -29,6 +29,8 @@ export interface GizmoInteractionDeps {
   fabricClothSimulation: FabricClothSimulationParticipant;
   viewportInvalidation: ViewportInvalidation;
   getMode: () => AppMode;
+  /** While the patch add-point mode runs, no transform gizmo is shown. */
+  isPatchAddPointActive: () => boolean;
   emit: () => void;
   syncFixedRigidPose: (entityId: string) => void;
   applyAssetMutation: (
@@ -62,6 +64,11 @@ export class GizmoInteractionController {
     const selectedAsset = registry.getSelectedRuntime();
     const selectedAssetObject =
       selectedAsset?.entity.visible !== false ? selectedAsset?.object ?? null : null;
+    if (this.deps.isPatchAddPointActive()) {
+      gizmo.setEnabled(false);
+      gizmo.attach(null);
+      return;
+    }
     const activePatchHandle = patchGizmo.getActiveHandleMesh();
     const gizmoTarget =
       activePatchHandle ??

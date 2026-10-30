@@ -554,7 +554,12 @@ export class TrianglePatchGizmoController {
   private commitPoint(entityId: string, point: PatchPoint): void {
     const params = this.registry.getRuntime(entityId)?.entity.trianglePatchParams;
     if (!params) {return;}
-    this.registry.setKindParams('trianglePatch', entityId, { points: replacePatchPoint(params.points, point) });
+    this.commitParams(entityId, { points: replacePatchPoint(params.points, point) });
+  }
+
+  /** Commits a params change through the registry, resyncs helpers and notifies the listener. */
+  commitParams(entityId: string, partial: Partial<TrianglePatchParams>): void {
+    this.registry.setKindParams('trianglePatch', entityId, partial);
     this.syncHelpersFromEntity();
     const updatedParams = this.registry.getRuntime(entityId)?.entity.trianglePatchParams;
     if (updatedParams) {

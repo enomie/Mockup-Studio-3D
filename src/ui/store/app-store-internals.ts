@@ -85,6 +85,8 @@ export interface AppState {
   userBakedAssets: UserBakedAsset[];
   selectedEntityId: string | null;
   patchHandleSelection: PatchHandleSelection | null;
+  /** Patch whose viewport add-point mode is running, if any. */
+  patchAddPointEntityId: string | null;
   camera: CameraSettings;
   exportImageFormat: ExportImageFormat;
   exportGroundSurface: ExportGroundSurface;
@@ -134,6 +136,7 @@ export let state: AppState = {
   userBakedAssets: [],
   selectedEntityId: null,
   patchHandleSelection: null,
+  patchAddPointEntityId: null,
   camera: cloneCameraSettings(camera.settings),
   exportImageFormat: 'png-transparent',
   exportGroundSurface: 'viewport',
@@ -260,6 +263,7 @@ export function syncEngineStateFromEngine(): void {
     entities: sceneApi.getEntities(),
     selectedEntityId: sceneApi.getSelectedEntityId(),
     patchHandleSelection: sceneApi.getPatchHandleSelection(),
+    patchAddPointEntityId: sceneApi.getPatchAddPointEntityId(),
     camera: cloneCameraSettings(sceneApi.getCameraSettings()),
   };
   emit();

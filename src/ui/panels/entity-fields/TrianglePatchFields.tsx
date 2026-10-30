@@ -6,6 +6,7 @@ import { useAppStore } from '@/ui/store/use-app-store';
 import {
   setKindParams,
   selectPatchHandle,
+  setPatchAddPointMode,
   } from '@/ui/store/app-store';
 import {
   defaultTrianglePatchParams,
@@ -45,6 +46,7 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
   const viewportPointId = useAppStore((s) => s.patchHandleSelection?.pointId);
   const viewportTargetKey = useAppStore((s) => s.patchHandleSelection?.targetKey);
   const [localPointId, setLocalPointId] = useState<string | null>(null);
+  const addPointActive = useAppStore((s) => s.patchAddPointEntityId === entity.id);
   const [localTargetKey, setLocalTargetKey] = useState<PatchHandleTarget>('pos');
   const pickedInViewport = viewportEntityId === entity.id && viewportPointId !== undefined && viewportTargetKey !== undefined;
   const firstPoint = patchParams.points[0];
@@ -303,6 +305,15 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
             );
           })}
         </ul>
+        <button
+          type="button"
+          className={`toolbar-chip-btn${addPointActive ? ' toolbar-chip-btn--active' : ''}`}
+          aria-pressed={addPointActive}
+          title="Click an edge in the viewport to place a point (Esc cancels)"
+          onClick={() => { setPatchAddPointMode(addPointActive ? null : entity.id); }}
+        >
+          Add Point
+        </button>
       </SubPanelSection>
     </>
   );

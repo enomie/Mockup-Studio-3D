@@ -1,6 +1,7 @@
 import { Raycaster, Vector2, type Camera, type Object3D, type Ray } from 'three/webgpu';
 import { noop } from '@/utils/noop';
 import type { EntityRegistry } from './entity-registry';
+import type { ViewportPointer } from './triangle-patch-add-point-tool';
 
 const _pointer = new Vector2();
 const _raycaster = new Raycaster();
@@ -19,12 +20,24 @@ export interface PatchLengthDragHandlers {
   end: () => void;
 }
 
+/** The patch add-point mode, driven by pointer events on the viewport. */
+export interface PatchAddPointHandlers {
+  isActive: () => boolean;
+  hover: (pointer: ViewportPointer, camera: Camera) => void;
+  commit: (pointer: ViewportPointer, camera: Camera) => void;
+  cancel: () => void;
+}
+
 export class SelectionController {
   private readonly domElement: HTMLElement;
   private readonly registry: EntityRegistry;
 
   private readonly onKeyDown = (event: KeyboardEvent): void => {
     if (event.code === 'Escape') {
+      if (this.patchAddPoint?.isActive()) {
+        this.patchAddPoint.cancel();
+        return;
+      }
       this.onSelect(null);
       return;
     }
@@ -41,6 +54,7 @@ export class SelectionController {
   private getPatchPickables: () => Object3D[] = () => [];
   private onSelectPatchHandle: (mesh: Object3D) => boolean = () => false;
   private patchLengthDrag: PatchLengthDragHandlers | null = null;
+  private patchAddPoint: PatchAddPointHandlers | null = null;
   private onSelect: (entityId: string | null) => void = noop;
   private onDelete: () => void = noop;
 
@@ -91,6 +105,41 @@ export class SelectionController {
 
   endPatchLengthDrag(): void {
     this.patchLengthDrag?.end();
+  }
+
+  setPatchAddPointHandlers(handlers: PatchAddPointHandlers): void {
+    this.patchAddPoint = handlers;
+  }
+
+  isPatchAddPointActive(): boolean {
+    return this.patchAddPoint?.isActive() ?? false;
+  }
+
+  hoverPatchAddPointAt(clientX: number, clientY: number): void {
+    const camera = this.getCamera();
+    const pointer = this.viewportPointer(clientX, clientY);
+    if (!this.patchAddPoint || !camera || !pointer) {return;}
+    this.patchAddPoint.hover(pointer, camera);
+  }
+
+  commitPatchAddPointAt(clientX: number, clientY: number): void {
+    const camera = this.getCamera();
+    const pointer = this.viewportPointer(clientX, clientY);
+    if (!this.patchAddPoint || !camera || !pointer) {return;}
+    this.patchAddPoint.commit(pointer, camera);
+  }
+
+  private viewportPointer(clientX: number, clientY: number): ViewportPointer | null {
+    const rect = this.domElement.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) {return null;}
+    return {
+      ndc: new Vector2(
+        ((clientX - rect.left) / rect.width) * 2 - 1,
+        -((clientY - rect.top) / rect.height) * 2 + 1,
+      ),
+      widthPx: rect.width,
+      heightPx: rect.height,
+    };
   }
 
   private setRayFromClient(clientX: number, clientY: number): boolean {

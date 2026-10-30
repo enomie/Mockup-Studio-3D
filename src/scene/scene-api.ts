@@ -228,6 +228,9 @@ export interface SceneApi {
   setBookMaterialTint(entityId: string, part: BookMaterialTintPart, tint: Rgb): void;
   selectPatchHandle(entityId: string, pointId: string, targetKey: PatchHandleTarget): void;
   getPatchHandleSelection(): PatchHandleSelection | null;
+  /** Starts the viewport add-point mode for a triangle patch, or stops it with null. */
+  setPatchAddPointMode(entityId: string | null): void;
+  getPatchAddPointEntityId(): string | null;
   loadBuiltinView(id: BuiltinCameraViewId): void;
   captureSlot(index: CameraSlotIndex): void;
   loadSlot(index: CameraSlotIndex): void;

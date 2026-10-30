@@ -18,6 +18,7 @@ export {
   setBookMaterialTint,
   setWallpaperPattern,
   selectPatchHandle,
+  setPatchAddPointMode,
 } from './app-store-asset-params';
 
 export {

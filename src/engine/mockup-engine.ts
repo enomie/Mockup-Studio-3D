@@ -1,4 +1,4 @@
-import { type Mesh, Scene, type WebGPURenderer } from 'three/webgpu';
+import { type Camera, type Mesh, Scene, type WebGPURenderer } from 'three/webgpu';
 import type { Rgb } from '@/colors/rgb';
 import { SCENE_DEFAULTS } from '@/config/scene-defaults';
 import { FIXTURE_DISC_LAYER, GROUND_PLANE_SIZE } from '@/constants';
@@ -95,6 +95,8 @@ import { GizmoInteractionController } from './gizmo-interaction-controller';
 import {
   TrianglePatchGizmoController,
 } from './triangle-patch-gizmo-controller';
+import { insertPatchPoint } from '@/scene/triangle-patch-point-edit';
+import { TrianglePatchAddPointTool, type ViewportPointer } from './triangle-patch-add-point-tool';
 import { SelectionController } from './selection-controller';
 import { SelectionHighlight } from './selection-highlight';
 import { ViewportInputController } from './viewport-input-controller';
@@ -109,6 +111,7 @@ const GROUND_PHYSICS_ID = 'ground';
 export class MockupEngine implements SceneApi {
   private readonly resizeObserver: ResizeObserver;
   private readonly patchGizmo: TrianglePatchGizmoController;
+  private readonly patchAddPoint: TrianglePatchAddPointTool;
   private readonly viewportInvalidation: ViewportInvalidation;
   private readonly listeners = new Set<SceneApiListener>();
 
@@ -145,6 +148,7 @@ export class MockupEngine implements SceneApi {
     private readonly viewportHelpers: ViewportHelpersSystem,
   ) {
     this.patchGizmo = new TrianglePatchGizmoController(scene, registry);
+    this.patchAddPoint = new TrianglePatchAddPointTool(scene, registry);
     this.viewportInvalidation = new ViewportInvalidation(renderer, (time) => { this.onFrame(time); },
     );
     this.assets.setViewportInvalidation(this.viewportInvalidation);
@@ -154,6 +158,7 @@ export class MockupEngine implements SceneApi {
 
     this.patchGizmo.setPatchChangeListener((entityId) => {
       void this.assets.rebuildEntity(entityId);
+      if (this.patchAddPoint.getEntityId() === entityId) {this.patchAddPoint.syncEdgeLines();}
       this.invalidateViewport();
       this.emit();
     });
@@ -169,6 +174,7 @@ export class MockupEngine implements SceneApi {
       fabricClothSimulation,
       viewportInvalidation: this.viewportInvalidation,
       getMode: () => this.appMode,
+      isPatchAddPointActive: () => this.patchAddPoint.isActive(),
       emit: () => { this.emit(); },
       syncFixedRigidPose: (entityId) => { this.syncRigidPrimitivePoseFromRuntimeIfFixed(entityId); },
       applyAssetMutation: (mutation, options) => { this.applyAssetMutation(mutation, options); },
@@ -315,6 +321,14 @@ export class MockupEngine implements SceneApi {
       update: (ray) => { engine.patchGizmo.updateLengthDrag(ray); },
       end: () => { engine.patchGizmo.endLengthDrag(); },
     });
+    selection.setPatchAddPointHandlers({
+      isActive: () => engine.patchAddPoint.isActive(),
+      hover: (pointer, camera) => {
+        if (engine.patchAddPoint.hoverAt(pointer, camera)) {engine.invalidateViewport();}
+      },
+      commit: (pointer, camera) => { engine.commitPatchAddPoint(pointer, camera); },
+      cancel: () => { engine.setPatchAddPointMode(null); },
+    });
     selection.setSelectHandler((entityId) => { engine.handleSelect(entityId); });
     selection.setDeleteHandler(() => {
       const selectedAssetId = registry.getSelectedEntityId();
@@ -434,6 +448,7 @@ export class MockupEngine implements SceneApi {
   }
 
   removeEntity(entityId: string): void {
+    if (this.patchAddPoint.getEntityId() === entityId) {this.patchAddPoint.stop();}
     this.assets.removeAsset(entityId);
     this.gizmoInteraction.refresh();
     this.emit();
@@ -594,6 +609,40 @@ export class MockupEngine implements SceneApi {
     this.gizmoInteraction.refresh();
     this.emit();
     this.invalidateViewport();
+  }
+
+  /** Starts the add-point mode for a patch, or stops it with null. */
+  setPatchAddPointMode(entityId: string | null): void {
+    if (entityId) {
+      this.patchGizmo.selectTarget(null);
+      this.patchAddPoint.start(entityId);
+    } else {
+      this.patchAddPoint.stop();
+    }
+    this.gizmoInteraction.refresh();
+    this.emit();
+  }
+
+  getPatchAddPointEntityId(): string | null {
+    return this.patchAddPoint.getEntityId();
+  }
+
+  /** Places a point on the edge under the pointer, selects its anchor and ends the mode. */
+  private commitPatchAddPoint(pointer: ViewportPointer, camera: Camera): void {
+    const entityId = this.patchAddPoint.getEntityId();
+    const params = entityId ? this.registry.getRuntime(entityId)?.entity.trianglePatchParams : undefined;
+    const hit = this.patchAddPoint.hitAt(pointer, camera);
+    if (!entityId || !params || !hit) {return;}
+
+    const inserted = insertPatchPoint(params, hit.edgeIndex, hit.t);
+    this.patchAddPoint.stop();
+    this.patchGizmo.commitParams(entityId, {
+      points: inserted.params.points,
+      edgeParams: inserted.params.edgeParams,
+    });
+    this.patchGizmo.selectTarget({ entityId, pointId: inserted.pointId, targetKey: 'pos' });
+    this.gizmoInteraction.refresh();
+    this.emit();
   }
 
   getPatchHandleSelection(): PatchHandleSelection | null {
@@ -866,6 +915,7 @@ export class MockupEngine implements SceneApi {
     this.disposed = true;
 
     this.viewportInput.dispose();
+    this.patchAddPoint.dispose();
     this.selectionHighlight.dispose();
     this.selection.dispose();
     this.gizmo.dispose();
@@ -902,6 +952,9 @@ export class MockupEngine implements SceneApi {
         this.registry.setSelectedEntityId(entityId);
       }
       this.patchGizmo.setActiveEntity(entityId);
+      if (this.patchAddPoint.isActive() && this.patchAddPoint.getEntityId() !== entityId) {
+        this.patchAddPoint.stop();
+      }
       if (entityId) {
         this.gizmoInteraction.clampFabricClothActivePinForEntity(entityId);
       }
