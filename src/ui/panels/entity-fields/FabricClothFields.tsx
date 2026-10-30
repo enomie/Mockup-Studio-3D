@@ -18,6 +18,7 @@ import { PanelAxisField } from '@/ui/components/PanelAxisField/PanelAxisField';
 import { MATERIAL_FABRIC_ID } from '@/scene/material-ids';
 import { ColorPicker } from '@/ui/components/ColorPicker';
 import { PanelCheckbox } from '@/ui/components/PanelCheckbox';
+import { PanelSelect, type PanelSelectOption } from '@/ui/components/PanelSelect';
 import { RangeSlider } from '@/ui/components/RangeSlider';
 import { SubPanelSection } from '@/ui/components/SubPanelSection';
 import {
@@ -25,8 +26,8 @@ import {
   FABRIC_PHYSICS_PRESET_KEYS,
   FABRIC_PHYSICS_PRESETS,
   fabricClothPhysicsParamsFromPresetKey,
-  fabricClothPhysicsPresetDisplayName,
   fabricClothPhysicsWithCustomScalar,
+  type FabricPhysicsPresetKey,
 } from '@/config/fabric-physics-presets';
 import { ImageSelect } from '@/ui/panels/ImageSurfaceFields';
 import { MaterialSelect } from '@/ui/panels/MaterialSelect';
@@ -39,6 +40,26 @@ import {
 } from '@/ui/store/app-store';
 import { useAppStore } from '@/ui/store/use-app-store';
 import type { PictureFieldsProps } from './entity-fields-types';
+
+const PINNED_CORNER_OPTIONS: readonly PanelSelectOption[] = [
+  { value: '0', label: 'None (free fall)' },
+  { value: '1', label: '1 corner' },
+  { value: '2', label: '2 corners (hanging)' },
+  { value: '3', label: '3 corners' },
+  { value: '4', label: '4 corners' },
+];
+
+const PIN_CORNER_OPTIONS: readonly PanelSelectOption[] = [0, 1, 2, 3].map((idx) => ({
+  value: String(idx),
+  label: `Corner ${idx + 1}`,
+}));
+
+const FABRIC_PRESET_OPTIONS: readonly PanelSelectOption[] = FABRIC_PHYSICS_PRESET_KEYS.map(
+  (key) => ({ value: key, label: FABRIC_PHYSICS_PRESETS[key].name }),
+);
+
+/** "Custom" is listed only while active (after editing a slider); it cannot be picked. */
+const FABRIC_CUSTOM_OPTION: PanelSelectOption = { value: 'custom', label: 'Custom' };
 
 export function FabricClothFields({
   entity,
@@ -113,80 +134,54 @@ export function FabricClothFields({
 
       {showPins ? (
         <SubPanelSection title="Fabric simulation">
-          <label className="panel-field">
-            <span className="panel-field-label">Pinned corners</span>
-            <select
-              className="panel-select"
-              value={pinnedCornersCount}
-              onChange={(event) => {
-                const count = Number.parseInt(event.target.value, 10);
-                setPinSelection((prev) => ({
-                  entityId: entity.id,
-                  corner: Math.min(prev.corner, Math.max(0, count - 1)),
-                }));
-                setFabricClothParams(entity.id, {
-                  sim: { ...fabricClothParams.sim, pinnedCornersCount: count },
-                });
+          <PanelSelect
+            label="Pinned corners"
+            value={String(pinnedCornersCount)}
+            options={PINNED_CORNER_OPTIONS}
+            onChange={(value) => {
+              const count = Number.parseInt(value, 10);
+              setPinSelection((prev) => ({
+                entityId: entity.id,
+                corner: Math.min(prev.corner, Math.max(0, count - 1)),
+              }));
+              setFabricClothParams(entity.id, {
+                sim: { ...fabricClothParams.sim, pinnedCornersCount: count },
+              });
+            }}
+          />
+          {pinnedCornersCount > 0 ? (
+            <PanelSelect
+              label="Active pin"
+              value={String(activePinCorner)}
+              options={PIN_CORNER_OPTIONS.slice(0, pinnedCornersCount)}
+              onChange={(value) => {
+                const idx = Number.parseInt(value, 10);
+                setPinSelection({ entityId: entity.id, corner: idx });
+                setFabricClothActivePinCorner(entity.id, idx);
               }}
-            >
-              <option value={0}>0 — free fall / tablecloth</option>
-              <option value={1}>1 corner pinned</option>
-              <option value={2}>2 corners pinned (hanging)</option>
-              <option value={3}>3 corners pinned</option>
-              <option value={4}>4 corners pinned</option>
-            </select>
-          </label>
-          <div className="grid grid-cols-4 gap-1">
-            {[0, 1, 2, 3].map((idx) => {
-              const enabled = idx < pinnedCornersCount;
-              const active = idx === activePinCorner && enabled;
-              return (
-                <button
-                  key={idx}
-                  type="button"
-                  className={`btn btn-xs ${active ? 'btn-primary' : enabled ? 'btn-outline btn-primary' : 'btn-ghost opacity-60'}`}
-                  disabled={!enabled}
-                  onClick={() => {
-                    setPinSelection({ entityId: entity.id, corner: idx });
-                    setFabricClothActivePinCorner(entity.id, idx);
-                  }}
-                >
-                  {idx + 1}
-                </button>
-              );
-            })}
-          </div>
+            />
+          ) : null}
           {worldPhysicsPhase !== 'idle' ? (
             <p className="panel-hint">
               During world physics, move pins with Translate — entity transform stays locked.
             </p>
           ) : null}
 
-          <div className="panel-field">
-            <span className="panel-field-label">Fabric behavior</span>
-            <p className="panel-hint mb-1">
-              Preset: {fabricClothPhysicsPresetDisplayName(physics.activePreset)}
-            </p>
-            <div className="grid grid-cols-2 gap-1">
-              {FABRIC_PHYSICS_PRESET_KEYS.map((key) => {
-                const active = physics.activePreset === key;
-                return (
-                  <button
-                    key={key}
-                    type="button"
-                    className={`btn btn-xs ${active ? 'btn-primary' : 'btn-outline btn-primary'}`}
-                    onClick={() => {
-                      setFabricClothParams(entity.id, {
-                        physics: fabricClothPhysicsParamsFromPresetKey(key),
-                      });
-                    }}
-                  >
-                    {FABRIC_PHYSICS_PRESETS[key].name}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+          <PanelSelect
+            label="Fabric behavior"
+            value={physics.activePreset}
+            options={
+              physics.activePreset === 'custom'
+                ? [...FABRIC_PRESET_OPTIONS, FABRIC_CUSTOM_OPTION]
+                : FABRIC_PRESET_OPTIONS
+            }
+            onChange={(value) => {
+              if (value === 'custom') {return;}
+              setFabricClothParams(entity.id, {
+                physics: fabricClothPhysicsParamsFromPresetKey(value as FabricPhysicsPresetKey),
+              });
+            }}
+          />
 
           <RangeSlider
             label="Bending stiffness"
