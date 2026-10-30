@@ -46,7 +46,7 @@ function EnvironmentEditor({ preset }: EnvironmentEditorProps) {
       <div className="material-editor-actions">
         <button
           type="button"
-          className="toolbar-chip-btn"
+          className="btn"
           onClick={() => duplicateEnvironment(preset.id)}
         >
           <Icon icon={Copy} size={16} strokeWidth={1.75} />
@@ -54,7 +54,7 @@ function EnvironmentEditor({ preset }: EnvironmentEditorProps) {
         </button>
         <button
           type="button"
-          className="toolbar-chip-btn toolbar-chip-btn--danger"
+          className="btn btn--danger"
           onClick={() => { removeEnvironment(preset.id); }}
         >
           <Icon icon={Trash2} size={16} strokeWidth={1.75} />
@@ -84,7 +84,7 @@ export function EnvironmentsPanel() {
       footer={
         <button
           type="button"
-          className="image-add-btn"
+          className="btn btn--add"
           aria-label="Save as environment"
           onClick={() => saveCurrentAsEnvironment()}
         >

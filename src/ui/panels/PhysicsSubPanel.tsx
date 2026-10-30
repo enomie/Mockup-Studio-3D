@@ -49,14 +49,14 @@ export function PhysicsSubPanel() {
           <div className="side-toggle side-toggle--stacked">
             <button
               type="button"
-              className="toolbar-chip-btn side-toggle__btn"
+              className="btn btn--outline side-toggle__btn"
               onClick={() => { startWorldPhysics(); }}
             >
               Start
             </button>
             <button
               type="button"
-              className={`toolbar-chip-btn side-toggle__btn${worldPhysicsPhase === 'paused' ? ' toolbar-chip-btn--active' : ''}`}
+              className="btn btn--outline side-toggle__btn"
               disabled={!canTogglePause}
               aria-pressed={worldPhysicsPhase === 'paused'}
               onClick={() => { toggleWorldPhysicsPause(); }}
@@ -65,7 +65,7 @@ export function PhysicsSubPanel() {
             </button>
             <button
               type="button"
-              className="toolbar-chip-btn side-toggle__btn"
+              className="btn btn--outline side-toggle__btn"
               disabled={!canBake}
               title={
                 canBake
@@ -78,7 +78,7 @@ export function PhysicsSubPanel() {
             </button>
             <button
               type="button"
-              className="toolbar-chip-btn side-toggle__btn"
+              className="btn btn--outline side-toggle__btn"
               disabled={!worldPhysicsHasSnapshot}
               onClick={() => { resetWorldPhysics(); }}
             >
@@ -95,14 +95,14 @@ export function PhysicsSubPanel() {
             <span className="panel-field-controls side-toggle">
               <button
                 type="button"
-                className="toolbar-chip-btn side-toggle__btn"
+                className="btn btn--outline side-toggle__btn"
                 onClick={() => { startPhysicsRigidTest(); }}
               >
                 Start
               </button>
               <button
                 type="button"
-                className="toolbar-chip-btn side-toggle__btn"
+                className="btn btn--outline side-toggle__btn"
                 disabled={!canStopRigidTest}
                 onClick={() => { stopPhysicsRigidTest(); }}
               >

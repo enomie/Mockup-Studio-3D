@@ -35,7 +35,7 @@ function ImageEditor({ image }: ImageEditorProps) {
         <div className="material-editor-actions">
           <button
             type="button"
-            className="toolbar-chip-btn toolbar-chip-btn--danger"
+            className="btn btn--danger"
             onClick={() => { removeImage(image.id); }}
           >
             <Icon icon={Trash2} size={16} strokeWidth={1.75} />
@@ -83,7 +83,7 @@ export function ImagesPanel() {
           />
           <button
             type="button"
-            className="image-add-btn"
+            className="btn btn--add"
             aria-label="Add images"
             onClick={handleAddClick}
           >

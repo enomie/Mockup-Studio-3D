@@ -18,7 +18,7 @@ export function TopMainBar() {
       <div className="top-bar__actions">
         <button
           type="button"
-          className="top-bar__btn top-bar__btn--icon"
+          className="btn btn--icon"
           aria-label="Save"
           title="Save"
           onClick={() => { handleDummyAction('save'); }}
@@ -28,7 +28,7 @@ export function TopMainBar() {
 
         <button
           type="button"
-          className="top-bar__btn top-bar__btn--icon"
+          className="btn btn--icon"
           aria-label="Export"
           title="Export"
           onClick={() => {
@@ -40,7 +40,7 @@ export function TopMainBar() {
 
         <button
           type="button"
-          className="top-bar__btn top-bar__btn--icon"
+          className="btn btn--icon"
           aria-label="Share"
           title="Share"
           onClick={() => { handleDummyAction('share'); }}

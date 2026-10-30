@@ -30,7 +30,7 @@ export function PanelToggleGroup<K extends string>({
               <button
                 key={option.key}
                 type="button"
-                className={`panel-toggle-group__button${on ? ' panel-toggle-group__button--on' : ''}`}
+                className="panel-toggle-group__button"
                 aria-pressed={on}
                 title={option.title}
                 onClick={() => { onToggle(option.key, !on); }}

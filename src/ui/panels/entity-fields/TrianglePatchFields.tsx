@@ -384,7 +384,7 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
         </ul>
         <button
           type="button"
-          className={`toolbar-chip-btn${addPointActive ? ' toolbar-chip-btn--active' : ''}`}
+          className="btn"
           aria-pressed={addPointActive}
           title="Click an edge in the viewport to place a point (Esc cancels)"
           onClick={() => { setPatchAddPointMode(addPointActive ? null : entity.id); }}

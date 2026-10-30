@@ -47,7 +47,7 @@ function ColorEditor({ preset }: ColorEditorProps) {
       <div className="material-editor-actions">
         <button
           type="button"
-          className="toolbar-chip-btn"
+          className="btn"
           onClick={() => duplicateColor(preset.id)}
         >
           <Icon icon={Copy} size={16} strokeWidth={1.75} />
@@ -56,7 +56,7 @@ function ColorEditor({ preset }: ColorEditorProps) {
         {preset.source === 'user' ? (
           <button
             type="button"
-            className="toolbar-chip-btn toolbar-chip-btn--danger"
+            className="btn btn--danger"
             onClick={() => { removeColor(preset.id); }}
           >
             <Icon icon={Trash2} size={16} strokeWidth={1.75} />
@@ -81,7 +81,7 @@ export function ColorsPanel() {
       footer={
         <button
           type="button"
-          className="image-add-btn"
+          className="btn btn--add"
           aria-label="Add color"
           onClick={() => addColor()}
         >

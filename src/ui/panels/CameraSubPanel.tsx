@@ -26,7 +26,7 @@ export function CameraSubPanel() {
       <SubPanelSection title="Projection">
         <CameraProjectionToggle
           className="camera-panel-projection"
-          chipClassName="toolbar-chip-btn camera-panel-projection__btn"
+          chipClassName="btn btn--block"
         />
 
         {camera.projection === 'perspective' ? (
@@ -88,7 +88,7 @@ export function CameraSubPanel() {
                 <div className="camera-slot-card__actions">
                   <button
                     type="button"
-                    className="toolbar-chip-btn camera-slot-card__action"
+                    className="btn camera-slot-card__action"
                     aria-label={loadLabel}
                     title={loadLabel}
                     disabled={!occupied}
@@ -100,7 +100,7 @@ export function CameraSubPanel() {
 
                   <button
                     type="button"
-                    className="toolbar-chip-btn camera-slot-card__action"
+                    className="btn camera-slot-card__action"
                     aria-label={captureLabel}
                     title={captureLabel}
                     onClick={() => { captureSlot(slotDef.index); }}

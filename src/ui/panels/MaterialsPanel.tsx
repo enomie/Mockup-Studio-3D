@@ -366,7 +366,7 @@ function MaterialEditor({ preset }: MaterialEditorProps) {
           />
           <button
             type="button"
-            className="toolbar-chip-btn"
+            className="btn"
             onClick={() => { updateMaterial(preset.id, { seed: randomProceduralSeed() }); }}
           >
             <Icon icon={Shuffle} size={16} strokeWidth={1.75} />
@@ -448,7 +448,7 @@ function MaterialEditor({ preset }: MaterialEditorProps) {
       <div className="material-editor-actions">
         <button
           type="button"
-          className="toolbar-chip-btn"
+          className="btn"
           onClick={() => duplicateMaterial(preset.id)}
         >
           <Icon icon={Copy} size={16} strokeWidth={1.75} />
@@ -457,7 +457,7 @@ function MaterialEditor({ preset }: MaterialEditorProps) {
         {preset.source === 'user' ? (
           <button
             type="button"
-            className="toolbar-chip-btn toolbar-chip-btn--danger"
+            className="btn btn--danger"
             onClick={() => { removeMaterial(preset.id); }}
           >
             <Icon icon={Trash2} size={16} strokeWidth={1.75} />
@@ -482,7 +482,7 @@ export function MaterialsPanel() {
       footer={
         <button
           type="button"
-          className="image-add-btn"
+          className="btn btn--add"
           aria-label="Add material"
           onClick={() => addMaterial('solid-pbr')}
         >

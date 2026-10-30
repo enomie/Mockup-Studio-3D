@@ -19,14 +19,14 @@ export function TopSubBar() {
             <button
               key={tool.id}
               type="button"
-              className={`viewport-tools__btn${active ? ' viewport-tools__btn--active' : ''}`}
+              className="btn"
               aria-label={label}
               aria-pressed={active}
               title={label}
               onClick={() => { setMode(tool.id); }}
             >
               <Icon icon={tool.icon} />
-              <span className="camera-quick-bar__chip-key" aria-hidden="true">{tool.shortcut}</span>
+              <span className="btn__key" aria-hidden="true">{tool.shortcut}</span>
             </button>
           );
         })}

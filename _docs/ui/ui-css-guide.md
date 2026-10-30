@@ -89,8 +89,24 @@ Ziel: 51 rohe Farbwerte → **16 Tokens** + klar abgegrenzte Ausnahmen.
 
 Panel-Tokens (`--panel-pad-x/-y`, `--panel-gap`, `--panel-stack-gap`) sind jetzt Aliase auf die Spacing-Skala.
 
-### A4. Komponenten statt Klassen-Neuerfindung
-Vor neuem Button/Chip/Toggle → existiert schon etwas? (siehe B2). Shared React-Komponenten liegen in `src/ui/components/`:
+### A4. Buttons (Schritt 3 – umgesetzt 2026-10-30)
+
+> **Regel:** Jeder Button ist `.btn` + Modifier. **Aktiv/gedrückt = `aria-pressed="true"`** – keine `--active`/`--on`-Klassen mehr. Keine neuen Button-Klassen erfinden; Kontext-Klassen (z. B. `side-toggle__btn`, `camera-slot-card__action`) nur für Layout (Breite, Ausrichtung), nie für Farbe/Rahmen.
+
+| Klasse | Aussehen | Wofür |
+|---|---|---|
+| `.btn` | randlos, transparent, Hover grau | Toolbar, Chips, Aktionen in Panels |
+| `.btn--icon` | quadratisch `--control-h` | nur Icon (`ToolbarIconButton`) |
+| `.btn--outline` | weiß mit Rahmen | Auswahl-Buttons in Panels (Left/Right, Start/Pause …) |
+| `.btn--danger` | rote Schrift, roter Hover | Löschen |
+| `.btn--add` | gestrichelt, volle Breite | „+ Hinzufügen“ am Listenende |
+| `.btn--block` | volle Breite | |
+| `.btn__key` | Tastenkürzel-Badge im Button | |
+
+Mehrfach-Toggle-Leiste (X | Y | Z): Komponente `PanelToggleGroup` (eigene Optik, ebenfalls `aria-pressed`).
+Noch **nicht** migriert (Teil von Schritt 5): Header-Buttons in `.scene-entity-block`, Collapse-Buttons von Panels/Nav.
+
+Shared React-Komponenten in `src/ui/components/`:
 `SubPanel`, `SubPanelSection`, `SubPanelCollapse*`, `PanelCheckbox`, `PanelSelect`, `PanelTextField`, `PanelAxisField`, `PanelToggleGroup`, `RangeSlider`, `ColorPicker`, `ToolbarIconButton`, `Icon`.
 
 ### A5. Checkliste für neue Features
@@ -135,8 +151,8 @@ Jeder Schritt: besprechen → umsetzen → Teil A aktualisieren → Häkchen.
 
 - [x] **1. Tokens** – fehlende Tokens definieren, Farbpalette auf ~10–12 Werte eindampfen, Hex-Codes ersetzen.
 - [x] **2. Skalen** – Font-size, Radius, Spacing als Tokens festlegen und anwenden.
-- [ ] **3. Buttons** – eine Button-Basis (`.btn` + Varianten icon/chip/danger) oder Komponente; Active-State vereinheitlichen (`aria-pressed` / `--active`).
-- [ ] **4. Toggles/Segmente** – `side-toggle`, `panel-toggle-group`, Projection-Toggle zusammenführen.
+- [x] **3. Buttons** – eine Button-Basis (`.btn` + Varianten icon/chip/danger) oder Komponente; Active-State vereinheitlichen (`aria-pressed` / `--active`).
+- [x] **4. Toggles/Segmente** (mit Schritt 3 erledigt) – `side-toggle`, `panel-toggle-group`, Projection-Toggle zusammenführen.
 - [ ] **5. Listen & Tiles** – gemeinsames Tile/Row-Muster.
 - [ ] **6. Panels & Sections** – Header/Body/Footer-Abstände konsistent.
 - [ ] **7. Inline-Styles** – auf dynamische Werte reduzieren.
@@ -151,3 +167,4 @@ Jeder Schritt: besprechen → umsetzen → Teil A aktualisieren → Häkchen.
 | 2026-10-30 | Guide angelegt. |
 | 2026-10-30 | Palette umgesetzt: eine Akzentfamilie (`#2f6bff`), Himmelblau-Auswahl entfällt; border-light mit border zusammengelegt; Dark Mode später. |
 | 2026-10-30 | Skalen umgesetzt: 6 Spacing-, 4 Font-, 4 Radius-Stufen, 2 Control-Höhen. |
+| 2026-10-30 | Buttons: ~25 Klassen → `.btn` + 6 Modifier; Aktiv-Zustand einheitlich über `aria-pressed`. Ungenutzte `.sub-panel__icon-btn` entfernt. |

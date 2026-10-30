@@ -22,13 +22,13 @@ export function CameraQuickBar() {
             <button
               key={view.id}
               type="button"
-              className="camera-quick-bar__chip"
+              className="btn"
               aria-label={label}
               title={label}
               onClick={() => { loadBuiltinView(view.id); }}
             >
-              <span className="camera-quick-bar__chip-label">{view.label}</span>
-              <span className="camera-quick-bar__chip-key">{view.shortcut}</span>
+              <span className="btn__label">{view.label}</span>
+              <span className="btn__key">{view.shortcut}</span>
             </button>
           );
         })}
@@ -47,7 +47,7 @@ export function CameraQuickBar() {
             <button
               key={slotDef.index}
               type="button"
-              className={`camera-quick-bar__chip${occupied ? '' : ' camera-quick-bar__chip--empty'}`}
+              className="btn"
               aria-label={label}
               title={label}
               disabled={!occupied}
@@ -55,8 +55,8 @@ export function CameraQuickBar() {
                 if (occupied) {loadSlot(slotDef.index);}
               }}
             >
-              <span className="camera-quick-bar__chip-label">{displayLabel}</span>
-              <span className="camera-quick-bar__chip-key">{slotDef.shortcut}</span>
+              <span className="btn__label">{displayLabel}</span>
+              <span className="btn__key">{slotDef.shortcut}</span>
             </button>
           );
         })}

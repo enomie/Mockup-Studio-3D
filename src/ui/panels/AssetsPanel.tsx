@@ -57,7 +57,7 @@ export function AssetsPanel() {
             </button>
             <button
               type="button"
-              className="toolbar-chip-btn"
+              className="btn"
               aria-label={`Remove ${entry.name}`}
               title="Remove user asset"
               onClick={() => {

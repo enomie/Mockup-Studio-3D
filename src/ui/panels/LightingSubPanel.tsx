@@ -141,7 +141,7 @@ export function LightingSubPanel() {
             <span className="panel-field-controls side-toggle">
               <button
                 type="button"
-                className={`preset-chip side-toggle__btn${lighting.key.side === 'left' ? ' side-toggle__btn--active' : ''}`}
+                className="btn btn--outline side-toggle__btn"
                 aria-pressed={lighting.key.side === 'left'}
                 onClick={() => { setKeySide('left'); }}
               >
@@ -149,7 +149,7 @@ export function LightingSubPanel() {
               </button>
               <button
                 type="button"
-                className={`preset-chip side-toggle__btn${lighting.key.side === 'right' ? ' side-toggle__btn--active' : ''}`}
+                className="btn btn--outline side-toggle__btn"
                 aria-pressed={lighting.key.side === 'right'}
                 onClick={() => { setKeySide('right'); }}
               >

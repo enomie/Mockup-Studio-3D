@@ -41,7 +41,7 @@ function LightRigEditor({ preset }: LightRigEditorProps) {
       <div className="material-editor-actions">
         <button
           type="button"
-          className="toolbar-chip-btn"
+          className="btn"
           onClick={() => duplicateLightingPreset(preset.id)}
         >
           <Icon icon={Copy} size={16} strokeWidth={1.75} />
@@ -49,7 +49,7 @@ function LightRigEditor({ preset }: LightRigEditorProps) {
         </button>
         <button
           type="button"
-          className="toolbar-chip-btn toolbar-chip-btn--danger"
+          className="btn btn--danger"
           onClick={() => { removeLightingPreset(preset.id); }}
         >
           <Icon icon={Trash2} size={16} strokeWidth={1.75} />
@@ -79,7 +79,7 @@ export function LightRigsPanel() {
       footer={
         <button
           type="button"
-          className="image-add-btn"
+          className="btn btn--add"
           aria-label="Save as light rig"
           onClick={() => saveCurrentAsLightingPreset()}
         >

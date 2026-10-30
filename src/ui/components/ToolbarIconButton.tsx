@@ -21,7 +21,7 @@ export function ToolbarIconButton({
   return (
     <button
       type="button"
-      className={`toolbar-chip-btn toolbar-chip-btn--icon${className ? ` ${className}` : ''}`}
+      className={`btn btn--icon${className ? ` ${className}` : ''}`}
       aria-label={ariaLabel}
       title={title ?? ariaLabel}
       disabled={disabled}

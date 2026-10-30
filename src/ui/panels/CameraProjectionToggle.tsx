@@ -21,7 +21,7 @@ interface CameraProjectionToggleProps {
 
 export function CameraProjectionToggle({
   className = 'camera-quick-bar__group camera-quick-bar__group--projection',
-  chipClassName = 'camera-quick-bar__chip',
+  chipClassName = 'btn',
 }: CameraProjectionToggleProps) {
   const projection = useAppStore((state) => state.camera.projection);
 
@@ -33,7 +33,7 @@ export function CameraProjectionToggle({
           <button
             key={option.id}
             type="button"
-            className={`${chipClassName} camera-projection-chip${active ? ' toolbar-chip-btn--active' : ''}`}
+            className={`${chipClassName} camera-projection-chip`}
             aria-label={option.title}
             aria-pressed={active}
             title={option.title}
