@@ -231,7 +231,7 @@ export function ColorPickerPopover({
           <span>Hex</span>
           <input
             type="text"
-            className={`color-picker-popover__input${hexInvalid ? ' color-picker-popover__input--invalid' : ''}`}
+            className={`panel-field-input color-picker-popover__input${hexInvalid ? ' panel-field-input--invalid' : ''}`}
             value={hexInput}
             onChange={(event) => { handleHexChange(event.target.value); }}
             onBlur={handleHexBlur}
@@ -244,7 +244,7 @@ export function ColorPickerPopover({
             type="number"
             min={0}
             max={255}
-            className="color-picker-popover__input"
+            className="panel-field-input color-picker-popover__input"
             value={bytes.r}
             onChange={(event) => { handleRgbChannel('r', event.target.value); }}
           />
@@ -255,7 +255,7 @@ export function ColorPickerPopover({
             type="number"
             min={0}
             max={255}
-            className="color-picker-popover__input"
+            className="panel-field-input color-picker-popover__input"
             value={bytes.g}
             onChange={(event) => { handleRgbChannel('g', event.target.value); }}
           />
@@ -266,7 +266,7 @@ export function ColorPickerPopover({
             type="number"
             min={0}
             max={255}
-            className="color-picker-popover__input"
+            className="panel-field-input color-picker-popover__input"
             value={bytes.b}
             onChange={(event) => { handleRgbChannel('b', event.target.value); }}
           />

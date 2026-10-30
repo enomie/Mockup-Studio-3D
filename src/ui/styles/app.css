@@ -417,6 +417,30 @@ input[type='range'] {
   border-left: 1px solid var(--color-border);
 }
 
+/* Thin scrollbars for all scrolling side panels (Look & Feel: Figma-like). */
+.main-nav__list,
+.sub-panel__body {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-scrollbar) transparent;
+}
+.main-nav__list::-webkit-scrollbar,
+.sub-panel__body::-webkit-scrollbar {
+  width: 6px;
+}
+.main-nav__list::-webkit-scrollbar-track,
+.sub-panel__body::-webkit-scrollbar-track {
+  background: transparent;
+}
+.main-nav__list::-webkit-scrollbar-thumb,
+.sub-panel__body::-webkit-scrollbar-thumb {
+  border-radius: var(--radius-md);
+  background: var(--color-scrollbar);
+}
+.main-nav__list::-webkit-scrollbar-thumb:hover,
+.sub-panel__body::-webkit-scrollbar-thumb:hover {
+  background: var(--color-scrollbar-hover);
+}
+
 .main-nav__list {
   flex: 1;
   min-height: 0;
@@ -424,17 +448,6 @@ input[type='range'] {
   padding: var(--space-3) var(--space-2);
   overflow-y: auto;
   list-style: none;
-  scrollbar-width: thin;
-  scrollbar-color: var(--color-scrollbar) transparent;
-}
-
-.main-nav__list::-webkit-scrollbar {
-  width: 5px;
-}
-
-.main-nav__list::-webkit-scrollbar-thumb {
-  border-radius: var(--radius-sm);
-  background: var(--color-scrollbar);
 }
 
 .main-nav__item {
@@ -512,25 +525,6 @@ input[type='range'] {
   overflow-x: hidden;
   overflow-y: auto;
   padding: var(--panel-pad-y) var(--panel-pad-x);
-  scrollbar-width: thin;
-  scrollbar-color: var(--color-scrollbar) transparent;
-}
-
-.sub-panel__body::-webkit-scrollbar {
-  width: 7px;
-}
-
-.sub-panel__body::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.sub-panel__body::-webkit-scrollbar-thumb {
-  border-radius: var(--radius-md);
-  background: var(--color-scrollbar);
-}
-
-.sub-panel__body::-webkit-scrollbar-thumb:hover {
-  background: var(--color-scrollbar-hover);
 }
 
 .panel-stack {
@@ -1006,6 +1000,11 @@ input[type='range'] {
   border-color: var(--color-danger);
 }
 
+.panel-field-input--invalid:focus-visible {
+  border-color: var(--color-danger);
+  box-shadow: 0 0 0 1px var(--color-danger);
+}
+
 .panel-field-input--full {
   width: 100%;
   padding: 0 var(--space-3);
@@ -1064,7 +1063,7 @@ input[type='range'] {
   border-color: var(--color-border-strong);
 }
 
-.patch-point-inspector-point--active {
+.patch-point-inspector-point[aria-current='true'] {
   border-color: var(--color-mark-anchor);
   background: var(--color-accent-bg);
   font-weight: 600;
@@ -1106,26 +1105,6 @@ input[type='range'] {
   outline: none;
 }
 
-.patch-point-inspector-point__remove {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: 22px;
-  height: var(--control-h-sm);
-  padding: 0;
-  border: none;
-  border-radius: var(--radius-md);
-  background: transparent;
-  color: var(--color-text-secondary);
-  cursor: pointer;
-}
-
-.patch-point-inspector-point__remove:hover {
-  background: var(--color-surface-hover);
-  color: var(--color-text);
-}
-
 .patch-point-inspector-detail {
   padding-left: var(--space-2);
 }
@@ -1149,10 +1128,6 @@ input[type='range'] {
   margin: 0;
   accent-color: var(--color-accent);
   cursor: pointer;
-}
-
-.panel-checkbox--disabled .panel-checkbox__input {
-  cursor: not-allowed;
 }
 
 .panel-toggle-group {
@@ -1338,17 +1313,19 @@ input[type='range'] {
 
 .color-picker-popover__input {
   width: 100%;
-  height: var(--control-h-sm);
-  padding: 0 var(--space-2);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  font: inherit;
+  padding: 0 var(--space-1);
+  font-family: inherit;
   font-size: var(--font-xs);
-  color: var(--color-text);
 }
 
-.color-picker-popover__input--invalid {
-  border-color: var(--color-danger);
+/* Narrow RGB fields: no room for number spinners. */
+.color-picker-popover__input[type='number'] {
+  appearance: textfield;
+}
+.color-picker-popover__input::-webkit-inner-spin-button,
+.color-picker-popover__input::-webkit-outer-spin-button {
+  margin: 0;
+  appearance: none;
 }
 
 .color-picker-popover__library,
@@ -1388,7 +1365,6 @@ input[type='range'] {
     0 4px,
     4px -4px,
     -4px 0;
-  box-sizing: border-box;
 }
 
 .color-picker-popover__preview-color {

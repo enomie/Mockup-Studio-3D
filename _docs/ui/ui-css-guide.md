@@ -241,6 +241,8 @@ Frage: Braucht `app.css` wirklich so viele Zeilen, oder ist sie aufgebläht?
 | Scrollbars | Navigation und Panel-Body definieren dünne Scrollbar je separat (5 px vs. 7 px) | eine gemeinsame Regel |
 | Kleinkram | `box-sizing: border-box` 2× (steht schon global), 1 tote Regel | löschen |
 
+**Umgesetzt (7b):** Patch-Inspector → `aria-current` + `.btn--icon`; Color-Picker-Felder → `.panel-field-input`-Basis; eine gemeinsame Scrollbar-Regel (6 px); Kleinkram gelöscht. Ergebnis 1486 → ~1460 Zeilen – weniger als geschätzt, weil zwei echte Fehler dazukamen (ungültige Eingabe bei Fokus wieder rot; Zahlen in R/G/B-Feldern nicht mehr abgeschnitten).
+
 **Fazit:** Kein Grund für einen Neuschrieb. Restliche Duplikate entfernen (Schritt 7b), dann aufteilen (Schritt 8) – das Aufteilen bringt mehr Übersicht als weiteres Kürzen.
 
 ## C. Cleanup-Roadmap (der Reihe nach)
@@ -254,7 +256,7 @@ Jeder Schritt: besprechen → umsetzen → Teil A aktualisieren → Häkchen.
 - [x] **5. Listen & Tiles** – gemeinsames Tile/Row-Muster.
 - [x] **6. Panels & Sections** – Header/Body/Footer-Abstände konsistent.
 - [x] **7. Inline-Styles** – auf dynamische Werte reduzieren.
-- [ ] **7b. Rest-Duplikate** (siehe B5)
+- [x] **7b. Rest-Duplikate** (siehe B5)
 - [ ] **8. Datei-Struktur** – app.css aufteilen.
 - [ ] **9. Responsive/Touch** – Entscheidung, was davon jetzt wirklich gilt.
 
@@ -270,3 +272,4 @@ Jeder Schritt: besprechen → umsetzen → Teil A aktualisieren → Häkchen.
 | 2026-10-30 | Tiles: `image-tile` + `material-tile` → `.tile`; Auswahl über `aria-current`. Scene-Header-Buttons → `__action`. Ungenutzt entfernt: `light-role-block`, `simple-list`, `preset-list`. |
 | 2026-10-30 | Panels: Inputs/Selects mit gemeinsamer Basis + Fokus-Rahmen; Nav-Aktiv über `aria-current`; Collapse-Leisten zusammengelegt; Höhen/Opacity als Tokens. |
 | 2026-10-30 | Inline-Styles geprüft: nur dynamische Werte übrig; fixer Abstand in `ViewportFrame` → `.viewport__gate-text`. |
+| 2026-10-30 | 7b: Rest-Duplikate entfernt (Patch-Inspector, Color-Picker-Felder, Scrollbars). Fix: `--invalid` gewinnt jetzt auch bei Fokus. |

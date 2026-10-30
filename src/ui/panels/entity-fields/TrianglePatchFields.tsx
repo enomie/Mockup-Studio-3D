@@ -250,7 +250,8 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
             return (
               <li key={node.id} className="patch-point-inspector-item">
                 <div
-                  className={`patch-point-inspector-point${selected ? ' patch-point-inspector-point--active' : ''}`}
+                  className="patch-point-inspector-point"
+                  aria-current={selected ? 'true' : undefined}
                   aria-expanded={selected}
                   onClick={() => { handleSelectTarget(node.id, selectedTargetKey); }}
                 >
@@ -277,7 +278,7 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
                   {corner ? null : (
                     <button
                       type="button"
-                      className="patch-point-inspector-point__remove"
+                      className="btn btn--icon"
                       aria-label={`Remove ${node.name}`}
                       title="Remove point"
                       onClick={(e) => {
