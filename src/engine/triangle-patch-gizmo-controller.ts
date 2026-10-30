@@ -18,6 +18,7 @@ import {
 } from 'three/webgpu';
 import {
   findPatchPoint,
+  isPatchCorner,
   replacePatchPoint,
   type PatchHandleSelection,
   type PatchHandleTarget,
@@ -74,6 +75,8 @@ interface PointHelpers {
 interface HelperResources {
   anchorGeo: SphereGeometry;
   anchorMat: MeshBasicNodeMaterial;
+  edgeAnchorGeo: SphereGeometry;
+  edgeAnchorMat: MeshBasicNodeMaterial;
   handleGeo: OctahedronGeometry;
   pinkMat: MeshBasicNodeMaterial;
   yellowMat: MeshBasicNodeMaterial;
@@ -107,6 +110,9 @@ function createHelperResources(): HelperResources {
   return {
     anchorGeo: new SphereGeometry(0.025, 16, 16),
     anchorMat: overlayMeshMaterial(0x0284c7),
+    // Edge points: purple and a bit smaller than the corners
+    edgeAnchorGeo: new SphereGeometry(0.021, 16, 16),
+    edgeAnchorMat: overlayMeshMaterial(0xa855f7),
     handleGeo: new OctahedronGeometry(0.018),
     pinkMat: overlayMeshMaterial(0xec4899),
     yellowMat: overlayMeshMaterial(0xeab308),
@@ -153,8 +159,8 @@ export class TrianglePatchGizmoController {
     this.onPatchChange = listener;
   }
 
-  private createPointHelpers(pointId: string): PointHelpers {
-    const { anchorGeo, anchorMat, handleGeo, pinkMat, yellowMat, linePinkMat, lineYellowMat } =
+  private createPointHelpers(pointId: string, isCorner: boolean): PointHelpers {
+    const { anchorGeo, anchorMat, edgeAnchorGeo, edgeAnchorMat, handleGeo, pinkMat, yellowMat, linePinkMat, lineYellowMat } =
       this.helperResources;
     const handleMesh = (geometry: BufferGeometry, material: MeshBasicNodeMaterial, targetKey: PatchHandleTarget) => {
       const mesh = new Mesh(geometry, material);
@@ -173,7 +179,9 @@ export class TrianglePatchGizmoController {
     };
 
     const helpers: PointHelpers = {
-      anchor: handleMesh(anchorGeo, anchorMat, 'pos'),
+      anchor: isCorner
+        ? handleMesh(anchorGeo, anchorMat, 'pos')
+        : handleMesh(edgeAnchorGeo, edgeAnchorMat, 'pos'),
       handleNext: handleMesh(handleGeo, pinkMat, 'handleNext'),
       handlePrev: handleMesh(handleGeo, pinkMat, 'handlePrev'),
       handleCrossIn: handleMesh(handleGeo, yellowMat, 'handleCrossIn'),
@@ -212,7 +220,8 @@ export class TrianglePatchGizmoController {
   }
 
   /** Keeps exactly one helper set per patch point. */
-  private ensurePointHelpers(points: readonly PatchPoint[]): void {
+  private ensurePointHelpers(params: TrianglePatchParams): void {
+    const { points } = params;
     const ids = new Set(points.map((point) => point.id));
     for (const [id, helpers] of this.pointHelpers) {
       if (!ids.has(id)) {
@@ -222,7 +231,7 @@ export class TrianglePatchGizmoController {
     }
     for (const point of points) {
       if (!this.pointHelpers.has(point.id)) {
-        this.pointHelpers.set(point.id, this.createPointHelpers(point.id));
+        this.pointHelpers.set(point.id, this.createPointHelpers(point.id, isPatchCorner(params, point.id)));
       }
     }
     this.handleMeshes.length = 0;
@@ -420,7 +429,7 @@ export class TrianglePatchGizmoController {
     // HelperGroup in the local or world space of the entity object
     parentObject.updateMatrixWorld(true);
 
-    this.ensurePointHelpers(params.points);
+    this.ensurePointHelpers(params);
     for (const node of params.points) {
       const h = this.pointHelpers.get(node.id);
       if (!h) {continue;}
