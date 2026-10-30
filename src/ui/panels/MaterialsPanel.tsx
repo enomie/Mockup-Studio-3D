@@ -491,25 +491,26 @@ export function MaterialsPanel() {
         </button>
       }
     >
-      <ul className="material-list">
+      <ul className="tile-list">
         {sortedMaterials.map((material) => {
           const isSelected = selectedMaterialId === material.id;
           return (
             <li key={material.id}>
               <button
                 type="button"
-                className={`material-tile${isSelected ? ' material-tile--selected' : ''}`}
+                className="tile"
+              aria-current={isSelected ? 'true' : undefined}
                 aria-label={material.name}
                 title={material.name}
                 onClick={() => { selectMaterial(isSelected ? null : material.id); }}
               >
                 <span
-                  className="material-tile__swatch"
+                  className="tile__swatch"
                   style={{ backgroundColor: swatchColor(material) }}
                 />
-                <span className="material-tile__meta">
-                  <span className="material-tile__name">{material.name}</span>
-                  <span className="material-tile__kind">{kindLabel(material)}</span>
+                <span className="tile__meta">
+                  <span className="tile__name">{material.name}</span>
+                  <span className="tile__detail">{kindLabel(material)}</span>
                 </span>
               </button>
             </li>

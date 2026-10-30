@@ -33,7 +33,7 @@ export function SceneEntityBlock({
       <div className="scene-entity-block__header">
         <button
           type="button"
-          className="scene-entity-block__collapse"
+          className="scene-entity-block__action"
           aria-expanded={!collapsed}
           aria-label={collapsed ? 'Expand properties' : 'Collapse properties'}
           onClick={onToggleCollapse}
@@ -54,7 +54,7 @@ export function SceneEntityBlock({
         )}
         <button
           type="button"
-          className="scene-entity-block__visibility"
+          className="scene-entity-block__action"
           aria-label={enabled ? `Hide ${title}` : `Show ${title}`}
           aria-pressed={enabled}
           title={enabled ? 'Hide' : 'Show'}

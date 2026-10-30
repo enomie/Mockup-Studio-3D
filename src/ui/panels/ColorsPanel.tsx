@@ -90,22 +90,23 @@ export function ColorsPanel() {
         </button>
       }
     >
-      <ul className="material-list">
+      <ul className="tile-list">
         {sortedColors.map((color) => (
           <li key={color.id}>
             <button
               type="button"
-              className={`material-tile${selectedColorId === color.id ? ' material-tile--selected' : ''}`}
+              className="tile"
+              aria-current={selectedColorId === color.id ? 'true' : undefined}
               aria-label={color.name}
               title={color.name}
               onClick={() => { selectColor(color.id); }}
             >
               <span
-                className="material-tile__swatch"
+                className="tile__swatch"
                 style={{ backgroundColor: swatchColor(color) }}
               />
-              <span className="material-tile__meta">
-                <span className="material-tile__name">{color.name}</span>
+              <span className="tile__meta">
+                <span className="tile__name">{color.name}</span>
               </span>
             </button>
           </li>

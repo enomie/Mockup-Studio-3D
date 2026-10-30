@@ -47,7 +47,7 @@ export function SceneSubPanel() {
                   </button>
                   <button
                     type="button"
-                    className="scene-entity-block__visibility"
+                    className="scene-entity-block__action"
                     aria-label={entity.visible ? `Hide ${entity.name}` : `Show ${entity.name}`}
                     aria-pressed={entity.visible}
                     title={entity.visible ? 'Hide' : 'Show'}
@@ -57,7 +57,7 @@ export function SceneSubPanel() {
                   </button>
                   <button
                     type="button"
-                    className="scene-entity-block__remove"
+                    className="scene-entity-block__action scene-entity-block__action--danger"
                     aria-label={`Remove ${entity.name}`}
                     title="Remove"
                     onClick={() => { removeEntity(entity.id); }}

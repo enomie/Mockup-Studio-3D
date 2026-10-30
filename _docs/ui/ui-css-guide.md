@@ -109,6 +109,36 @@ Noch **nicht** migriert (Teil von Schritt 5): Header-Buttons in `.scene-entity-b
 Shared React-Komponenten in `src/ui/components/`:
 `SubPanel`, `SubPanelSection`, `SubPanelCollapse*`, `PanelCheckbox`, `PanelSelect`, `PanelTextField`, `PanelAxisField`, `PanelToggleGroup`, `RangeSlider`, `ColorPicker`, `ToolbarIconButton`, `Icon`.
 
+### A6. Listen & Tiles (Schritt 5 – umgesetzt 2026-10-30)
+
+> **Regel:** Auswählbare Listen = `ul.tile-list > li > button.tile`. **Ausgewählt = `aria-current="true"`** (nicht `aria-pressed` – Auswahl in einer Liste ist kein Umschalter). Keine panel-spezifischen Tile-Klassen mehr.
+
+```
+<ul class="tile-list">
+  <li>
+    <button class="tile" aria-current="true">
+      <span class="tile__thumb">…img/icon…</span>   <!-- oder tile__swatch (Farbfläche) -->
+      <span class="tile__meta">
+        <span class="tile__name">Name</span>
+        <span class="tile__detail">Kategorie · Info</span>
+      </span>
+    </button>
+  </li>
+</ul>
+```
+
+| Klasse | Wofür |
+|---|---|
+| `.tile-list` / `.tile-list__row` | Liste; Row = Tile + Nebenbuttons in einer Zeile |
+| `.tile__thumb` (+ `--icon`) / `.tile__swatch` | 32px Vorschaubild / Icon / Farbfläche |
+| `.tile__name`, `.tile__detail`, `.tile__detail-text` | Text |
+
+Verwendet in: Assets, Images, Materials, Colors, Environments, Light rigs.
+
+**Szenen-Einträge** (`.scene-entity-block`) bleiben eigenes Muster (aufklappbarer Block mit Body). Header-Buttons: `.scene-entity-block__action` (+ `--danger`) statt drei Einzelklassen.
+
+**Kamera-Slots** (`.camera-slot-card`) bleiben eigenes Karten-Muster (enthält Formular + Aktionen).
+
 ### A5. Checkliste für neue Features
 - [ ] Bestehende Komponente aus `src/ui/components/` verwendet?
 - [ ] Nur Tokens, keine neuen Hex-/px-Magic-Numbers?
@@ -153,7 +183,7 @@ Jeder Schritt: besprechen → umsetzen → Teil A aktualisieren → Häkchen.
 - [x] **2. Skalen** – Font-size, Radius, Spacing als Tokens festlegen und anwenden.
 - [x] **3. Buttons** – eine Button-Basis (`.btn` + Varianten icon/chip/danger) oder Komponente; Active-State vereinheitlichen (`aria-pressed` / `--active`).
 - [x] **4. Toggles/Segmente** (mit Schritt 3 erledigt) – `side-toggle`, `panel-toggle-group`, Projection-Toggle zusammenführen.
-- [ ] **5. Listen & Tiles** – gemeinsames Tile/Row-Muster.
+- [x] **5. Listen & Tiles** – gemeinsames Tile/Row-Muster.
 - [ ] **6. Panels & Sections** – Header/Body/Footer-Abstände konsistent.
 - [ ] **7. Inline-Styles** – auf dynamische Werte reduzieren.
 - [ ] **8. Datei-Struktur** – app.css aufteilen.
@@ -168,3 +198,4 @@ Jeder Schritt: besprechen → umsetzen → Teil A aktualisieren → Häkchen.
 | 2026-10-30 | Palette umgesetzt: eine Akzentfamilie (`#2f6bff`), Himmelblau-Auswahl entfällt; border-light mit border zusammengelegt; Dark Mode später. |
 | 2026-10-30 | Skalen umgesetzt: 6 Spacing-, 4 Font-, 4 Radius-Stufen, 2 Control-Höhen. |
 | 2026-10-30 | Buttons: ~25 Klassen → `.btn` + 6 Modifier; Aktiv-Zustand einheitlich über `aria-pressed`. Ungenutzte `.sub-panel__icon-btn` entfernt. |
+| 2026-10-30 | Tiles: `image-tile` + `material-tile` → `.tile`; Auswahl über `aria-current`. Scene-Header-Buttons → `__action`. Ungenutzt entfernt: `light-role-block`, `simple-list`, `preset-list`. |

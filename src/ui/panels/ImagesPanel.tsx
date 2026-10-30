@@ -93,28 +93,29 @@ export function ImagesPanel() {
         </>
       }
     >
-      <ul className="image-list">
+      <ul className="tile-list">
         {sortedImages.map((image) => (
           <li key={image.id}>
             <button
               type="button"
-              className={`image-tile${selectedImageId === image.id ? ' image-tile--selected' : ''}`}
+              className="tile"
+              aria-current={selectedImageId === image.id ? 'true' : undefined}
               aria-label={image.name}
               title={image.name}
               onClick={() => { selectImage(image.id); }}
             >
-              <span className="image-tile__thumb">
+              <span className="tile__thumb">
                 <img src={image.url} alt="" loading="lazy" />
               </span>
-              <span className="image-tile__meta">
-                <span className="image-tile__name">{image.name}</span>
-                <span className="image-tile__orientation">
+              <span className="tile__meta">
+                <span className="tile__name">{image.name}</span>
+                <span className="tile__detail">
                   {image.source === 'starter' ? (
                     <>
-                      <span className="material-tile__kind">Starter</span>
+                      <span className="tile__detail">Starter</span>
                       {image.logicalFormat && image.sizeToken ? (
                         <span
-                          className="image-tile__builtin-detail"
+                          className="tile__detail-text"
                           title={`${image.logicalFormat} · ${image.sizeToken}`}
                         >
                           {image.logicalFormat} · {image.sizeToken}

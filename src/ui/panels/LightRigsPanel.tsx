@@ -88,24 +88,25 @@ export function LightRigsPanel() {
         </button>
       }
     >
-      <ul className="material-list">
+      <ul className="tile-list">
         {sortedLightingPresets.map((preset) => (
           <li key={preset.id}>
             <button
               type="button"
-              className={`material-tile${activeLightingPresetId === preset.id ? ' material-tile--selected' : ''}`}
+              className="tile"
+              aria-current={activeLightingPresetId === preset.id ? 'true' : undefined}
               aria-label={preset.name}
               title={preset.description ?? preset.name}
               onClick={() => { loadLightingPreset(preset.id); }}
             >
               <span
-                className="material-tile__swatch"
+                className="tile__swatch"
                 style={lightRigSwatchStyle(preset)}
               />
-              <span className="material-tile__meta">
-                <span className="material-tile__name">{preset.name}</span>
+              <span className="tile__meta">
+                <span className="tile__name">{preset.name}</span>
                 {preset.source === 'builtin' ? (
-                  <span className="material-tile__kind">Built-in</span>
+                  <span className="tile__detail">Built-in</span>
                 ) : null}
               </span>
             </button>

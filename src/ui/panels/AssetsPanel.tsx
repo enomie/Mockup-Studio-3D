@@ -16,41 +16,41 @@ export function AssetsPanel() {
 
   return (
     <SubPanel title="Assets" side="left" width="list">
-      <ul className="image-list">
+      <ul className="tile-list">
         {SORTED_ASSET_CATALOG.map((entry) => (
           <li key={entry.kind}>
             <button
               type="button"
-              className="image-tile"
+              className="tile"
               aria-label={`Add ${entry.label}`}
               title={`Add ${entry.label}`}
               onClick={() => { addAssetFromCatalog(entry.kind); }}
             >
-              <span className="image-tile__thumb image-tile__thumb--icon">
+              <span className="tile__thumb tile__thumb--icon">
                 <Icon icon={entry.icon} />
               </span>
-              <span className="image-tile__meta">
-                <span className="image-tile__name">{entry.label}</span>
-                <span className="image-tile__orientation">{entry.category}</span>
+              <span className="tile__meta">
+                <span className="tile__name">{entry.label}</span>
+                <span className="tile__detail">{entry.category}</span>
               </span>
             </button>
           </li>
         ))}
         {sortedUserBaked.map((entry) => (
-          <li key={entry.id} className="image-list__item-row">
+          <li key={entry.id} className="tile-list__row">
             <button
               type="button"
-              className="image-tile"
+              className="tile"
               aria-label={`Add ${entry.name}`}
               title={`Add ${entry.name}`}
               onClick={() => { addAssetFromUserBaked(entry.id); }}
             >
-              <span className="image-tile__thumb image-tile__thumb--icon">
+              <span className="tile__thumb tile__thumb--icon">
                 <Icon icon={Layers} />
               </span>
-              <span className="image-tile__meta">
-                <span className="image-tile__name">{entry.name}</span>
-                <span className="image-tile__orientation">
+              <span className="tile__meta">
+                <span className="tile__name">{entry.name}</span>
+                <span className="tile__detail">
                   {formatFabricClothBakedMeshSubtitle(entry.mesh)}
                 </span>
               </span>
