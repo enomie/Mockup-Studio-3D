@@ -18,6 +18,7 @@ import {
 import {
   defaultFabricClothParams,
   FABRIC_CLOTH_BORDER_WIDTH_M,
+  FABRIC_CLOTH_REST_PLANE_XY_ATTR,
 } from '@/scene/asset-fabric-cloth';
 import type { AssetEntity } from '@/scene/entity-types';
 import {
@@ -49,7 +50,17 @@ describe('fabric-cloth-bake', () => {
     const payload = bakeFabricClothMeshFromDeformed(mesh);
     expect(payload.segmentsW).toBe(segmentsW);
     expect(payload.segmentsH).toBe(segmentsH);
-    expect(payload.positions).toEqual(Array.from(pos.subarray(0, nu * nv * 3)));
+    // Every baked vertex keeps the uv / rest-plane coordinate of the live vertex it came from.
+    const liveUv = mesh.geometry.getAttribute('uv').array as Float32Array;
+    const liveRest = mesh.geometry.getAttribute(FABRIC_CLOTH_REST_PLANE_XY_ATTR)
+      .array as Float32Array;
+    for (let i = 0; i < nu * nv; i++) {
+      const j = (nv - 1 - Math.floor(i / nu)) * nu + (i % nu);
+      expect(payload.positions[i * 3 + 2]).toBeCloseTo(pos[j * 3 + 2], 6);
+      expect(payload.uvs[i * 2]).toBeCloseTo(liveUv[j * 2], 6);
+      expect(payload.uvs[i * 2 + 1]).toBeCloseTo(liveUv[j * 2 + 1], 6);
+      expect(payload.restPlaneXY[i * 2 + 1]).toBeCloseTo(liveRest[j * 2 + 1], 6);
+    }
     const rebuilt = buildBufferGeometryFromBakedMeshPayload(payload);
     expect(rebuilt.getAttribute('position').count).toBe(
       (payload.segmentsW + 1) * (payload.segmentsH + 1),
@@ -274,8 +285,36 @@ describe('bake normals', () => {
     );
     const payload = bakeFabricClothMeshFromDeformed(mesh, centerline);
     payload.normals.forEach((v, i) => {
-      expect(v).toBeCloseTo(live[i], 6);
+      const vertex = Math.floor(i / 3);
+      const j = (6 - Math.floor(vertex / 7)) * 7 + (vertex % 7);
+      expect(v).toBeCloseTo(live[j * 3 + (i % 3)], 6);
     });
+    mesh.geometry.dispose();
+  });
+});
+
+describe('baked triangle winding', () => {
+  it('faces the same way as the vertex normals (no back-face shading)', () => {
+    const mesh = buildFabricClothMeshFromOptions({
+      faceWidth: 0.3,
+      faceHeight: 0.2,
+      material: new MeshBasicMaterial(),
+      segments: { segmentsW: 4, segmentsH: 3 },
+    });
+    const geometry = buildBufferGeometryFromBakedMeshPayload(bakeFabricClothMeshFromDeformed(mesh));
+    const p = geometry.getAttribute('position');
+    const n = geometry.getAttribute('normal');
+    const index = geometry.index?.array ?? [];
+    for (let t = 0; t < index.length; t += 3) {
+      const [a, b, c] = [index[t], index[t + 1], index[t + 2]];
+      const e1x = p.getX(b) - p.getX(a);
+      const e1y = p.getY(b) - p.getY(a);
+      const e2x = p.getX(c) - p.getX(a);
+      const e2y = p.getY(c) - p.getY(a);
+      const faceZ = e1x * e2y - e1y * e2x;
+      expect(Math.sign(faceZ)).toBe(Math.sign(n.getZ(a)));
+    }
+    geometry.dispose();
     mesh.geometry.dispose();
   });
 });

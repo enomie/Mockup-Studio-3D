@@ -195,6 +195,28 @@ export function bakeFabricClothMeshFromVerletBinding(
 }
 
 /**
+ * The live grid stores row 0 at −Y; PlaneGeometry (baked payload, its uvs, rest plane
+ * and triangle index) stores row 0 at +Y. Flips rows so the payload stays consistent —
+ * otherwise the image is upside down and triangles wind backwards (back-face shading).
+ */
+function liveGridRowsToPlaneGeometryOrder(
+  values: Float32Array,
+  nx: number,
+  ny: number,
+): number[] {
+  const out = new Array<number>(values.length);
+  const rowStride = nx * 3;
+  for (let row = 0; row < ny; row++) {
+    const src = (ny - 1 - row) * rowStride;
+    const dst = row * rowStride;
+    for (let k = 0; k < rowStride; k++) {
+      out[dst + k] = values[src + k];
+    }
+  }
+  return out;
+}
+
+/**
  * Freezes the cloth at simulation resolution: same grid, positions and normals as
  * the live mesh, so the bake looks exactly like the simulated cloth.
  */
@@ -217,15 +239,17 @@ export function bakeFabricClothMeshFromDeformed(
     restPlane[i * 2 + 1] = posAttr.getY(i);
   }
 
-  const normals = new Float32Array(coarsePositions.length);
-  writeClothGridNormals(coarsePositions, normals, segmentsW + 1, segmentsH + 1);
+  const nx = segmentsW + 1;
+  const ny = segmentsH + 1;
+  const liveNormals = new Float32Array(coarsePositions.length);
+  writeClothGridNormals(coarsePositions, liveNormals, nx, ny);
   const uvs = Array.from(geometry.getAttribute('uv').array as Float32Array);
   geometry.dispose();
 
   const footprint = fabricClothRestPlaneFootprintM(restPlane);
   return {
-    positions: Array.from(coarsePositions),
-    normals: Array.from(normals),
+    positions: liveGridRowsToPlaneGeometryOrder(coarsePositions, nx, ny),
+    normals: liveGridRowsToPlaneGeometryOrder(liveNormals, nx, ny),
     uvs,
     restPlaneXY: Array.from(restPlane),
     segmentsW,
