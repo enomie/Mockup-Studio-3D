@@ -1,5 +1,5 @@
 import { Euler, Quaternion, Vector3 } from 'three';
-import type { PatchNodeData } from './asset-triangle-patch';
+import type { PatchPoint } from './asset-triangle-patch';
 
 const HANDLE_KEYS = [
   'handleNext',
@@ -12,14 +12,14 @@ export type PatchHandleKey = (typeof HANDLE_KEYS)[number];
 
 /** Rotate all tangent handles around `node.pos` (anchor stays fixed). */
 export function rotatePatchNodeHandlesAroundAnchor(
-  node: PatchNodeData,
+  node: PatchPoint,
   deltaEulerRad: { x: number; y: number; z: number },
-): PatchNodeData {
+): PatchPoint {
   const euler = new Euler(deltaEulerRad.x, deltaEulerRad.y, deltaEulerRad.z, 'XYZ');
   const quaternion = new Quaternion().setFromEuler(euler);
   const anchor = new Vector3(node.pos.x, node.pos.y, node.pos.z);
 
-  const next: PatchNodeData = {
+  const next: PatchPoint = {
     ...node,
     pos: { ...node.pos },
     handleNext: { ...node.handleNext },
@@ -43,16 +43,16 @@ export function rotatePatchNodeHandlesAroundAnchor(
 }
 
 export function translatePatchNodeAnchor(
-  node: PatchNodeData,
+  node: PatchPoint,
   newPos: { x: number; y: number; z: number },
-): PatchNodeData {
+): PatchPoint {
   const delta = {
     x: newPos.x - node.pos.x,
     y: newPos.y - node.pos.y,
     z: newPos.z - node.pos.z,
   };
 
-  const next: PatchNodeData = {
+  const next: PatchPoint = {
     ...node,
     pos: { ...newPos },
     handleNext: {

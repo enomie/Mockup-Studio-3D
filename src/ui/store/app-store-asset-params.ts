@@ -47,10 +47,10 @@ export function setBookMaterialTint(
 
 export function selectPatchHandle(
   entityId: string,
-  nodeIndex: number,
+  pointId: string,
   targetKey: PatchHandleTarget,
 ): void {
-  store.sceneApi?.selectPatchHandle(entityId, nodeIndex, targetKey);
+  store.sceneApi?.selectPatchHandle(entityId, pointId, targetKey);
 }
 
 export function setWallpaperPattern(entityId: string, partial: Partial<WallpaperPattern>): void {

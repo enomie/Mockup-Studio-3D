@@ -3,7 +3,11 @@ import {
   Float32BufferAttribute,
   Vector3,
 } from 'three/webgpu';
-import type { TrianglePatchParams, PatchNodeData } from '@/scene/asset-triangle-patch';
+import {
+  getPatchCorners,
+  type PatchPoint,
+  type TrianglePatchParams,
+} from '@/scene/asset-triangle-patch';
 import { ensureGeometryTangents } from '@/engine/geometry-tangents';
 
 const _pA = new Vector3();
@@ -18,8 +22,8 @@ const _bC = new Vector3();
  * nA uses handleNext, nB uses handlePrev.
  */
 export function evalCubicBezierEdge(
-  nA: PatchNodeData,
-  nB: PatchNodeData,
+  nA: PatchPoint,
+  nB: PatchPoint,
   t: number,
   out: Vector3 = new Vector3(),
 ): Vector3 {
@@ -45,7 +49,7 @@ export function evalCubicBezierEdge(
  * Edge 2: C -> A
  */
 export function evalPatchSurfacePoint(
-  nodes: readonly [PatchNodeData, PatchNodeData, PatchNodeData],
+  nodes: readonly [PatchPoint, PatchPoint, PatchPoint],
   u: number,
   v: number,
   w: number,
@@ -128,6 +132,7 @@ export function buildTrianglePatchGeometry(params: TrianglePatchParams): BufferG
   const gridIndex: number[][] = [];
   let vCounter = 0;
   const pt = new Vector3();
+  const corners = getPatchCorners(params);
 
   for (let i = 0; i <= divisions; i++) {
     gridIndex[i] = [];
@@ -138,7 +143,7 @@ export function buildTrianglePatchGeometry(params: TrianglePatchParams): BufferG
       const v = j / divisions;
       const w = (divisions - i - j) / divisions;
 
-      evalPatchSurfacePoint(params.nodes, u, v, w, pt);
+      evalPatchSurfacePoint(corners, u, v, w, pt);
 
       const pIdx = vCounter * 3;
       positions[pIdx] = pt.x;

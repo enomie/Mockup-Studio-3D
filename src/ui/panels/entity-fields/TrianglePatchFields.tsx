@@ -9,8 +9,9 @@ import {
   } from '@/ui/store/app-store';
 import {
   defaultTrianglePatchParams,
+  replacePatchPoint,
   type PatchHandleTarget,
-  type PatchNodeData,
+  type PatchPoint,
   type TrianglePatchParams,
 } from '@/scene/asset-triangle-patch';
 import {
@@ -24,15 +25,6 @@ import { formatDegrees, parseDegreesInput } from './field-input-helpers';
 
 interface TrianglePatchFieldsProps {
   entity: AssetEntity;
-}
-
-function patchPointLetter(index: number): string {
-  return String.fromCharCode(65 + index);
-}
-
-function patchPointHint(node: PatchNodeData): string | undefined {
-  const match = /\(([^)]+)\)/.exec(node.name);
-  return match?.[1];
 }
 
 const TARGETS: { key: PatchHandleTarget; label: string; color: string }[] = [
@@ -50,39 +42,44 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
   const patchParams: TrianglePatchParams = entity.trianglePatchParams ?? defaultTrianglePatchParams();
   // The viewport pick wins; local state covers the case where nothing is picked yet.
   const viewportEntityId = useAppStore((s) => s.patchHandleSelection?.entityId);
-  const viewportNodeIndex = useAppStore((s) => s.patchHandleSelection?.nodeIndex);
+  const viewportPointId = useAppStore((s) => s.patchHandleSelection?.pointId);
   const viewportTargetKey = useAppStore((s) => s.patchHandleSelection?.targetKey);
-  const [localCornerIdx, setLocalCornerIdx] = useState<number>(0);
+  const [localPointId, setLocalPointId] = useState<string | null>(null);
   const [localTargetKey, setLocalTargetKey] = useState<PatchHandleTarget>('pos');
-  const pickedInViewport = viewportEntityId === entity.id && viewportNodeIndex !== undefined && viewportTargetKey !== undefined;
-  const selectedCornerIdx = pickedInViewport ? viewportNodeIndex : localCornerIdx;
+  const pickedInViewport = viewportEntityId === entity.id && viewportPointId !== undefined && viewportTargetKey !== undefined;
+  const firstPoint = patchParams.points[0];
+  const activeNode: PatchPoint =
+    patchParams.points.find((point) => point.id === (pickedInViewport ? viewportPointId : localPointId)) ?? firstPoint;
+  const selectedPointId = activeNode.id;
   const selectedTargetKey = pickedInViewport ? viewportTargetKey : localTargetKey;
 
   const [anchorHandleRotRad, setAnchorHandleRotRad] = useState({ x: 0, y: 0, z: 0 });
-  const selectionKey = `${selectedCornerIdx}:${selectedTargetKey}`;
+  const selectionKey = `${selectedPointId}:${selectedTargetKey}`;
   const [rotSelectionKey, setRotSelectionKey] = useState(selectionKey);
   if (rotSelectionKey !== selectionKey) {
     setRotSelectionKey(selectionKey);
     setAnchorHandleRotRad({ x: 0, y: 0, z: 0 });
   }
 
-  const activeNode = patchParams.nodes[selectedCornerIdx] ?? patchParams.nodes[0];
   const activeVec = activeNode[selectedTargetKey];
 
-  const handleSelectTarget = (cornerIdx: number, targetKey: PatchHandleTarget) => {
-    setLocalCornerIdx(cornerIdx);
+  const handleSelectTarget = (pointId: string, targetKey: PatchHandleTarget) => {
+    setLocalPointId(pointId);
     setLocalTargetKey(targetKey);
-    selectPatchHandle(entity.id, cornerIdx, targetKey);
+    selectPatchHandle(entity.id, pointId, targetKey);
+  };
+
+  const commitPoint = (point: PatchPoint) => {
+    setKindParams('trianglePatch', entity.id, { points: replacePatchPoint(patchParams.points, point) });
   };
 
   const updateCoord = (axis: 'x' | 'y' | 'z', value: number) => {
-    const updatedNodes = [...patchParams.nodes] as [typeof patchParams.nodes[0], typeof patchParams.nodes[1], typeof patchParams.nodes[2]];
 
     if (selectedTargetKey === 'pos') {
-      updatedNodes[selectedCornerIdx] = translatePatchNodeAnchor(activeNode, {
+      commitPoint(translatePatchNodeAnchor(activeNode, {
         ...activeNode.pos,
         [axis]: value,
-      });
+      }));
     } else {
       const nodeCopy = {
         ...activeNode,
@@ -122,10 +119,8 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
         }
       }
 
-      updatedNodes[selectedCornerIdx] = nodeCopy;
+      commitPoint(nodeCopy);
     }
-
-    setKindParams('trianglePatch', entity.id, { nodes: updatedNodes });
   };
 
   const updateAnchorHandleRotation = (axis: 'x' | 'y' | 'z', radians: number): void => {
@@ -139,16 +134,7 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
         z: axis === 'z' ? deltaRad : 0,
       };
 
-      const updatedNodes = [...patchParams.nodes] as [
-        typeof patchParams.nodes[0],
-        typeof patchParams.nodes[1],
-        typeof patchParams.nodes[2],
-      ];
-      updatedNodes[selectedCornerIdx] = rotatePatchNodeHandlesAroundAnchor(
-        activeNode,
-        deltaEuler,
-      );
-      setKindParams('trianglePatch', entity.id, { nodes: updatedNodes });
+      commitPoint(rotatePatchNodeHandlesAroundAnchor(activeNode, deltaEuler));
 
       return { ...prev, [axis]: radians };
     });
@@ -156,7 +142,6 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
 
   const scaleHandleLength = (factor: number) => {
     if (selectedTargetKey === 'pos') {return;}
-    const updatedNodes = [...patchParams.nodes] as [typeof patchParams.nodes[0], typeof patchParams.nodes[1], typeof patchParams.nodes[2]];
     const nodeCopy = {
       ...activeNode,
       pos: { ...activeNode.pos },
@@ -193,8 +178,7 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
       }
     }
 
-    updatedNodes[selectedCornerIdx] = nodeCopy;
-    setKindParams('trianglePatch', entity.id, { nodes: updatedNodes });
+    commitPoint(nodeCopy);
   };
 
   const handleLen = selectedTargetKey !== 'pos'
@@ -214,21 +198,17 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
 
       <SubPanelSection title="Point & Handle Inspector">
         <ul className="patch-point-inspector-list">
-          {patchParams.nodes.map((node, cornerIdx) => {
-            const selected = selectedCornerIdx === cornerIdx;
-            const hint = patchPointHint(node);
+          {patchParams.points.map((node) => {
+            const selected = selectedPointId === node.id;
             return (
               <li key={node.id} className="patch-point-inspector-item">
                 <button
                   type="button"
                   className={`patch-point-inspector-point${selected ? ' patch-point-inspector-point--active' : ''}`}
                   aria-expanded={selected}
-                  onClick={() => { handleSelectTarget(cornerIdx, selectedTargetKey); }}
+                  onClick={() => { handleSelectTarget(node.id, selectedTargetKey); }}
                 >
-                  <span className="patch-point-inspector-point__letter">{patchPointLetter(cornerIdx)}</span>
-                  {hint ? (
-                    <span className="patch-point-inspector-point__hint">{hint}</span>
-                  ) : null}
+                  <span className="patch-point-inspector-point__hint">{node.name}</span>
                 </button>
 
                 {selected ? (
@@ -240,7 +220,7 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
                       id={`patch-target-${entity.id}`}
                       className="panel-field-select"
                       value={selectedTargetKey}
-                      onChange={(e) => { handleSelectTarget(cornerIdx, e.target.value as PatchHandleTarget); }}
+                      onChange={(e) => { handleSelectTarget(node.id, e.target.value as PatchHandleTarget); }}
                     >
                       {TARGETS.map((t) => (
                         <option key={t.key} value={t.key}>

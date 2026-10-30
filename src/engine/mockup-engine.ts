@@ -588,9 +588,9 @@ export class MockupEngine implements SceneApi {
     );
   }
 
-  selectPatchHandle(entityId: string, nodeIndex: number, targetKey: PatchHandleTarget): void {
+  selectPatchHandle(entityId: string, pointId: string, targetKey: PatchHandleTarget): void {
     this.patchGizmo.setActiveEntity(entityId);
-    this.patchGizmo.selectTarget({ entityId, nodeIndex, targetKey });
+    this.patchGizmo.selectTarget({ entityId, pointId, targetKey });
     this.gizmoInteraction.refresh();
     this.emit();
     this.invalidateViewport();

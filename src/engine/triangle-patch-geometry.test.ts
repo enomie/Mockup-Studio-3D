@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { defaultTrianglePatchParams } from '@/scene/asset-triangle-patch';
+import { defaultTrianglePatchParams, getPatchCorners } from '@/scene/asset-triangle-patch';
 import {
   buildTrianglePatchGeometry,
   evalCubicBezierEdge,
@@ -10,7 +10,7 @@ import { Vector3 } from 'three/webgpu';
 describe('triangle-patch-geometry', () => {
   it('evaluates cubic bezier edge endpoints correctly', () => {
     const params = defaultTrianglePatchParams();
-    const [nA, nB] = params.nodes;
+    const [nA, nB] = getPatchCorners(params);
 
     const start = new Vector3();
     const end = new Vector3();
@@ -29,26 +29,27 @@ describe('triangle-patch-geometry', () => {
 
   it('evaluates patch surface corner points at barycentric corners', () => {
     const params = defaultTrianglePatchParams();
-    const [nA, nB, nC] = params.nodes;
+    const corners = getPatchCorners(params);
+    const [nA, nB, nC] = corners;
 
     const ptA = new Vector3();
     const ptB = new Vector3();
     const ptC = new Vector3();
 
     // Corner A: u=1, v=0, w=0
-    evalPatchSurfacePoint(params.nodes, 1, 0, 0, ptA);
+    evalPatchSurfacePoint(corners, 1, 0, 0, ptA);
     expect(ptA.x).toBeCloseTo(nA.pos.x);
     expect(ptA.y).toBeCloseTo(nA.pos.y);
     expect(ptA.z).toBeCloseTo(nA.pos.z);
 
     // Corner B: u=0, v=1, w=0
-    evalPatchSurfacePoint(params.nodes, 0, 1, 0, ptB);
+    evalPatchSurfacePoint(corners, 0, 1, 0, ptB);
     expect(ptB.x).toBeCloseTo(nB.pos.x);
     expect(ptB.y).toBeCloseTo(nB.pos.y);
     expect(ptB.z).toBeCloseTo(nB.pos.z);
 
     // Corner C: u=0, v=0, w=1
-    evalPatchSurfacePoint(params.nodes, 0, 0, 1, ptC);
+    evalPatchSurfacePoint(corners, 0, 0, 1, ptC);
     expect(ptC.x).toBeCloseTo(nC.pos.x);
     expect(ptC.y).toBeCloseTo(nC.pos.y);
     expect(ptC.z).toBeCloseTo(nC.pos.z);

@@ -16,11 +16,13 @@ import {
   type Sphere,
   type Scene,
 } from 'three/webgpu';
-import type {
-  PatchHandleSelection,
-  PatchHandleTarget,
-  PatchNodeData,
-  TrianglePatchParams,
+import {
+  findPatchPoint,
+  replacePatchPoint,
+  type PatchHandleSelection,
+  type PatchHandleTarget,
+  type PatchPoint,
+  type TrianglePatchParams,
 } from '@/scene/asset-triangle-patch';
 import type { EntityRegistry } from './entity-registry';
 
@@ -33,7 +35,7 @@ const RING_AXIS = new Vector3(0, 0, 1);
 type LeverKey = Exclude<PatchHandleTarget, 'pos'>;
 
 interface LengthDragState {
-  nodeIndex: number;
+  pointId: string;
   key: LeverKey;
   /** Entity-local unit direction, frozen for the whole drag. */
   dir: Vector3;
@@ -57,6 +59,62 @@ export function closestAxisParamToRay(origin: Vector3, dir: Vector3, ray: Ray): 
 
 export type PatchSubTarget = PatchHandleSelection;
 
+interface PointHelpers {
+  anchor: Mesh;
+  handleNext: Mesh;
+  handlePrev: Mesh;
+  handleCrossIn: Mesh;
+  handleCrossOut: Mesh;
+  lineNext: Line;
+  linePrev: Line;
+  lineCross: Line;
+}
+
+/** Geometries and materials shared by every point's helper meshes. */
+interface HelperResources {
+  anchorGeo: SphereGeometry;
+  anchorMat: MeshBasicNodeMaterial;
+  handleGeo: OctahedronGeometry;
+  pinkMat: MeshBasicNodeMaterial;
+  yellowMat: MeshBasicNodeMaterial;
+  linePinkMat: LineBasicNodeMaterial;
+  lineYellowMat: LineBasicNodeMaterial;
+}
+
+function overlayMeshMaterial(color: number): MeshBasicNodeMaterial {
+  return new MeshBasicNodeMaterial({
+    color,
+    transparent: true,
+    opacity: 1.0,
+    depthTest: false,
+    depthWrite: false,
+    toneMapped: false,
+  });
+}
+
+function overlayLineMaterial(color: number): LineBasicNodeMaterial {
+  return new LineBasicNodeMaterial({
+    color,
+    transparent: true,
+    opacity: 0.85,
+    depthTest: false,
+    depthWrite: false,
+    toneMapped: false,
+  });
+}
+
+function createHelperResources(): HelperResources {
+  return {
+    anchorGeo: new SphereGeometry(0.025, 16, 16),
+    anchorMat: overlayMeshMaterial(0x0284c7),
+    handleGeo: new OctahedronGeometry(0.018),
+    pinkMat: overlayMeshMaterial(0xec4899),
+    yellowMat: overlayMeshMaterial(0xeab308),
+    linePinkMat: overlayLineMaterial(0xec4899),
+    lineYellowMat: overlayLineMaterial(0xeab308),
+  };
+}
+
 export class TrianglePatchGizmoController {
   private readonly scene: Scene;
   private readonly registry: EntityRegistry;
@@ -69,17 +127,9 @@ export class TrianglePatchGizmoController {
   // Track created handle meshes for raycasting & picking
   private readonly handleMeshes: Mesh[] = [];
 
-  // Corner helper meshes per corner index (0, 1, 2)
-  private readonly cornerHelpers: {
-    anchor: Mesh;
-    handleNext: Mesh;
-    handlePrev: Mesh;
-    handleCrossIn: Mesh;
-    handleCrossOut: Mesh;
-    lineNext: Line;
-    linePrev: Line;
-    lineCross: Line;
-  }[] = [];
+  // Helper meshes per patch point id, created and removed as points come and go
+  private readonly pointHelpers = new Map<string, PointHelpers>();
+  private readonly helperResources: HelperResources;
 
   /** Glowing ring on the active lever line: drag it to change only the lever length. */
   private readonly lengthRing: Mesh;
@@ -95,7 +145,7 @@ export class TrianglePatchGizmoController {
     this.scene.add(this.helperGroup);
     this.helperGroup.visible = false;
 
-    this.createHelperMeshes();
+    this.helperResources = createHelperResources();
     this.lengthRing = this.createLengthRing();
   }
 
@@ -103,130 +153,82 @@ export class TrianglePatchGizmoController {
     this.onPatchChange = listener;
   }
 
-  private createHelperMeshes(): void {
-    const anchorGeo = new SphereGeometry(0.025, 16, 16);
-    const anchorMat = new MeshBasicNodeMaterial({
-      color: 0x0284c7,
-      transparent: true,
-      opacity: 1.0,
-      depthTest: false,
-      depthWrite: false,
-      toneMapped: false,
-    });
+  private createPointHelpers(pointId: string): PointHelpers {
+    const { anchorGeo, anchorMat, handleGeo, pinkMat, yellowMat, linePinkMat, lineYellowMat } =
+      this.helperResources;
+    const handleMesh = (geometry: BufferGeometry, material: MeshBasicNodeMaterial, targetKey: PatchHandleTarget) => {
+      const mesh = new Mesh(geometry, material);
+      mesh.castShadow = false;
+      mesh.renderOrder = 999;
+      mesh.frustumCulled = false;
+      mesh.userData = { role: PATCH_GIZMO_HANDLE_ROLE, pointId, targetKey };
+      return mesh;
+    };
+    const line = (pointCount: number, material: LineBasicNodeMaterial) => {
+      const points = Array.from({ length: pointCount }, () => new Vector3());
+      const mesh = new Line(new BufferGeometry().setFromPoints(points), material);
+      mesh.renderOrder = 998;
+      mesh.frustumCulled = false;
+      return mesh;
+    };
 
-    const handleGeo = new OctahedronGeometry(0.018);
-    const pinkMat = new MeshBasicNodeMaterial({
-      color: 0xec4899,
-      transparent: true,
-      opacity: 1.0,
-      depthTest: false,
-      depthWrite: false,
-      toneMapped: false,
-    });
-    const yellowMat = new MeshBasicNodeMaterial({
-      color: 0xeab308,
-      transparent: true,
-      opacity: 1.0,
-      depthTest: false,
-      depthWrite: false,
-      toneMapped: false,
-    });
+    const helpers: PointHelpers = {
+      anchor: handleMesh(anchorGeo, anchorMat, 'pos'),
+      handleNext: handleMesh(handleGeo, pinkMat, 'handleNext'),
+      handlePrev: handleMesh(handleGeo, pinkMat, 'handlePrev'),
+      handleCrossIn: handleMesh(handleGeo, yellowMat, 'handleCrossIn'),
+      handleCrossOut: handleMesh(handleGeo, yellowMat, 'handleCrossOut'),
+      lineNext: line(2, linePinkMat),
+      linePrev: line(2, linePinkMat),
+      lineCross: line(3, lineYellowMat),
+    };
+    this.helperGroup.add(
+      helpers.anchor,
+      helpers.handleNext,
+      helpers.handlePrev,
+      helpers.handleCrossIn,
+      helpers.handleCrossOut,
+      helpers.lineNext,
+      helpers.linePrev,
+      helpers.lineCross,
+    );
+    return helpers;
+  }
 
-    const linePinkMat = new LineBasicNodeMaterial({
-      color: 0xec4899,
-      transparent: true,
-      opacity: 0.85,
-      depthTest: false,
-      depthWrite: false,
-      toneMapped: false,
-    });
-    const lineYellowMat = new LineBasicNodeMaterial({
-      color: 0xeab308,
-      transparent: true,
-      opacity: 0.85,
-      depthTest: false,
-      depthWrite: false,
-      toneMapped: false,
-    });
+  private disposePointHelpers(helpers: PointHelpers): void {
+    this.helperGroup.remove(
+      helpers.anchor,
+      helpers.handleNext,
+      helpers.handlePrev,
+      helpers.handleCrossIn,
+      helpers.handleCrossOut,
+      helpers.lineNext,
+      helpers.linePrev,
+      helpers.lineCross,
+    );
+    helpers.lineNext.geometry.dispose();
+    helpers.linePrev.geometry.dispose();
+    helpers.lineCross.geometry.dispose();
+  }
 
-    for (let c = 0; c < 3; c++) {
-      const anchor = new Mesh(anchorGeo, anchorMat);
-      anchor.castShadow = false;
-      anchor.renderOrder = 999;
-      anchor.frustumCulled = false;
-      anchor.userData = {
-        role: PATCH_GIZMO_HANDLE_ROLE,
-        nodeIndex: c,
-        targetKey: 'pos' as PatchHandleTarget,
-      };
-
-      const handleNext = new Mesh(handleGeo, pinkMat);
-      handleNext.renderOrder = 999;
-      handleNext.frustumCulled = false;
-      handleNext.userData = {
-        role: PATCH_GIZMO_HANDLE_ROLE,
-        nodeIndex: c,
-        targetKey: 'handleNext' as PatchHandleTarget,
-      };
-
-      const handlePrev = new Mesh(handleGeo, pinkMat);
-      handlePrev.renderOrder = 999;
-      handlePrev.frustumCulled = false;
-      handlePrev.userData = {
-        role: PATCH_GIZMO_HANDLE_ROLE,
-        nodeIndex: c,
-        targetKey: 'handlePrev' as PatchHandleTarget,
-      };
-
-      const handleCrossIn = new Mesh(handleGeo, yellowMat);
-      handleCrossIn.renderOrder = 999;
-      handleCrossIn.frustumCulled = false;
-      handleCrossIn.userData = {
-        role: PATCH_GIZMO_HANDLE_ROLE,
-        nodeIndex: c,
-        targetKey: 'handleCrossIn' as PatchHandleTarget,
-      };
-
-      const handleCrossOut = new Mesh(handleGeo, yellowMat);
-      handleCrossOut.renderOrder = 999;
-      handleCrossOut.frustumCulled = false;
-      handleCrossOut.userData = {
-        role: PATCH_GIZMO_HANDLE_ROLE,
-        nodeIndex: c,
-        targetKey: 'handleCrossOut' as PatchHandleTarget,
-      };
-
-      const lineNext = new Line(new BufferGeometry().setFromPoints([new Vector3(), new Vector3()]), linePinkMat);
-      lineNext.renderOrder = 998;
-      lineNext.frustumCulled = false;
-      const linePrev = new Line(new BufferGeometry().setFromPoints([new Vector3(), new Vector3()]), linePinkMat);
-      linePrev.renderOrder = 998;
-      linePrev.frustumCulled = false;
-      const lineCross = new Line(new BufferGeometry().setFromPoints([new Vector3(), new Vector3(), new Vector3()]), lineYellowMat);
-      lineCross.renderOrder = 998;
-      lineCross.frustumCulled = false;
-
-      this.helperGroup.add(anchor);
-      this.helperGroup.add(handleNext);
-      this.helperGroup.add(handlePrev);
-      this.helperGroup.add(handleCrossIn);
-      this.helperGroup.add(handleCrossOut);
-      this.helperGroup.add(lineNext);
-      this.helperGroup.add(linePrev);
-      this.helperGroup.add(lineCross);
-
-      this.handleMeshes.push(anchor, handleNext, handlePrev, handleCrossIn, handleCrossOut);
-
-      this.cornerHelpers.push({
-        anchor,
-        handleNext,
-        handlePrev,
-        handleCrossIn,
-        handleCrossOut,
-        lineNext,
-        linePrev,
-        lineCross,
-      });
+  /** Keeps exactly one helper set per patch point. */
+  private ensurePointHelpers(points: readonly PatchPoint[]): void {
+    const ids = new Set(points.map((point) => point.id));
+    for (const [id, helpers] of this.pointHelpers) {
+      if (!ids.has(id)) {
+        this.disposePointHelpers(helpers);
+        this.pointHelpers.delete(id);
+      }
+    }
+    for (const point of points) {
+      if (!this.pointHelpers.has(point.id)) {
+        this.pointHelpers.set(point.id, this.createPointHelpers(point.id));
+      }
+    }
+    this.handleMeshes.length = 0;
+    for (const point of points) {
+      const h = this.pointHelpers.get(point.id);
+      if (h) {this.handleMeshes.push(h.anchor, h.handleNext, h.handlePrev, h.handleCrossIn, h.handleCrossOut);}
     }
   }
 
@@ -256,7 +258,7 @@ export class TrianglePatchGizmoController {
 
   private syncLengthRing(): void {
     const key = this.activeLeverKey();
-    const corner = this.activeTarget ? this.cornerHelpers[this.activeTarget.nodeIndex] : undefined;
+    const corner = this.activeTarget ? this.pointHelpers.get(this.activeTarget.pointId) : undefined;
     if (!key || !corner) {
       this.lengthRing.visible = false;
       return;
@@ -283,7 +285,8 @@ export class TrianglePatchGizmoController {
     if (!ray.intersectsSphere(this.lengthRingBoundingSphere())) {return false;}
 
     const runtime = this.activeEntityId ? this.registry.getRuntime(this.activeEntityId) : undefined;
-    const node = runtime?.entity.trianglePatchParams?.nodes[this.activeTarget.nodeIndex];
+    const params = runtime?.entity.trianglePatchParams;
+    const node = params ? findPatchPoint(params, this.activeTarget.pointId) : undefined;
     if (!runtime || !node) {return false;}
 
     const origin = new Vector3(node.pos.x, node.pos.y, node.pos.z);
@@ -296,7 +299,7 @@ export class TrianglePatchGizmoController {
     if (startAxisParam === null) {return false;}
 
     this.lengthDrag = {
-      nodeIndex: this.activeTarget.nodeIndex,
+      pointId: this.activeTarget.pointId,
       key,
       dir,
       startLength,
@@ -310,7 +313,7 @@ export class TrianglePatchGizmoController {
     if (!drag || !this.activeEntityId) {return;}
     const runtime = this.registry.getRuntime(this.activeEntityId);
     const params = runtime?.entity.trianglePatchParams;
-    const node = params?.nodes[drag.nodeIndex];
+    const node = params ? findPatchPoint(params, drag.pointId) : undefined;
     if (!runtime || !params || !node) {return;}
 
     const origin = new Vector3(node.pos.x, node.pos.y, node.pos.z);
@@ -319,7 +322,7 @@ export class TrianglePatchGizmoController {
 
     const length = Math.max(MIN_HANDLE_LENGTH_M, drag.startLength + t - drag.startAxisParam);
     const tip = origin.addScaledVector(drag.dir, length);
-    this.commitNode(this.activeEntityId, drag.nodeIndex, {
+    this.commitPoint(this.activeEntityId, {
       ...node,
       [drag.key]: { x: tip.x, y: tip.y, z: tip.z },
     });
@@ -353,8 +356,8 @@ export class TrianglePatchGizmoController {
 
   getActiveHandleMesh(): Mesh | null {
     if (!this.activeTarget || !this.helperGroup.visible) {return null;}
-    const { nodeIndex, targetKey } = this.activeTarget;
-    const corner = this.cornerHelpers.at(nodeIndex);
+    const { pointId, targetKey } = this.activeTarget;
+    const corner = this.pointHelpers.get(pointId);
     if (!corner) {return null;}
     return corner[targetKey === 'pos' ? 'anchor' : targetKey];
   }
@@ -388,18 +391,18 @@ export class TrianglePatchGizmoController {
   }
 
   selectHandleByMesh(mesh: Mesh): PatchSubTarget | null {
-    const { role, nodeIndex, targetKey } = mesh.userData as {
+    const { role, pointId, targetKey } = mesh.userData as {
       role?: string;
-      nodeIndex?: number;
+      pointId?: string;
       targetKey?: PatchHandleTarget;
     };
-    if (role !== PATCH_GIZMO_HANDLE_ROLE || nodeIndex === undefined || !targetKey || !this.activeEntityId) {
+    if (role !== PATCH_GIZMO_HANDLE_ROLE || pointId === undefined || !targetKey || !this.activeEntityId) {
       return null;
     }
 
     this.activeTarget = {
       entityId: this.activeEntityId,
-      nodeIndex,
+      pointId,
       targetKey,
     };
     this.syncLengthRing();
@@ -417,10 +420,10 @@ export class TrianglePatchGizmoController {
     // HelperGroup in the local or world space of the entity object
     parentObject.updateMatrixWorld(true);
 
-    for (let c = 0; c < 3; c++) {
-      const node = params.nodes.at(c);
-      const h = this.cornerHelpers.at(c);
-      if (!node || !h) {continue;}
+    this.ensurePointHelpers(params.points);
+    for (const node of params.points) {
+      const h = this.pointHelpers.get(node.id);
+      if (!h) {continue;}
 
       const toWorld = (v: Vec3) =>
         new Vector3(v.x, v.y, v.z).applyMatrix4(parentObject.matrixWorld);
@@ -452,9 +455,8 @@ export class TrianglePatchGizmoController {
     if (!runtime?.entity.trianglePatchParams) {return false;}
 
     const params = runtime.entity.trianglePatchParams;
-    const nodeIndex = this.activeTarget.nodeIndex;
     const targetKey = this.activeTarget.targetKey;
-    const currentNode = params.nodes.at(nodeIndex);
+    const currentNode = findPatchPoint(params, this.activeTarget.pointId);
     if (!currentNode) {return false;}
     // Entities are immutable: edit a copy of the node and commit it through the registry.
     const node = structuredClone(currentNode);
@@ -463,9 +465,9 @@ export class TrianglePatchGizmoController {
     parentObject.updateMatrixWorld(true);
     const invParent = parentObject.matrixWorld.clone().invert();
 
-    const corner = this.cornerHelpers[nodeIndex];
+    const corner = this.pointHelpers.get(currentNode.id);
     const movedMesh = this.getActiveHandleMesh();
-    if (!movedMesh) {return false;}
+    if (!movedMesh || !corner) {return false;}
 
     // New local point relative to the asset
     const newLocal = movedMesh.position.clone().applyMatrix4(invParent);
@@ -535,18 +537,15 @@ export class TrianglePatchGizmoController {
       }
     }
 
-    this.commitNode(this.activeEntityId, nodeIndex, node);
+    this.commitPoint(this.activeEntityId, node);
     return true;
   }
 
-  /** Entities are immutable: replaces one node through the registry, then resyncs helpers. */
-  private commitNode(entityId: string, nodeIndex: number, node: PatchNodeData): void {
+  /** Entities are immutable: replaces one point through the registry, then resyncs helpers. */
+  private commitPoint(entityId: string, point: PatchPoint): void {
     const params = this.registry.getRuntime(entityId)?.entity.trianglePatchParams;
     if (!params) {return;}
-    const nodes = params.nodes.map((entry, index) =>
-      index === nodeIndex ? node : entry,
-    ) as TrianglePatchParams['nodes'];
-    this.registry.setKindParams('trianglePatch', entityId, { nodes });
+    this.registry.setKindParams('trianglePatch', entityId, { points: replacePatchPoint(params.points, point) });
     this.syncHelpersFromEntity();
     const updatedParams = this.registry.getRuntime(entityId)?.entity.trianglePatchParams;
     if (updatedParams) {
