@@ -1,6 +1,6 @@
 # Plan — Export-Seitenverhältnis, Format-Rahmen & feste Auflösung
 
-Status: **Plan** (noch nicht umgesetzt). Normative Spezifikation nach Umsetzung → [`requirements-export.md`](../requirements/requirements-export.md) ergänzen.
+Status: **Umgesetzt** (Rahmen, Size-Section, feste Auflösung). Panel-Overlay offen. Normative Spezifikation nach Umsetzung → [`requirements-export.md`](../requirements/requirements-export.md) ergänzen.
 
 ---
 

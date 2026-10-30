@@ -9,6 +9,11 @@ export interface CaptureViewportImageOptions {
   jpegQuality?: number;
   /** Default `viewport`. `contact-shadows-only` applies only with `png-transparent`. */
   groundSurface?: ExportGroundSurface;
+  /**
+   * Fixed output size in pixels. The image shows the viewport frame of that aspect
+   * (largest centered rect). Omitted = capture the live canvas as-is.
+   */
+  outputSize?: { width: number; height: number };
 }
 
 const pad2 = (n: number): string => String(n).padStart(2, '0');

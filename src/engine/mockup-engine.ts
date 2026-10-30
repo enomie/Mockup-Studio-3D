@@ -104,6 +104,7 @@ import { isStudioLightId } from '@/scene/light-ids';
 import { LightingSystem } from './lighting/lighting-system';
 import { ViewportInvalidation } from './viewport-invalidation';
 import { captureViewportImageFromEngine } from './mockup-engine-capture';
+import { EXPORT_SIZE_MAX } from '@/scene/export-size';
 import { ViewportHelpersSystem } from './viewport-helpers/viewport-helpers-system';
 
 const GROUND_PHYSICS_ID = 'ground';
@@ -904,6 +905,7 @@ export class MockupEngine implements SceneApi {
         popExportHidePhysicsTest: () => { this.rigidTest.popExportHide(); },
         pushExportShadowQuality: () => { this.lighting.pushExportShadowQuality(); },
         popExportShadowQuality: () => { this.lighting.popExportShadowQuality(); },
+        pushExportOutputSize: (width, height) => this.pushExportOutputSize(width, height),
         renderViewportFrame: (overrides) => { this.renderViewportFrame(overrides); },
       },
       options,
@@ -1057,6 +1059,34 @@ export class MockupEngine implements SceneApi {
       skyEnabled: overrides?.skyEnabled ?? this.environment.getSkyEnabled(),
       transparentBackground: overrides?.transparentBackground ?? false,
     });
+  }
+
+  /** Resizes the drawing buffer (not the CSS box) to the export size and frames the cameras. */
+  private pushExportOutputSize(width: number, height: number): () => void {
+    const limit = this.getMaxTextureDimension();
+    const scale = Math.min(1, limit / Math.max(width, height));
+    const w = Math.max(1, Math.round(width * scale));
+    const h = Math.max(1, Math.round(height * scale));
+    const prevPixelRatio = this.renderer.getPixelRatio();
+
+    this.renderer.setPixelRatio(1);
+    this.renderer.setSize(w, h, false);
+    this.viewportPipeline.setSize(w, h);
+    this.cameras.beginExportFrame(w / h);
+    if (this.groundMaterial.isMirrorEnabled()) {
+      this.groundMaterial.getPlanarReflection().updateResolution(this.renderer);
+    }
+
+    return () => {
+      this.cameras.endExportFrame();
+      this.renderer.setPixelRatio(prevPixelRatio);
+      this.handleResize();
+    };
+  }
+
+  private getMaxTextureDimension(): number {
+    const backend = this.renderer.backend as { device?: { limits?: { maxTextureDimension2D?: number } } };
+    return backend.device?.limits?.maxTextureDimension2D ?? EXPORT_SIZE_MAX;
   }
 
   private handleResize(): void {

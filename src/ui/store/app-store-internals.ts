@@ -21,6 +21,7 @@ import {
   type AtmosphereSnapshot,
   type EnvironmentPreset,
 } from '@/scene/environment-preset-types';
+import { defaultExportSizeSettings, type ExportSizeSettings } from '@/scene/export-size';
 import { normalizeGroundSettings } from '@/scene/ground-settings';
 import {
   cloneLightingSettings,
@@ -90,6 +91,9 @@ export interface AppState {
   camera: CameraSettings;
   exportImageFormat: ExportImageFormat;
   exportGroundSurface: ExportGroundSurface;
+  exportSize: ExportSizeSettings;
+  /** Live canvas size in device pixels (drives the `viewport` export preset). */
+  viewportPixelSize: { width: number; height: number };
   viewportHelpers: ViewportHelpersState;
   physics: PhysicsSettings;
 }
@@ -140,6 +144,8 @@ export let state: AppState = {
   camera: cloneCameraSettings(camera.settings),
   exportImageFormat: 'png-transparent',
   exportGroundSurface: 'viewport',
+  exportSize: defaultExportSizeSettings(),
+  viewportPixelSize: { width: 0, height: 0 },
   viewportHelpers: { ...viewportHelpers },
   physics: defaultPhysicsSettings(),
 };

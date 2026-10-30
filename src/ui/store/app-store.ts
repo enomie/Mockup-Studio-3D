@@ -155,7 +155,16 @@ export {
 export {
   setExportImageFormat,
   setExportGroundSurface,
+  setExportAspectPreset,
+  setExportCustomRatio,
+  setExportOrientation,
+  setExportWidth,
+  setExportHeight,
+  setExportFrameVisible,
+  setViewportPixelSize,
   exportViewportImage,
+  type ExportAspectPreset,
+  type ExportOrientation,
   type ExportGroundSurface,
   type ExportImageFormat,
 } from './app-store-export';

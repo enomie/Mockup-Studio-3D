@@ -17,6 +17,8 @@ export interface MockupEngineCaptureHost {
   popExportHidePhysicsTest: () => void;
   pushExportShadowQuality: () => void;
   popExportShadowQuality: () => void;
+  /** Renders at a fixed pixel size framed to its aspect; returns a restore callback. */
+  pushExportOutputSize: (width: number, height: number) => () => void;
   renderViewportFrame: (overrides?: {
     skyEnabled?: boolean;
     transparentBackground?: boolean;
@@ -53,6 +55,9 @@ export async function captureViewportImageFromEngine(
   host.pushExportHidePhysicsTest();
   host.pushExportShadowQuality();
   host.lighting.updateFrame();
+  const popOutputSize = options.outputSize
+    ? host.pushExportOutputSize(options.outputSize.width, options.outputSize.height)
+    : null;
 
   try {
     host.renderViewportFrame({ skyEnabled: includeSky, transparentBackground });
@@ -78,6 +83,7 @@ export async function captureViewportImageFromEngine(
       );
     });
   } finally {
+    popOutputSize?.();
     host.popExportShadowQuality();
     host.popExportHidePhysicsTest();
     if (useShadowCatcher) {

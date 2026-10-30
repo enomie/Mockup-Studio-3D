@@ -133,3 +133,9 @@ Optional später (nicht v1): statisches Bake-Mesh für Performance oder Scene-Sa
 **Description:** **Nicht mehr implementiert** (v1 Viewport helpers + Lighting Fixtures). Export-Sub-Panel **Lighting** / `exportHideLightFixtures` / `CaptureViewportImageOptions.hideLightFixtures` entfernt. Fixtures und Viewport helpers exportieren **WYSIWYG** → Abschnitte *Viewport helpers — WYSIWYG* und [`requirements-lighting.md`](./requirements-lighting.md) (*Fixtures — Panel section*).
 
 ---
+
+---
+
+**Category:** Export  
+**Title:** Size — Seitenverhältnis, Rahmen & feste Auflösung  
+**Description:** Section **Size** im `ExportSubPanel`. Store `exportSize` (`ExportSizeSettings`, `src/scene/export-size.ts`). **Aspect ratio:** `Viewport` (Default — Export = Live-Canvas wie bisher, kein Rahmen, Felder read-only) · `16:9` · `4:3` · `1:1` · `4:5` · `Custom` (Ratio W/H). **Orientation:** Landscape = lange Seite horizontal, Portrait tauscht (9:16, 3:4, 4:5 …); bei 1:1 disabled. **Width/Height** (px) gekoppelt: zuletzt bearbeitete Seite (`anchor`) bleibt, andere = `round()`; Preset-Wechsel behält Anchor-Seite; Orientierung tauscht Werte. Clamp 16…8192 px pro Seite (Engine zusätzlich `maxTextureDimension2D`), Hinweis im Panel. **Rahmen:** DOM-Overlay im Viewport, größtes zentriertes Rechteck (Letter-/Pillarbox), Außenbereich abgedunkelt, Label `Ratio · W × H`, `pointer-events: none`, Toggle **Show frame in viewport** (Default an). **Render:** `outputSize` → Drawing-Buffer auf Zielgröße (Pixel-Ratio 1, CSS-Größe unverändert), Kamera-Frustum auf Rahmen beschnitten (`CameraController.beginExportFrame`, Perspektive über FOV, Ortho über halfH) → Bild = Rahmen-Inhalt. Persistenz: Session; später pro Szene. Plan → [`../improve/plan-export-aspect-frame.md`](../improve/plan-export-aspect-frame.md).

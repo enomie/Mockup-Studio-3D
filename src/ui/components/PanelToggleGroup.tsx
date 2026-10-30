@@ -10,6 +10,7 @@ interface PanelToggleGroupProps<K extends string> {
   /** Keys that are switched on; any combination is allowed. */
   active: Readonly<Record<K, boolean>>;
   onToggle: (key: K, on: boolean) => void;
+  disabled?: boolean;
 }
 
 /** One-row group of independent toggle buttons (multi-select), e.g. Mirror X | Y | Z. */
@@ -18,6 +19,7 @@ export function PanelToggleGroup<K extends string>({
   options,
   active,
   onToggle,
+  disabled = false,
 }: PanelToggleGroupProps<K>) {
   return (
     <div className="panel-field-row">
@@ -33,6 +35,7 @@ export function PanelToggleGroup<K extends string>({
                 className="panel-toggle-group__button"
                 aria-pressed={on}
                 title={option.title}
+                disabled={disabled}
                 onClick={() => { onToggle(option.key, !on); }}
               >
                 {option.label}

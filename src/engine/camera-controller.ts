@@ -25,6 +25,7 @@ import {
 } from '@/constants';
 import type { CameraProjection, CameraReadout, CameraViewState } from '@/scene/scene-api';
 import type { Vec3 } from '@/scene/entity-types';
+import { computeExportFovDeg, computeExportFrameHeightFraction } from '@/scene/export-size';
 import { DEG_TO_RAD } from '@/units/angle';
 
 export type { CameraProjection };
@@ -53,6 +54,8 @@ export class CameraController {
   private activeProjection: CameraProjection = 'perspective';
   private orthoZoom = 1;
   private aspect = 1;
+  /** Live FOV saved while an export frame is applied. */
+  private exportFrame: { fov: number } | null = null;
 
   private spaceDown = false;
   private orbitEnabled = true;
@@ -372,6 +375,29 @@ export class CameraController {
     this.setElevationDeg(0);
   }
 
+  /**
+   * Temporarily narrows both cameras to the export frame: the largest rect of `targetAspect`
+   * centered in the live view. Undo with `endExportFrame()`.
+   */
+  beginExportFrame(targetAspect: number): void {
+    if (this.exportFrame) {return;}
+    const heightFraction = computeExportFrameHeightFraction(this.aspect, targetAspect);
+    this.exportFrame = { fov: this.perspective.fov };
+    this.perspective.fov = computeExportFovDeg(this.perspective.fov, heightFraction);
+    this.perspective.aspect = targetAspect;
+    this.perspective.updateProjectionMatrix();
+    this.updateOrthographicProjection(targetAspect, heightFraction);
+  }
+
+  endExportFrame(): void {
+    if (!this.exportFrame) {return;}
+    this.perspective.fov = this.exportFrame.fov;
+    this.exportFrame = null;
+    this.perspective.aspect = this.aspect;
+    this.perspective.updateProjectionMatrix();
+    this.updateOrthographicProjection();
+  }
+
   handleResize(width: number, height: number): void {
     if (width === 0 || height === 0) {return;}
     this.aspect = width / height;
@@ -483,9 +509,9 @@ export class CameraController {
     this.orthographic.up.set(0, 1, 0);
   }
 
-  private updateOrthographicProjection(): void {
-    const halfH = FRUSTUM_SIZE / (2 * this.orthoZoom);
-    const halfW = halfH * this.aspect;
+  private updateOrthographicProjection(aspect = this.aspect, heightFraction = 1): void {
+    const halfH = (FRUSTUM_SIZE / (2 * this.orthoZoom)) * heightFraction;
+    const halfW = halfH * aspect;
     this.orthographic.left = -halfW;
     this.orthographic.right = halfW;
     this.orthographic.top = halfH;

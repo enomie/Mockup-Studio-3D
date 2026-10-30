@@ -337,6 +337,32 @@
   height: 100% !important;
 }
 
+.viewport-export-frame {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.viewport-export-frame__window {
+  position: absolute;
+  /* Huge spread shadow dims the area outside the frame without extra elements. */
+  box-shadow: 0 0 0 100vmax var(--viewport-export-frame-dim);
+  outline: 1px solid var(--viewport-export-frame-line);
+}
+
+.viewport-export-frame__label {
+  position: absolute;
+  top: var(--space-1);
+  left: var(--space-1);
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-xs);
+  color: var(--viewport-export-frame-label);
+  background: var(--viewport-export-frame-dim);
+  font-variant-numeric: tabular-nums;
+}
+
 .viewport__gate {
   position: absolute;
   inset: 0;
