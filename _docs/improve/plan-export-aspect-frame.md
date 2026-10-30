@@ -21,7 +21,8 @@ Status: **Plan** (noch nicht umgesetzt). Normative Spezifikation nach Umsetzung 
 | Thema | Entscheidung |
 |-------|--------------|
 | Ort der Auswahl | Export-Panel (`ExportSubPanel`), neue Section **Size** |
-| Presets | **16:9, 4:3, 1:1, 4:5** + **Custom** (zwei Felder `W : H`) |
+| Presets | **Viewport** (frei, wie bisher) + **16:9, 4:3, 1:1, 4:5** + **Custom** (zwei Felder `W : H`) |
+| Default | **Viewport** — Verhalten wie heute, kein Rahmen |
 | Orientierung | Toggle **Landscape / Portrait** — tauscht Verhältnis (9:16, 3:4, 5:4). Bei 1:1 wirkungslos (disabled) |
 | Pixelgröße | Felder **Width** + **Height**, über Verhältnis gekoppelt. Eingabe einer Seite → andere wird berechnet |
 | Rundung | `Math.round` auf ganze Pixel (z. B. 16:9 @ 1000 → 563) |
@@ -41,13 +42,18 @@ Status: **Plan** (noch nicht umgesetzt). Normative Spezifikation nach Umsetzung 
 - **Preset-/Custom-Wechsel:** Anchor-Seite bleibt, andere wird neu berechnet.
 - **Orientierung tauschen:** Width ↔ Height tauschen (Anchor tauscht mit).
 - Clamp: min 16 px, max Device-Limit. Wird die berechnete Seite > Limit, beide proportional herunterskalieren + Hinweis.
-- **Default:** 16:9 Landscape, Width 3840 → 2160.
+- **Default-Größe** beim ersten Wechsel auf ein festes Format: 16:9 Landscape, Width 3840 → 2160.
+
+### Preset „Viewport“ (Default)
+- Seitenverhältnis = aktuelles Viewport-Verhältnis, **kein Rahmen**, Orientierungs-Toggle disabled.
+- Größe wie heute: Canvas-Größe × Pixel-Ratio (Felder read-only angezeigt).
 
 ### Custom-Verhältnis
 - Zwei Zahlenfelder (positiv, Dezimal erlaubt, z. B. 2.39 : 1). Ungültig → letzter gültiger Wert bleibt.
 
 ### Format-Rahmen im Viewport
 - DOM-Overlay in `ViewportFrame` (kein Render-Pass): größtes Rechteck des Verhältnisses, zentriert, „contain“ im Viewport.
+- Rahmen ist **maximal groß**: je nach Verhältnis bleibt entweder links/rechts oder oben/unten ein Rand (Letterbox/Pillarbox), nie beides.
 - Außerhalb: halbtransparente Abdunklung; dünne Rahmenlinie. Pointer-Events: `none` (Navigation/Gizmo unverändert).
 - Label klein in der Ecke, z. B. `16:9 · 3840 × 2160`.
 - Neuberechnung bei Viewport-Resize (bestehender `ResizeObserver`) und Store-Änderung.
@@ -125,5 +131,5 @@ Alle UI-Strings Englisch (AGENTS.md).
 
 ## Offene Punkte
 
-- Persistenz der Size-Settings: pro Szene oder global?
-- Verhalten des Rahmens im Modus „Export“ (`AppMode: 'export'`) — ggf. stärker hervorheben.
+- **Persistenz:** pro Szene — sobald es Szenen gibt. Bis dahin nur im App-Store (Session), Typ `ExportSizeSettings` so schneiden, dass er später 1:1 in die Szene wandert.
+- **Modus „Export“** (`AppMode: 'export'`): vorerst **keine** zusätzliche Hervorhebung, nach erstem Test entscheiden.
