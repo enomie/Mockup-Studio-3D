@@ -17,6 +17,7 @@ import {
   type Scene,
 } from 'three/webgpu';
 import type {
+  PatchHandleSelection,
   PatchHandleTarget,
   PatchNodeData,
   TrianglePatchParams,
@@ -54,11 +55,7 @@ export function closestAxisParamToRay(origin: Vector3, dir: Vector3, ray: Ray): 
   return (b * e - d) / denom;
 }
 
-export interface PatchSubTarget {
-  entityId: string;
-  nodeIndex: number;
-  targetKey: PatchHandleTarget;
-}
+export type PatchSubTarget = PatchHandleSelection;
 
 export class TrianglePatchGizmoController {
   private readonly scene: Scene;

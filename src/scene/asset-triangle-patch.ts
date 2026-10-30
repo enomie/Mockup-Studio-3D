@@ -18,6 +18,13 @@ export type PatchHandleTarget =
   | 'handleCrossIn'
   | 'handleCrossOut';
 
+/** The patch control point (corner + anchor/handle) currently picked for editing. */
+export interface PatchHandleSelection {
+  entityId: string;
+  nodeIndex: number;
+  targetKey: PatchHandleTarget;
+}
+
 export interface TrianglePatchParams {
   divisions: number;
   /**

@@ -42,6 +42,7 @@ import {
   type EditablePhysicsSettings,
   type PhysicsSettings,
 } from '@/scene/physics-settings';
+import type { PatchHandleSelection } from '@/scene/asset-triangle-patch';
 import type {
   AppMode,
   CameraSettings,
@@ -83,6 +84,7 @@ export interface AppState {
   entities: readonly AssetEntity[];
   userBakedAssets: UserBakedAsset[];
   selectedEntityId: string | null;
+  patchHandleSelection: PatchHandleSelection | null;
   camera: CameraSettings;
   exportImageFormat: ExportImageFormat;
   exportGroundSurface: ExportGroundSurface;
@@ -131,6 +133,7 @@ export let state: AppState = {
   entities: [],
   userBakedAssets: [],
   selectedEntityId: null,
+  patchHandleSelection: null,
   camera: cloneCameraSettings(camera.settings),
   exportImageFormat: 'png-transparent',
   exportGroundSurface: 'viewport',
@@ -256,6 +259,7 @@ export function syncEngineStateFromEngine(): void {
     },
     entities: sceneApi.getEntities(),
     selectedEntityId: sceneApi.getSelectedEntityId(),
+    patchHandleSelection: sceneApi.getPatchHandleSelection(),
     camera: cloneCameraSettings(sceneApi.getCameraSettings()),
   };
   emit();

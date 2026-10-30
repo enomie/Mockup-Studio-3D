@@ -48,17 +48,30 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
   const slots = entity.materials;
 
   const patchParams: TrianglePatchParams = entity.trianglePatchParams ?? defaultTrianglePatchParams();
-  const [selectedCornerIdx, setSelectedCornerIdx] = useState<number>(0);
-  const [selectedTargetKey, setSelectedTargetKey] = useState<PatchHandleTarget>('pos');
+  // The viewport pick wins; local state covers the case where nothing is picked yet.
+  const viewportEntityId = useAppStore((s) => s.patchHandleSelection?.entityId);
+  const viewportNodeIndex = useAppStore((s) => s.patchHandleSelection?.nodeIndex);
+  const viewportTargetKey = useAppStore((s) => s.patchHandleSelection?.targetKey);
+  const [localCornerIdx, setLocalCornerIdx] = useState<number>(0);
+  const [localTargetKey, setLocalTargetKey] = useState<PatchHandleTarget>('pos');
+  const pickedInViewport = viewportEntityId === entity.id && viewportNodeIndex !== undefined && viewportTargetKey !== undefined;
+  const selectedCornerIdx = pickedInViewport ? viewportNodeIndex : localCornerIdx;
+  const selectedTargetKey = pickedInViewport ? viewportTargetKey : localTargetKey;
+
   const [anchorHandleRotRad, setAnchorHandleRotRad] = useState({ x: 0, y: 0, z: 0 });
+  const selectionKey = `${selectedCornerIdx}:${selectedTargetKey}`;
+  const [rotSelectionKey, setRotSelectionKey] = useState(selectionKey);
+  if (rotSelectionKey !== selectionKey) {
+    setRotSelectionKey(selectionKey);
+    setAnchorHandleRotRad({ x: 0, y: 0, z: 0 });
+  }
 
   const activeNode = patchParams.nodes[selectedCornerIdx] ?? patchParams.nodes[0];
   const activeVec = activeNode[selectedTargetKey];
 
   const handleSelectTarget = (cornerIdx: number, targetKey: PatchHandleTarget) => {
-    setSelectedCornerIdx(cornerIdx);
-    setSelectedTargetKey(targetKey);
-    setAnchorHandleRotRad({ x: 0, y: 0, z: 0 });
+    setLocalCornerIdx(cornerIdx);
+    setLocalTargetKey(targetKey);
     selectPatchHandle(entity.id, cornerIdx, targetKey);
   };
 

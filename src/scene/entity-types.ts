@@ -43,7 +43,7 @@ export type { SphereParams } from './asset-sphere';
 export type { WheelCarParams } from './asset-wheel-car';
 export type { FabricClothParams } from './asset-fabric-cloth';
 export type { BookParams } from './asset-book';
-export type { TrianglePatchParams, PatchNodeData, PatchHandleTarget } from './asset-triangle-patch';
+export type { TrianglePatchParams, PatchNodeData, PatchHandleTarget, PatchHandleSelection } from './asset-triangle-patch';
 export type { PhysicsBodyMode } from './physics-rigid-body';
 export type { WallParams, WallpaperPattern } from './asset-wall';
 

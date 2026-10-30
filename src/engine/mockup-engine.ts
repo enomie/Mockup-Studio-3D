@@ -48,6 +48,7 @@ import type {
   AssetGeometryPart,
   EntityTransform,
   MaterialEntitySlot,
+  PatchHandleSelection,
   PatchHandleTarget,
   WallpaperPattern,
   Vec3,
@@ -593,6 +594,11 @@ export class MockupEngine implements SceneApi {
     this.gizmoInteraction.refresh();
     this.emit();
     this.invalidateViewport();
+  }
+
+  getPatchHandleSelection(): PatchHandleSelection | null {
+    const target = this.patchGizmo.getActiveTarget();
+    return target ? { ...target } : null;
   }
 
   setWallpaperPattern(entityId: string, partial: Partial<WallpaperPattern>): void {

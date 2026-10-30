@@ -7,6 +7,7 @@ import type {
   AssetGeometryPart,
   AssetKind,
   EntityTransform,
+  PatchHandleSelection,
   PatchHandleTarget,
   WallpaperPattern,
   ImageResolver,
@@ -226,6 +227,7 @@ export interface SceneApi {
   setBookSpineImageId(entityId: string, imageId: string | null): void;
   setBookMaterialTint(entityId: string, part: BookMaterialTintPart, tint: Rgb): void;
   selectPatchHandle(entityId: string, nodeIndex: number, targetKey: PatchHandleTarget): void;
+  getPatchHandleSelection(): PatchHandleSelection | null;
   loadBuiltinView(id: BuiltinCameraViewId): void;
   captureSlot(index: CameraSlotIndex): void;
   loadSlot(index: CameraSlotIndex): void;
