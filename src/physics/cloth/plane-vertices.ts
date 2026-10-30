@@ -8,6 +8,51 @@ export interface PlaneVertexUpdateOptions {
 }
 
 /**
+ * Smooth per-vertex normals for a cloth grid (idx = y * nx + x) from central
+ * differences. Shared by the live simulation and the bake so both shade the same.
+ */
+export function writeClothGridNormals(
+  pos: Float32Array,
+  normals: Float32Array,
+  nx: number,
+  ny: number,
+): void {
+  for (let y = 0; y < ny; y++) {
+    for (let x = 0; x < nx; x++) {
+      const xPrev = Math.max(0, x - 1);
+      const xNext = Math.min(nx - 1, x + 1);
+      const yPrev = Math.max(0, y - 1);
+      const yNext = Math.min(ny - 1, y + 1);
+
+      const [rx, ry, rz] = vec3GetAt(pos, (y * nx + xNext) * 3);
+      const [lx, ly, lz] = vec3GetAt(pos, (y * nx + xPrev) * 3);
+      const tx = rx - lx;
+      const ty = ry - ly;
+      const tz = rz - lz;
+
+      const [ux, uy, uz] = vec3GetAt(pos, (yNext * nx + x) * 3);
+      const [dx, dy, dz] = vec3GetAt(pos, (yPrev * nx + x) * 3);
+      const bx = ux - dx;
+      const by = uy - dy;
+      const bz = uz - dz;
+
+      let nX = ty * bz - tz * by;
+      let nY = tz * bx - tx * bz;
+      let nZ = tx * by - ty * bx;
+      const len = Math.sqrt(nX * nX + nY * nY + nZ * nZ) || 1;
+      nX /= len;
+      nY /= len;
+      nZ /= len;
+
+      const o = (y * nx + x) * 3;
+      normals[o] = nX;
+      normals[o + 1] = nY;
+      normals[o + 2] = nZ;
+    }
+  }
+}
+
+/**
  * Copy centerline `pos` (idx = y * nx + x) into the cloth plane geometry and
  * recompute smooth grid normals (+Z for the rest plane).
  */
@@ -30,40 +75,7 @@ export function updateClothPlaneVertices(
 
   if (computeNormals) {
     const normAttr = geometry.getAttribute('normal') as BufferAttribute;
-    const normArr = normAttr.array as Float32Array;
-    for (let y = 0; y < ny; y++) {
-      for (let x = 0; x < nx; x++) {
-        const xPrev = Math.max(0, x - 1);
-        const xNext = Math.min(nx - 1, x + 1);
-        const yPrev = Math.max(0, y - 1);
-        const yNext = Math.min(ny - 1, y + 1);
-
-        const [rx, ry, rz] = vec3GetAt(pos, (y * nx + xNext) * 3);
-        const [lx, ly, lz] = vec3GetAt(pos, (y * nx + xPrev) * 3);
-        const tx = rx - lx;
-        const ty = ry - ly;
-        const tz = rz - lz;
-
-        const [ux, uy, uz] = vec3GetAt(pos, (yNext * nx + x) * 3);
-        const [dx, dy, dz] = vec3GetAt(pos, (yPrev * nx + x) * 3);
-        const bx = ux - dx;
-        const by = uy - dy;
-        const bz = uz - dz;
-
-        let nX = ty * bz - tz * by;
-        let nY = tz * bx - tx * bz;
-        let nZ = tx * by - ty * bx;
-        const len = Math.sqrt(nX * nX + nY * nY + nZ * nZ) || 1;
-        nX /= len;
-        nY /= len;
-        nZ /= len;
-
-        const o = (y * nx + x) * 3;
-        normArr[o] = nX;
-        normArr[o + 1] = nY;
-        normArr[o + 2] = nZ;
-      }
-    }
+    writeClothGridNormals(pos, normAttr.array as Float32Array, nx, ny);
     normAttr.needsUpdate = true;
     ensureGeometryTangents(geometry);
   }

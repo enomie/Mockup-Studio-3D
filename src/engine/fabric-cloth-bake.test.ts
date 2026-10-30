@@ -1,3 +1,4 @@
+import { updateClothPlaneVertices } from '@/physics/cloth/plane-vertices';
 import { describe, expect, it } from 'vitest';
 import { Group, MeshBasicMaterial, PlaneGeometry } from 'three/webgpu';
 import {
@@ -26,7 +27,7 @@ import {
 import { vec3Get, vec3Set } from '@/physics/cloth/float-buffer';
 
 describe('fabric-cloth-bake', () => {
-  it('increases vertex count and preserves corners', () => {
+  it('keeps the simulation grid and rebuilds an indexed plane', () => {
     const segmentsW = 4;
     const segmentsH = 4;
     const w = 0.45;
@@ -45,8 +46,10 @@ describe('fabric-cloth-bake', () => {
         pos[(v * nu + u) * 3 + 2] = 0.01 * (u + v);
       }
     }
-    const payload = bakeFabricClothMeshFromDeformed(mesh, 2);
-    expect(payload.positions.length).toBeGreaterThan(pos.length);
+    const payload = bakeFabricClothMeshFromDeformed(mesh);
+    expect(payload.segmentsW).toBe(segmentsW);
+    expect(payload.segmentsH).toBe(segmentsH);
+    expect(payload.positions).toEqual(Array.from(pos.subarray(0, nu * nv * 3)));
     const rebuilt = buildBufferGeometryFromBakedMeshPayload(payload);
     expect(rebuilt.getAttribute('position').count).toBe(
       (payload.segmentsW + 1) * (payload.segmentsH + 1),
@@ -84,9 +87,9 @@ describe('fabric-cloth-bake', () => {
     const [wx, wy, wz] = vec3Get(binding.pos, 0);
     vec3Set(binding.pos, 0, wx, wy - 0.05, wz);
     flushBindingPlane(binding);
-    const payload = bakeFabricClothMeshFromVerletBinding(binding, 2);
+    const payload = bakeFabricClothMeshFromVerletBinding(binding);
     expect(payload.planeWidthM).toBeCloseTo(0.4);
-    expect(payload.positions.length).toBeGreaterThan(25 * 3);
+    expect(payload.positions.length).toBe(25 * 3);
     mesh.geometry.dispose();
   });
 
@@ -104,14 +107,14 @@ describe('fabric-cloth-bake', () => {
     for (let i = 0; i < grid.planeVertexCount; i++) {
       pos[i * 3 + 2] += 0.002 * i;
     }
-    const payload = bakeFabricClothMeshFromDeformed(mesh, 2);
+    const payload = bakeFabricClothMeshFromDeformed(mesh);
     expect(payload.planeWidthM).toBeCloseTo(w);
     expect(payload.planeHeightM).toBeCloseTo(h);
-    expect(payload.positions.length).toBeGreaterThan(grid.planeVertexCount * 3);
+    expect(payload.positions.length).toBe(grid.planeVertexCount * 3);
     mesh.geometry.dispose();
   });
 
-  it('production sim grid bakes to denser topology than coarse cloth', () => {
+  it('production sim grid bakes to the same topology as the live cloth', () => {
     const seg = fabricClothGridSegments(0.45, 0.45);
     const mesh = buildFabricClothMeshFromOptions({
       faceWidth: 0.45,
@@ -127,7 +130,7 @@ describe('fabric-cloth-bake', () => {
 
     const payload = bakeFabricClothMeshFromDeformed(mesh);
     const bakedTopology = fabricClothBakedMeshTopology(payload);
-    expect(bakedTopology.triangleCount).toBeGreaterThan(coarseTopology.triangleCount * 3);
+    expect(bakedTopology.triangleCount).toBe(coarseTopology.triangleCount);
 
     const rebuilt = buildBufferGeometryFromBakedMeshPayload(payload);
     expect(rebuilt.index?.count).toBe(bakedTopology.triangleCount * 3);
@@ -142,7 +145,7 @@ describe('fabric-cloth-bake', () => {
       material: new MeshBasicMaterial(),
       segments: { segmentsW: 3, segmentsH: 3 },
     });
-    const payload = bakeFabricClothMeshFromDeformed(mesh, 2);
+    const payload = bakeFabricClothMeshFromDeformed(mesh);
     validateFabricClothBakedRestPlaneExtents(payload);
     mesh.geometry.dispose();
   });
@@ -157,7 +160,7 @@ describe('fabric-cloth-bake', () => {
       material: new MeshBasicMaterial(),
       segments: { segmentsW: 8, segmentsH: 8 },
     });
-    const payload = bakeFabricClothMeshFromDeformed(mesh, 2);
+    const payload = bakeFabricClothMeshFromDeformed(mesh);
     const halfW = w * 0.5;
     let edgeMask = 0;
     let centerMask = 0;
@@ -192,7 +195,7 @@ describe('fabric-cloth-bake', () => {
       pos[i * 3] += 0.05;
       pos[i * 3 + 1] -= 0.02;
     }
-    const payload = bakeFabricClothMeshFromDeformed(mesh, 2);
+    const payload = bakeFabricClothMeshFromDeformed(mesh);
     validateFabricClothBakedRestPlaneExtents(payload);
     expect(payload.planeWidthM).toBeCloseTo(w);
     expect(payload.planeHeightM).toBeCloseTo(h);
@@ -206,7 +209,7 @@ describe('fabric-cloth-bake', () => {
       material: new MeshBasicMaterial(),
       segments: { segmentsW: 4, segmentsH: 4 },
     });
-    const payload = bakeFabricClothMeshFromDeformed(mesh, 2);
+    const payload = bakeFabricClothMeshFromDeformed(mesh);
     const legacy = {
       ...payload,
       planeWidthM: 0.9,
@@ -229,7 +232,7 @@ describe('normalizeFabricClothBakedMeshPayload base pivot', () => {
       material: new MeshBasicMaterial(),
       segments: { segmentsW: 4, segmentsH: 4 },
     });
-    const payload = bakeFabricClothMeshFromDeformed(mesh, 2);
+    const payload = bakeFabricClothMeshFromDeformed(mesh);
     // Legacy: cloth fell 0.5 m below its origin (mesh-local z = entity Y) and drifted.
     const legacy = {
       ...payload,
@@ -247,6 +250,32 @@ describe('normalizeFabricClothBakedMeshPayload base pivot', () => {
     expect(minZ).toBeCloseTo(0, 6);
     expect(minX + maxX).toBeCloseTo(0, 6);
     expect(normalizeFabricClothBakedMeshPayload(fixed)).toBe(fixed);
+    mesh.geometry.dispose();
+  });
+});
+
+describe('bake normals', () => {
+  it('match the live simulation normals', () => {
+    const mesh = buildFabricClothMeshFromOptions({
+      faceWidth: 0.3,
+      faceHeight: 0.3,
+      material: new MeshBasicMaterial(),
+      segments: { segmentsW: 6, segmentsH: 6 },
+    });
+    const pos = mesh.geometry.getAttribute('position').array as Float32Array;
+    const n = 7 * 7;
+    for (let i = 0; i < n; i++) {
+      pos[i * 3 + 2] = 0.02 * Math.sin(i);
+    }
+    const centerline = pos.slice(0, n * 3);
+    updateClothPlaneVertices(mesh.geometry, centerline, 6, 6);
+    const live = Array.from(
+      (mesh.geometry.getAttribute('normal').array as Float32Array).subarray(0, n * 3),
+    );
+    const payload = bakeFabricClothMeshFromDeformed(mesh, centerline);
+    payload.normals.forEach((v, i) => {
+      expect(v).toBeCloseTo(live[i], 6);
+    });
     mesh.geometry.dispose();
   });
 });

@@ -101,7 +101,7 @@ describe('fabric cloth bake roundtrip (entity-local AABB)', () => {
     flushBindingPlane(binding);
 
     const referenceBounds = centerlineEntityLocalBounds(binding, entityRoot);
-    const payload = bakeFabricClothMeshFromVerletBinding(binding, 2);
+    const payload = bakeFabricClothMeshFromVerletBinding(binding);
     const bakedGeometry = buildBufferGeometryFromBakedMeshPayload(payload);
     const bakedMesh = new Mesh(bakedGeometry, new MeshBasicMaterial());
     bakedMesh.rotation.x = -Math.PI / 2;
