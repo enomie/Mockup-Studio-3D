@@ -6,6 +6,7 @@ import {
 } from 'three/webgpu';
 import {
   defaultTrianglePatchParams,
+  getPatchMirrorSigns,
   type TrianglePatchParams,
 } from '@/scene/asset-triangle-patch';
 import { buildTrianglePatchGeometry } from '@/engine/triangle-patch-geometry';
@@ -43,6 +44,18 @@ export function addTrianglePatch(
   mesh.userData.assetMeshRole = 'trianglePatch';
 
   group.add(mesh);
+
+  // Mirror copies share geometry and material; the negative scale flips the
+  // winding, which three.js compensates for via the negative determinant.
+  for (const sign of getPatchMirrorSigns(patchParams.mirror)) {
+    const copy = new Mesh(geometry, material);
+    copy.scale.set(sign.x, sign.y, sign.z);
+    copy.castShadow = true;
+    copy.receiveShadow = true;
+    copy.userData.isAssetScreen = true;
+    copy.userData.assetMeshRole = 'trianglePatchMirror';
+    group.add(copy);
+  }
   return mesh;
 }
 

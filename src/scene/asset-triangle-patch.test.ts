@@ -4,6 +4,7 @@ import {
   defaultTrianglePatchParams,
   getPatchCorners,
   getPatchEdgePoints,
+  getPatchMirrorSigns,
   isPatchCorner,
   replacePatchPoint,
   type TrianglePatchParams,
@@ -46,5 +47,26 @@ describe('triangle patch params', () => {
     const points = replacePatchPoint(params.points, renamed);
     expect(points.map((point) => point.name)).toEqual(['Point 1', 'Nose', 'Point 3']);
     expect(points[0]).toBe(params.points[0]);
+  });
+});
+
+describe('getPatchMirrorSigns', () => {
+  it('returns no copies without mirror', () => {
+    expect(getPatchMirrorSigns(undefined)).toEqual([]);
+    expect(getPatchMirrorSigns({ x: false, y: false, z: false })).toEqual([]);
+  });
+
+  it('includes the diagonal copy for X+Z', () => {
+    expect(getPatchMirrorSigns({ x: true, y: false, z: true })).toEqual([
+      { x: -1, y: 1, z: 1 },
+      { x: 1, y: 1, z: -1 },
+      { x: -1, y: 1, z: -1 },
+    ]);
+  });
+
+  it('yields seven copies for all axes', () => {
+    const signs = getPatchMirrorSigns({ x: true, y: true, z: true });
+    expect(signs).toHaveLength(7);
+    expect(new Set(signs.map((s) => `${s.x},${s.y},${s.z}`)).size).toBe(7);
   });
 });

@@ -1,6 +1,6 @@
 # Plan: Patch – Spiegeln („Mirror“)
 
-Stand: 2026-10-30 · Status: Plan, noch nicht umgesetzt
+Stand: 2026-10-30 · Status: umgesetzt (V1: X/Y/Z live, Checkboxen im Panel). Gizmo-Ziehen läuft über `setKindParams` → voller Rebuild, Kopien sind dadurch automatisch aktuell.
 
 ## 1. Was der User will
 

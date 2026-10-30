@@ -35,6 +35,36 @@ export interface TrianglePatchParams {
   cornerIds: [string, string, string];
   /** Edge parameter t in (0, 1) of every non-corner point on its edge. */
   edgeParams: Record<string, number>;
+  /** Live mirror copies across the local YZ / XZ / XY planes through the pivot; absent means none. */
+  mirror?: PatchMirror;
+}
+
+/** Which local axes the patch is mirrored across (x flips X across the YZ plane, and so on). */
+export interface PatchMirror {
+  x: boolean;
+  y: boolean;
+  z: boolean;
+}
+
+/**
+ * Scale sign vectors of every mirror copy, excluding the original (1, 1, 1).
+ * All sign combinations of the enabled axes, so X+Z also yields the diagonal (-1, 1, -1).
+ */
+export function getPatchMirrorSigns(mirror: PatchMirror | undefined): Vec3[] {
+  if (!mirror) {return [];}
+  const xs = mirror.x ? [1, -1] : [1];
+  const ys = mirror.y ? [1, -1] : [1];
+  const zs = mirror.z ? [1, -1] : [1];
+  const signs: Vec3[] = [];
+  for (const y of ys) {
+    for (const z of zs) {
+      for (const x of xs) {
+        if (x === 1 && y === 1 && z === 1) {continue;}
+        signs.push({ x, y, z });
+      }
+    }
+  }
+  return signs;
 }
 
 export function isTrianglePatchAssetKind(kind: AssetKind): kind is 'triangle-patch' {
@@ -59,6 +89,7 @@ export function cloneTrianglePatchParams(params: TrianglePatchParams): TriangleP
     points: params.points.map(clonePatchPoint),
     cornerIds: [...params.cornerIds],
     edgeParams: { ...params.edgeParams },
+    ...(params.mirror ? { mirror: { ...params.mirror } } : {}),
   };
 }
 

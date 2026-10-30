@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Trash2 } from 'lucide-react';
 import { Icon } from '@/ui/components/Icon';
 import { removePatchPoint } from '@/scene/triangle-patch-point-edit';
+import { PanelCheckbox } from '@/ui/components/PanelCheckbox';
 import { SubPanelSection } from '@/ui/components/SubPanelSection';
 import { PanelAxisField } from '@/ui/components/PanelAxisField/PanelAxisField';
 import { MaterialSelect } from '@/ui/panels/MaterialSelect';
@@ -16,6 +17,7 @@ import {
   isPatchCorner,
   replacePatchPoint,
   type PatchHandleTarget,
+  type PatchMirror,
   type PatchPoint,
   type TrianglePatchParams,
 } from '@/scene/asset-triangle-patch';
@@ -208,6 +210,11 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
     commitPoint(nodeCopy);
   };
 
+  const mirror: PatchMirror = patchParams.mirror ?? { x: false, y: false, z: false };
+  const setMirrorAxis = (axis: keyof PatchMirror, checked: boolean) => {
+    setKindParams('trianglePatch', entity.id, { mirror: { ...mirror, [axis]: checked } });
+  };
+
   const handleLen = selectedTargetKey !== 'pos'
     ? Math.hypot(activeVec.x - activeNode.pos.x, activeVec.y - activeNode.pos.y, activeVec.z - activeNode.pos.z)
     : 0;
@@ -221,6 +228,12 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
           materials={materials}
           value={slots?.patchMaterialId ?? MATERIAL_ALUMINUM_BRUSHED_ID}
         />
+      </SubPanelSection>
+
+      <SubPanelSection title="Mirror">
+        <PanelCheckbox label="Mirror X" checked={mirror.x} onChange={(checked) => { setMirrorAxis('x', checked); }} />
+        <PanelCheckbox label="Mirror Y" checked={mirror.y} onChange={(checked) => { setMirrorAxis('y', checked); }} />
+        <PanelCheckbox label="Mirror Z" checked={mirror.z} onChange={(checked) => { setMirrorAxis('z', checked); }} />
       </SubPanelSection>
 
       <SubPanelSection title="Point & Handle Inspector">

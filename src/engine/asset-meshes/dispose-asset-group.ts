@@ -14,9 +14,14 @@ export function disposeAssetGroup(group: Group): void {
     }
   });
 
+  // Meshes may share geometry and material (e.g. triangle patch mirror copies).
+  const disposedGeometries = new Set<BufferGeometry>();
   const disposedMaterials = new Set<Material>();
   for (const mesh of meshes) {
-    mesh.geometry.dispose();
+    if (!disposedGeometries.has(mesh.geometry)) {
+      mesh.geometry.dispose();
+      disposedGeometries.add(mesh.geometry);
+    }
     const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
     for (const rawMaterial of materials) {
       const material = rawMaterial as Material;
