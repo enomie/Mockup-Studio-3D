@@ -6,6 +6,11 @@ Kurze Historie: **wie** wir uns entschieden haben (Warum, Alternativen). Require
 
 ## Einträge
 
+### 2026-10-30 — Export: Format-Rahmen + feste Auflösung
+- **Entscheidung:** Export-Panel-Section **Size** (Viewport · 16:9 · 4:3 · 1:1 · 4:5 · Custom, Landscape/Portrait, gekoppelte Width/Height, max. 8192 px). Viewport zeigt größten zentrierten Rahmen (DOM-Overlay, abgedunkelter Rand). Export rendert Drawing-Buffer in Zielgröße; Kamera-Frustum wird auf den Rahmen beschnitten (Perspektive über FOV, Ortho über halfH) → Bild = Rahmen-Inhalt. Default `Viewport` = altes Verhalten.
+- **Grund:** Export war bisher der Live-Canvas — Format und Auflösung hingen von Panels, Fenster und Zoom ab, Zielformate (16:9, 9:16 …) nicht planbar.
+- **Verworfen:** Schnellwahl-Buttons (HD/4K/Insta); Live-Kamera auf Ziel-Aspect umstellen (Viewport würde verzerren/beschneiden). Landscape = lange Seite horizontal (4:5 Landscape → 5:4). Persistenz vorerst Session, später pro Szene. Panel-Overlay-Layout als eigener späterer Schritt. Details: `_docs/improve/plan-export-aspect-frame.md`.
+
 ### 2026-10-30 — Nur Desktop-Browser, kein Responsive/Touch
 - **Entscheidung:** App vorerst nur am Desktop im Browser. Responsive-Layout, Touch-Optimierung und Mobile-Ansicht sind aus Requirements und UI-Guide gestrichen (ersetzt „Desktop + Mobile“ vom 2026-10-07).
 - **Grund:** Kein aktueller Bedarf; spart Komplexität im CSS (keine `@media`-Queries, keine 44-px-Hit-Areas).

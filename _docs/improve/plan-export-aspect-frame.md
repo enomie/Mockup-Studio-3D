@@ -1,6 +1,8 @@
 # Plan — Export-Seitenverhältnis, Format-Rahmen & feste Auflösung
 
-Status: **Umgesetzt** (Rahmen, Size-Section, feste Auflösung). Panel-Overlay offen. Normative Spezifikation nach Umsetzung → [`requirements-export.md`](../requirements/requirements-export.md) ergänzen.
+Status: **Umgesetzt & vom User getestet** (Rahmen, Size-Section, feste Auflösung). Panel-Overlay offen. Normativ → [`requirements-export.md`](../requirements/requirements-export.md) (Abschnitt „Size“). Entscheidung → `diary-code-decisions.md`.
+
+**Abweichung vom Plan:** Landscape = lange Seite horizontal für alle Presets — 4:5 im Landscape-Modus ergibt 5:4, echtes 4:5 über Portrait.
 
 ---
 
