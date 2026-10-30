@@ -5,7 +5,7 @@ import {
 } from 'three/webgpu';
 import {
   getPatchCorners,
-  getPatchEdgePoints,
+  locatePatchEdgeSegment,
   type PatchPoint,
   type TrianglePatchParams,
 } from '@/scene/asset-triangle-patch';
@@ -39,36 +39,6 @@ export function evalCubicBezierEdge(
   return out;
 }
 
-const _edgeKnots: number[] = [];
-
-/**
- * Finds the segment of edge `edgeIndex` that holds parameter `t` and returns its two
- * points plus the local segment parameter. Edge points sit at their `edgeParams` value;
- * out-of-order params are clamped so the knots stay monotonic.
- */
-function locateEdgeSegment(
-  params: TrianglePatchParams,
-  edgeIndex: number,
-  t: number,
-): { a: PatchPoint; b: PatchPoint; s: number } {
-  const points = getPatchEdgePoints(params, edgeIndex);
-  const last = points.length - 1;
-  _edgeKnots.length = 0;
-  _edgeKnots.push(0);
-  for (let i = 1; i < last; i++) {
-    const knot = params.edgeParams[points[i].id] ?? i / last;
-    _edgeKnots.push(Math.min(1, Math.max(_edgeKnots[i - 1], knot)));
-  }
-  _edgeKnots.push(1);
-
-  const clampedT = Math.max(0, Math.min(1, t));
-  let k = 0;
-  while (k < last - 1 && clampedT > _edgeKnots[k + 1]) {k++;}
-  const span = _edgeKnots[k + 1] - _edgeKnots[k];
-  const s = span > 1e-9 ? (clampedT - _edgeKnots[k]) / span : 0;
-  return { a: points[k], b: points[k + 1], s };
-}
-
 /** Evaluates edge `edgeIndex` (corner e -> corner e+1) at `t` in [0, 1], across all its segments. */
 export function evalEdge(
   params: TrianglePatchParams,
@@ -76,7 +46,7 @@ export function evalEdge(
   t: number,
   out: Vector3 = new Vector3(),
 ): Vector3 {
-  const { a, b, s } = locateEdgeSegment(params, edgeIndex, t);
+  const { start: a, end: b, s } = locatePatchEdgeSegment(params, edgeIndex, t);
   return evalCubicBezierEdge(a, b, s, out);
 }
 
@@ -87,7 +57,7 @@ export function evalCross(
   t: number,
   out: Vector3 = new Vector3(),
 ): Vector3 {
-  const { a, b, s } = locateEdgeSegment(params, edgeIndex, t);
+  const { start: a, end: b, s } = locatePatchEdgeSegment(params, edgeIndex, t);
   out.x = (1 - s) * (a.handleCrossIn.x - a.pos.x) + s * (b.handleCrossIn.x - b.pos.x);
   out.y = (1 - s) * (a.handleCrossIn.y - a.pos.y) + s * (b.handleCrossIn.y - b.pos.y);
   out.z = (1 - s) * (a.handleCrossIn.z - a.pos.z) + s * (b.handleCrossIn.z - b.pos.z);

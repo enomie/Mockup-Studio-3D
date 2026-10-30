@@ -96,6 +96,39 @@ export function getPatchEdgePoints(params: TrianglePatchParams, edgeIndex: numbe
   throw new Error(`triangle patch corner ${endId} is missing`);
 }
 
+export interface PatchEdgeSegment {
+  start: PatchPoint;
+  end: PatchPoint;
+  /** Local parameter in [0, 1] inside the segment. */
+  s: number;
+}
+
+/**
+ * Finds the segment of edge `edgeIndex` that holds edge parameter `t`. Edge points sit at
+ * their `edgeParams` value; out-of-order params are clamped so the knots stay monotonic.
+ */
+export function locatePatchEdgeSegment(
+  params: TrianglePatchParams,
+  edgeIndex: number,
+  t: number,
+): PatchEdgeSegment {
+  const points = getPatchEdgePoints(params, edgeIndex);
+  const last = points.length - 1;
+  const clampedT = Math.max(0, Math.min(1, t));
+  let knotStart = 0;
+  for (let k = 0; k < last; k++) {
+    const rawEnd = k + 1 === last ? 1 : params.edgeParams[points[k + 1].id] ?? (k + 1) / last;
+    const knotEnd = Math.min(1, Math.max(knotStart, rawEnd));
+    if (clampedT <= knotEnd || k + 1 === last) {
+      const span = knotEnd - knotStart;
+      const s = span > 1e-9 ? Math.min(1, Math.max(0, (clampedT - knotStart) / span)) : 0;
+      return { start: points[k], end: points[k + 1], s };
+    }
+    knotStart = knotEnd;
+  }
+  throw new Error('triangle patch edge has no segment');
+}
+
 /** Returns a new point list with the point of the same id swapped in. */
 export function replacePatchPoint(points: readonly PatchPoint[], next: PatchPoint): PatchPoint[] {
   return points.map((point) => (point.id === next.id ? next : point));
