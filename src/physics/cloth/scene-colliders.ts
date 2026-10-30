@@ -151,9 +151,9 @@ function resolveMatrixCollider(
   if (ny > 0.65) {
     vy = 0;
     oldPosY = outY;
-    const slipRatio = 1.0 - friction;
-    slipX = wx + vx * slipRatio;
-    slipZ = wz + vz * slipRatio;
+    // wx/wz already include this step's velocity; friction removes part of it.
+    slipX = wx - vx * friction;
+    slipZ = wz - vz * friction;
   } else if (dist < dHat * 0.5) {
     vy = 0;
   }
@@ -204,9 +204,9 @@ function resolveSphere(
   let slipZ: number | null = null;
   if (ny > 0.65) {
     oldPosY = outY;
-    const slipRatio = 1.0 - friction;
-    slipX = wx + vx * slipRatio;
-    slipZ = wz + vz * slipRatio;
+    // wx/wz already include this step's velocity; friction removes part of it.
+    slipX = wx - vx * friction;
+    slipZ = wz - vz * friction;
   }
 
   return { x: outX, y: outY, z: outZ, vy: 0, oldPosY, slipX, slipZ };
@@ -291,8 +291,9 @@ export function resolveSceneCollisions(
     y = floorContactY;
     outVy = 0;
     oldPosY = y;
-    x = wx + vx * (1.0 - friction);
-    z = wz + vz * (1.0 - friction);
+    // wx/wz already include this step's velocity; friction removes part of it.
+    x = wx - vx * friction;
+    z = wz - vz * friction;
   }
 
   return { x, y, z, vy: outVy, oldPosY };
