@@ -26,7 +26,7 @@ Siehe auch: [`requirements-code.md`](./requirements-code.md) (technische Regeln)
 
 **Category:** Workflow  
 **Title:** Phase 3 — Inventur vor Implementierung  
-**Description:** Bevor Code geändert wird, **Bestand aufnehmen**: Welche Module existieren bereits? (`src/scene/scene-api.ts`, `src/engine/`, Store, Controller, Render, Physics.) Passt das neue Feature in bestehende Strukturen? **Erweitern** statt parallel neu bauen. **Refactoring** nur im direkt betroffenen Scope, wenn es die Integration vereinfacht. Keine zweite API-Schicht, keine duplizierten Typen, keine Engine-Logik in React. Entfernte Dateien nach `/_deleted/` (nicht löschen).
+**Description:** Bevor Code geändert wird, **Bestand aufnehmen**: Welche Module existieren bereits? (`src/scene/scene-api.ts`, `src/engine/`, Store, Controller, Render, Physics.) Passt das neue Feature in bestehende Strukturen? **Erweitern** statt parallel neu bauen. **Refactoring** nur im direkt betroffenen Scope, wenn es die Integration vereinfacht. Keine zweite API-Schicht, keine duplizierten Typen, keine Engine-Logik in React. Entfernte Dateien direkt löschen — die Git-History bewahrt sie.
 
 ---
 

@@ -24,7 +24,7 @@ Architektur, Patterns und technische Vorgaben für Mockup Studio 3D.
 
 **Category:** Code  
 **Title:** Module, Naming & Constants  
-**Description:** Ein Verantwortungsbereich pro Datei/Modul. Named exports bevorzugen. Dateinamen: `kebab-case.ts` oder bestehende Ordner-Konvention (`src/render/`, `src/physics/`). Magic Numbers verboten in Logik — Werte nach `src/constants.ts` oder domänenspezifische `constants.ts`. Wiederverwendbare Typen nahe bei der Domäne (`src/colors/rgb.ts`), nicht duplizieren. Keine zirkulären Imports. Keine toten Dateien — entfernte Dateien nach `/_deleted/` verschieben, nicht löschen. Dependencies minimal halten; keine „just in case"-Libraries.
+**Description:** Ein Verantwortungsbereich pro Datei/Modul. Named exports bevorzugen. Dateinamen: `kebab-case.ts` oder bestehende Ordner-Konvention (`src/render/`, `src/physics/`). Magic Numbers verboten in Logik — Werte nach `src/constants.ts` oder domänenspezifische `constants.ts`. Wiederverwendbare Typen nahe bei der Domäne (`src/colors/rgb.ts`), nicht duplizieren. Keine zirkulären Imports. Keine toten Dateien — entfernte Dateien direkt löschen (Git-History genügt), kein `_deleted/`-Ordner. Dependencies minimal halten; keine „just in case"-Libraries.
 
 ---
 

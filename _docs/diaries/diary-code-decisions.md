@@ -6,6 +6,10 @@ Kurze Historie: **wie** wir uns entschieden haben (Warum, Alternativen). Require
 
 ## Einträge
 
+### 2026-10-30 — Kein `_deleted/`-Ordner mehr
+- **Entscheidung:** Entfernte Dateien werden direkt gelöscht. Die Regel „nach `/_deleted/` verschieben“ ist aufgehoben (Requirements Code + Development Workflow angepasst).
+- **Grund:** Git-History bewahrt alles; der Ordner existierte ohnehin nicht mehr. Ältere Diary-Einträge, die `_deleted/` erwähnen, bleiben als Historie stehen.
+
 ### 2026-10-30 — Himmelsrichtungen: N = −Z, O = +X
 - **Entscheidung:** Eine Datei `src/engine/world-compass.ts` definiert N/O/S/W und die Quadranten alpha (NE) … delta (NW) samt Farben. Viewport helpers **Compass arrows** (ersetzt Forward arrow) und **Quadrant grid**. Tests prüfen Händigkeit und Startansicht (N oben, O rechts, alpha oben rechts).
 - **Grund:** Ein Vorgängerprojekt nutzte N = +Z **und** O = +X. Das ist in Three.js (rechtshändig) eine gespiegelte Karte und erzwang Hacks (Projektionsmatrix spiegeln, Orbit spiegeln, `DoubleSide`). Ost/West wirkten für den User immer vertauscht.
@@ -1541,8 +1545,9 @@ Kurze Historie: **wie** wir uns entschieden haben (Warum, Alternativen). Require
 - **Grund:** Schnell sichtbare Demo-Szene; Skybox ohne Shadow; Ground fixed (nicht platzierbar).
 
 ### 2026-10-07 — Code-Sprache & Cleanup
-- **Entscheidung:** Code/Kommentare **Englisch**; Docs/Requirements Deutsch ok; gelöschte Dateien nach `/_deleted/` umbenennen, nicht löschen.
-- **Grund:** Team-Konvention; History behalten.
+- **Entscheidung:** Code/Kommentare **Englisch**; Docs/Requirements Deutsch ok.
+- **Grund:** Team-Konvention.
+- **Update 2026-10-30:** `_deleted/`-Regel aufgehoben — Dateien werden direkt gelöscht, Git-History genügt.
 
 ### 2026-10-07 — Dev-Server
 - **Entscheidung:** Vite Port **4040**; Dev-Server startet **User**, Agent **nie** `npm run dev`.
