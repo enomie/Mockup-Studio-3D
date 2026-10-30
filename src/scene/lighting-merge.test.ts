@@ -5,7 +5,7 @@ import { cloneLightingSettings } from './lighting-preset-types';
 import type { DeepPartial, LightingSettings } from './scene-api';
 
 function defaults(): LightingSettings {
-  return cloneLightingSettings(SCENE_DEFAULTS.lighting as LightingSettings);
+  return cloneLightingSettings(SCENE_DEFAULTS.lighting);
 }
 
 describe('mergeLightingSettings', () => {
