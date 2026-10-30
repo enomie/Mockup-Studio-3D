@@ -1,6 +1,9 @@
 import {
+  BufferGeometry,
   CanvasTexture,
+  Float32BufferAttribute,
   Group,
+  LineSegments,
   Mesh,
   MeshBasicNodeMaterial,
   PlaneGeometry,
@@ -9,12 +12,13 @@ import {
 import {
   VIEWPORT_HELPER_GROUND_OFFSET_M,
   VIEWPORT_HELPER_RENDER_ORDER,
-  VIEWPORT_QUADRANT_FILL_OPACITY,
+  VIEWPORT_QUADRANT_CELL_M,
+  VIEWPORT_QUADRANT_LINE_OPACITY,
   VIEWPORT_QUADRANT_LABEL_SIZE_M,
   VIEWPORT_QUADRANT_SIZE_M,
 } from '@/constants';
 import { PLAN_QUADRANTS, type PlanQuadrant } from '@/engine/world-compass';
-import { applyViewportHelperXRay, createViewportHelperMeshMaterial } from './viewport-helper-material';
+import { applyViewportHelperXRay, createViewportHelperLineMaterial } from './viewport-helper-material';
 
 const LABEL_CANVAS_PX = 256;
 
@@ -30,6 +34,29 @@ function createFloorPlane(size: number, material: MeshBasicNodeMaterial): Mesh {
   mesh.receiveShadow = false;
   mesh.frustumCulled = false;
   return mesh;
+}
+
+/** Grid lines inside one quadrant square (local space, centered on 0,0). */
+function createQuadrantLines(color: number): LineSegments {
+  const size = VIEWPORT_QUADRANT_SIZE_M;
+  const half = size / 2;
+  const steps = Math.round(size / VIEWPORT_QUADRANT_CELL_M);
+  const positions: number[] = [];
+  for (let i = 0; i <= steps; i++) {
+    const v = -half + (i * size) / steps;
+    positions.push(-half, 0, v, half, 0, v);
+    positions.push(v, 0, -half, v, 0, half);
+  }
+  const geometry = new BufferGeometry();
+  geometry.setAttribute('position', new Float32BufferAttribute(positions, 3));
+  const material = createViewportHelperLineMaterial(color);
+  material.opacity = VIEWPORT_QUADRANT_LINE_OPACITY;
+  const lines = new LineSegments(geometry, material);
+  lines.renderOrder = VIEWPORT_HELPER_RENDER_ORDER;
+  lines.castShadow = false;
+  lines.receiveShadow = false;
+  lines.frustumCulled = false;
+  return lines;
 }
 
 function createLabelTexture(quadrant: PlanQuadrant): CanvasTexture {
@@ -58,11 +85,7 @@ function createQuadrant(quadrant: PlanQuadrant): Group {
   const half = VIEWPORT_QUADRANT_SIZE_M / 2;
   group.position.set(quadrant.signX * half, VIEWPORT_HELPER_GROUND_OFFSET_M, quadrant.signZ * half);
 
-  const fillMaterial = createViewportHelperMeshMaterial(quadrant.color);
-  fillMaterial.opacity = VIEWPORT_QUADRANT_FILL_OPACITY;
-  const fill = createFloorPlane(VIEWPORT_QUADRANT_SIZE_M, fillMaterial);
-  fill.renderOrder = VIEWPORT_HELPER_RENDER_ORDER;
-  group.add(fill);
+  group.add(createQuadrantLines(quadrant.color));
 
   const labelMaterial = new MeshBasicNodeMaterial({
     map: createLabelTexture(quadrant),
@@ -76,7 +99,7 @@ function createQuadrant(quadrant: PlanQuadrant): Group {
   return group;
 }
 
-/** Four tinted floor squares (alpha NE, beta SE, gamma SW, delta NW) around the reference center. */
+/** Four colored line grids (alpha NE, beta SE, gamma SW, delta NW) around the reference center. */
 export function createQuadrantGridHelper(): Group {
   const group = new Group();
   group.name = 'quadrant-grid';
