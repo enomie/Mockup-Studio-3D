@@ -1238,16 +1238,60 @@ input[type='range'] {
   font-weight: 600;
 }
 
-.patch-point-inspector-point__letter {
+.patch-point-inspector-point__dot {
   flex-shrink: 0;
-  min-width: 1.25rem;
-  font-weight: 600;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #0284c7;
 }
 
-.patch-point-inspector-point__hint {
-  font-size: 11px;
-  font-weight: 400;
-  color: var(--color-text-muted);
+.patch-point-inspector-point__dot--edge {
+  width: 7px;
+  height: 7px;
+  background: #a855f7;
+}
+
+.patch-point-inspector-point__name {
+  flex: 1;
+  min-width: 0;
+  height: 20px;
+  padding: 0 4px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+}
+
+.patch-point-inspector-point__name:hover {
+  border-color: var(--color-border);
+}
+
+.patch-point-inspector-point__name:focus {
+  border-color: #0284c7;
+  background: #fff;
+  outline: none;
+}
+
+.patch-point-inspector-point__remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.patch-point-inspector-point__remove:hover {
+  background: #eee;
+  color: #333;
 }
 
 .patch-point-inspector-detail {

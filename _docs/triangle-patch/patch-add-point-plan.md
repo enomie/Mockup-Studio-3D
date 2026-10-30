@@ -1,6 +1,6 @@
 # Plan: Patch – Punkte hinzufügen („Add Point“)
 
-Status: **Schritt 1–5 erledigt** (Schritt 6: vorläufiger „Add Point“-Button ist schon drin).
+Status: **Schritt 1–6 erledigt.**
 Scope: **nur** neue Punkte auf den Patch-Kanten setzen, umbenennen, löschen – inkl. Wölbung durch jeden Punkt.
 Nicht im Scope: Snap/Copy-Paste von Tangenten, Symmetrie, Hebel-Kontinuitäts-Modi (glatt/spitz-Kopplung), Mitte-der-Kante-Shortcut (Idee gemerkt, später).
 

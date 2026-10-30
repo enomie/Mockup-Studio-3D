@@ -1,4 +1,7 @@
 import { useState } from 'react';
+import { Trash2 } from 'lucide-react';
+import { Icon } from '@/ui/components/Icon';
+import { removePatchPoint } from '@/scene/triangle-patch-point-edit';
 import { SubPanelSection } from '@/ui/components/SubPanelSection';
 import { PanelAxisField } from '@/ui/components/PanelAxisField/PanelAxisField';
 import { MaterialSelect } from '@/ui/panels/MaterialSelect';
@@ -10,6 +13,7 @@ import {
   } from '@/ui/store/app-store';
 import {
   defaultTrianglePatchParams,
+  isPatchCorner,
   replacePatchPoint,
   type PatchHandleTarget,
   type PatchPoint,
@@ -73,6 +77,27 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
 
   const commitPoint = (point: PatchPoint) => {
     setKindParams('trianglePatch', entity.id, { points: replacePatchPoint(patchParams.points, point) });
+  };
+
+  const renamePoint = (point: PatchPoint, input: HTMLInputElement) => {
+    const name = input.value.trim();
+    if (!name) {
+      input.value = point.name;
+      return;
+    }
+    if (name !== point.name) {commitPoint({ ...point, name });}
+  };
+
+  /** Removes an edge point; when it was selected, the previous point in the loop takes over. */
+  const removePoint = (pointId: string) => {
+    const index = patchParams.points.findIndex((point) => point.id === pointId);
+    const next = removePatchPoint(patchParams, pointId);
+    if (next === patchParams) {return;}
+    setKindParams('trianglePatch', entity.id, { points: next.points, edgeParams: next.edgeParams });
+    if (pointId === selectedPointId) {
+      const previous = patchParams.points[(index - 1 + patchParams.points.length) % patchParams.points.length];
+      handleSelectTarget(previous.id, 'pos');
+    }
   };
 
   const updateCoord = (axis: 'x' | 'y' | 'z', value: number) => {
@@ -202,16 +227,49 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
         <ul className="patch-point-inspector-list">
           {patchParams.points.map((node) => {
             const selected = selectedPointId === node.id;
+            const corner = isPatchCorner(patchParams, node.id);
             return (
               <li key={node.id} className="patch-point-inspector-item">
-                <button
-                  type="button"
+                <div
                   className={`patch-point-inspector-point${selected ? ' patch-point-inspector-point--active' : ''}`}
                   aria-expanded={selected}
                   onClick={() => { handleSelectTarget(node.id, selectedTargetKey); }}
                 >
-                  <span className="patch-point-inspector-point__hint">{node.name}</span>
-                </button>
+                  <span
+                    className={`patch-point-inspector-point__dot${corner ? '' : ' patch-point-inspector-point__dot--edge'}`}
+                    title={corner ? 'Corner point' : 'Edge point'}
+                  />
+                  <input
+                    key={node.name}
+                    className="patch-point-inspector-point__name"
+                    defaultValue={node.name}
+                    aria-label="Point name"
+                    onFocus={() => { if (!selected) {handleSelectTarget(node.id, selectedTargetKey);} }}
+                    onBlur={(e) => { renamePoint(node, e.currentTarget); }}
+                    onKeyDown={(e) => {
+                      e.stopPropagation();
+                      if (e.key === 'Enter') {e.currentTarget.blur();}
+                      if (e.key === 'Escape') {
+                        e.currentTarget.value = node.name;
+                        e.currentTarget.blur();
+                      }
+                    }}
+                  />
+                  {corner ? null : (
+                    <button
+                      type="button"
+                      className="patch-point-inspector-point__remove"
+                      aria-label={`Remove ${node.name}`}
+                      title="Remove point"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removePoint(node.id);
+                      }}
+                    >
+                      <Icon icon={Trash2} />
+                    </button>
+                  )}
+                </div>
 
                 {selected ? (
                   <div className="patch-point-inspector-detail panel-field-stack">
