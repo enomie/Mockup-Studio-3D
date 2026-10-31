@@ -12,7 +12,7 @@ Quelle: `_docs/demo-extern/minimalistisches_dreiecks_patch_studio (10).html` (Sh
 
 | UI-Name | ID | Kind | Umsetzung |
 |---|---|---|---|
-| Paint Metallic | `material-paint-metallic` | `solid-pbr` | Preset: color `0x0284c7`, roughness 0.18, metalness 0.75 (Werte aus Demo). Läuft über bestehende PBR-Pipeline. |
+| Paint Metallic | `material-paint-metallic` | `solid-pbr` | Preset: color `0x0284c7`, roughness 0.18, metalness 0.75 (Werte aus Demo), clearcoat 1.0, clearcoatRoughness 0.05 (Autolack-Optik; vom User bestätigt). Läuft über bestehende PBR-Pipeline. |
 | Zebra Analysis | `material-zebra-analysis` | `analysis` (neu) | `MeshBasicNodeMaterial`, TSL-Port: `r = reflect(-viewDir, normalView)`, `s = step(0, sin(r.y * stripeScale))`, `color = mix(0.05, 0.95, s)`. DoubleSide. |
 | Wireframe | `material-wireframe` | `analysis` (neu) | `MeshBasicNodeMaterial({ wireframe: true })`, color `0x38bdf8`, DoubleSide. |
 
