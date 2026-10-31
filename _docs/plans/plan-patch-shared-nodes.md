@@ -1,6 +1,6 @@
 # Plan: Gemeinsame Punkte wirklich EINMAL – „Knoten“, die mehrere Patches benutzen
 
-Status: **Entwurf – wartet auf Freigabe**
+Status: **freigegeben – N1 in Umsetzung**
 Ersetzt das bisherige Modell „jeder Patch hat eigene Punkte, Kopien werden synchron gehalten“ (Schritt A Link, C1/C2/C3, Coupled Pairs, Shared-Point-Plan). Die Flächen-Mathematik (Classic + Kanten-Korrektur D) bleibt.
 
 ---
@@ -64,7 +64,12 @@ Knoten liegen in **Weltkoordinaten** (sie gehören keinem Patch). Die Patches le
 
 ---
 
-## Offene Fragen
+## Entscheidungen
+
+- Frage 1 → **(b)**: Knoten wandern mit dem verschobenen Patch mit; der andere Patch verformt sich.
+- Frage 2 → **ja**: Mirror-Kopien nehmen an Knoten nicht teil.
+
+## Ursprüngliche Fragen
 
 1. **Ganzen Patch verschieben/drehen** (nur einer gewählt): Bisher verformte sich der Partner mit. Im neuen Modell gibt es zwei saubere Möglichkeiten:
    - **(a) Knoten bleiben, wo sie sind** → die gemeinsame Kante bleibt stehen, der verschobene Patch verformt sich zu ihr hin (der andere Patch bleibt ganz unverändert).
