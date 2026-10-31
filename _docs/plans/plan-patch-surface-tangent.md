@@ -94,6 +94,6 @@ Reiner Mathe-Baustein mit Tests, Messwerte kommen in den Plan zurück:
 
 ## Offene Fragen an dich
 
-1. Ecken-Handles im Tangent-Modus als **Mittel-Wölbung** umwidmen – ok? (Alternative: ausblenden.)
-2. Name im Panel: **„Smooth Edges“** vs. „Tangent“ vs. eigener Vorschlag?
+1. ~~Ecken-Handles als Mittel-Wölbung?~~ → **Ja.**
+2. ~~Name im Panel?~~ → **„Smooth Edges“.**
 3. Neue Patches erst nach deinem Test auf den neuen Modus umstellen – ok?
