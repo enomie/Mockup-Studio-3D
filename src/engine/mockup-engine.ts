@@ -1,3 +1,5 @@
+import { SceneHistoryController, type SceneHistoryState } from './history/scene-history-controller';
+import { attachHistoryInputTracking } from './history/history-input-tracking';
 import { type Camera, type Mesh, Scene, type WebGPURenderer } from 'three/webgpu';
 import type { Rgb } from '@/colors/rgb';
 import { SCENE_DEFAULTS } from '@/config/scene-defaults';
@@ -122,6 +124,8 @@ export class MockupEngine implements SceneApi {
   private lastTime = performance.now();
   private gravityScale = DEFAULT_GRAVITY_SCALE;
   private readonly gizmoInteraction: GizmoInteractionController;
+  private readonly history: SceneHistoryController;
+  private readonly detachHistoryInput: () => void;
 
   private constructor(
     private readonly container: HTMLElement,
@@ -184,6 +188,18 @@ export class MockupEngine implements SceneApi {
     scene.add(gizmo.getHelper());
     this.gizmoInteraction.refresh();
 
+    this.history = new SceneHistoryController({
+      getEntities: () => this.registry.getEntities(),
+      restoreEntities: (entities) => this.restoreEntities(entities),
+      focusEntity: (entityId) => { this.handleSelect(entityId); },
+      isRecordingSuspended: () =>
+        this.worldPhysics.getPhase() !== 'idle' ||
+        this.rigidTest.getPhase() !== 'idle' ||
+        this.physics.needsSimulationStep(),
+      onStateChanged: () => { this.notifySceneApiListeners(); },
+    });
+    this.detachHistoryInput = attachHistoryInputTracking(this.history);
+    registry.subscribeEntities(() => { this.history.onEntitiesChanged(); });
     registry.subscribeEntities(() => { this.notifySceneApiListeners(); });
     registry.subscribeSelection(() => { this.notifySceneApiListeners(); });
     lighting.subscribeSelection(() => { this.notifySceneApiListeners(); });
@@ -339,6 +355,7 @@ export class MockupEngine implements SceneApi {
 
     // Default portfolio scene: picture, print (A5), smartphone, tablet, monitor.
     engine.assets.seedDefaultScene();
+    engine.history.flush();
     engine.invalidateViewport();
 
     return engine;
@@ -622,6 +639,31 @@ export class MockupEngine implements SceneApi {
     } else {
       this.patchAddPoint.stop();
     }
+    this.gizmoInteraction.refresh();
+    this.emit();
+  }
+
+  undo(): void {
+    void this.history.undo();
+  }
+
+  redo(): void {
+    void this.history.redo();
+  }
+
+  getHistoryState(): SceneHistoryState {
+    return this.history.getState();
+  }
+
+  /** Undo/redo restore: ends patch tools whose entity vanished, then rebuilds. */
+  private async restoreEntities(entities: readonly AssetEntity[]): Promise<void> {
+    const ids = new Set(entities.map((entity) => entity.id));
+    const addPointId = this.patchAddPoint.getEntityId();
+    if (addPointId && !ids.has(addPointId)) {this.patchAddPoint.stop();}
+    const patchId = this.patchGizmo.getActiveEntityId();
+    if (patchId && !ids.has(patchId)) {this.patchGizmo.setActiveEntity(null);}
+    await this.assets.restoreEntities(entities);
+    this.patchGizmo.syncHelpersFromEntity();
     this.gizmoInteraction.refresh();
     this.emit();
   }
@@ -917,6 +959,7 @@ export class MockupEngine implements SceneApi {
     if (this.disposed) {return;}
     this.disposed = true;
 
+    this.detachHistoryInput();
     this.viewportInput.dispose();
     this.patchAddPoint.dispose();
     this.selectionHighlight.dispose();

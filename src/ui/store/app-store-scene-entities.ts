@@ -99,3 +99,11 @@ export function setGeometryVisible(
   store.sceneApi?.setGeometryVisible(entityId, part, visible);
 }
 
+
+export function undoSceneChange(): void {
+  store.sceneApi?.undo();
+}
+
+export function redoSceneChange(): void {
+  store.sceneApi?.redo();
+}

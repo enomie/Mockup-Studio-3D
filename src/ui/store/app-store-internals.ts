@@ -1,3 +1,4 @@
+import type { SceneHistoryState } from '@/engine/history/scene-history-controller';
 import { SCENE_DEFAULTS } from '@/config/scene-defaults';
 import { STARTER_IMAGES, type ImageAsset } from '@/data/image-assets';
 import type { Rgb } from '@/colors/rgb';
@@ -90,6 +91,7 @@ export interface AppState {
   patchHandleSelection: PatchHandleSelection | null;
   /** Patch whose viewport add-point mode is running, if any. */
   patchAddPointEntityId: string | null;
+  history: SceneHistoryState;
   camera: CameraSettings;
   exportImageFormat: ExportImageFormat;
   exportGroundSurface: ExportGroundSurface;
@@ -144,6 +146,7 @@ export let state: AppState = {
   selectedEntityId: null,
   patchHandleSelection: null,
   patchAddPointEntityId: null,
+  history: { canUndo: false, canRedo: false, undoLabel: null, redoLabel: null },
   camera: cloneCameraSettings(camera.settings),
   exportImageFormat: 'png-transparent',
   exportGroundSurface: 'viewport',
@@ -274,6 +277,7 @@ export function syncEngineStateFromEngine(): void {
     selectedEntityId: sceneApi.getSelectedEntityId(),
     patchHandleSelection: sceneApi.getPatchHandleSelection(),
     patchAddPointEntityId: sceneApi.getPatchAddPointEntityId(),
+    history: sceneApi.getHistoryState(),
     camera: cloneCameraSettings(sceneApi.getCameraSettings()),
   };
   emit();

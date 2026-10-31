@@ -109,6 +109,13 @@
   font-weight: 500;
 }
 
+.top-bar__history {
+  grid-column: 3;
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-1);
+}
+
 .viewport-tools {
   grid-column: 2;
   display: flex;

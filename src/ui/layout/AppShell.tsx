@@ -3,6 +3,7 @@ import { ViewportFrame } from '@/ui/components/ViewportFrame';
 import { useCameraViewShortcuts } from '@/ui/hooks/useCameraViewShortcuts';
 import { useViewportToolShortcuts } from '@/ui/hooks/useViewportToolShortcuts';
 import { usePatchPointClipboardShortcuts } from '@/ui/hooks/usePatchPointClipboardShortcuts';
+import { useUndoRedoShortcuts } from '@/ui/hooks/useUndoRedoShortcuts';
 import { LeftDetailPanel } from '@/ui/shell/LeftDetailPanel';
 import { LeftMainPanel } from '@/ui/shell/LeftMainPanel';
 import { LeftSubPanel } from '@/ui/shell/LeftSubPanel';
@@ -16,6 +17,7 @@ import { TopSubBar } from '@/ui/shell/TopSubBar';
 export function AppShell() {
   useViewportToolShortcuts();
   usePatchPointClipboardShortcuts();
+  useUndoRedoShortcuts();
   useCameraViewShortcuts();
 
   const [leftSelected, setLeftSelected] = useState('assets');

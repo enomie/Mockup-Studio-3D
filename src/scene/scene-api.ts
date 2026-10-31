@@ -1,3 +1,4 @@
+import type { SceneHistoryState } from '@/engine/history/scene-history-controller';
 import type { KindParamFamily, KindParamsByFamily } from './kind-param-families';
 import type { Rgb } from '@/colors/rgb';
 import type {
@@ -241,6 +242,10 @@ export interface SceneApi {
   /** Starts the viewport add-point mode for a triangle patch, or stops it with null. */
   setPatchAddPointMode(entityId: string | null): void;
   getPatchAddPointEntityId(): string | null;
+  /** Undo/redo of scene object changes. */
+  undo(): void;
+  redo(): void;
+  getHistoryState(): SceneHistoryState;
   loadBuiltinView(id: BuiltinCameraViewId): void;
   captureSlot(index: CameraSlotIndex): void;
   loadSlot(index: CameraSlotIndex): void;

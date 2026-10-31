@@ -804,6 +804,38 @@ export class AssetSystem {
     }
   }
 
+  /**
+   * Brings the registry to `target` (undo/redo): removes entities missing from it,
+   * re-creates removed ones and rebuilds every entity whose stored object changed.
+   * Resolves once all rebuilds are done.
+   */
+  async restoreEntities(target: readonly AssetEntity[]): Promise<void> {
+    const targetIds = new Set(target.map((entity) => entity.id));
+    for (const entity of this.registry.getEntities()) {
+      if (!targetIds.has(entity.id)) {this.removeAsset(entity.id);}
+    }
+
+    const rebuilds: Promise<void>[] = [];
+    for (const entity of target) {
+      const runtime = this.registry.getRuntime(entity.id);
+      if (runtime?.entity === entity) {continue;}
+      if (runtime) {
+        this.registry.restoreEntity(entity);
+      } else {
+        const root = new Group();
+        this.scene.add(root);
+        this.registry.insertRestoredEntity(entity, root);
+      }
+      rebuilds.push(rebuildEntity(this.rebuildCtx, entity.id).then(() => {
+        if (isRigidPrimitiveAssetKind(entity.assetKind)) {
+          this.rigidPrimitivePhysics?.reconcileEntity(entity.id);
+        }
+      }));
+    }
+    this.registry.reorderEntities(target.map((entity) => entity.id));
+    await Promise.all(rebuilds);
+  }
+
   removeAsset(entityId: string): void {
     const runtime = this.registry.getRuntime(entityId);
     if (!runtime) {return;}

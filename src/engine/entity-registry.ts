@@ -243,6 +243,47 @@ export class EntityRegistry {
     this.markEntitiesChanged();
   }
 
+  // --- History restore ---
+
+  /**
+   * Swaps in a stored entity (undo/redo). Re-applies transform and visibility to the
+   * existing object; the caller rebuilds the geometry.
+   */
+  restoreEntity(entity: AssetEntity): void {
+    const runtime = this.entities.get(entity.id);
+    if (!runtime) {return;}
+    runtime.entity = entity;
+    this.applyTransformToObject(runtime.object, entity.transform);
+    runtime.object.visible = entity.visible;
+    this.markEntitiesChanged();
+  }
+
+  /** Re-inserts a stored entity with a fresh (empty) object root (undo of a removal). */
+  insertRestoredEntity(entity: AssetEntity, object: Object3D): void {
+    object.userData.entityId = entity.id;
+    this.applyTransformToObject(object, entity.transform);
+    object.visible = entity.visible;
+    this.entities.set(entity.id, { entity, object });
+    this.markEntitiesChanged();
+  }
+
+  /** Reorders entities to match `ids`; unknown ids are ignored, missing ones keep their place at the end. */
+  reorderEntities(ids: readonly string[]): void {
+    const ordered = new Map<string, EntityRuntime>();
+    for (const id of ids) {
+      const runtime = this.entities.get(id);
+      if (runtime) {ordered.set(id, runtime);}
+    }
+    for (const [id, runtime] of this.entities) {
+      if (!ordered.has(id)) {ordered.set(id, runtime);}
+    }
+    const changed = [...ordered.keys()].some((id, i) => [...this.entities.keys()][i] !== id);
+    if (!changed) {return;}
+    this.entities.clear();
+    for (const [id, runtime] of ordered) {this.entities.set(id, runtime);}
+    this.markEntitiesChanged();
+  }
+
   // --- Selection & transform ---
 
   setSelectedEntityId(entityId: string | null): void {

@@ -49,6 +49,8 @@ export {
   setFaceTint,
   setImageSurface,
   setGeometryVisible,
+  undoSceneChange,
+  redoSceneChange,
 } from './app-store-scene-entities';
 
 export {

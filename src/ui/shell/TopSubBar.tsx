@@ -1,11 +1,18 @@
 import { DEFAULT_SCENE_NAME } from '@/config/default-scene-assets';
 import { Icon } from '@/ui/components/Icon';
-import { setMode } from '@/ui/store/app-store';
+import { Redo2, Undo2 } from 'lucide-react';
+import { redoSceneChange, setMode, undoSceneChange } from '@/ui/store/app-store';
 import { useAppStore } from '@/ui/store/use-app-store';
 import { VIEWPORT_TOOLS, viewportToolLabel } from './viewport-tools';
 
 export function TopSubBar() {
   const mode = useAppStore((s) => s.mode);
+  const canUndo = useAppStore((s) => s.history.canUndo);
+  const canRedo = useAppStore((s) => s.history.canRedo);
+  const undoLabel = useAppStore((s) => s.history.undoLabel);
+  const redoLabel = useAppStore((s) => s.history.redoLabel);
+  const undoTitle = undoLabel ? `Undo: ${undoLabel} (Ctrl+Z)` : 'Undo (Ctrl+Z)';
+  const redoTitle = redoLabel ? `Redo: ${redoLabel} (Ctrl+Shift+Z)` : 'Redo (Ctrl+Shift+Z)';
 
   return (
     <div className="top-bar top-bar--sub">
@@ -30,6 +37,29 @@ export function TopSubBar() {
             </button>
           );
         })}
+      </div>
+
+      <div className="top-bar__history" role="toolbar" aria-label="History">
+        <button
+          type="button"
+          className="btn btn--icon"
+          aria-label={undoTitle}
+          title={undoTitle}
+          disabled={!canUndo}
+          onClick={undoSceneChange}
+        >
+          <Icon icon={Undo2} />
+        </button>
+        <button
+          type="button"
+          className="btn btn--icon"
+          aria-label={redoTitle}
+          title={redoTitle}
+          disabled={!canRedo}
+          onClick={redoSceneChange}
+        >
+          <Icon icon={Redo2} />
+        </button>
       </div>
     </div>
   );
