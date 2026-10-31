@@ -70,6 +70,42 @@ Copy/Paste pro Punktzeile im Inspector + Ctrl/Cmd+C/V; Modi: Position & Handles 
 
 ---
 
+## Nachtrag zu Schritt A – Punkte auf verbundenen Kanten
+
+**Problem (Praxistest):** Ein neuer Punkt auf einer verbundenen Kante teilt sie nur in *einem* Patch → der Link zeigt ins Leere („broken“).
+
+**Grundsatz:** Ein Punkt auf einer verbundenen Kante gehört zu **beiden** Patches. Aus einer verbundenen Kante werden zwei verbundene Kanten.
+
+### Punkt einfügen
+- Patch A: Kante P1–P2 ist mit Q1–Q2 (Patch B) verbunden. Neuer Punkt P5 bei Kurvenparameter `s` (von P1 aus).
+- B bekommt automatisch Q5 bei demselben Parameter von Q1 aus (Richtung aus der Link-Zuordnung, bei umgekehrter Laufrichtung `1 − s`). Da beide Kanten dieselbe Kurve sind und per de Casteljau geteilt wird, liegt Q5 exakt auf P5 und die Kurven bleiben unverändert.
+- Links: `P1–P2 ↔ Q1–Q2` wird ersetzt durch `P1–P5 ↔ Q1–Q5` und `P5–P2 ↔ Q5–Q2` (in beiden Patches).
+- Ein Undo-Schritt (beide Patches ändern sich in derselben Aktion).
+- Gilt nur für **gültige** Links; bei ungültigem Link verhält sich Einfügen wie bisher.
+
+### Punkt entfernen
+| Fall | Verhalten |
+|---|---|
+| P5 liegt zwischen zwei gültigen Links zum **selben** Partner, beide zeigen dort auf denselben Partnerpunkt Q5 (kein Eckpunkt) | Q5 wird in B mit entfernt; die zwei Links werden zu einem (`P1–P2 ↔ Q1–Q2`). |
+| sonst (P5 ist Endpunkt nur eines Links, oder Partnerpunkte passen nicht) | Link(s) an P5 werden gelöst (wie bisher), Partner bleibt unverändert. |
+
+### Bereits kaputte Links
+Keine automatische Reparatur (müsste raten). Lösung: Unlink, dann die Teilkanten neu verbinden.
+
+### Umsetzung
+- `scene/triangle-patch-point-edit.ts`: `insertPatchPointInSegment(params, aId, bId, s)` (Einfügen über Segment statt Kante/t); `insertPatchPoint` liefert zusätzlich Segment + tatsächlich verwendetes `s`.
+- `scene/triangle-patch-edge-link.ts` (rein, testbar):
+  - `splitLinkOnInsert(owner, insert, findEntity)` → neue Params für A und B oder `null`.
+  - `mergeLinksOnRemove(owner, pointId, findEntity)` → neue Params für A und B oder `null`.
+- Engine (`commitPatchAddPoint`) und Panel (Punkt entfernen) rufen diese Funktionen auf und schreiben beide Patches.
+
+### Tests
+- Einfügen auf verbundener Kante: Q5 entsteht, Lage = P5 (Welt), zwei gültige Links in beiden Richtungen, auch bei Flip/umgekehrter Laufrichtung.
+- Entfernen des gemeinsamen Punkts: beide Punkte weg, ein gültiger Link.
+- Entfernen eines Punkts mit nur einem Link: Link gelöst, Partner unverändert.
+
+---
+
 ## Schritt B – Flächen-Mathematik mit echter Rand-Neigung (später, eigener Plan)
 
 - Gelber Handle = tatsächliche Neigung der Fläche an der Kante (Coons/Gregory mit Hermite-Querableitungen).
