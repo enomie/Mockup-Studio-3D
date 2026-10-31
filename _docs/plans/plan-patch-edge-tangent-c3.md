@@ -1,85 +1,123 @@
-# Plan: Schritt C3 – Smooth / Corner für die pinken Handles innerhalb eines Patches
+# Plan: Schritt C3 – Zwei Schalter pro Punkt: Kante und Fläche
 
 Status: **Abgestimmt – wartet auf Start**
-Vorgänger: `plan-patch-smooth-corner.md` (C1/C2: Gelenke zwischen verbundenen Patches)
+Vorgänger: `plan-patch-smooth-corner.md` (C1/C2: Gelenke zwischen verbundenen Patches), `plan-patch-classic-edge-correction.md` (D: Classic + Kanten-Korrektur)
 
 ---
 
-## Ziel
+## Grundsatz
 
-Ein **Kantenpunkt** (Punkt auf einer Patch-Kante, keine Ecke) hat zwei pinke Handles: einen nach vorne, einen nach hinten entlang der Kante. Heute sind sie unabhängig → die Kante kann an diesem Punkt unbeabsichtigt knicken.
+> **Jeder sichtbare Handle bewirkt etwas. Kopplungen gibt es nur, wo sie helfen – und jede lässt sich mit Shift lösen.**
 
-Wie in Illustrator:
-- **Smooth:** beide pinken Handles liegen auf einer Linie, gegenüber. Ziehst/drehst du einen, dreht der andere mit. **Längen bleiben frei.** → Kante läuft glatt durch den Punkt.
-- **Corner:** beide unabhängig → bewusster Knick in der Kante.
+Volle Gestaltungsfreiheit. Was bisher „vorher schon so war“, wird daran gemessen und ggf. geändert.
 
-## Wo es gilt – und wo nicht
+## Das Prinzip (Skizze des Nutzers)
 
-| Punkt | C3 gilt? | Warum |
-|---|---|---|
-| Kantenpunkt | **ja** | beide pinken Handles gehören zur selben Kante |
-| Ecke | **nein** | die zwei pinken Handles gehören zu zwei verschiedenen Kanten; eine Ecke ist eine Ecke (sonst würde der Patch dort flachgedrückt) |
+An jedem Punkt läuft eine Linie im Profil entweder **durch** (Smooth) oder **knickt** (Corner). Das gibt es in **zwei Richtungen**:
 
-## Abgrenzung zu C2 (Gelenk mit dem Partner-Patch)
+| Schalter | Handles | Richtung | Smooth | Corner |
+|---|---|---|---|---|
+| **Kante** (neu) | die zwei **rosa** Handles des Punkts | **entlang** der Kante | Randlinie läuft rund durch den Punkt | Randlinie knickt am Punkt |
+| **Fläche** (= Joint aus C2) | **mein gelber** Handle + **gelber Handle des Nachbar-Patches** | **quer** zur Kante | Fläche geht glatt in den Nachbarn über | Grat zwischen den Flächen |
 
-Zwei getrennte Einstellungen, die sich nicht in die Quere kommen:
+Die zwei Schalter sind **unabhängig**. Damit ist auch der allererste Wunsch abgedeckt: *gemeinsame Linie, aber die Flächen wölben sich anders weg* = Kante **Smooth**, Fläche **Corner**.
 
-| Einstellung | betrifft | an Kantenpunkten | an Ecken |
-|---|---|---|---|
-| **Joint** (C2) | Übergang zum **anderen Patch** | gelber Handle | pinker Handle der Nachbarkante |
-| **Edge Tangent** (C3, neu) | Verlauf der **eigenen Kante** | beide pinken Handles | – |
+- **Länge** der Handles = wie rund/voll (Länge 0 = Knick ohne Rundung, Sonderform von Corner). Unabhängig von Smooth/Corner.
 
-**Shift + Ziehen** bricht genau das auf, was zum gezogenen Handle gehört:
-- gelber Handle an einem Kantenpunkt → Joint wird Corner (wie heute),
-- pinker Handle an einem Kantenpunkt → Edge Tangent wird Corner (neu),
-- pinker Handle der Nachbarkante an einer Ecke → Joint wird Corner (wie heute).
+---
 
-*(Änderung gegenüber C2: Heute bricht Shift den Joint bei jedem Handle. Das wird präzisiert.)*
+## Punkte: kein Unterschied mehr in der Bedienung
 
-## Regel
+- Intern bleiben die 3/4 **Patch-Ecken** das Gerüst der Fläche (nicht löschbar, kleine Markierung „Patch corner“).
+- In der Bedienung ist **jeder Punkt gleich**: gleiche Handles, gleiche zwei Schalter.
+- Unterschied nur im **Standardwert** des Schalters „Kante“: Patch-Ecken starten **Corner** (der Umriss biegt dort ab), Kantenpunkte **Smooth**.
+- Kante **Smooth an einer Patch-Ecke** ist erlaubt, aber mit Hinweis („flattens the patch at this corner“), weil die Fläche dort flach zusammengedrückt wird.
 
-- Ziehen/Ändern von `handleNext` → `handlePrev` wird auf die Gegenrichtung gedreht, Länge von `handlePrev` bleibt (und umgekehrt).
-- Gilt überall, wo Handles geändert werden: Viewport-Gizmo, Inspector-Felder (X/Y/Z, Length), Punkt-Paste.
-- Rotation des ganzen Punkts (Rot X/Y/Z) und Verschieben des Ankers ändern die Kolinearität nicht → nichts zu tun.
-- **Verbundene Kanten:** Die pinken Handles eines gemeinsamen Kantenpunkts werden ohnehin auf den Partner übertragen (Schritt A); der Edge-Tangent-Zustand wird ebenfalls übertragen (wie der Joint).
+---
+
+## Die gelben Handles neu geordnet
+
+- **Wippe entfällt:** `handleCrossIn` und `handleCrossOut` sind nicht mehr gegenseitig gekoppelt. Der gelbe Handle ist frei.
+- **Cross Out bekommt seine eigentliche Bedeutung: das Gegenüber beim Nachbarn.**
+  - **Verbundener Punkt:** Als „Cross Out“ wird der **gelbe Handle des Partner-Patches** angezeigt (an derselben Stelle im Raum). Ziehen daran bewegt den Handle des Partners. Bei Fläche = Smooth bilden beide ein Paar wie in Illustrator.
+  - **Unverbundener Punkt:** kein Nachbar → **kein Gegenüber** → Cross Out wird **ausgeblendet** und ist nicht anklickbar.
+  - Die gespeicherten `handleCrossOut`-Daten bleiben unangetastet (keine Wirkung auf die Form, nur Ladekompatibilität).
+- An **Patch-Ecken** gilt der eine gelbe Handle weiterhin für beide angrenzenden Kanten (Classic-Fläche). „Ein gelber Handle pro Kante an Ecken“ ist ein **eigener späterer Schritt** (Eingriff in die Classic-Berechnung).
+
+---
+
+## Regeln
+
+**Kante = Smooth** (rosa Paar):
+- Ändern von `handleNext` → `handlePrev` wird auf die Gegenrichtung gedreht, **Länge bleibt** (und umgekehrt).
+- Gilt überall, wo Handles geändert werden: Viewport-Gizmo, Inspector (X/Y/Z, Length), Punkt-Paste.
+- Rotation des ganzen Punkts (Rot X/Y/Z) und Verschieben des Ankers ändern die Kolinearität nicht.
+
+**Fläche = Smooth** (gelbes Paar mit dem Partner): unverändert aus C1/C2 (Queranteil gegenüber, Längen frei; an Ecken über den rosa Handle der Nachbarkante).
+
+**Shift + Ziehen** bricht immer das Paar, an dem gezogen wird:
+- **rosa** Handle → Schalter **Kante** wird Corner,
+- **gelber** Handle (eigener oder das angezeigte Gegenüber) → Schalter **Fläche** wird Corner (auf beiden Patches).
+- *(Änderung gegenüber C2: Shift bricht nicht mehr bei jedem Handle die Fläche.)*
+
+**Handles einziehen:** Knopf im Inspector setzt die Länge der rosa Handles auf 0 (spitzer Punkt ohne Rundung); wieder herausziehen über „Length“.
+
+**Verbundene Kanten:** Schalter-Zustände und rosa Handles gemeinsamer Punkte werden auf den Partner übertragen (wie heute der Joint).
+
+---
 
 ## Datenmodell
 
-- `PatchPoint.edgeTangent?: 'smooth' | 'corner'` – nur an Kantenpunkten relevant.
+- Neu: `PatchPoint.edgeTangent?: 'smooth' | 'corner'` (Schalter **Kante**).
+- Bestehend: `PatchPoint.joint` (Schalter **Fläche**) – nur die Beschriftung ändert sich.
+- **Bestehende Punkte ohne `edgeTangent`:** automatisch **Smooth**, wenn die rosa Handles schon (fast) auf einer Linie liegen (< 1°), sonst **Corner**. Formen ändern sich dadurch nicht.
+- **Neu eingefügte Punkte:** Kante Smooth (de Casteljau liefert ohnehin gegenüberliegende Handles).
 - Undo/Redo automatisch (Teil der Patch-Daten).
+
+---
 
 ## Bedienung
 
-- **Inspector**, Detailbereich des gewählten Punkts (nur Kantenpunkte): Toggle **Edge Tangent: Smooth / Corner**. Beim Wechsel auf Smooth gibt der aktuell gewählte pinke Handle die Richtung vor (sonst „Forward“), der andere springt gegenüber und behält seine Länge.
-- **Shift + Ziehen** am pinken Handle → Corner.
-- **Viewport:** Smooth → pinke Handles wie heute (Rauten); Corner → pinke Handles als **kleine Würfel** (passend zum Corner-Würfel bei Gelenken).
+**Inspector** (Detailbereich des gewählten Punkts):
+- **Edge: Smooth / Corner** (alle Punkte)
+- **Surface: Smooth / Corner** (nur Punkte auf verbundenen Kanten; Sternpunkte „Shared“, nicht schaltbar)
+- Knopf **Retract handles** (rosa Längen auf 0)
+- Beim Wechsel auf Smooth gibt der gewählte Handle die Richtung vor (sonst „Forward“ bzw. dieser Patch), der andere springt gegenüber und behält seine Länge.
+- Die Punktliste zeigt beide Zustände kompakt an.
 
-## Standardwerte
+**Viewport:**
+- Rosa Handles: Smooth = Raute (wie heute), **Corner = Würfel**.
+- Gelbe Handles: eigener = Raute; Gegenüber vom Partner = Raute in Partner-Farbe; Fläche Corner = **Würfel**.
+- Anker-Markierung für Gelenke aus C2 (Ring/Würfel) bleibt.
 
-- **Neu eingefügte Kantenpunkte:** Smooth (die Teilung per de Casteljau liefert ohnehin gegenüberliegende Handles → keine sichtbare Änderung).
-- **Bestehende Kantenpunkte:** siehe offene Frage 1.
+---
 
 ## Tests
 
-1. Smooth: `handleNext` ändern → `handlePrev` exakt gegenüber, Länge unverändert (und umgekehrt), über Gizmo-Logik und Inspector-Logik.
-2. Corner: Handles unabhängig.
-3. Ecken: Regel greift nie.
-4. Neu eingefügter Punkt: Smooth, Kante unverändert.
-5. Shift: pinker Handle → nur Edge Tangent wird Corner; gelber Handle → nur Joint wird Corner.
-6. Verbundene Kante: Zustand und Handles landen beim Partner; idempotent.
-7. Undo = ein Schritt.
+1. Kante Smooth: `handleNext` ändern → `handlePrev` exakt gegenüber, Länge unverändert (Gizmo- und Inspector-Weg).
+2. Kante Corner: rosa Handles unabhängig.
+3. Wippe weg: `handleCrossIn` ändern verändert `handleCrossOut` nicht.
+4. Bestehende Punkte: Einstufung Smooth/Corner nach < 1°-Regel, Form unverändert.
+5. Neu eingefügter Punkt: Kante Smooth, Randlinie unverändert.
+6. Shift: rosa → nur Kante Corner; gelb → nur Fläche Corner (beide Patches).
+7. Gegenüber-Handle: zeigt Partner-Handle in Weltlage; Ziehen ändert den Partner.
+8. Kante Smooth + Fläche Corner gleichzeitig möglich (erste Skizze).
+9. Verbundene Kanten: Zustände/Handles beim Partner, idempotent; Undo = ein Schritt.
 
 ## Umsetzungsschritte
 
-- **C3a – Regel + Daten + Tests** (gemeinsamer Helfer für Gizmo und Inspector, Übertragung an Partner, Shift-Präzisierung).
-- **C3b – Bedienung:** Toggle im Inspector, Würfel-Handles im Viewport.
+- **C3a – Regeln + Daten + Tests:** `edgeTangent`, Kolinearitäts-Regel (gemeinsamer Helfer für Gizmo/Inspector/Paste), Wegfall der Wippe, Einstufung Altbestand, Shift-Präzisierung, Übertragung an Partner.
+- **C3b – Bedienung:** zwei Schalter + „Retract handles“ im Inspector, Würfel-Handles, Cross Out ausblenden bzw. als Partner-Gegenüber anzeigen und ziehbar machen.
+
+## Danach (eigener Plan)
+
+- Ecken: ein gelber Handle **pro Kante** (volle Freiheit auch an Patch-Ecken).
+- Idee: „**Make patch corner**“ – selbst wählen, welche Punkte die 3/4 Patch-Ecken sind.
 
 ## Entscheidungen
 
-1. Bestehende Kantenpunkte: **(b)** automatisch Smooth, wenn die pinken Handles schon (fast) auf einer Linie liegen (< 1°), sonst Corner.
-2. Corner-Darstellung der pinken Handles als **Würfel**. → ja
-3. Shift bricht nur, was zum gezogenen Handle gehört. → ja
-
-## Offen
-
-- Gelbe Handles: Die beiden gelben Handles eines Punkts (`handleCrossIn` / `handleCrossOut`) sind heute fest gegenüber gekoppelt („Wippe“, schon vor C vorhanden). `handleCrossOut` hat keine Wirkung auf die Fläche. Wie damit umgehen → mit dem Nutzer klären.
+1. Bestehende Punkte: automatisch Smooth bei (fast) gerader Linie (< 1°), sonst Corner. → **(b)**
+2. Corner-Darstellung als **Würfel**. → ja
+3. Shift bricht nur das gezogene Paar. → ja
+4. **Zwei Schalter** pro Punkt (Kante / Fläche), unabhängig. → ja
+5. Grundsatz „jeder sichtbare Handle wirkt“: Wippe weg, Cross Out = Gegenüber beim Nachbarn bzw. ausgeblendet. → ja
