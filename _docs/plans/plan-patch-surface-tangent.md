@@ -1,6 +1,6 @@
 # Plan: Schritt B – Patch-Fläche mit echter Rand-Neigung
 
-Status: **Entwurf – wartet auf Freigabe**
+Status: **B1 erledigt (Mathe-Kern + Messung)** – B2 offen
 Vorgänger: `plan-patch-point-copy-and-shared-edges.md` (Schritt A erledigt: Kanten verbinden, nur Linie)
 
 ---
@@ -77,6 +77,35 @@ Reiner Mathe-Baustein mit Tests, Messwerte kommen in den Plan zurück:
 - **B1 – Mathe-Kern + Tests** (`patch-surface-transfinite.ts`): Bänder, Querableitungen (sphärische Interpolation, Ecken aus Nachbarkanten), Kato-Mischung, Mittel-Wölbung, analytische Normalen. Messbericht an dich.
 - **B2 – Einbau:** `surface`-Feld, Mesh-Aufbau für Dreieck/Viereck im Tangent-Modus, Panel-Umschalter, Beschriftung der Ecken-Handles, Gizmo unverändert.
 - **B3 – Praxistest durch dich** mit zwei verbundenen Patches; danach Entscheidung „Standard für neue Patches?“ und Start von Schritt C.
+
+---
+
+## Messbericht B1
+
+Modul: `src/engine/patch-surface-transfinite.ts`, Tests: `patch-surface-transfinite.test.ts`.
+
+**Knick an der gemeinsamen Kante** – gleicher Aufbau wie die ursprüngliche Messung (zwei ungleiche Dreiecke, gemeinsame Kante mit einem Kantenpunkt in der Mitte, gelbe Handles gegenüber, B-Handle halb so lang, Nachbarkanten in einer Ebene):
+
+| Stelle t | Classic | Smooth Edges |
+|---|---|---|
+| 0,05 | 0,38° | 0,0000° |
+| 0,10 | 1,39° | 0,0000° |
+| 0,25 | 6,22° | 0,0000° |
+| 0,50 | 12,35° | 0,0000° |
+| 0,75 | 6,22° | 0,0000° |
+| 0,90 | 1,39° | 0,0000° |
+| 0,95 | 0,38° | 0,0000° |
+
+- Viereck, gleicher Test: max **0,0000°**.
+- Fläche liegt exakt auf allen Kanten (< 1e-9), Dreieck und Viereck, mit Kantenpunkten.
+- Fläche verlässt die Kante exakt in Richtung der Querableitung (Fehler max 0,0002°).
+- Ecken: keine NaN, stetig.
+
+**Wenn die Nachbarkanten an den Ecken nicht in einer Ebene liegen:** Knick 0° am gemeinsamen Kantenpunkt, zu den Ecken hin wachsend (bis ≈ 31° direkt an der Ecke im Test). Das ist mathematisch zwingend (die Ecke wird von den Nachbarkanten bestimmt) und wird in Schritt C durch Smooth-Kopplung der pinken Handles an gemeinsamen Ecken gelöst.
+
+**Erkenntnis während der Messung:** Für die Glätte zählt nur der Anteil der Querableitung *quer* zur Kante. Dieser Anteil wird sphärisch interpoliert, der Anteil *entlang* der Kante getrennt als Zahl. Erst damit wurde der Knick zwischen Ecke und Kantenpunkt 0 (vorher bis 1,3°).
+
+**Für B2 offen:** Mesh-Aufbau im neuen Modus, Normalen analytisch (Randnormale = Kantentangente × Querableitung ist bereits als Funktion vorhanden), Umschalter im Panel.
 
 ---
 
