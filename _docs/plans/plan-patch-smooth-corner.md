@@ -1,6 +1,6 @@
 # Plan: Schritt C – Smooth / Corner an gemeinsamen Punkten
 
-Status: **Abgestimmt – wartet auf Start (C1)**
+Status: **C1 erledigt** – C2 (Bedienung) offen
 Vorgänger: Schritt A (Kanten verbinden), Schritt B (`plan-patch-surface-tangent.md`, Smooth Edges)
 
 ---
@@ -96,6 +96,24 @@ Beispiel Ecke: Kippst du in A die Nachbarkante nach oben, kippt die Nachbarkante
 - **C3 – optional:** dasselbe Smooth/Corner-Prinzip für die beiden **pinken** Handles an Kantenpunkten **innerhalb** eines Patches (Kante läuft glatt durch den Punkt). Heute sind sie unabhängig.
 
 ---
+
+## Messbericht C1
+
+Tests: `src/engine/patch-smooth-joint.test.ts`. Aufbau: zwei ungleiche Smooth-Edges-Dreiecke, gemeinsame Kante mit Kantenpunkt in der Mitte (zwei Links), dritte Ecken unterschiedlich angehoben → Nachbarkanten **nicht** in einer Ebene, gelbe Handles beliebig.
+
+| Gelenke | max. Knick entlang der ganzen Kante (inkl. Ecken) |
+|---|---|
+| Corner (keine Kopplung) | 54,46° |
+| Smooth (nach einem Sync-Durchlauf) | **0,00014°** |
+
+- Partner-Handle am Kantenpunkt zeigt quer zur Kante exakt gegenüber, Länge unverändert.
+- Corner-Gelenke bleiben unangetastet; Gelenk-Zustand wird auf den Partner übertragen.
+- Idempotent in beide Richtungen (kein Hin-und-her).
+- Sternpunkte (Ecke mit zwei gemeinsamen Kanten) werden nicht gekoppelt.
+
+**Nebenbei behoben (aus Schritt A):** Bei zwei Links zum selben Partner (geteilte Kante) wurde pro Durchlauf nur der erste angeglichen. Jetzt werden alle Links zu einem Partner gemeinsam angewendet.
+
+**Achse an Kantenpunkten:** Richtung pinker Handle → pinker Handle durch den Punkt (eine Achse für beide Links des Punkts, sonst könnten sich die Patches gegenseitig korrigieren).
 
 ## Entscheidungen
 

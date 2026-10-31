@@ -143,7 +143,7 @@ const EPSILON = 1e-9;
 function pointsDiffer(a: readonly PatchPoint[], b: readonly PatchPoint[]): boolean {
   if (a.length !== b.length) {return true;}
   const keys = ['pos', 'handleNext', 'handlePrev', 'handleCrossIn', 'handleCrossOut'] as const;
-  return a.some((p, i) => keys.some((k) => dist(p[k], b[i][k]) > EPSILON));
+  return a.some((p, i) => p.joint !== b[i].joint || keys.some((k) => dist(p[k], b[i][k]) > EPSILON));
 }
 
 /** A link that still makes sense: partner exists, both segments are neighbors, partner links back. */
@@ -166,9 +166,140 @@ export function isEdgeLinkValid(
   );
 }
 
+/** Rotates a local direction vector into world space (or back with `inverse`). */
+function rotateVector(v: Vec3, transform: EntityTransform, inverse = false): Vector3 {
+  const q = rotationOf(transform);
+  return new Vector3(v.x, v.y, v.z).applyQuaternion(inverse ? q.invert() : q);
+}
+
+/** Valid links of `entity` touching `pointId`. */
+function linksAtPoint(
+  entity: AssetEntity,
+  params: PatchParams,
+  pointId: string,
+  findEntity: (id: string) => AssetEntity | undefined,
+): PatchEdgeLink[] {
+  const owner = { ...entity, patchParams: params };
+  return (params.edgeLinks ?? []).filter(
+    (l) => (l.startPointId === pointId || l.endPointId === pointId) && isEdgeLinkValid(owner, l, findEntity),
+  );
+}
+
+type CrossHandleKey = 'handleCrossIn' | 'handleNext' | 'handlePrev';
+
 /**
- * Brings every patch linked to `sourceId` (and further along chains) in line with it.
- * Each patch is visited once; returns the new points per changed entity.
+ * The handle that decides how the surface leaves the shared edge at `pointId`
+ * ("cross handle"): the yellow handle at edge points, the other edge's pink handle at
+ * corners. Null where the point is shared by more than one edge line (star points).
+ */
+export function crossHandleKeyAt(
+  params: PatchParams,
+  pointId: string,
+  segment: PatchSegment,
+  linkCount: number,
+): CrossHandleKey | null {
+  const corner = params.cornerIds.includes(pointId);
+  if (!corner) {return linkCount <= 2 ? 'handleCrossIn' : null;}
+  if (linkCount > 1) {return null;}
+  const other = segment.startPointId === pointId ? segment.endPointId : segment.startPointId;
+  const keys = segmentHandleKeys(params, pointId, other);
+  if (!keys) {return null;}
+  return keys.a === 'handleNext' ? 'handlePrev' : 'handleNext';
+}
+
+/**
+ * Smooth joint rule: turns the partner's cross handle around the shared edge axis so its
+ * part across the axis points exactly opposite the source's. The partner keeps the length
+ * of that part and its part along the axis.
+ */
+export function alignSmoothCrossHandle(
+  source: { point: PatchPoint; key: CrossHandleKey; transform: EntityTransform; axis: Vec3 },
+  partner: { point: PatchPoint; key: CrossHandleKey; transform: EntityTransform },
+): PatchPoint | null {
+  const axis = rotateVector(source.axis, source.transform);
+  if (axis.lengthSq() < 1e-20) {return null;}
+  axis.normalize();
+  const hs = rotateVector(sub(source.point[source.key], source.point.pos), source.transform);
+  const perpS = hs.clone().addScaledVector(axis, -hs.dot(axis));
+  const perpSLen = perpS.length();
+  if (perpSLen < 1e-9) {return null;}
+
+  const hp = rotateVector(sub(partner.point[partner.key], partner.point.pos), partner.transform);
+  const alongP = hp.dot(axis);
+  const perpPLen = hp.clone().addScaledVector(axis, -alongP).length();
+  const length = perpPLen > 1e-9 ? perpPLen : perpSLen;
+  const world = axis.clone().multiplyScalar(alongP).addScaledVector(perpS, -length / perpSLen);
+  const local = rotateVector({ x: world.x, y: world.y, z: world.z }, partner.transform, true);
+  const pos = partner.point.pos;
+  const next: PatchPoint = {
+    ...partner.point,
+    [partner.key]: { x: pos.x + local.x, y: pos.y + local.y, z: pos.z + local.z },
+  };
+  if (partner.key === 'handleCrossIn') {
+    // Keep the (geometry-free) out handle opposite, as the inspector does.
+    const out = sub(partner.point.handleCrossOut, pos);
+    const outLen = Math.hypot(out.x, out.y, out.z);
+    const inLen = local.length();
+    if (inLen > 1e-12) {
+      const k = -outLen / inLen;
+      next.handleCrossOut = { x: pos.x + local.x * k, y: pos.y + local.y * k, z: pos.z + local.z * k };
+    }
+  }
+  return next;
+}
+
+function sub(a: Vec3, b: Vec3): Vec3 {
+  return { x: a.x - b.x, y: a.y - b.y, z: a.z - b.z };
+}
+
+/** Applies the smooth joints of `link` from the source patch onto the partner points. */
+function applyJoints(
+  source: AssetEntity,
+  sourceParams: PatchParams,
+  partner: AssetEntity,
+  partnerParams: PatchParams,
+  link: PatchEdgeLink,
+  findEntity: (id: string) => AssetEntity | undefined,
+): PatchPoint[] {
+  let points = partnerParams.points;
+  const pairs: [string, string][] = [
+    [link.startPointId, link.partnerStartPointId],
+    [link.endPointId, link.partnerEndPointId],
+  ];
+  const segment = { startPointId: link.startPointId, endPointId: link.endPointId };
+  const partnerSegment = { startPointId: link.partnerStartPointId, endPointId: link.partnerEndPointId };
+  for (const [sId, pId] of pairs) {
+    const sPoint = sourceParams.points.find((p) => p.id === sId);
+    const pPoint = points.find((p) => p.id === pId);
+    if (!sPoint || !pPoint) {continue;}
+    const joint = sPoint.joint ?? 'corner';
+    let nextPoint: PatchPoint = pPoint.joint === sPoint.joint ? pPoint : { ...pPoint, joint };
+    if (joint === 'smooth') {
+      const sKey = crossHandleKeyAt(sourceParams, sId, segment, linksAtPoint(source, sourceParams, sId, findEntity).length);
+      const currentPartner = { ...partnerParams, points };
+      const pKey = crossHandleKeyAt(currentPartner, pId, partnerSegment, linksAtPoint(partner, currentPartner, pId, findEntity).length);
+      const keys = segmentHandleKeys(sourceParams, sId, sId === segment.startPointId ? segment.endPointId : segment.startPointId);
+      if (sKey && pKey && keys) {
+        // Edge points: one axis through the point (pink to pink) so both of its links agree.
+        const axis = sKey === 'handleCrossIn'
+          ? sub(sPoint.handleNext, sPoint.handlePrev)
+          : sub(sPoint[keys.a], sPoint.pos);
+        const aligned = alignSmoothCrossHandle(
+          { point: sPoint, key: sKey, transform: source.transform, axis },
+          { point: nextPoint, key: pKey, transform: partner.transform },
+        );
+        if (aligned) {nextPoint = aligned;}
+      }
+    }
+    if (nextPoint !== pPoint) {points = replacePatchPoint(points, nextPoint);}
+  }
+  return points;
+}
+
+/**
+ * Brings every patch linked to `sourceId` (and further along chains) in line with it:
+ * shared edges and, at smooth joints, the cross handles. All links to one partner are
+ * applied together; each patch is visited once. Returns the new points per changed entity.
  */
 export function propagateEdgeLinks(
   sourceIds: readonly string[],
@@ -182,29 +313,41 @@ export function propagateEdgeLinks(
     const points = updated.get(entity.id);
     return entity.patchParams && points ? { ...entity.patchParams, points } : entity.patchParams;
   };
+  const current = (id: string): AssetEntity | undefined => {
+    const entity = findEntity(id);
+    const params = entity ? paramsOf(entity) : undefined;
+    return entity && params ? { ...entity, patchParams: params } : entity;
+  };
 
   for (let id = queue.shift(); id !== undefined; id = queue.shift()) {
-    const source = findEntity(id);
-    const sourceParams = source ? paramsOf(source) : undefined;
+    const source = current(id);
+    const sourceParams = source?.patchParams;
     if (!source || !sourceParams) {continue;}
-    for (const link of sourceParams.edgeLinks ?? []) {
-      if (visited.has(link.partnerEntityId)) {continue;}
-      const partner = findEntity(link.partnerEntityId);
-      const partnerParams = partner ? paramsOf(partner) : undefined;
-      if (!partner || !partnerParams || !isEdgeLinkValid(source, link, findEntity)) {continue;}
-      const shape = captureEdgeShape(sourceParams, source.transform, {
-        startPointId: link.startPointId,
-        endPointId: link.endPointId,
-      });
-      if (!shape) {continue;}
-      const next = applyEdgeShape(partnerParams, partner.transform, {
-        startPointId: link.partnerStartPointId,
-        endPointId: link.partnerEndPointId,
-      }, shape);
-      if (!next || !pointsDiffer(next, partnerParams.points)) {continue;}
-      updated.set(partner.id, next);
-      visited.add(partner.id);
-      queue.push(partner.id);
+    const partnerIds = [...new Set((sourceParams.edgeLinks ?? []).map((l) => l.partnerEntityId))];
+    for (const partnerId of partnerIds) {
+      if (visited.has(partnerId)) {continue;}
+      const partner = current(partnerId);
+      const partnerParams = partner?.patchParams;
+      if (!partner || !partnerParams) {continue;}
+      let points = partnerParams.points;
+      for (const link of sourceParams.edgeLinks ?? []) {
+        if (link.partnerEntityId !== partnerId || !isEdgeLinkValid(source, link, current)) {continue;}
+        const shape = captureEdgeShape(sourceParams, source.transform, {
+          startPointId: link.startPointId,
+          endPointId: link.endPointId,
+        });
+        if (!shape) {continue;}
+        const shaped = applyEdgeShape({ ...partnerParams, points }, partner.transform, {
+          startPointId: link.partnerStartPointId,
+          endPointId: link.partnerEndPointId,
+        }, shape);
+        if (shaped) {points = shaped;}
+        points = applyJoints(source, sourceParams, partner, { ...partnerParams, points }, link, current);
+      }
+      if (!pointsDiffer(points, partnerParams.points)) {continue;}
+      updated.set(partnerId, points);
+      visited.add(partnerId);
+      queue.push(partnerId);
     }
   }
   return updated;
