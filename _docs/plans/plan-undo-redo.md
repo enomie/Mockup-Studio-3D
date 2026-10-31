@@ -1,6 +1,6 @@
 # Plan: Undo / Redo
 
-Status: **Entwurf – wartet auf Freigabe**
+Status: **Abgestimmt – wartet auf Start**
 
 ## Ausgangslage
 
@@ -32,7 +32,7 @@ Status: **Entwurf – wartet auf Freigabe**
 - Auswahl wechseln, Tool wechseln (W/E/R/T), Viewport-Helfer, Export-Einstellungen
 - Laufende Physik-Simulation (Start/Reset haben eigene Logik)
 
-**Später (eigener Schritt, falls gewünscht):** Licht, Environment, Ground, Material-/Farb-Bibliothek.
+**Phase 2 (beschlossen):** Licht, Environment, Ground, Material-/Farb-Bibliothek – „alles“. Gleicher Snapshot-Mechanismus, der Verlaufseintrag wird um diese Zustände erweitert. Kamera, Auswahl und Tool-Wechsel bleiben weiterhin außen vor.
 
 ## Technischer Ansatz
 
@@ -66,7 +66,7 @@ Status: **Entwurf – wartet auf Freigabe**
 4. Store, Buttons im TopSubBar, Shortcuts
 5. Sonderfälle (Bilder, Physik, Patch-Auswahl)
 
-## Offene Punkte
+## Entscheidungen
 
-- Sollen Licht/Environment später auch undo-bar werden?
-- 100 Schritte als Limit ok?
+- Licht/Environment/Ground/Bibliotheken: **ja**, in Phase 2.
+- Limit: **100 Schritte**.
