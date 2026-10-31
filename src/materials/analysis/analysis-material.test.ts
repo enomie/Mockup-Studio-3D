@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { DoubleSide, MeshPhysicalNodeMaterial } from 'three/webgpu';
+import { DoubleSide, MeshPhysicalNodeMaterial, Texture } from 'three/webgpu';
 import { MATERIAL_PRESETS } from '@/data/material-presets';
-import { createMaterialFromPreset } from '@/engine/material-resolver';
+import { createImageOnPresetMaterial, createMaterialFromPreset } from '@/engine/material-resolver';
 import {
   MATERIAL_PAINT_METALLIC_ID,
   MATERIAL_WIREFRAME_ID,
@@ -35,5 +35,24 @@ describe('analysis and paint materials', () => {
     expect(wire.outputNode).toBeTruthy();
     expect(wire.wireframe).toBe(true);
     expect(wire.side).toBe(DoubleSide);
+  });
+});
+
+describe('fabric cloth (image-on-preset) path', () => {
+  const resolve = (id: string) => MATERIAL_PRESETS.find((entry) => entry.id === id) ?? null;
+
+  it('keeps Paint Metallic color and clearcoat without an image', () => {
+    const material = createImageOnPresetMaterial(resolve, MATERIAL_PAINT_METALLIC_ID, null, 1, 1);
+    expect(material).toBeInstanceOf(MeshPhysicalNodeMaterial);
+    expect((material as MeshPhysicalNodeMaterial).clearcoat).toBe(1);
+    expect(material.color.getHex()).not.toBe(0xffffff);
+    expect(material.side).toBe(DoubleSide);
+  });
+
+  it('uses the analysis shader even when an image is present', () => {
+    const zebra = createImageOnPresetMaterial(resolve, MATERIAL_ZEBRA_ANALYSIS_ID, new Texture(), 1, 1);
+    expect(zebra.outputNode).toBeTruthy();
+    const wire = createImageOnPresetMaterial(resolve, MATERIAL_WIREFRAME_ID, null, 1, 1);
+    expect(wire.wireframe).toBe(true);
   });
 });

@@ -432,6 +432,13 @@ Tint auf Entity-Slots (`faceTints`) multipliziert weiterhin Preset-Farbe — wie
 | `material-glass-wine-bottle` | Glass (wine bottle) | transmission | — | — |
 | `material-glass-frosted-pane` | Glass Frosted (pane) | transmission | — | — |
 | `material-glass-frosted-solid` | Glass Frosted (solid) | transmission | — | — |
+| `material-paint-metallic` | Paint Metallic | solid-pbr | — (Clearcoat 1.0 / 0.05) | — |
+| `material-zebra-analysis` | Zebra Analysis | **analysis** (`analysisMode: zebra`) | — | — |
+| `material-wireframe` | Wireframe | **analysis** (`analysisMode: wireframe`) | — | — |
+
+**Analysis-Kind (2026-10-31):** Unlit Prüf-Materialien aus der Demo `_docs/demo-extern/minimalistisches_dreiecks_patch_studio (10).html` (dort Shading-Modi Lack / Zebra / Dreiecksnetz). Für **alle** Slots wählbar, werden gespeichert und gerendert, ignorieren Szenenlicht. Engine: `src/materials/analysis/analysis-material.ts` — `MeshStandardNodeMaterial` mit `outputNode` (Zebra: `step(0, sin(reflectView.y * stripeScale))`, Default 16; Wireframe: `wireframe: true`, Farbe `color`), DoubleSide. Editor: Zebra → *Stripe scale* (2–64), Wireframe → *Color*. Bild-auf-Preset-Pfade (Print usw.) nutzen bei `analysis` PBR + Bild; **Fabric Cloth** zeigt das Analysis-Material auch mit Bild.
+
+**Fabric Cloth ohne Bild:** `createImageOnPresetMaterial` nutzt ohne Bild den normalen `createMaterialFromPreset` (Farbe/Clearcoat bleiben). Mit Bild ersetzt das Bild die Farbe (Struktur bleibt).
 
 **Migration (Load):** `material-silver` → `material-chrome`; `wood-mahogany` → `wood-soft`. **`lineColor`** nur Grid Paper opaque. Sampling → *Procedural — Sampling (normativ)*; Kugel-Mesh → [`requirements-assets-sphere.md`](./requirements-assets-sphere.md).
 

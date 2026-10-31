@@ -6,6 +6,15 @@ Kurze Historie: **wie** wir uns entschieden haben (Warum, Alternativen). Require
 
 ## Einträge
 
+### 2026-10-31 — Analysis-Materialien (Zebra, Wireframe) + Paint Metallic
+- **Entscheidung:** Die Shading-Modi der Patch-Demo werden **normale Built-in-Materialien** (neues `kind: 'analysis'` für Zebra/Wireframe, Paint Metallic als `solid-pbr` mit Clearcoat), für alle Slots, ohne Filter. Umsetzung als `MeshStandardNodeMaterial` + `outputNode` statt `MeshBasicNodeMaterial`.
+- **Grund:** User will sie wie jedes Material zuweisen; Render/Export und fehlendes Licht sind ok. `outputNode` ist ebenso unlit, hält aber den Rückgabetyp des Resolvers – keine Typ-Kaskade.
+- **Verworfen:** Anzeige-Modus (Overlay, nicht gespeichert) – nicht gewünscht.
+
+### 2026-10-31 — Fix: Fabric Cloth färbte solid-pbr weiß
+- **Entscheidung:** `createImageOnPresetMaterial` ohne Bild (und bei `analysis` immer) → `createMaterialFromPreset`.
+- **Grund:** `createStructureBaseMaterial` setzt bei `solid-pbr` Albedo fest auf Weiß (gedacht fürs Bild darüber), wurde aber auch ohne Bild benutzt → Paint Metallic und User-PBR auf Stoff weiß; `analysis` war dort unbekannt.
+
 ### 2026-10-31 — Umgesetzte Pläne werden gelöscht
 - **Entscheidung:** Nach der Umsetzung kommt ein Plan aus `_docs/plans/` weg; aktueller Stand → Feature-Doku/Requirements, Begründung → dieses Tagebuch, Plan selbst → Git-Historie. Alle 13 umgesetzten Pläne entfernt.
 - **Grund:** Veraltete Pläne widersprechen dem Code und verwirren (viele Zwischenstände).

@@ -541,8 +541,10 @@ export function createImageOnPresetMaterial(
     return createPassepartoutPbrMaterial(resolvePreset, FABRIC_PLACEHOLDER_SURFACE);
   }
 
-  if (!tex) {
-    const material = createStructureBaseMaterial(preset, 'default');
+  // Without an image (or for unlit analysis presets, which ignore images) use the
+  // regular preset pipeline so color, clearcoat and analysis shaders are kept.
+  if (!tex || preset.kind === 'analysis') {
+    const material = createMaterialFromPreset(preset);
     material.side = DoubleSide;
     return material;
   }
