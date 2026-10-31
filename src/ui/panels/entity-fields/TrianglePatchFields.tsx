@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Trash2 } from 'lucide-react';
+import { ClipboardPaste, Copy, Trash2, X } from 'lucide-react';
 import { Icon } from '@/ui/components/Icon';
 import { removePatchPoint } from '@/scene/triangle-patch-point-edit';
 import { PanelToggleGroup, type PanelToggleOption } from '@/ui/components/PanelToggleGroup';
@@ -7,6 +7,15 @@ import { SubPanelSection } from '@/ui/components/SubPanelSection';
 import { PanelAxisField } from '@/ui/components/PanelAxisField/PanelAxisField';
 import { MaterialSelect } from '@/ui/panels/MaterialSelect';
 import { useAppStore } from '@/ui/store/use-app-store';
+import {
+  copyPatchPointToClipboard,
+  pastePatchPointFromClipboard,
+  setPatchPointClipboard,
+  setPatchPointPasteMode,
+  usePatchPointClipboard,
+  usePatchPointPasteMode,
+} from '@/ui/store/patch-point-clipboard-store';
+import type { PatchPointPasteMode } from '@/scene/triangle-patch-point-clipboard';
 import {
   setKindParams,
   selectPatchHandle,
@@ -41,6 +50,12 @@ const MIRROR_OPTIONS: PanelToggleOption<keyof PatchMirror>[] = [
   { key: 'z', label: 'Z', title: 'Mirror across the XY plane (flips Z)' },
 ];
 
+const PASTE_MODES: { key: PatchPointPasteMode; label: string }[] = [
+  { key: 'all', label: 'Position & Handles' },
+  { key: 'position', label: 'Position Only' },
+  { key: 'handles', label: 'Handles Only' },
+];
+
 const TARGETS: { key: PatchHandleTarget; label: string; color: string }[] = [
   { key: 'pos', label: 'Anchor Point', color: '#0284c7' },
   { key: 'handleNext', label: 'Handle Forward (Pink)', color: '#ec4899' },
@@ -51,6 +66,8 @@ const TARGETS: { key: PatchHandleTarget; label: string; color: string }[] = [
 
 export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
   const materials = useAppStore((s) => s.materials);
+  const clipboard = usePatchPointClipboard();
+  const pasteMode = usePatchPointPasteMode();
   const slots = entity.materials;
 
   const patchParams: PatchParams = entity.patchParams ??
@@ -275,6 +292,31 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
                       }
                     }}
                   />
+                  <button
+                    type="button"
+                    className="btn btn--icon"
+                    aria-label={`Copy ${node.name}`}
+                    title="Copy point position and handles (Ctrl+C)"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      copyPatchPointToClipboard(entity.id, node.id);
+                    }}
+                  >
+                    <Icon icon={Copy} />
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn--icon"
+                    aria-label={`Paste onto ${node.name}`}
+                    title="Paste copied point (Ctrl+V)"
+                    disabled={!clipboard}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      pastePatchPointFromClipboard(entity.id, node.id, pasteMode);
+                    }}
+                  >
+                    <Icon icon={ClipboardPaste} />
+                  </button>
                   {corner ? null : (
                     <button
                       type="button"
@@ -383,6 +425,32 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
             );
           })}
         </ul>
+        {clipboard ? (
+          <div className="panel-field-stack">
+            <div className="patch-point-inspector-point">
+              <span className="panel-field-label">Copied: {clipboard.label}</span>
+              <button
+                type="button"
+                className="btn btn--icon"
+                aria-label="Clear copied point"
+                title="Clear copied point"
+                onClick={() => { setPatchPointClipboard(null); }}
+              >
+                <Icon icon={X} />
+              </button>
+            </div>
+            <select
+              className="panel-field-select"
+              aria-label="Paste mode"
+              value={pasteMode}
+              onChange={(e) => { setPatchPointPasteMode(e.target.value as PatchPointPasteMode); }}
+            >
+              {PASTE_MODES.map((m) => (
+                <option key={m.key} value={m.key}>{m.label}</option>
+              ))}
+            </select>
+          </div>
+        ) : null}
         <button
           type="button"
           className="btn"

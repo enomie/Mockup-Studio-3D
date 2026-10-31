@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { ViewportFrame } from '@/ui/components/ViewportFrame';
 import { useCameraViewShortcuts } from '@/ui/hooks/useCameraViewShortcuts';
 import { useViewportToolShortcuts } from '@/ui/hooks/useViewportToolShortcuts';
+import { usePatchPointClipboardShortcuts } from '@/ui/hooks/usePatchPointClipboardShortcuts';
 import { LeftDetailPanel } from '@/ui/shell/LeftDetailPanel';
 import { LeftMainPanel } from '@/ui/shell/LeftMainPanel';
 import { LeftSubPanel } from '@/ui/shell/LeftSubPanel';
@@ -14,6 +15,7 @@ import { TopSubBar } from '@/ui/shell/TopSubBar';
 
 export function AppShell() {
   useViewportToolShortcuts();
+  usePatchPointClipboardShortcuts();
   useCameraViewShortcuts();
 
   const [leftSelected, setLeftSelected] = useState('assets');
