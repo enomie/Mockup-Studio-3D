@@ -1,6 +1,6 @@
 # Plan: Schritt C3 – Zwei Schalter pro Punkt: Kante und Fläche
 
-Status: **Abgestimmt – wartet auf Start**
+Status: **C3a erledigt** – C3b (Bedienung) offen
 Vorgänger: `plan-patch-smooth-corner.md` (C1/C2: Gelenke zwischen verbundenen Patches), `plan-patch-classic-edge-correction.md` (D: Classic + Kanten-Korrektur)
 
 ---
@@ -108,6 +108,16 @@ Die zwei Schalter sind **unabhängig**. Damit ist auch der allererste Wunsch abg
 
 - **C3a – Regeln + Daten + Tests:** `edgeTangent`, Kolinearitäts-Regel (gemeinsamer Helfer für Gizmo/Inspector/Paste), Wegfall der Wippe, Einstufung Altbestand, Shift-Präzisierung, Übertragung an Partner.
 - **C3b – Bedienung:** zwei Schalter + „Retract handles“ im Inspector, Würfel-Handles, Cross Out ausblenden bzw. als Partner-Gegenüber anzeigen und ziehbar machen.
+
+## Umsetzung C3a
+
+- `PatchPoint.edgeTangent` + `resolveEdgeTangent` (Altbestand: < 1° → Smooth) + `applyEdgeTangentRule` (gemeinsam für Gizmo und Inspector).
+- Wippe zwischen den gelben Handles entfernt (Gizmo und Inspector).
+- Shift: rosa → Kante Corner, gelb → Fläche Corner.
+- Neu eingefügte Punkte: Kante Smooth. Punkt-Paste: Kanten-Zustand wird aus den neuen Handles neu bestimmt.
+- Verbundene Kanten: Kanten-Zustand wird an den Partner übertragen.
+- Tests: `src/scene/triangle-patch-edge-tangent.test.ts` (7). Shift im Gizmo ist nicht automatisch getestet (braucht echte Tastatur/Viewport).
+- Sichtbar ändert sich für dich bis C3b: die gelben Handles sind frei (keine Wippe), rosa Handles an geraden Punkten drehen gemeinsam, Shift trennt sie.
 
 ## Danach (eigener Plan)
 

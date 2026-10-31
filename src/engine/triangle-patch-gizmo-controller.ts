@@ -28,6 +28,7 @@ import {
   isPatchAssetKind,
 } from '@/scene/asset-triangle-patch';
 import type { EntityRegistry } from './entity-registry';
+import { applyEdgeTangentRule } from '@/scene/triangle-patch-node-edit';
 
 export const PATCH_GIZMO_HANDLE_ROLE = 'patchGizmoHandle';
 
@@ -590,32 +591,21 @@ export class TrianglePatchGizmoController {
         }
       }
     } else {
-      // Shift while dragging a handle breaks a smooth joint (Illustrator-style corner).
-      if (isShiftHeld() && node.joint === 'smooth') {node.joint = 'corner';}
-      // Handle moved
+      // Shift while dragging breaks the pair being dragged (Illustrator-style corner):
+      // pink handles -> edge switch, yellow handles -> surface switch (joint with the partner).
+      if (isShiftHeld()) {
+        if (targetKey === 'handleNext' || targetKey === 'handlePrev') {
+          node.edgeTangent = 'corner';
+        } else if (node.joint === 'smooth') {
+          node.joint = 'corner';
+        }
+      }
       node[targetKey].x = newLocal.x;
       node[targetKey].y = newLocal.y;
       node[targetKey].z = newLocal.z;
-
-      // Seesaw counter-coupling for cross-tangents (CrossIn / CrossOut)
-      if (targetKey === 'handleCrossIn' || targetKey === 'handleCrossOut') {
-        const isCrossIn = targetKey === 'handleCrossIn';
-        const activeKey = isCrossIn ? 'handleCrossIn' : 'handleCrossOut';
-        const partnerKey = isCrossIn ? 'handleCrossOut' : 'handleCrossIn';
-
-        const p0 = new Vector3(node.pos.x, node.pos.y, node.pos.z);
-        const activeH = new Vector3(node[activeKey].x, node[activeKey].y, node[activeKey].z);
-        const partnerH = new Vector3(node[partnerKey].x, node[partnerKey].y, node[partnerKey].z);
-
-        const vOffset = activeH.clone().sub(p0);
-        if (vOffset.length() > 0.0001) {
-          const lenOpp = partnerH.distanceTo(p0);
-          partnerH.copy(p0).addScaledVector(vOffset.normalize(), -lenOpp);
-          node[partnerKey].x = partnerH.x;
-          node[partnerKey].y = partnerH.y;
-          node[partnerKey].z = partnerH.z;
-        }
-      }
+      // The yellow handles are independent (no seesaw); a smooth edge keeps both pinks on one line.
+      this.commitPoint(this.activeEntityId, applyEdgeTangentRule(node, targetKey));
+      return true;
     }
 
     this.commitPoint(this.activeEntityId, node);

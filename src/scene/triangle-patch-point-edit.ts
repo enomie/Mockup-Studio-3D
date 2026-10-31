@@ -67,6 +67,7 @@ export function insertPatchPoint(
     handlePrev: p012,
     handleCrossIn: addVec(split, crossIn),
     handleCrossOut: addVec(split, crossOut),
+    edgeTangent: 'smooth',
   };
 
   const points = params.points.map((point) => {

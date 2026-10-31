@@ -17,6 +17,12 @@ export interface PatchPoint {
    * handles of both patches (no crease), 'corner' leaves them free. Absent = corner.
    */
   joint?: PatchJoint;
+  /**
+   * Edge switch: 'smooth' keeps both pink handles on one line (the boundary runs through
+   * the point without a kink, lengths free), 'corner' leaves them free. Absent: derived
+   * from the handles (see resolveEdgeTangent).
+   */
+  edgeTangent?: PatchJoint;
 }
 
 export type PatchJoint = 'smooth' | 'corner';
@@ -107,6 +113,7 @@ export function clonePatchPoint(point: PatchPoint): PatchPoint {
     handleCrossIn: { ...point.handleCrossIn },
     handleCrossOut: { ...point.handleCrossOut },
     ...(point.joint ? { joint: point.joint } : {}),
+    ...(point.edgeTangent ? { edgeTangent: point.edgeTangent } : {}),
   };
 }
 

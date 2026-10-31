@@ -39,6 +39,7 @@ import {
   type PatchParams,
 } from '@/scene/asset-triangle-patch';
 import {
+  applyEdgeTangentRule,
   rotatePatchNodeHandlesAroundAnchor,
   translatePatchNodeAnchor,
 } from '@/scene/triangle-patch-node-edit';
@@ -158,35 +159,8 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
       };
 
       nodeCopy[selectedTargetKey][axis] = value;
-
-      if (selectedTargetKey === 'handleCrossIn' || selectedTargetKey === 'handleCrossOut') {
-        const isCrossIn = selectedTargetKey === 'handleCrossIn';
-        const partnerKey = isCrossIn ? 'handleCrossOut' : 'handleCrossIn';
-
-        const p0 = nodeCopy.pos;
-        const curH = nodeCopy[selectedTargetKey];
-        const oppH = nodeCopy[partnerKey];
-
-        const dx = curH.x - p0.x;
-        const dy = curH.y - p0.y;
-        const dz = curH.z - p0.z;
-        const len = Math.hypot(dx, dy, dz);
-
-        const oppDx = oppH.x - p0.x;
-        const oppDy = oppH.y - p0.y;
-        const oppDz = oppH.z - p0.z;
-        const oppLen = Math.hypot(oppDx, oppDy, oppDz);
-
-        if (len > 0.0001) {
-          nodeCopy[partnerKey] = {
-            x: p0.x - (dx / len) * oppLen,
-            y: p0.y - (dy / len) * oppLen,
-            z: p0.z - (dz / len) * oppLen,
-          };
-        }
-      }
-
-      commitPoint(nodeCopy);
+      // Yellow handles are independent (no seesaw); a smooth edge keeps both pinks on one line.
+      commitPoint(applyEdgeTangentRule(nodeCopy, selectedTargetKey));
     }
   };
 
@@ -229,21 +203,6 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
       y: p0.y + dy,
       z: p0.z + dz,
     };
-
-    if (selectedTargetKey === 'handleCrossIn' || selectedTargetKey === 'handleCrossOut') {
-      const isCrossIn = selectedTargetKey === 'handleCrossIn';
-      const partnerKey = isCrossIn ? 'handleCrossOut' : 'handleCrossIn';
-      const oppH = nodeCopy[partnerKey];
-      const oppLen = Math.hypot(oppH.x - p0.x, oppH.y - p0.y, oppH.z - p0.z);
-      const newLen = Math.hypot(dx, dy, dz);
-      if (newLen > 0.0001) {
-        nodeCopy[partnerKey] = {
-          x: p0.x - (dx / newLen) * oppLen,
-          y: p0.y - (dy / newLen) * oppLen,
-          z: p0.z - (dz / newLen) * oppLen,
-        };
-      }
-    }
 
     commitPoint(nodeCopy);
   };

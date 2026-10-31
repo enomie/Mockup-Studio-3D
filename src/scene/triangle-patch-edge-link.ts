@@ -143,7 +143,7 @@ const EPSILON = 1e-9;
 function pointsDiffer(a: readonly PatchPoint[], b: readonly PatchPoint[]): boolean {
   if (a.length !== b.length) {return true;}
   const keys = ['pos', 'handleNext', 'handlePrev', 'handleCrossIn', 'handleCrossOut'] as const;
-  return a.some((p, i) => p.joint !== b[i].joint || keys.some((k) => dist(p[k], b[i][k]) > EPSILON));
+  return a.some((p, i) => p.joint !== b[i].joint || p.edgeTangent !== b[i].edgeTangent || keys.some((k) => dist(p[k], b[i][k]) > EPSILON));
 }
 
 /** A link that still makes sense: partner exists, both segments are neighbors, partner links back. */
@@ -274,6 +274,10 @@ function applyJoints(
     if (!sPoint || !pPoint) {continue;}
     const joint = sPoint.joint ?? 'corner';
     let nextPoint: PatchPoint = pPoint.joint === sPoint.joint ? pPoint : { ...pPoint, joint };
+    // The edge switch belongs to the shared edge line: same state on both sides.
+    if (sPoint.edgeTangent !== undefined && nextPoint.edgeTangent !== sPoint.edgeTangent) {
+      nextPoint = { ...nextPoint, edgeTangent: sPoint.edgeTangent };
+    }
     if (joint === 'smooth') {
       const sKey = crossHandleKeyAt(sourceParams, sId, segment, linksAtPoint(source, sourceParams, sId, findEntity).length);
       const currentPartner = { ...partnerParams, points };
