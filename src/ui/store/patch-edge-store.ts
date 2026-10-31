@@ -17,7 +17,6 @@ import {
   type PatchSegment,
 } from '@/scene/triangle-patch-edge-link';
 import type { PatchEdgeSelection } from '@/engine/triangle-patch-add-point-tool';
-import { applyEdgeTangentRule } from '@/scene/triangle-patch-node-edit';
 import { setKindParams } from './app-store-asset-params';
 import * as store from './app-store-internals';
 
@@ -222,39 +221,4 @@ export function flipPatchEdgeLink(entityId: string, link: PatchEdgeLink): void {
     ...(points ? { points } : {}),
     edgeLinks: [...withoutSegmentLinks(partner.params, partnerSegment), back],
   });
-}
-
-/**
- * Sets the edge switch (pink handles) of a point. Smooth turns the other pink handle
- * opposite the leading one (`lead`, the selected handle) and keeps its length.
- */
-export function setPatchEdgeTangent(
-  entityId: string,
-  pointId: string,
-  mode: PatchJoint,
-  lead: 'handleNext' | 'handlePrev' = 'handleNext',
-): void {
-  const owner = findPatch(entityId);
-  const point = owner?.params.points.find((p) => p.id === pointId);
-  if (!owner || !point) {return;}
-  const next = mode === 'smooth'
-    ? applyEdgeTangentRule({ ...point, edgeTangent: 'smooth' }, lead)
-    : { ...point, edgeTangent: 'corner' as const };
-  setKindParams('patch', entityId, { points: owner.params.points.map((p) => (p.id === pointId ? next : p)) });
-  store.sceneApi?.syncPatchLinksFrom(entityId);
-}
-
-/** Pulls both pink handles into the anchor: a sharp point without rounding (edge = corner). */
-export function retractPatchPinkHandles(entityId: string, pointId: string): void {
-  const owner = findPatch(entityId);
-  const point = owner?.params.points.find((p) => p.id === pointId);
-  if (!owner || !point) {return;}
-  const next: PatchPoint = {
-    ...point,
-    handleNext: { ...point.pos },
-    handlePrev: { ...point.pos },
-    edgeTangent: 'corner',
-  };
-  setKindParams('patch', entityId, { points: owner.params.points.map((p) => (p.id === pointId ? next : p)) });
-  store.sceneApi?.syncPatchLinksFrom(entityId);
 }

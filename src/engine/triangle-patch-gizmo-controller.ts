@@ -9,7 +9,6 @@ import {
   OctahedronGeometry,
   Quaternion,
   SphereGeometry,
-  BoxGeometry,
   TorusGeometry,
   Vector3,
   type Object3D,
@@ -28,7 +27,7 @@ import {
   isPatchAssetKind,
 } from '@/scene/asset-triangle-patch';
 import type { EntityRegistry } from './entity-registry';
-import { applyEdgeTangentRule, resolveEdgeTangent } from '@/scene/triangle-patch-node-edit';
+import { crossHandleKeyAt } from '@/scene/triangle-patch-edge-link';
 
 export const PATCH_GIZMO_HANDLE_ROLE = 'patchGizmoHandle';
 
@@ -94,10 +93,6 @@ interface PointHelpers {
 interface HelperResources {
   anchorGeo: SphereGeometry;
   anchorMat: MeshBasicNodeMaterial;
-  /** Corner joint anchor: a cube instead of a sphere. */
-  cornerJointGeo: BoxGeometry;
-  /** Handle of a corner pair (edge or surface switch = corner): a small cube. */
-  cornerHandleGeo: BoxGeometry;
   /** The partner patch's yellow handle shown as this point's counterpart. */
   partnerYellowMat: MeshBasicNodeMaterial;
   jointRingGeo: TorusGeometry;
@@ -137,8 +132,6 @@ function createHelperResources(): HelperResources {
   return {
     anchorGeo: new SphereGeometry(0.025, 16, 16),
     anchorMat: overlayMeshMaterial(0x0284c7),
-    cornerJointGeo: new BoxGeometry(0.04, 0.04, 0.04),
-    cornerHandleGeo: new BoxGeometry(0.026, 0.026, 0.026),
     partnerYellowMat: overlayMeshMaterial(0xf59e0b),
     jointRingGeo: new TorusGeometry(0.038, 0.005, 8, 40),
     jointRingMat: overlayMeshMaterial(0x22c55e),
@@ -228,7 +221,6 @@ export class TrianglePatchGizmoController {
       linePrev: line(2, linePinkMat),
       lineCross: line(3, lineYellowMat),
     };
-    helpers.anchor.userData.defaultGeometry = helpers.anchor.geometry;
     helpers.handleCrossOut.userData.defaultMaterial = helpers.handleCrossOut.material;
     this.helperGroup.add(
       helpers.jointRing,
@@ -523,18 +515,8 @@ export class TrianglePatchGizmoController {
         : h.handleCrossOut.userData.defaultMaterial) as MeshBasicNodeMaterial;
 
       h.anchor.position.copy(pPos);
-      // Corner pairs show cube handles: pink by the edge switch, yellow by the surface joint.
-      const { handleGeo, cornerHandleGeo } = this.helperResources;
-      const edgeCorner = resolveEdgeTangent(node) === 'corner';
-      h.handleNext.geometry = edgeCorner ? cornerHandleGeo : handleGeo;
-      h.handlePrev.geometry = edgeCorner ? cornerHandleGeo : handleGeo;
-      h.handleCrossIn.geometry = linkedIds.has(node.id) && (node.joint ?? 'corner') === 'corner' ? cornerHandleGeo : handleGeo;
-      // Joint marker: smooth = round anchor with a ring, corner = cube.
-      const joint = linkedIds.has(node.id) ? node.joint ?? 'corner' : null;
-      h.anchor.geometry = joint === 'corner'
-        ? this.helperResources.cornerJointGeo
-        : (h.anchor.userData.defaultGeometry as BufferGeometry);
-      h.jointRing.visible = joint === 'smooth';
+      // Shared point marker: a ring around the anchor while the point is coupled.
+      h.jointRing.visible = linkedIds.has(node.id) && node.joint === 'smooth';
       h.jointRing.position.copy(pPos);
       h.handleNext.position.copy(pNext);
       h.handlePrev.position.copy(pPrev);
@@ -613,14 +595,9 @@ export class TrianglePatchGizmoController {
         }
       }
     } else {
-      // Shift while dragging breaks the pair being dragged (Illustrator-style corner):
-      // pink handles -> edge switch, yellow handles -> surface switch (joint with the partner).
-      if (isShiftHeld()) {
-        if (targetKey === 'handleNext' || targetKey === 'handlePrev') {
-          node.edgeTangent = 'corner';
-        } else if (node.joint === 'smooth') {
-          node.joint = 'corner';
-        }
+      // Shift while dragging a coupled handle makes the shared point independent.
+      if (isShiftHeld() && node.joint === 'smooth' && this.isCoupledHandle(params, node.id, targetKey)) {
+        node.joint = 'corner';
       }
       if (targetKey === 'handleCrossOut') {
         // The counterpart is the partner's yellow handle: edit the partner patch.
@@ -631,13 +608,23 @@ export class TrianglePatchGizmoController {
       node[targetKey].x = newLocal.x;
       node[targetKey].y = newLocal.y;
       node[targetKey].z = newLocal.z;
-      // The yellow handles are independent (no seesaw); a smooth edge keeps both pinks on one line.
-      this.commitPoint(this.activeEntityId, applyEdgeTangentRule(node, targetKey));
+      // Every handle moves on its own (no seesaw, no automatic pink pairing).
+      this.commitPoint(this.activeEntityId, node);
       return true;
     }
 
     this.commitPoint(this.activeEntityId, node);
     return true;
+  }
+
+  /**
+   * Whether `key` is a handle that follows the coupled/independent mode at a shared point:
+   * the yellow handle, or at an end point the pink handle of the neighboring edge.
+   */
+  private isCoupledHandle(params: PatchParams, pointId: string, key: PatchHandleTarget): boolean {
+    if (key === 'handleCrossIn' || key === 'handleCrossOut') {return true;}
+    const links = (params.edgeLinks ?? []).filter((l) => l.startPointId === pointId || l.endPointId === pointId);
+    return links.some((l) => crossHandleKeyAt(params, pointId, l, links.length) === key);
   }
 
   /** Partner patch and point sharing `pointId` over an edge link, or null. */

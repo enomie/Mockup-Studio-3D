@@ -13,16 +13,10 @@ export interface PatchPoint {
   handleCrossIn: Vec3;
   handleCrossOut: Vec3;
   /**
-   * Joint with the partner patch at a point on a linked edge: 'smooth' couples the cross
-   * handles of both patches (no crease), 'corner' leaves them free. Absent = corner.
+   * Mode of a point on a shared (linked) edge: 'smooth' = coupled (the partner's handles
+   * mirror this side, no crease), 'corner' = independent. Absent = independent.
    */
   joint?: PatchJoint;
-  /**
-   * Edge switch: 'smooth' keeps both pink handles on one line (the boundary runs through
-   * the point without a kink, lengths free), 'corner' leaves them free. Absent: derived
-   * from the handles (see resolveEdgeTangent).
-   */
-  edgeTangent?: PatchJoint;
 }
 
 export type PatchJoint = 'smooth' | 'corner';
@@ -113,7 +107,6 @@ export function clonePatchPoint(point: PatchPoint): PatchPoint {
     handleCrossIn: { ...point.handleCrossIn },
     handleCrossOut: { ...point.handleCrossOut },
     ...(point.joint ? { joint: point.joint } : {}),
-    ...(point.edgeTangent ? { edgeTangent: point.edgeTangent } : {}),
   };
 }
 

@@ -4,7 +4,7 @@ import { Icon } from '@/ui/components/Icon';
 import { removePatchPoint } from '@/scene/triangle-patch-point-edit';
 import { mergeLinksOnRemove } from '@/scene/triangle-patch-linked-edit';
 import { crossHandleKeyAt, isEdgeLinkValid } from '@/scene/triangle-patch-edge-link';
-import { retractPatchPinkHandles, setPatchEdgeTangent, setPatchJoint } from '@/ui/store/patch-edge-store';
+import { setPatchJoint } from '@/ui/store/patch-edge-store';
 import { PanelToggleGroup, type PanelToggleOption } from '@/ui/components/PanelToggleGroup';
 import { SubPanelSection } from '@/ui/components/SubPanelSection';
 import { RangeSlider } from '@/ui/components/RangeSlider';
@@ -39,8 +39,6 @@ import {
   type PatchParams,
 } from '@/scene/asset-triangle-patch';
 import {
-  applyEdgeTangentRule,
-  resolveEdgeTangent,
   rotatePatchNodeHandlesAroundAnchor,
   translatePatchNodeAnchor,
 } from '@/scene/triangle-patch-node-edit';
@@ -63,11 +61,6 @@ const PASTE_MODES: { key: PatchPointPasteMode; label: string }[] = [
   { key: 'all', label: 'Position & Handles' },
   { key: 'position', label: 'Position Only' },
   { key: 'handles', label: 'Handles Only' },
-];
-
-const SWITCH_OPTIONS: PanelToggleOption<'smooth' | 'corner'>[] = [
-  { key: 'smooth', label: 'Smooth', title: 'Runs through the point without a kink (handles on one line, lengths free)' },
-  { key: 'corner', label: 'Corner', title: 'Kink at the point (handles independent); Shift+drag a handle also sets this' },
 ];
 
 const TARGETS: { key: PatchHandleTarget; label: string; color: string }[] = [
@@ -164,8 +157,8 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
       };
 
       nodeCopy[selectedTargetKey][axis] = value;
-      // Yellow handles are independent (no seesaw); a smooth edge keeps both pinks on one line.
-      commitPoint(applyEdgeTangentRule(nodeCopy, selectedTargetKey));
+      // Every handle moves on its own (no seesaw, no automatic pink pairing).
+      commitPoint(nodeCopy);
     }
   };
 
@@ -222,14 +215,14 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
     if (links.length === 0) {return null;}
     const star = crossHandleKeyAt(patchParams, node.id, links[0], links.length) === null;
     if (star) {
-      return { label: 'Shared', title: 'Shared by several linked edges: cannot be smooth', star: true };
+      return { label: 'Shared', title: 'Shared by several linked edges: cannot be coupled', star: true };
     }
-    const smooth = node.joint === 'smooth';
+    const coupled = node.joint === 'smooth';
     return {
-      label: smooth ? 'Smooth' : 'Corner',
-      title: smooth
-        ? 'Smooth joint: the linked patch follows this side (click for Corner; Shift+drag a handle also breaks it)'
-        : 'Corner joint: both sides are free (click for Smooth: the linked patch aligns to this side)',
+      label: coupled ? 'Coupled' : 'Independent',
+      title: coupled
+        ? 'Coupled: the linked patch mirrors this point, the transition stays smooth (click for Independent; Shift+drag a handle also does this)'
+        : 'Independent: each patch is set freely at this point (click to couple: the linked patch follows this side)',
       star: false,
     };
   };
@@ -367,33 +360,6 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
 
                 {selected ? (
                   <div className="patch-point-inspector-detail panel-field-stack">
-                    <PanelToggleGroup
-                        label="Edge"
-                        options={SWITCH_OPTIONS}
-                        active={{ smooth: resolveEdgeTangent(node) === 'smooth', corner: resolveEdgeTangent(node) === 'corner' }}
-                        onToggle={(mode) => {
-                          setPatchEdgeTangent(entity.id, node.id, mode, selectedTargetKey === 'handlePrev' ? 'handlePrev' : 'handleNext');
-                        }}
-                      />
-                    {corner && resolveEdgeTangent(node) === 'smooth' ? (
-                      <span className="panel-field-hint">Smooth at a patch corner flattens the patch there.</span>
-                    ) : null}
-                    {jointInfo(node) && !jointInfo(node)?.star ? (
-                      <PanelToggleGroup
-                          label="Surface"
-                          options={SWITCH_OPTIONS}
-                          active={{ smooth: node.joint === 'smooth', corner: node.joint !== 'smooth' }}
-                          onToggle={(mode) => { setPatchJoint(entity.id, node.id, mode); }}
-                        />
-                    ) : null}
-                    <button
-                      type="button"
-                      className="btn"
-                      title="Pull both pink handles into the point: a sharp point without rounding"
-                      onClick={() => { retractPatchPinkHandles(entity.id, node.id); }}
-                    >
-                      Retract handles
-                    </button>
                     <label htmlFor={`patch-target-${entity.id}`} className="panel-field-label">
                       Handle
                     </label>

@@ -1,6 +1,6 @@
 # Plan: Vereinfachung – gemeinsame Punkte „Gekoppelt / Unabhängig“
 
-Status: **Entwurf – wartet auf Freigabe**
+Status: **umgesetzt**
 Vereinfacht die Bedienung aus `plan-patch-smooth-corner.md` (C2) und `plan-patch-edge-tangent-c3.md` (C3).
 
 ---
@@ -70,3 +70,11 @@ Jeder Punkt auf einer **gemeinsamen Kante** (beide Endpunkte und jeder später e
 - Neu: rosa Handles werden nirgends mehr automatisch gekoppelt (auch nicht bei alten Daten mit `edgeTangent`).
 - Shift am gelben Handle bzw. am rosa Handle der Nachbarkante (Endpunkt) → Independent; Shift an rosa Handles entlang der gemeinsamen Kante → keine Änderung.
 - Eingefügter Punkt auf gemeinsamer Kante → Coupled auf beiden Seiten.
+
+## Umsetzung
+
+- Gizmo/Inspector: alle Handles bewegen sich einzeln (keine Wippe, keine automatische Rosa-Kopplung). Shift + Ziehen an einem gekoppelten Handle (gelb; an Endpunkten rosa Handle der Nachbarkante) → Independent.
+- Inspector: nur noch der Schalter „🔗 Coupled / Independent“ in der Punktzeile; Edge-/Surface-Schalter, „Retract handles“ und Hinweis entfernt.
+- Viewport: Ring um gekoppelte gemeinsame Punkte; Würfel entfernt.
+- `edgeTangent` aus Datenmodell, Einfügen, Paste, Sync entfernt; Test-Datei dazu entfernt.
+- Browser-Test: keine Edge-/Surface-Schalter, kein Retract; nach Link zeigen beide Endpunkte „🔗 Coupled“, Klick → „Independent“.

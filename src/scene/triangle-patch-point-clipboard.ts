@@ -75,8 +75,6 @@ export function pastePatchPoint(
         .applyQuaternion(qInv);
 
   const next: PatchPoint = { ...target, pos: toVec3(localPos) };
-  // New handles: let the edge switch be derived from them again (smooth if on one line).
-  if (mode !== 'position') {delete next.edgeTangent;}
   for (const key of HANDLE_KEYS) {
     let offset: Vector3;
     if (mode === 'position') {

@@ -83,16 +83,10 @@
   padding-left: var(--space-2);
 }
 
-/* Joint toggle (Smooth / Corner) on points of linked edges */
+/* Coupled / Independent toggle on points of shared edges */
 .patch-joint-toggle {
   flex: none;
   padding: 0 var(--space-1);
   font-size: var(--font-sm, 11px);
   white-space: nowrap;
-}
-
-/* Hint under the Edge switch (e.g. smooth at a patch corner) */
-.panel-field-hint {
-  font-size: var(--font-sm, 11px);
-  color: var(--color-text-muted, #6b7280);
 }

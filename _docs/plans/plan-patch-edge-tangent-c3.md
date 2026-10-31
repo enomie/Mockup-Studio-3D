@@ -1,6 +1,6 @@
 # Plan: Schritt C3 – Zwei Schalter pro Punkt: Kante und Fläche
 
-Status: **C3a + C3b erledigt**
+Status: **ersetzt** durch `plan-patch-simplify-coupling.md` (Nutzer: keine Smooth/Corner-Schalter, nur gekoppelt/unabhängig an gemeinsamen Punkten)
 Vorgänger: `plan-patch-smooth-corner.md` (C1/C2: Gelenke zwischen verbundenen Patches), `plan-patch-classic-edge-correction.md` (D: Classic + Kanten-Korrektur)
 
 ---
