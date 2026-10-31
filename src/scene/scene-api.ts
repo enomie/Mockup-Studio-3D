@@ -73,8 +73,6 @@ export interface ViewportHelpersState {
   lightHandles: boolean;
 }
 
-export type LightingReferenceMode = 'scene-center' | 'world-fixed';
-
 /** Legacy (pre-orbit) key side — only read when migrating saved payloads. */
 export type StudioLightSide = 'left' | 'right';
 
@@ -114,7 +112,6 @@ export interface FillLightSettings {
 }
 
 export interface LightingSettings {
-  referenceMode: LightingReferenceMode;
   showFixtures: boolean;
   fixturesReflectInMirror: boolean;
   ambient: AmbientLightSettings;

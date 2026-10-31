@@ -1,6 +1,5 @@
 import { Group, type Scene } from 'three/webgpu';
 import { SCENE_DEFAULTS } from '@/config/scene-defaults';
-import type { LightingSystem } from '@/engine/lighting/lighting-system';
 import type { ViewportHelpersState } from '@/scene/scene-api';
 import { createFloorGridHelper, createFloorGridMajorHelper } from './floor-grid';
 import { createCompassArrowsHelper } from './compass-arrows';
@@ -42,22 +41,6 @@ export class ViewportHelpersSystem {
     return { ...this.state };
   }
 
-  updateFrame(lighting: LightingSystem): void {
-    const center = lighting.getReferenceCenter();
-    this.worldOrigin.position.set(center.x, 0, center.z);
-    this.quadrantGrid.position.set(center.x, 0, center.z);
-
-    if (!this.state.compassArrows) {
-      this.compassArrows.visible = false;
-      return;
-    }
-
-    // Fixed world directions — see world-compass.ts (North = -Z, East = +X).
-    this.compassArrows.visible = true;
-    this.compassArrows.position.set(center.x, 0, center.z);
-    this.compassArrows.rotation.set(0, 0, 0);
-  }
-
   dispose(): void {
     this.root.removeFromParent();
   }
@@ -67,8 +50,6 @@ export class ViewportHelpersSystem {
     this.floorGridMajor.visible = this.state.floorGrid;
     this.worldOrigin.visible = this.state.worldOrigin;
     this.quadrantGrid.visible = this.state.quadrantGrid;
-    if (!this.state.compassArrows) {
-      this.compassArrows.visible = false;
-    }
+    this.compassArrows.visible = this.state.compassArrows;
   }
 }

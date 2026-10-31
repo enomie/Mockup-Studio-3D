@@ -15,7 +15,6 @@ export function cloneLightingSettings(
   settings: LightingSettings,
 ): LightingSettings {
   return {
-    referenceMode: settings.referenceMode,
     showFixtures: settings.showFixtures,
     fixturesReflectInMirror: settings.fixturesReflectInMirror,
     ambient: {

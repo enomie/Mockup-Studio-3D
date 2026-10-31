@@ -57,7 +57,6 @@ export function mergeLightingSettings(
   const keyIntensity = partial.key?.intensity ?? current.key.intensity;
 
   const next: LightingSettings = {
-    referenceMode: partial.referenceMode ?? current.referenceMode,
     showFixtures: partial.showFixtures ?? current.showFixtures,
     fixturesReflectInMirror:
       partial.fixturesReflectInMirror ?? current.fixturesReflectInMirror,

@@ -900,7 +900,6 @@ export class MockupEngine implements SceneApi {
         gizmo: this.gizmo,
         environment: this.environment,
         lighting: this.lighting,
-        updateViewportHelpersFrame: () => { this.viewportHelpers.updateFrame(this.lighting); },
         pushExportHidePhysicsTest: () => { this.rigidTest.pushExportHide(); },
         popExportHidePhysicsTest: () => { this.rigidTest.popExportHide(); },
         pushExportShadowQuality: () => { this.lighting.pushExportShadowQuality(); },
@@ -1038,7 +1037,6 @@ export class MockupEngine implements SceneApi {
     this.gizmo.updateCamera(camera);
     this.environment.updateFrame(camera);
     this.lighting.updateFrame();
-    this.viewportHelpers.updateFrame(this.lighting);
 
     this.renderViewportFrame();
 

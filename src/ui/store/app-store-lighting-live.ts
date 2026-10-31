@@ -1,16 +1,11 @@
 import type { Rgb } from '@/colors/rgb';
-import type { AppMode, LightingReferenceMode } from '@/scene/scene-api';
+import type { AppMode } from '@/scene/scene-api';
 import * as store from './app-store-internals';
 
 export function setMode(mode: AppMode): void {
   store.setAppState({ ...store.state, mode });
   store.sceneApi?.setMode(mode);
   store.emit();
-}
-
-
-export function setLightingReferenceMode(referenceMode: LightingReferenceMode): void {
-  store.patchLighting({ referenceMode });
 }
 
 export function setShowLightFixtures(showFixtures: boolean): void {

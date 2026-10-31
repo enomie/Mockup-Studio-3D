@@ -8,25 +8,6 @@ export interface StudioPose {
   rotation: Vec3;
 }
 
-export function computeSceneCenter(
-  positions: readonly Vec3[],
-): Vec3 {
-  if (positions.length === 0) {
-    return { x: 0, y: 0, z: 0 };
-  }
-
-  let x = 0;
-  let y = 0;
-  let z = 0;
-  for (const position of positions) {
-    x += position.x;
-    y += position.y;
-    z += position.z;
-  }
-  const count = positions.length;
-  return { x: x / count, y: y / count, z: z / count };
-}
-
 function sphericalToPosition(
   center: Vec3,
   azimuthDeg: number,

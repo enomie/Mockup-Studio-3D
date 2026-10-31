@@ -78,7 +78,6 @@ export {
 
 export {
   setMode,
-  setLightingReferenceMode,
   setAmbientColor,
   setAmbientIntensity,
   setAmbientEnabled,

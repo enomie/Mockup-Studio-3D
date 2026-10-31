@@ -16,7 +16,6 @@ export const BUILTIN_LIGHT_DRAMATIC_ID = 'builtin-light-dramatic';
 export function lightingFromSceneDefaults(): LightingSettings {
   const { lighting } = SCENE_DEFAULTS;
   return cloneLightingSettings({
-    referenceMode: lighting.referenceMode,
     showFixtures: lighting.showFixtures,
     fixturesReflectInMirror: lighting.fixturesReflectInMirror,
     ambient: {

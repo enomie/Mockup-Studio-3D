@@ -39,7 +39,6 @@ import {
   setKeyAzimuth,
   setKeyElevation,
   setFixturesReflectInMirror,
-  setLightingReferenceMode,
   setSelectedEntity,
   setShowLightFixtures,
 } from '@/ui/store/app-store';
@@ -84,13 +83,6 @@ export function LightingSubPanel() {
 
   return (
     <SubPanel title="Lighting" side="right">
-      <PanelCheckbox
-        label="Follow scene center"
-        checked={lighting.referenceMode === 'scene-center'}
-        onChange={(checked) => { setLightingReferenceMode(checked ? 'scene-center' : 'world-fixed'); }
-        }
-      />
-
       <SubPanelSection title="Fixtures">
         <PanelCheckbox
           label="Show fixtures"

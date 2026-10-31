@@ -12,7 +12,6 @@ export interface MockupEngineCaptureHost {
   gizmo: GizmoController;
   environment: EnvironmentSystem;
   lighting: LightingSystem;
-  updateViewportHelpersFrame: () => void;
   pushExportHidePhysicsTest: () => void;
   popExportHidePhysicsTest: () => void;
   pushExportShadowQuality: () => void;
@@ -38,7 +37,6 @@ export async function captureViewportImageFromEngine(
   host.gizmo.updateCamera(camera);
   host.environment.updateFrame(camera);
   host.lighting.updateFrame();
-  host.updateViewportHelpersFrame();
 
   const prevClearColor = host.renderer.getClearColor(new Color());
   const prevClearAlpha = host.renderer.getClearAlpha();

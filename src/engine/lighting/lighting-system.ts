@@ -1,6 +1,6 @@
 import {
   AmbientLight,
-  Group,
+  type Group,
   type Light,
   type MeshBasicNodeMaterial,
   type Scene,
@@ -19,7 +19,7 @@ import {
   SHADOW_MAP_SIZE_EXPORT,
 } from '@/constants';
 import { rgbToColor, type Rgb } from '@/colors/rgb';
-import { cloneTransform, defaultTransform, type Vec3 } from '@/scene/entity-types';
+import { cloneTransform, type Vec3 } from '@/scene/entity-types';
 import { LIGHT_FILL_ID, LIGHT_KEY_ID, type StudioLightId } from '@/scene/light-ids';
 import { mergeLightingSettings } from '@/scene/lighting-merge';
 import type { DeepPartial, LightingSettings } from '@/scene/scene-api';
@@ -36,7 +36,6 @@ import {
   applyTransformOffset,
   computeOrbitPose,
   computeOffsetFromWorld,
-  computeSceneCenter,
   type StudioPose,
 } from './studio-pose';
 
@@ -45,10 +44,11 @@ type SelectionListener = (lightId: StudioLightId | null) => void;
 const KEY_PICK_COLOR: Rgb = { r: 1, g: 0.85, b: 0.6 };
 const FILL_PICK_COLOR: Rgb = { r: 0.75, g: 0.85, b: 1 };
 const _targetPosition = new Vector3();
+/** Fixed world point the studio light rig orbits around. */
+const STUDIO_ANCHOR: Vec3 = { x: 0, y: 0, z: 0 };
 
 function cloneLightingSettings(settings: LightingSettings): LightingSettings {
   return {
-    referenceMode: settings.referenceMode,
     showFixtures: settings.showFixtures,
     fixturesReflectInMirror: settings.fixturesReflectInMirror,
     ambient: {
@@ -115,14 +115,12 @@ export class LightingSystem {
   private readonly registry: EntityRegistry;
   private readonly lightPool: LightPool;
   private readonly ambient: AmbientLight;
-  private readonly worldFixedPoses = new Map<StudioLightId, StudioPose>();
 
   private settings: LightingSettings;
   private selectedLightId: StudioLightId | null = null;
   private readonly selectionListeners = new Set<SelectionListener>();
   private lightHandlesVisible = false;
   private planarReflection: PlanarReflectionPass | null = null;
-  private readonly referenceCenter: Vec3 = { x: 0, y: 0, z: 0 };
   private shadowCoverageRadius = SHADOW_COVERAGE_RADIUS;
   private exportShadowQualityDepth = 0;
 
@@ -134,12 +132,6 @@ export class LightingSystem {
     this.lightPool = new LightPool(scene);
     this.ambient = new AmbientLight(0xffffff, initial.ambient.intensity);
     scene.add(this.ambient);
-
-    registry.subscribeEntities(() => {
-      if (this.settings.referenceMode === 'scene-center') {
-        this.updateRigTransforms();
-      }
-    });
 
     this.apply(initial);
   }
@@ -159,10 +151,6 @@ export class LightingSystem {
 
   isLightHandlesVisible(): boolean {
     return this.lightHandlesVisible;
-  }
-
-  getReferenceCenter(): Vec3 {
-    return { ...this.referenceCenter };
   }
 
   getRigWorldPosition(lightId: StudioLightId): Vec3 | null {
@@ -186,15 +174,7 @@ export class LightingSystem {
   }
 
   setLighting(partial: DeepPartial<LightingSettings>): void {
-    const wasSceneCenter = this.settings.referenceMode === 'scene-center';
     this.settings = mergeLightingSettings(this.settings, partial);
-
-    if (wasSceneCenter && this.settings.referenceMode === 'world-fixed') {
-      this.captureWorldFixedPoses();
-    }
-    if (partial.referenceMode === 'scene-center') {
-      this.worldFixedPoses.clear();
-    }
 
     this.updateRigTransforms();
     this.applyAmbient();
@@ -226,7 +206,6 @@ export class LightingSystem {
 
   /** Keep shadow matrices current — call once per frame from the render loop. */
   updateFrame(): void {
-    this.syncReferenceCenterFromEntities();
     this.refreshShadowCoverageRadius();
 
     const rigs: SpotLightRig[] = [];
@@ -298,27 +277,12 @@ export class LightingSystem {
     const rig = this.getRig(lightId);
     if (!rig) {return;}
 
-    const center = this.refreshReferenceCenter();
-    const base = this.getBasePose(lightId, center);
-    const world = readTransformFromObject(rig.helper);
-    const offset = computeOffsetFromWorld(base, world);
-
+    const base = this.getBasePose(lightId);
+    const offset = computeOffsetFromWorld(base, readTransformFromObject(rig.helper));
     if (lightId === LIGHT_KEY_ID) {
       this.settings.key.transformOffset = offset;
-      if (this.settings.referenceMode === 'world-fixed') {
-        this.worldFixedPoses.set(LIGHT_KEY_ID, {
-          position: { ...world.position },
-          rotation: { ...world.rotation },
-        });
-      }
     } else {
       this.settings.fill.transformOffset = offset;
-      if (this.settings.referenceMode === 'world-fixed') {
-        this.worldFixedPoses.set(LIGHT_FILL_ID, {
-          position: { ...world.position },
-          rotation: { ...world.rotation },
-        });
-      }
     }
   }
 
@@ -343,30 +307,9 @@ export class LightingSystem {
     return this.lightPool.getSpotRigById(lightId);
   }
 
-  private refreshReferenceCenter(): Group {
-    const center = computeSceneCenter(
-      this.registry.getEntities().map((entity) => entity.transform.position),
-    );
-    this.referenceCenter.x = center.x;
-    this.referenceCenter.y = center.y;
-    this.referenceCenter.z = center.z;
-    const anchor = new Group();
-    anchor.position.set(center.x, center.y, center.z);
-    return anchor;
-  }
-
-  private getBasePose(lightId: StudioLightId, centerAnchor: Group): StudioPose {
-    const center = {
-      x: centerAnchor.position.x,
-      y: centerAnchor.position.y,
-      z: centerAnchor.position.z,
-    };
-
-    if (this.settings.referenceMode === 'world-fixed') {
-      const stored = this.worldFixedPoses.get(lightId);
-      if (stored) {return stored;}
-    }
-
+  /** Lights orbit the fixed studio anchor — never the (moving) scene contents. */
+  private getBasePose(lightId: StudioLightId): StudioPose {
+    const center = STUDIO_ANCHOR;
     if (lightId === LIGHT_KEY_ID) {
       const { key } = this.settings;
       return computeOrbitPose(center, key.azimuthDeg, key.elevationDeg);
@@ -375,8 +318,8 @@ export class LightingSystem {
     return computeOrbitPose(center, fill.azimuthDeg, fill.elevationDeg, fill.distance);
   }
 
-  private getWorldPose(lightId: StudioLightId, centerAnchor: Group): StudioPose {
-    const base = this.getBasePose(lightId, centerAnchor);
+  private getWorldPose(lightId: StudioLightId): StudioPose {
+    const base = this.getBasePose(lightId);
     const offset =
       lightId === LIGHT_KEY_ID
         ? this.settings.key.transformOffset
@@ -385,11 +328,10 @@ export class LightingSystem {
   }
 
   private updateRigTransforms(): void {
-    const centerAnchor = this.refreshReferenceCenter();
-    _targetPosition.copy(centerAnchor.position);
+    _targetPosition.set(STUDIO_ANCHOR.x, STUDIO_ANCHOR.y, STUDIO_ANCHOR.z);
     this.refreshShadowCoverageRadius();
 
-    const keyPose = this.getWorldPose(LIGHT_KEY_ID, centerAnchor);
+    const keyPose = this.getWorldPose(LIGHT_KEY_ID);
     applyPoseToRig(
       this.getKeyRig(),
       keyPose,
@@ -398,7 +340,7 @@ export class LightingSystem {
       this.shadowCoverageRadius,
     );
 
-    const fillPose = this.getWorldPose(LIGHT_FILL_ID, centerAnchor);
+    const fillPose = this.getWorldPose(LIGHT_FILL_ID);
     applyPoseToRig(
       this.getFillRig(),
       fillPose,
@@ -406,23 +348,6 @@ export class LightingSystem {
       this.settings.fill.enabled && this.settings.fill.castShadow,
       this.shadowCoverageRadius,
     );
-  }
-
-  private captureWorldFixedPoses(): void {
-    for (const lightId of [LIGHT_KEY_ID, LIGHT_FILL_ID] as const) {
-      const rig = this.getRig(lightId);
-      if (!rig) {continue;}
-      const world = readTransformFromObject(rig.helper);
-      this.worldFixedPoses.set(lightId, {
-        position: { ...world.position },
-        rotation: { ...world.rotation },
-      });
-      if (lightId === LIGHT_KEY_ID) {
-        this.settings.key.transformOffset = defaultTransform();
-      } else {
-        this.settings.fill.transformOffset = defaultTransform();
-      }
-    }
   }
 
   private applyAmbient(): void {
@@ -483,19 +408,10 @@ export class LightingSystem {
     }
   }
 
-  private syncReferenceCenterFromEntities(): void {
-    const center = computeSceneCenter(
-      this.registry.getEntities().map((entity) => entity.transform.position),
-    );
-    this.referenceCenter.x = center.x;
-    this.referenceCenter.y = center.y;
-    this.referenceCenter.z = center.z;
-  }
-
   private refreshShadowCoverageRadius(): void {
     this.shadowCoverageRadius = computeSceneShadowCoverageRadius(
       this.registry.getVisibleEntityRoots(),
-      this.referenceCenter,
+      STUDIO_ANCHOR,
     );
   }
 

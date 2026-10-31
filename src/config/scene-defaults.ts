@@ -92,7 +92,6 @@ export const SCENE_DEFAULTS = {
     lightHandles: false,
   },
   lighting: {
-    referenceMode: 'scene-center',
     showFixtures: true,
     fixturesReflectInMirror: true,
     ambient: {

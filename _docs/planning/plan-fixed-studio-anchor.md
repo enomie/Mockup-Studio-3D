@@ -42,7 +42,10 @@ World-Origin-Marker und Kompass-Pfeile mit.
 - Unit: Viewport-Helfer bleiben bei (0,0,0).
 - `npx vitest run`, `npm run lint`, `npm run build`.
 
-## Offene Frage
+## Entscheidung (User)
+„Follow scene center“ wird komplett entfernt; Lichter orbiten fest um (0,0,0). Umsetzung direkt auf `main`.
+
+## Ursprüngliche offene Frage
 Soll „Follow scene center“ als Option überhaupt bleiben, oder ganz entfernt werden
 (einfacher, weniger Code)? Empfehlung: **entfernen** – ein Studio-Licht, das um den
 Szenen-Mittelwert springt, ist für Mockups kaum sinnvoll; stattdessen später ggf. ein
