@@ -5,6 +5,7 @@ import {
 } from './history/scene-history-controller';
 import { attachHistoryInputTracking } from './history/history-input-tracking';
 import { PatchEdgeLinkSync } from './patch-edge-link-sync';
+import { splitLinkOnInsert } from '@/scene/triangle-patch-linked-edit';
 import { type Camera, type Mesh, Scene, type WebGPURenderer } from 'three/webgpu';
 import type { Rgb } from '@/colors/rgb';
 import { SCENE_DEFAULTS } from '@/config/scene-defaults';
@@ -743,10 +744,21 @@ export class MockupEngine implements SceneApi {
 
     const inserted = insertPatchPoint(params, hit.edgeIndex, hit.t);
     this.patchAddPoint.stop();
+    const owner = this.registry.getRuntime(entityId)?.entity;
+    // A point on a linked edge is created in the partner patch too (link splits in two).
+    const linked = owner
+      ? splitLinkOnInsert(owner, inserted, (id) => this.registry.getRuntime(id)?.entity)
+      : null;
+    const ownerParams = linked?.ownerParams ?? inserted.params;
     this.patchGizmo.commitParams(entityId, {
-      points: inserted.params.points,
-      edgeParams: inserted.params.edgeParams,
+      points: ownerParams.points,
+      edgeParams: ownerParams.edgeParams,
+      ...(linked ? { edgeLinks: ownerParams.edgeLinks } : {}),
     });
+    if (linked) {
+      const { points, edgeParams, edgeLinks } = linked.partnerParams;
+      this.setKindParams('patch', linked.partnerId, { points, edgeParams, edgeLinks });
+    }
     this.patchGizmo.selectTarget({ entityId, pointId: inserted.pointId, targetKey: 'pos' });
     this.gizmoInteraction.refresh();
     this.emit();

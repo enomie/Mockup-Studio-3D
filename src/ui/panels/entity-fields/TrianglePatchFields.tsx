@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ClipboardPaste, Copy, Trash2, X } from 'lucide-react';
 import { Icon } from '@/ui/components/Icon';
 import { removePatchPoint } from '@/scene/triangle-patch-point-edit';
+import { mergeLinksOnRemove } from '@/scene/triangle-patch-linked-edit';
 import { PanelToggleGroup, type PanelToggleOption } from '@/ui/components/PanelToggleGroup';
 import { SubPanelSection } from '@/ui/components/SubPanelSection';
 import { PatchEdgesSection } from './PatchEdgesSection';
@@ -21,6 +22,7 @@ import {
   setKindParams,
   selectPatchHandle,
   setPatchAddPointMode,
+  getAppState,
   } from '@/ui/store/app-store';
 import {
   defaultPatchParamsForKind,
@@ -119,9 +121,15 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
   /** Removes an edge point; when it was selected, the previous point in the loop takes over. */
   const removePoint = (pointId: string) => {
     const index = patchParams.points.findIndex((point) => point.id === pointId);
-    const next = removePatchPoint(patchParams, pointId);
+    // A shared point of two linked edges is removed on both patches (links merge into one).
+    const merged = mergeLinksOnRemove(entity, pointId, (id) => getAppState().entities.find((e) => e.id === id));
+    const next = merged?.ownerParams ?? removePatchPoint(patchParams, pointId);
     if (next === patchParams) {return;}
     setKindParams('patch', entity.id, { points: next.points, edgeParams: next.edgeParams, edgeLinks: next.edgeLinks });
+    if (merged) {
+      const { points, edgeParams, edgeLinks } = merged.partnerParams;
+      setKindParams('patch', merged.partnerId, { points, edgeParams, edgeLinks });
+    }
     if (pointId === selectedPointId) {
       const previous = patchParams.points[(index - 1 + patchParams.points.length) % patchParams.points.length];
       handleSelectTarget(previous.id, 'pos');

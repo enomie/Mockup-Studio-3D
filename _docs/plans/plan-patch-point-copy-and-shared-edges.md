@@ -2,7 +2,7 @@
 
 Status:
 - **Phase 1 (Punkt Copy/Paste): erledigt**
-- **Schritt A (Kanten Copy/Paste + Link, nur Linie): in Umsetzung**
+- **Schritt A (Kanten Copy/Paste + Link, nur Linie): erledigt** (inkl. Nachtrag Punkte auf verbundenen Kanten)
 - Schritt B (neue Flächen-Mathematik) und C (Smooth/Corner): offen, eigener Plan vor Start
 
 ---
@@ -71,6 +71,8 @@ Copy/Paste pro Punktzeile im Inspector + Ctrl/Cmd+C/V; Modi: Position & Handles 
 ---
 
 ## Nachtrag zu Schritt A – Punkte auf verbundenen Kanten
+
+Status: **erledigt**
 
 **Problem (Praxistest):** Ein neuer Punkt auf einer verbundenen Kante teilt sie nur in *einem* Patch → der Link zeigt ins Leere („broken“).
 

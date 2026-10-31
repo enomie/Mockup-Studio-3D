@@ -44,7 +44,7 @@ export function insertPatchPoint(
   params: PatchParams,
   edgeIndex: number,
   t: number,
-): { params: PatchParams; pointId: string } {
+): InsertedPatchPoint {
   const { start, end, s: rawS } = locatePatchEdgeSegment(params, edgeIndex, t);
   const s = Math.min(1 - MIN_SEGMENT_SPLIT, Math.max(MIN_SEGMENT_SPLIT, rawS));
 
@@ -88,7 +88,59 @@ export function insertPatchPoint(
       edgeParams: { ...params.edgeParams, [inserted.id]: edgeT },
     },
     pointId: inserted.id,
+    startPointId: start.id,
+    endPointId: end.id,
+    s,
   };
+}
+
+/** Result of inserting a point: new params, the new point and the segment it split (loop order). */
+export interface InsertedPatchPoint {
+  params: PatchParams;
+  pointId: string;
+  startPointId: string;
+  endPointId: string;
+  /** Split parameter actually used, from `startPointId` (0..1). */
+  s: number;
+}
+
+/**
+ * Inserts a point into the segment between neighbors `aId` and `bId` at curve parameter
+ * `sFromA` measured from `aId`. Null when the two points are not neighbors.
+ */
+export function insertPatchPointInSegment(
+  params: PatchParams,
+  aId: string,
+  bId: string,
+  sFromA: number,
+): InsertedPatchPoint | null {
+  const n = params.points.length;
+  const ia = params.points.findIndex((p) => p.id === aId);
+  const ib = params.points.findIndex((p) => p.id === bId);
+  if (ia < 0 || ib < 0) {return null;}
+  let startIndex: number;
+  let s: number;
+  if ((ia + 1) % n === ib) {
+    startIndex = ia;
+    s = sFromA;
+  } else if ((ib + 1) % n === ia) {
+    startIndex = ib;
+    s = 1 - sFromA;
+  } else {
+    return null;
+  }
+  // Edge = last corner at or before the segment start (walking backwards in the loop).
+  let edgeIndex = -1;
+  for (let k = 0; k < n && edgeIndex < 0; k++) {
+    const id = params.points[(startIndex - k + n) % n].id;
+    edgeIndex = params.cornerIds.indexOf(id);
+  }
+  if (edgeIndex < 0) {return null;}
+  const startId = params.points[startIndex].id;
+  const endId = params.points[(startIndex + 1) % n].id;
+  const knotStart = startId === params.cornerIds[edgeIndex] ? 0 : params.edgeParams[startId];
+  const knotEnd = endId === params.cornerIds[(edgeIndex + 1) % params.cornerIds.length] ? 1 : params.edgeParams[endId];
+  return insertPatchPoint(params, edgeIndex, knotStart + (knotEnd - knotStart) * s);
 }
 
 /** Removes an edge point; its two segments merge into one. Corners cannot be removed. */
