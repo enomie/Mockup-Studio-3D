@@ -6,6 +6,16 @@ import {
 import { attachHistoryInputTracking } from './history/history-input-tracking';
 import { PatchEdgeLinkSync } from './patch-edge-link-sync';
 import { PatchNodeSync } from './patch-node-sync';
+import {
+  alignNodeOpposite,
+  createInnerNode,
+  joinSharedEdge,
+  nextSharedNodeName,
+  resolvePatchPoints,
+  setNodeSlot,
+  type PatchNode,
+} from '@/scene/patch-nodes';
+import { segmentHandleKeys, type PatchSegment } from '@/scene/triangle-patch-edge-link';
 import { splitLinkOnInsert } from '@/scene/triangle-patch-linked-edit';
 import { alignSharedPairAverage } from '@/scene/triangle-patch-coupled-pairs';
 import { type Camera, type Mesh, Scene, type WebGPURenderer } from 'three/webgpu';
@@ -111,7 +121,7 @@ import {
   type PatchEdgeSelection,
   type ViewportPointer,
 } from './triangle-patch-add-point-tool';
-import { locatePatchEdgeSegment } from '@/scene/asset-triangle-patch';
+import { locatePatchEdgeSegment, type PatchParams } from '@/scene/asset-triangle-patch';
 import { SelectionController } from './selection-controller';
 import { SelectionHighlight } from './selection-highlight';
 import { ViewportInputController } from './viewport-input-controller';
@@ -704,6 +714,39 @@ export class MockupEngine implements SceneApi {
     this.emit();
   }
 
+  joinPatchEdges(aEntityId: string, aSegment: PatchSegment, bEntityId: string, bSegment: PatchSegment): void {
+    const a = this.registry.getRuntime(aEntityId)?.entity;
+    const b = this.registry.getRuntime(bEntityId)?.entity;
+    if (!a || !b) {return;}
+    const taken: string[] = [];
+    const joined = joinSharedEdge(
+      { entity: a, segment: aSegment },
+      { entity: b, segment: bSegment },
+      () => crypto.randomUUID(),
+      () => {
+        const name = nextSharedNodeName(this.registry.getPatchNodes(), taken);
+        taken.push(name);
+        return name;
+      },
+    );
+    if (!joined) {return;}
+    this.registry.setPatchNodes([...this.registry.getPatchNodes(), ...joined.nodes]);
+    this.setKindParams('patch', aEntityId, { points: joined.aParams.points, edgeLinks: joined.aParams.edgeLinks });
+    this.setKindParams('patch', bEntityId, { points: joined.bParams.points, edgeLinks: joined.bParams.edgeLinks });
+  }
+
+  getPatchNodes(): readonly PatchNode[] {
+    return this.registry.getPatchNodes();
+  }
+
+  setPatchNodeSlot(nodeId: string, slot: string, worldOffset: Vec3, free: boolean): void {
+    this.registry.setPatchNodes(this.registry.getPatchNodes().map((n) => (n.id === nodeId ? setNodeSlot(n, slot, worldOffset, free) : n)));
+  }
+
+  alignPatchNode(nodeId: string): void {
+    this.registry.setPatchNodes(this.registry.getPatchNodes().map((n) => (n.id === nodeId ? alignNodeOpposite(n) : n)));
+  }
+
   syncPatchLinksFrom(entityId: string): void {
     this.edgeLinkSync.runFrom([entityId]);
   }
@@ -766,23 +809,67 @@ export class MockupEngine implements SceneApi {
     const linked = owner
       ? splitLinkOnInsert(owner, inserted, (id) => this.registry.getRuntime(id)?.entity)
       : null;
-    const ownerParams = linked?.ownerParams ?? inserted.params;
+    let ownerParams = linked?.ownerParams ?? inserted.params;
+    let partnerParams = linked?.partnerParams;
+    // On an edge joined into shared points, the new point is ONE shared point of both patches.
+    const startPoint = params.points.find((p) => p.id === inserted.startPointId);
+    const endPoint = params.points.find((p) => p.id === inserted.endPointId);
+    const partner = linked ? this.registry.getRuntime(linked.partnerId)?.entity : undefined;
+    if (linked && partner && owner && partnerParams && startPoint?.nodeId && endPoint?.nodeId) {
+      const node = this.innerNodeFor(owner, ownerParams, partner, partnerParams, inserted.pointId, inserted.endPointId);
+      if (node) {
+        node.name = nextSharedNodeName(this.registry.getPatchNodes());
+        this.registry.setPatchNodes([...this.registry.getPatchNodes(), node]);
+        ownerParams = { ...ownerParams, points: resolvePatchPoints(ownerParams.points, entityId, owner.transform, [node]) };
+        partnerParams = { ...partnerParams, points: resolvePatchPoints(partnerParams.points, partner.id, partner.transform, [node]) };
+      }
+    }
     this.patchGizmo.commitParams(entityId, {
       points: ownerParams.points,
       edgeParams: ownerParams.edgeParams,
       ...(linked ? { edgeLinks: ownerParams.edgeLinks } : {}),
     });
-    if (linked) {
-      const { points, edgeParams, edgeLinks } = linked.partnerParams;
+    if (linked && partnerParams) {
+      const { points, edgeParams, edgeLinks } = partnerParams;
       this.setKindParams('patch', linked.partnerId, { points, edgeParams, edgeLinks });
-      // The new shared point starts coupled: yellow pair opposite on the average direction
-      // (the pink pair is already opposite from the curve split).
-      const aligned = alignSharedPairAverage(entityId, inserted.pointId, 'yellow', (id) => this.registry.getRuntime(id)?.entity);
-      for (const [id, points] of aligned) {this.setKindParams('patch', id, { points });}
+      if (!startPoint?.nodeId || !endPoint?.nodeId) {
+        // Old-style linked edge: the yellow pair starts opposite on the average direction.
+        const aligned = alignSharedPairAverage(entityId, inserted.pointId, 'yellow', (id) => this.registry.getRuntime(id)?.entity);
+        for (const [id, points2] of aligned) {this.setKindParams('patch', id, { points: points2 });}
+      }
     }
     this.patchGizmo.selectTarget({ entityId, pointId: inserted.pointId, targetKey: 'pos' });
     this.gizmoInteraction.refresh();
     this.emit();
+  }
+
+  /** Shared point for a point inserted on a joined edge, from the two new patch points. */
+  private innerNodeFor(
+    owner: AssetEntity,
+    ownerParams: PatchParams,
+    partner: AssetEntity,
+    partnerParams: PatchParams,
+    pointId: string,
+    endPointId: string,
+  ): PatchNode | null {
+    const links = ownerParams.edgeLinks ?? [];
+    const toPartner = (id: string) => {
+      const l = links.find((x) => x.startPointId === id || x.endPointId === id);
+      return l ? (l.startPointId === id ? l.partnerStartPointId : l.partnerEndPointId) : null;
+    };
+    const p = ownerParams.points.find((x) => x.id === pointId);
+    const qId = toPartner(pointId);
+    const q = qId ? partnerParams.points.find((x) => x.id === qId) : undefined;
+    const qEnd = toPartner(endPointId);
+    if (!p || !q || !qEnd) {return null;}
+    // Same direction when the partner's next handle at q points towards the partner of our end.
+    const sameDirection = segmentHandleKeys(partnerParams, q.id, qEnd)?.a === 'handleNext';
+    return createInnerNode(
+      crypto.randomUUID(),
+      { entityId: owner.id, transform: owner.transform, point: p },
+      { entityId: partner.id, transform: partner.transform, point: q },
+      sameDirection,
+    );
   }
 
   getPatchHandleSelection(): PatchHandleSelection | null {

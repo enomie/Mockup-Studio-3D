@@ -3,9 +3,14 @@ import { ClipboardPaste, Copy, Trash2, X } from 'lucide-react';
 import { Icon } from '@/ui/components/Icon';
 import { removePatchPoint } from '@/scene/triangle-patch-point-edit';
 import { mergeLinksOnRemove } from '@/scene/triangle-patch-linked-edit';
-import { applyInnerPinkCoupling, type HandlePair } from '@/scene/triangle-patch-coupled-pairs';
-import { isEdgeLinkValid, sharedPointRole } from '@/scene/triangle-patch-edge-link';
-import { setSharedPair } from '@/ui/store/patch-edge-store';
+import { applyInnerPinkCoupling } from '@/scene/triangle-patch-coupled-pairs';
+import { alignPatchNode, setPatchNodeSlot } from '@/ui/store/patch-edge-store';
+import {
+  extraSlotsFor,
+  nodeHasFreePairs,
+  nodeOffsetFromLocalTip,
+  nodeSlotLocal,
+} from '@/scene/patch-nodes';
 import { PanelToggleGroup, type PanelToggleOption } from '@/ui/components/PanelToggleGroup';
 import { SubPanelSection } from '@/ui/components/SubPanelSection';
 import { RangeSlider } from '@/ui/components/RangeSlider';
@@ -64,21 +69,11 @@ const PASTE_MODES: { key: PatchPointPasteMode; label: string }[] = [
   { key: 'handles', label: 'Handles Only' },
 ];
 
-const PAIR_OPTIONS: PanelToggleOption<'coupled' | 'free'>[] = [
-  { key: 'coupled', label: 'Coupled', title: 'Both handles stay opposite: drag one, the other turns along (lengths free)' },
-  { key: 'free', label: 'Free', title: 'Both handles move independently (Shift+drag a handle also frees its pair)' },
-];
-
-const PAIRS: { pair: HandlePair; label: string }[] = [
-  { pair: 'yellow', label: 'Yellow pair' },
-  { pair: 'pink', label: 'Pink pair' },
-];
-
-const TARGETS: { key: PatchHandleTarget; label: string; color: string }[] = [
-  { key: 'pos', label: 'Anchor Point', color: '#0284c7' },
-  { key: 'handleNext', label: 'Handle Forward (Pink)', color: '#ec4899' },
-  { key: 'handlePrev', label: 'Handle Backward (Pink)', color: '#ec4899' },
-  { key: 'handleCrossIn', label: 'Surface Handle (Yellow)', color: '#eab308' },
+const TARGETS: { key: PatchHandleTarget; label: string }[] = [
+  { key: 'pos', label: 'Anchor Point' },
+  { key: 'handleNext', label: 'Handle Forward (Pink)' },
+  { key: 'handlePrev', label: 'Handle Backward (Pink)' },
+  { key: 'handleCrossIn', label: 'Surface Handle (Yellow)' },
 ];
 
 export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
@@ -111,7 +106,31 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
     setAnchorHandleRotRad({ x: 0, y: 0, z: 0 });
   }
 
-  const activeVec = activeNode[selectedTargetKey];
+  // Shared point (node): the handles this patch does not map itself are edited on the node.
+  const patchNodes = useAppStore((s) => s.patchNodes);
+  const nodeOf = (point: PatchPoint) => {
+    const node = point.nodeId ? patchNodes.find((n) => n.id === point.nodeId) : undefined;
+    const use = node?.uses.find((u) => u.entityId === entity.id && u.pointId === point.id);
+    return node && use ? { node, use } : null;
+  };
+  const activeShared = nodeOf(activeNode);
+  const extraSlot = (key: PatchHandleTarget): string | null => {
+    if (!activeShared || (key !== 'handleCrossOut' && key !== 'sharedPink')) {return null;}
+    const extras = extraSlotsFor(activeShared.node, activeShared.use);
+    return key === 'handleCrossOut' ? extras.yellow : extras.pink;
+  };
+  const selectedExtra = extraSlot(selectedTargetKey);
+  const activeVec = activeShared && selectedExtra
+    ? nodeSlotLocal(activeShared.node, selectedExtra, entity.transform)
+    : selectedTargetKey === 'sharedPink' ? activeNode.pos : activeNode[selectedTargetKey];
+  const writeExtra = (localTip: { x: number; y: number; z: number }) => {
+    if (!activeShared || !selectedExtra) {return;}
+    setPatchNodeSlot(
+      activeShared.node.id,
+      selectedExtra,
+      nodeOffsetFromLocalTip(activeShared.node, localTip, entity.transform),
+    );
+  };
 
   const handleSelectTarget = (pointId: string, targetKey: PatchHandleTarget) => {
     setLocalPointId(pointId);
@@ -152,6 +171,11 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
 
   const updateCoord = (axis: 'x' | 'y' | 'z', value: number) => {
 
+    if (selectedExtra) {
+      writeExtra({ ...activeVec, [axis]: value });
+      return;
+    }
+    if (selectedTargetKey === 'sharedPink') {return;}
     if (selectedTargetKey === 'pos') {
       commitPoint(translatePatchNodeAnchor(activeNode, {
         ...activeNode.pos,
@@ -192,6 +216,16 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
 
   const scaleHandleLength = (factor: number) => {
     if (selectedTargetKey === 'pos') {return;}
+    if (selectedExtra) {
+      const p0 = activeNode.pos;
+      writeExtra({
+        x: p0.x + (activeVec.x - p0.x) * factor,
+        y: p0.y + (activeVec.y - p0.y) * factor,
+        z: p0.z + (activeVec.z - p0.z) * factor,
+      });
+      return;
+    }
+    if (selectedTargetKey === 'sharedPink') {return;}
     const nodeCopy = {
       ...activeNode,
       pos: { ...activeNode.pos },
@@ -216,19 +250,21 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
     commitPoint(nodeCopy);
   };
 
-  const entities = useAppStore((s) => s.entities);
-  const findEntity = (id: string) => entities.find((e) => e.id === id);
-  /** Joint state of a point on a linked edge, or null when the point is not shared. */
-  const jointInfo = (node: PatchPoint): { label: string; title: string; star: boolean } | null => {
-    const links = (patchParams.edgeLinks ?? []).filter(
-      (l) => (l.startPointId === node.id || l.endPointId === node.id) && isEdgeLinkValid(entity, l, findEntity),
-    );
-    if (links.length === 0) {return null;}
-    const star = sharedPointRole(patchParams, node.id, links) === 'star';
-    if (star) {
-      return { label: 'Shared', title: 'Shared by several linked edges: pairs cannot be coupled', star: true };
-    }
-    return { label: '', title: 'Point on a shared edge: handle pairs can be coupled (see below)', star: false };
+  /** Handle list of a point: a shared point lists all its handles, neutrally numbered. */
+  const targetsFor = (point: PatchPoint): { key: PatchHandleTarget; label: string }[] => {
+    const shared = nodeOf(point);
+    if (!shared) {return TARGETS;}
+    const extras = extraSlotsFor(shared.node, shared.use);
+    const alongIsNext = shared.node.along.includes(shared.use.next);
+    const list: { key: PatchHandleTarget; label: string }[] = [
+      { key: 'pos', label: 'Anchor Point' },
+      { key: alongIsNext ? 'handleNext' : 'handlePrev', label: 'Pink 1' },
+      { key: alongIsNext ? 'handlePrev' : 'handleNext', label: 'Pink 2' },
+    ];
+    if (extras.pink) {list.push({ key: 'sharedPink', label: 'Pink 3' });}
+    list.push({ key: 'handleCrossIn', label: 'Yellow 1' });
+    if (extras.yellow) {list.push({ key: 'handleCrossOut', label: 'Yellow 2' });}
+    return list;
   };
 
   const mirror: PatchMirror = patchParams.mirror ?? { x: false, y: false, z: false };
@@ -306,11 +342,6 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
                       }
                     }}
                   />
-                  {jointInfo(node) ? (
-                    <span className="patch-joint-badge" title={jointInfo(node)?.title}>
-                      🔗{jointInfo(node)?.star ? ' Shared' : ''}
-                    </span>
-                  ) : null}
                   <button
                     type="button"
                     className="btn btn--icon"
@@ -354,32 +385,23 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
 
                 {selected ? (
                   <div className="patch-point-inspector-detail panel-field-stack">
-                    {jointInfo(node) && !jointInfo(node)?.star ? (
-                      <>
-                        {PAIRS.map(({ pair, label }) => {
-                          const coupled = pair === 'yellow' ? node.joint === 'smooth' : node.pinkPair === 'coupled';
-                          return (
-                            <div key={pair} className="panel-field-stack">
-                              <PanelToggleGroup
-                                label={label}
-                                options={PAIR_OPTIONS}
-                                active={{ coupled, free: !coupled }}
-                                onToggle={(mode) => { setSharedPair(entity.id, node.id, pair, mode === 'coupled'); }}
-                              />
-                              {coupled ? null : (
-                                <button
-                                  type="button"
-                                  className="btn"
-                                  title="Put both handles of this pair opposite on their average direction (lengths stay) and couple them"
-                                  onClick={() => { setSharedPair(entity.id, node.id, pair, true); }}
-                                >
-                                  Align opposite (average)
-                                </button>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </>
+                    {activeShared ? (
+                      <div className="panel-field-stack">
+                        <span className="panel-field-label">
+                          {nodeHasFreePairs(activeShared.node)
+                            ? 'Some handles are free (Shift)'
+                            : 'All handles opposite'}
+                        </span>
+                        <button
+                          type="button"
+                          className="btn"
+                          disabled={!nodeHasFreePairs(activeShared.node)}
+                          title="Put freed handles back opposite on their average direction (lengths stay)"
+                          onClick={() => { alignPatchNode(activeShared.node.id); }}
+                        >
+                          Align handles opposite
+                        </button>
+                      </div>
                     ) : null}
                     <label htmlFor={`patch-target-${entity.id}`} className="panel-field-label">
                       Handle
@@ -390,7 +412,7 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
                       value={selectedTargetKey}
                       onChange={(e) => { handleSelectTarget(node.id, e.target.value as PatchHandleTarget); }}
                     >
-                      {TARGETS.map((t) => (
+                      {targetsFor(node).map((t) => (
                         <option key={t.key} value={t.key}>
                           {t.label}
                         </option>

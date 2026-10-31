@@ -1,3 +1,5 @@
+import type { PatchNode } from '@/scene/patch-nodes';
+import type { PatchSegment } from '@/scene/triangle-patch-edge-link';
 import type { PatchEdgeSelection } from '@/engine/triangle-patch-add-point-tool';
 import type { HistorySettingsAdapter, SceneHistoryState } from '@/engine/history/scene-history-controller';
 import type { KindParamFamily, KindParamsByFamily } from './kind-param-families';
@@ -249,6 +251,13 @@ export interface SceneApi {
   /** Highlights a patch edge segment (or none); used by edge copy/paste/link. */
   selectPatchEdge(selection: PatchEdgeSelection | null): void;
   getPatchEdgeSelection(): PatchEdgeSelection | null;
+  /** Joins two edge segments into shared points (start pairs with start). */
+  joinPatchEdges(aEntityId: string, aSegment: PatchSegment, bEntityId: string, bSegment: PatchSegment): void;
+  getPatchNodes(): readonly PatchNode[];
+  /** Sets one handle of a shared point (world offset from the point); `free` uncouples its pair. */
+  setPatchNodeSlot(nodeId: string, slot: string, worldOffset: Vec3, free: boolean): void;
+  /** "Align handles opposite" on a shared point. */
+  alignPatchNode(nodeId: string): void;
   /** Aligns all patches linked to `entityId` to it now (edges and smooth joints). */
   syncPatchLinksFrom(entityId: string): void;
   /** Undo/redo of scene object changes. */

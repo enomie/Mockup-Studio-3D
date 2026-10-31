@@ -31,6 +31,9 @@ export function PatchEdgesSection({ entity, params }: PatchEdgesSectionProps) {
   const selEnd = useAppStore((s) => s.patchEdgeSelection?.endPointId);
   const clipboard = usePatchEdgeClipboard();
   const findEntity = (id: string) => entities.find((e) => e.id === id);
+  /** Joined into shared points: direction is fixed, no Flip. */
+  const isNodeSegment = (segment: { startPointId: string; endPointId: string }) =>
+    [segment.startPointId, segment.endPointId].every((id) => params.points.find((p) => p.id === id)?.nodeId);
 
   return (
     <SubPanelSection title="Edges">
@@ -94,7 +97,7 @@ export function PatchEdgesSection({ entity, params }: PatchEdgesSectionProps) {
                   <span className="panel-field-label" title={valid ? 'Linked edge' : 'Link is broken (partner deleted or edge split)'}>
                     {valid ? '🔗' : '⚠'} {partnerLabel}
                   </span>
-                  {valid ? (
+                  {valid && !isNodeSegment(segment) ? (
                     <button
                       type="button"
                       className="btn btn--icon"

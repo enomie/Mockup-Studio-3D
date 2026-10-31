@@ -1,3 +1,4 @@
+import type { PatchNode } from '@/scene/patch-nodes';
 import type { PatchEdgeSelection } from '@/engine/triangle-patch-add-point-tool';
 import type { SceneHistoryState } from '@/engine/history/scene-history-controller';
 import { SCENE_DEFAULTS } from '@/config/scene-defaults';
@@ -95,6 +96,8 @@ export interface AppState {
   history: SceneHistoryState;
   patchEdgePickEntityId: string | null;
   patchEdgeSelection: PatchEdgeSelection | null;
+  /** Shared patch points (nodes). */
+  patchNodes: readonly PatchNode[];
   camera: CameraSettings;
   exportImageFormat: ExportImageFormat;
   exportGroundSurface: ExportGroundSurface;
@@ -152,6 +155,7 @@ export let state: AppState = {
   history: { canUndo: false, canRedo: false, undoLabel: null, redoLabel: null },
   patchEdgePickEntityId: null,
   patchEdgeSelection: null,
+  patchNodes: [],
   camera: cloneCameraSettings(camera.settings),
   exportImageFormat: 'png-transparent',
   exportGroundSurface: 'viewport',
@@ -285,6 +289,7 @@ export function syncEngineStateFromEngine(): void {
     history: sceneApi.getHistoryState(),
     patchEdgePickEntityId: sceneApi.getPatchEdgePickEntityId(),
     patchEdgeSelection: sceneApi.getPatchEdgeSelection(),
+    patchNodes: sceneApi.getPatchNodes(),
     camera: cloneCameraSettings(sceneApi.getCameraSettings()),
   };
   emit();

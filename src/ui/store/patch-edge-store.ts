@@ -3,6 +3,7 @@ import {
   defaultPatchParamsForKind,
   isPatchAssetKind,
   type PatchParams,
+  type PatchPoint,
 } from '@/scene/asset-triangle-patch';
 import type { AssetEntity } from '@/scene/entity-types';
 import {
@@ -132,37 +133,11 @@ export function pastePatchEdge(entityId: string, segment: PatchSegment, link: bo
     return true;
   }
 
+  // Joining: the 4 end points become 2 shared points used by both patches (average,
+  // all handles opposite). The copied side's segment pairs with the oriented target.
   detachPartners(entityId, target.params, segment);
   detachPartners(source.entity.id, source.params, clip.segment);
-  const targetLink: PatchEdgeLink = {
-    startPointId: oriented.startPointId,
-    endPointId: oriented.endPointId,
-    partnerEntityId: source.entity.id,
-    partnerStartPointId: clip.segment.startPointId,
-    partnerEndPointId: clip.segment.endPointId,
-  };
-  const sourceLink: PatchEdgeLink = {
-    startPointId: clip.segment.startPointId,
-    endPointId: clip.segment.endPointId,
-    partnerEntityId: entityId,
-    partnerStartPointId: oriented.startPointId,
-    partnerEndPointId: oriented.endPointId,
-  };
-  // Re-read the source: detaching partners may have touched it.
-  const sourceNow = findPatch(source.entity.id) ?? source;
-  setKindParams('patch', source.entity.id, {
-    edgeLinks: [...withoutSegmentLinks(sourceNow.params, clip.segment), sourceLink],
-  });
-  const targetNow = findPatch(entityId) ?? target;
-  setKindParams('patch', entityId, {
-    points,
-    edgeLinks: [...withoutSegmentLinks(targetNow.params, segment), targetLink],
-  });
-  // New links: both pairs at both end points coupled, opposite on the average direction.
-  for (const pointId of [segment.startPointId, segment.endPointId]) {
-    alignPair(entityId, pointId, 'yellow');
-    alignPair(entityId, pointId, 'pink');
-  }
+  store.sceneApi?.joinPatchEdges(source.entity.id, clip.segment, entityId, oriented);
   return true;
 }
 
@@ -196,7 +171,29 @@ export function unlinkPatchEdge(entityId: string, link: PatchEdgeLink): void {
   if (!owner) {return;}
   const segment = { startPointId: link.startPointId, endPointId: link.endPointId };
   detachPartners(entityId, owner.params, segment);
-  setKindParams('patch', entityId, { edgeLinks: withoutSegmentLinks(owner.params, segment) });
+  const remaining = withoutSegmentLinks(owner.params, segment);
+  // Shared points at the ends become separate points again (one per patch), unless they
+  // still belong to another joined segment. The node dissolves once no patch uses it.
+  const pairs: [string, string][] = [
+    [link.startPointId, link.partnerStartPointId],
+    [link.endPointId, link.partnerEndPointId],
+  ];
+  const stillShared = (id: string) => remaining.some((l) => l.startPointId === id || l.endPointId === id);
+  const ownIds = pairs.filter(([id]) => !stillShared(id)).map(([id]) => id);
+  const partnerIds = pairs.filter(([id]) => !stillShared(id)).map(([, pid]) => pid);
+  setKindParams('patch', entityId, { points: withoutNodes(owner.params.points, ownIds), edgeLinks: remaining });
+  const partner = findPatch(link.partnerEntityId);
+  if (partner) {
+    setKindParams('patch', partner.entity.id, { points: withoutNodes(partner.params.points, partnerIds) });
+  }
+}
+
+function withoutNodes(points: readonly PatchPoint[], ids: readonly string[]): PatchPoint[] {
+  return points.map((point) => {
+    if (!ids.includes(point.id) || !point.nodeId) {return point;}
+    const { nodeId: _node, ...rest } = point;
+    return rest;
+  });
 }
 
 /** Reverses which ends belong together; this patch keeps its edge, the partner follows. */
@@ -228,4 +225,14 @@ export function flipPatchEdgeLink(entityId: string, link: PatchEdgeLink): void {
     ...(points ? { points } : {}),
     edgeLinks: [...withoutSegmentLinks(partner.params, partnerSegment), back],
   });
+}
+
+/** Sets one handle of a shared point (world offset); coupled pairs turn along. */
+export function setPatchNodeSlot(nodeId: string, slot: string, worldOffset: { x: number; y: number; z: number }): void {
+  store.sceneApi?.setPatchNodeSlot(nodeId, slot, worldOffset, false);
+}
+
+/** "Align handles opposite" on a shared point. */
+export function alignPatchNode(nodeId: string): void {
+  store.sceneApi?.alignPatchNode(nodeId);
 }

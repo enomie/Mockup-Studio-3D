@@ -28,6 +28,13 @@ import {
 } from '@/scene/asset-triangle-patch';
 import type { EntityRegistry } from './entity-registry';
 import { applyInnerPinkCoupling, pairOfHandle } from '@/scene/triangle-patch-coupled-pairs';
+import {
+  extraSlotsFor,
+  nodeSlotWorld,
+  setNodeSlot,
+  type PatchNode,
+  type PatchNodeUse,
+} from '@/scene/patch-nodes';
 
 export const PATCH_GIZMO_HANDLE_ROLE = 'patchGizmoHandle';
 
@@ -35,7 +42,8 @@ export const PATCH_GIZMO_HANDLE_ROLE = 'patchGizmoHandle';
 const MIN_HANDLE_LENGTH_M = 0.002;
 const RING_AXIS = new Vector3(0, 0, 1);
 
-type LeverKey = Exclude<PatchHandleTarget, 'pos'>;
+/** Own handles with a length ring; the extra handles of a shared point have none. */
+type LeverKey = Exclude<PatchHandleTarget, 'pos' | 'handleCrossOut' | 'sharedPink'>;
 
 interface LengthDragState {
   pointId: string;
@@ -83,7 +91,11 @@ interface PointHelpers {
   handleNext: Mesh;
   handlePrev: Mesh;
   handleCrossIn: Mesh;
+  /** Shared point: the node's other yellow handle (hidden on normal points). */
   handleCrossOut: Mesh;
+  /** Shared end point: the node's other neighboring-edge pink handle. */
+  sharedPink: Mesh;
+  lineSharedPink: Line;
   lineNext: Line;
   linePrev: Line;
   lineCross: Line;
@@ -94,7 +106,6 @@ interface HelperResources {
   anchorGeo: SphereGeometry;
   anchorMat: MeshBasicNodeMaterial;
   /** The partner patch's yellow handle shown as this point's counterpart. */
-  partnerYellowMat: MeshBasicNodeMaterial;
   jointRingGeo: TorusGeometry;
   jointRingMat: MeshBasicNodeMaterial;
   edgeAnchorGeo: SphereGeometry;
@@ -132,7 +143,6 @@ function createHelperResources(): HelperResources {
   return {
     anchorGeo: new SphereGeometry(0.025, 16, 16),
     anchorMat: overlayMeshMaterial(0x0284c7),
-    partnerYellowMat: overlayMeshMaterial(0xf59e0b),
     jointRingGeo: new TorusGeometry(0.038, 0.005, 8, 40),
     jointRingMat: overlayMeshMaterial(0x22c55e),
     // Edge points: purple and a bit smaller than the corners
@@ -220,8 +230,9 @@ export class TrianglePatchGizmoController {
       lineNext: line(2, linePinkMat),
       linePrev: line(2, linePinkMat),
       lineCross: line(3, lineYellowMat),
+      sharedPink: handleMesh(handleGeo, pinkMat, 'sharedPink'),
+      lineSharedPink: line(2, linePinkMat),
     };
-    helpers.handleCrossOut.userData.defaultMaterial = helpers.handleCrossOut.material;
     this.helperGroup.add(
       helpers.jointRing,
       helpers.anchor,
@@ -232,6 +243,8 @@ export class TrianglePatchGizmoController {
       helpers.lineNext,
       helpers.linePrev,
       helpers.lineCross,
+      helpers.sharedPink,
+      helpers.lineSharedPink,
     );
     return helpers;
   }
@@ -247,7 +260,10 @@ export class TrianglePatchGizmoController {
       helpers.lineNext,
       helpers.linePrev,
       helpers.lineCross,
+      helpers.sharedPink,
+      helpers.lineSharedPink,
     );
+    helpers.lineSharedPink.geometry.dispose();
     helpers.lineNext.geometry.dispose();
     helpers.linePrev.geometry.dispose();
     helpers.lineCross.geometry.dispose();
@@ -271,7 +287,7 @@ export class TrianglePatchGizmoController {
     this.handleMeshes.length = 0;
     for (const point of points) {
       const h = this.pointHelpers.get(point.id);
-      if (h) {this.handleMeshes.push(h.anchor, h.handleNext, h.handlePrev, h.handleCrossIn, h.handleCrossOut);}
+      if (h) {this.handleMeshes.push(h.anchor, h.handleNext, h.handlePrev, h.handleCrossIn, h.handleCrossOut, h.sharedPink);}
     }
   }
 
@@ -297,7 +313,7 @@ export class TrianglePatchGizmoController {
   private activeLeverKey(): LeverKey | null {
     const key = this.activeTarget?.targetKey;
     // The cross-out counterpart belongs to the partner patch: no length ring here.
-    return key && key !== 'pos' && key !== 'handleCrossOut' ? key : null;
+    return key && key !== 'pos' && key !== 'handleCrossOut' && key !== 'sharedPink' ? key : null;
   }
 
   private syncLengthRing(): void {
@@ -504,15 +520,17 @@ export class TrianglePatchGizmoController {
       const pNext = toWorld(node.handleNext);
       const pPrev = toWorld(node.handlePrev);
       const pCrossIn = toWorld(node.handleCrossIn);
-      // Cross out = the counterpart: the partner patch's yellow handle (world position);
-      // without a partner there is no counterpart and the handle is hidden.
-      const partner = this.partnerCrossTarget(params, node.id);
-      const partnerTip = partner ? this.partnerCrossWorld(partner) : null;
-      const pCrossOut = partnerTip ?? toWorld(node.handleCrossOut);
-      h.handleCrossOut.visible = partnerTip !== null;
-      h.handleCrossOut.material = (partnerTip
-        ? this.helperResources.partnerYellowMat
-        : h.handleCrossOut.userData.defaultMaterial) as MeshBasicNodeMaterial;
+      // Shared point: one point with all its handles - the node's handles this patch does
+      // not map itself are shown here too (normal colors).
+      const extra = this.nodeExtras(node);
+      const pCrossOut = extra.yellow ?? pPos;
+      h.handleCrossOut.visible = extra.yellow !== null;
+      h.sharedPink.visible = extra.pink !== null;
+      h.lineSharedPink.visible = extra.pink !== null;
+      if (extra.pink) {
+        h.sharedPink.position.copy(extra.pink);
+        h.lineSharedPink.geometry.setFromPoints([pPos, extra.pink]);
+      }
 
       h.anchor.position.copy(pPos);
       // Shared point marker: a ring around the anchor while the point is coupled.
@@ -525,7 +543,7 @@ export class TrianglePatchGizmoController {
 
       h.lineNext.geometry.setFromPoints([pPos, pNext]);
       h.linePrev.geometry.setFromPoints([pPos, pPrev]);
-      h.lineCross.geometry.setFromPoints(partnerTip ? [pCrossIn, pPos, pCrossOut] : [pCrossIn, pPos, pPos]);
+      h.lineCross.geometry.setFromPoints(extra.yellow ? [pCrossIn, pPos, pCrossOut] : [pCrossIn, pPos, pPos]);
     }
     this.syncLengthRing();
   }
@@ -601,10 +619,9 @@ export class TrianglePatchGizmoController {
         if (pair === 'yellow' && node.joint === 'smooth') {node.joint = 'corner';}
         if (pair === 'pink' && node.pinkPair === 'coupled') {node.pinkPair = 'free';}
       }
-      if (targetKey === 'handleCrossOut') {
-        // The counterpart is the partner's yellow handle: edit the partner patch.
-        const partner = this.partnerCrossTarget(params, node.id);
-        if (partner) {this.movePartnerCross(partner, movedMesh.position, isShiftHeld());}
+      if (targetKey === 'handleCrossOut' || targetKey === 'sharedPink') {
+        // Extra handle of a shared point: edit the node directly (Shift frees its pair).
+        this.moveNodeExtra(node, targetKey === 'handleCrossOut' ? 'yellow' : 'pink', movedMesh.position);
         return true;
       }
       node[targetKey].x = newLocal.x;
@@ -619,46 +636,35 @@ export class TrianglePatchGizmoController {
     return true;
   }
 
-  /** Partner patch and point sharing `pointId` over an edge link, or null. */
-  private partnerCrossTarget(params: PatchParams, pointId: string): { entityId: string; pointId: string } | null {
-    for (const link of params.edgeLinks ?? []) {
-      const partnerPointId = link.startPointId === pointId
-        ? link.partnerStartPointId
-        : link.endPointId === pointId ? link.partnerEndPointId : null;
-      if (!partnerPointId) {continue;}
-      const partnerParams = this.registry.getRuntime(link.partnerEntityId)?.entity.patchParams;
-      if (partnerParams && findPatchPoint(partnerParams, partnerPointId)) {
-        return { entityId: link.partnerEntityId, pointId: partnerPointId };
-      }
-    }
-    return null;
+  private nodeAndUse(point: PatchPoint): { node: PatchNode; use: PatchNodeUse } | null {
+    if (!point.nodeId || !this.activeEntityId) {return null;}
+    const node = this.registry.getPatchNodes().find((n) => n.id === point.nodeId);
+    const use = node?.uses.find((u) => u.entityId === this.activeEntityId && u.pointId === point.id);
+    return node && use ? { node, use } : null;
   }
 
-  private partnerCrossWorld(target: { entityId: string; pointId: string }): Vector3 | null {
-    const runtime = this.registry.getRuntime(target.entityId);
-    const point = runtime?.entity.patchParams ? findPatchPoint(runtime.entity.patchParams, target.pointId) : undefined;
-    if (!runtime || !point) {return null;}
-    runtime.object.updateMatrixWorld(true);
-    const c = point.handleCrossIn;
-    return new Vector3(c.x, c.y, c.z).applyMatrix4(runtime.object.matrixWorld);
-  }
-
-  /** Moves the partner's yellow handle to `world`; Shift breaks the surface joint. */
-  private movePartnerCross(target: { entityId: string; pointId: string }, world: Vector3, shift: boolean): void {
-    const runtime = this.registry.getRuntime(target.entityId);
-    const params = runtime?.entity.patchParams;
-    const point = params ? findPatchPoint(params, target.pointId) : undefined;
-    if (!runtime || !params || !point) {return;}
-    runtime.object.updateMatrixWorld(true);
-    const local = world.clone().applyMatrix4(runtime.object.matrixWorld.clone().invert());
-    const next: PatchPoint = {
-      ...point,
-      handleCrossIn: { x: local.x, y: local.y, z: local.z },
-      ...(shift && point.joint === 'smooth' ? { joint: 'corner' as const } : {}),
+  /** World tips of the node handles this patch does not map (other yellow / pink). */
+  private nodeExtras(point: PatchPoint): { yellow: Vector3 | null; pink: Vector3 | null } {
+    const found = this.nodeAndUse(point);
+    if (!found) {return { yellow: null, pink: null };}
+    const slots = extraSlotsFor(found.node, found.use);
+    const tip = (slot: string | null) => {
+      if (!slot) {return null;}
+      const w = nodeSlotWorld(found.node, slot);
+      return new Vector3(w.x, w.y, w.z);
     };
-    this.registry.setKindParams('patch', target.entityId, { points: replacePatchPoint(params.points, next) });
-    const updated = this.registry.getRuntime(target.entityId)?.entity.patchParams;
-    if (updated) {this.onPatchChange?.(target.entityId, updated);}
+    return { yellow: tip(slots.yellow), pink: tip(slots.pink) };
+  }
+
+  private moveNodeExtra(point: PatchPoint, which: 'yellow' | 'pink', world: Vector3): void {
+    const found = this.nodeAndUse(point);
+    if (!found) {return;}
+    const slot = extraSlotsFor(found.node, found.use)[which];
+    if (!slot) {return;}
+    const p = found.node.pos;
+    const offset = { x: world.x - p.x, y: world.y - p.y, z: world.z - p.z };
+    const next = setNodeSlot(found.node, slot, offset, isShiftHeld());
+    this.registry.setPatchNodes(this.registry.getPatchNodes().map((n) => (n.id === next.id ? next : n)));
     this.syncHelpersFromEntity();
   }
 

@@ -34,12 +34,17 @@ export type PatchPairMode = 'coupled' | 'free';
 
 export type PatchJoint = 'smooth' | 'corner';
 
+/**
+ * Editable target of a patch point. On a shared point 'handleCrossOut' stands for the
+ * node's other yellow handle and 'sharedPink' for its other neighboring-edge pink handle.
+ */
 export type PatchHandleTarget =
   | 'pos'
   | 'handleNext'
   | 'handlePrev'
   | 'handleCrossIn'
-  | 'handleCrossOut';
+  | 'handleCrossOut'
+  | 'sharedPink';
 
 /** The patch control point (anchor or handle) currently picked for editing. */
 export interface PatchHandleSelection {

@@ -1,6 +1,6 @@
 # Plan: Gemeinsame Punkte wirklich EINMAL – „Knoten“, die mehrere Patches benutzen
 
-Status: **N1 erledigt** – N2 (Bedienung) offen
+Status: **N1 + N2 erledigt** – N3 (Aufräumen) offen
 Ersetzt das bisherige Modell „jeder Patch hat eigene Punkte, Kopien werden synchron gehalten“ (Schritt A Link, C1/C2/C3, Coupled Pairs, Shared-Point-Plan). Die Flächen-Mathematik (Classic + Kanten-Korrektur D) bleibt.
 
 ---
@@ -110,3 +110,14 @@ Knoten liegen in **Weltkoordinaten** (sie gehören keinem Patch). Die Patches le
 - Engine: Knoten im Entity-Registry, Undo/Redo-Schnappschuss enthält Knoten, `PatchNodeSync` gleicht nach jeder Änderung ab. Alte Kanten-Synchronisation überspringt Kanten, deren Enden Knoten sind.
 - Tests: `patch-nodes.test.ts` (11) – 4 → 2, ein Name, gemeinsamer Kanten-Handle, Paare gegenüber, Bearbeiten über Patch A erreicht Patch B, Shift/Align, Verschieben nimmt Knoten mit, Patch löschen löst Knoten auf, Idempotenz; `patch-nodes-crease.test.ts` – Knick < 0,1° zwischen zwei unterschiedlich gedrehten Patches.
 - Bedienung noch unverändert (N2): „Link“ im Panel erzeugt noch das alte Modell.
+
+## Umsetzung N2
+
+- **Link** legt jetzt Knoten an: 4 Punkte → 2 gemeinsame Punkte, eindeutig benannt („Shared 1“, „Shared 2“, …).
+- **Gizmo:** an einem gemeinsamen Punkt alle Handles des Knotens in normalen Farben – zusätzlich zu den eigenen der zweite gelbe Handle und (an Endpunkten) der zweite rosa Handle; Ziehen ändert den Knoten direkt, Shift löst das Paar.
+- **Inspector:** Handle-Liste „Anchor Point, Pink 1–3, Yellow 1–2“; Status „All handles opposite“ / „Some handles are free (Shift)“; Knopf „Align handles opposite“. Bearbeiten jedes Handles (X/Y/Z, Length) direkt.
+- **Punkt einfügen** auf gemeinsamer Kante → ein neuer gemeinsamer Punkt (beide Patches).
+- **Punkt löschen** → verschwindet aus beiden Patches (Knoten löst sich auf).
+- **Unlink** → die Endpunkte werden wieder getrennte Punkte (sofern nicht Teil eines weiteren gemeinsamen Segments). „Flip“ bei Knoten-Kanten ausgeblendet.
+- Browser-Test: Link → 2 Knoten; Handle-Liste vollständig; „Yellow 2“ im Patch 2 bearbeitet → Punkt in Patch 1 ändert sich; Einfügen → 3 Knoten; Unlink eines Teilsegments → nur dessen freier Endpunkt wird getrennt; Undo stellt alles wieder her.
+- Nicht prüfbar (kein sichtbarer Viewport): Ziehen der Zusatz-Handles und Shift im Viewport.

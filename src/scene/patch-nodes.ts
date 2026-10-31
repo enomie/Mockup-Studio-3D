@@ -338,6 +338,7 @@ export function joinSharedEdge(
   a: JoinSide,
   b: JoinSide,
   newNodeId: () => string,
+  newNodeName: () => string = () => '',
 ): { nodes: PatchNode[]; aParams: PatchParams; bParams: PatchParams } | null {
   const pa = a.entity.patchParams;
   const pb = b.entity.patchParams;
@@ -354,13 +355,15 @@ export function joinSharedEdge(
     const ka = segmentHandleKeys(pa, aId, aOther);
     const kb = segmentHandleKeys(pb, bId, bOther);
     if (!ap || !bp || !ka || !kb || ap.nodeId || bp.nodeId) {return null;}
-    nodes.push(createEndNode(
+    const node = createEndNode(
       newNodeId(),
       { entityId: a.entity.id, transform: a.entity.transform, point: ap },
       ka.a,
       { entityId: b.entity.id, transform: b.entity.transform, point: bp },
       kb.a,
-    ));
+    );
+    const name = newNodeName();
+    nodes.push(name ? { ...node, name } : node);
   }
   const link = (from: JoinSide, to: JoinSide): PatchEdgeLink => ({
     startPointId: from.segment.startPointId,
@@ -472,4 +475,67 @@ export function reconcilePatchNodes(
     }
   }
   return { nodes: changedNodes.size > 0 ? next : null, points };
+}
+
+// --- Editing a node directly (handles a patch does not own) ------------------------------
+
+/**
+ * Handles of the node a patch does not map itself (the other patch's yellow and, at end
+ * points, its neighboring-edge pink). They are shown and edited on the same point.
+ */
+export function extraSlotsFor(node: PatchNode, use: PatchNodeUse): { yellow: string | null; pink: string | null } {
+  const partnerOf = (slot: string) => {
+    const pair = pairWith(node, slot);
+    return pair ? (pair.a === slot ? pair.b : pair.a) : null;
+  };
+  const own = new Set([use.next, use.prev, use.cross]);
+  const yellow = partnerOf(use.cross);
+  const off = node.along.includes(use.next) ? use.prev : use.next;
+  const pink = node.along.includes(off) ? null : partnerOf(off);
+  return {
+    yellow: yellow && !own.has(yellow) ? yellow : null,
+    pink: pink && !own.has(pink) ? pink : null,
+  };
+}
+
+/** Sets one handle of the node (world offset). Coupled pairs turn along unless `free`. */
+export function setNodeSlot(node: PatchNode, slot: string, worldOffset: Vec3, free = false): PatchNode {
+  let next: PatchNode = { ...node, handles: { ...node.handles, [slot]: worldOffset } };
+  const pair = pairWith(next, slot);
+  if (!pair) {return next;}
+  if (free) {
+    return { ...next, pairs: next.pairs.map((p) => (p === pair ? { ...p, coupled: false } : p)) };
+  }
+  if (pair.coupled) {next = { ...next, handles: realignPartner(next, pair, slot) };}
+  return next;
+}
+
+/** True when any handle pair of the node was freed (not opposite any more). */
+export function nodeHasFreePairs(node: PatchNode): boolean {
+  return node.pairs.some((p) => !p.coupled);
+}
+
+/** World position of a node handle tip. */
+export function nodeSlotWorld(node: PatchNode, slot: string): Vec3 {
+  const h = node.handles[slot];
+  return { x: node.pos.x + h.x, y: node.pos.y + h.y, z: node.pos.z + h.z };
+}
+
+/** A node handle tip in the local space of a patch (for the inspector fields). */
+export function nodeSlotLocal(node: PatchNode, slot: string, transform: EntityTransform): Vec3 {
+  return toLocalPoint(nodeSlotWorld(node, slot), transform);
+}
+
+/** World offset of a node handle whose tip is given in a patch's local space. */
+export function nodeOffsetFromLocalTip(node: PatchNode, localTip: Vec3, transform: EntityTransform): Vec3 {
+  const w = toWorldPoint(localTip, transform);
+  return { x: w.x - node.pos.x, y: w.y - node.pos.y, z: w.z - node.pos.z };
+}
+
+/** Next free "Shared N" name (one name per shared point, unique in the scene). */
+export function nextSharedNodeName(nodes: readonly PatchNode[], taken: readonly string[] = []): string {
+  const used = new Set([...nodes.map((n) => n.name), ...taken]);
+  let i = 1;
+  while (used.has(`Shared ${i}`)) {i++;}
+  return `Shared ${i}`;
 }

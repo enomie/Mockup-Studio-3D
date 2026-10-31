@@ -7,7 +7,10 @@ import {
   applyPointEditToNode,
   joinSharedEdge,
   moveNodeWithPatch,
+  extraSlotsFor,
+  nextSharedNodeName,
   reconcilePatchNodes,
+  setNodeSlot,
   removeNodeUse,
   resolvePatchPoints,
   type PatchNode,
@@ -180,6 +183,33 @@ describe('shared nodes', () => {
       expect(r.nodes).toEqual([]);
       const [A3] = apply([A], r.points);
       expect(pt(A3, segA.startPointId).nodeId).toBeUndefined();
+    });
+  });
+
+  describe('editing a shared point directly', () => {
+    it('lists the handles a patch does not own (other yellow, other neighboring-edge pink)', () => {
+      const { nodes } = joined();
+      const node = nodes[0];
+      const useA = node.uses.find((u) => u.entityId === 'A');
+      if (!useA) {throw new Error('no use');}
+      expect(extraSlotsFor(node, useA)).toEqual({ yellow: 'yellowB', pink: 'pinkB' });
+    });
+
+    it('setting an extra handle turns its coupled partner; free uncouples', () => {
+      const { nodes } = joined();
+      const node = nodes[0];
+      const moved = setNodeSlot(node, 'yellowB', v(0, 0.4, 0.4));
+      expect(moved.handles.yellowA).not.toEqual(node.handles.yellowA);
+      const freed = setNodeSlot(node, 'yellowB', v(0, 0.4, 0.4), true);
+      expect(freed.handles.yellowA).toEqual(node.handles.yellowA);
+      expect(freed.pairs.find((q) => q.a === 'yellowA')?.coupled).toBe(false);
+    });
+
+    it('names shared points uniquely', () => {
+      const { nodes } = joined();
+      const named = nodes.map((n, i) => ({ ...n, name: `Shared ${String(i + 1)}` }));
+      expect(nextSharedNodeName(named)).toBe('Shared 3');
+      expect(nextSharedNodeName([], ['Shared 1'])).toBe('Shared 2');
     });
   });
 });
