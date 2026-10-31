@@ -1,6 +1,6 @@
 # Plan: Classic-Fläche mit Kanten-Korrektur (ersetzt „Smooth Edges“)
 
-Status: **Abgestimmt – wartet auf Start (D1)**
+Status: **D1 erledigt (Mathe + Messung)** – D2 (Einbau) offen
 Vorgänger: `plan-patch-surface-tangent.md` (Schritt B, Smooth Edges), `plan-patch-smooth-corner.md` (Schritt C, Gelenke)
 
 ---
@@ -87,6 +87,24 @@ Bezeichnungen pro Kante *i*: Parameter entlang der Kante `t`, Abstand von der Ka
 | Mirror-Kopien | Geometrie wird einmal gebaut und gespiegelt – unverändert |
 
 ---
+
+## Messbericht D1
+
+Modul: `src/engine/patch-edge-correction.ts`, Tests: `patch-edge-correction.test.ts`. Aufbau: zwei ungleiche Classic-Dreiecke, gemeinsame Kante mit Kantenpunkt (zwei Links), dritte Ecken unterschiedlich angehoben (Nachbarkanten nicht in einer Ebene), Smooth-Gelenke nach einem Sync (Schritt C).
+
+| | max. Knick entlang der ganzen Kante |
+|---|---|
+| Classic | 39,14° |
+| Classic + Kanten-Korrektur | **0,0026°** |
+
+- Unverbundene Patches: keine Korrektur, exakt Classic.
+- Kanten exakt (< 1e-9), Dreieck und Viereck.
+- Außerhalb des Streifens (30 %): identisch zu Classic (< 1e-12, reine Rundung).
+- Im Streifen: maximale Formabweichung zu Classic **7,6 cm** bei einem Patch von ca. 1 m (in diesem bewusst stark verdrehten Testfall).
+- Corner-Gelenke: keine Korrektur.
+- Ecken: keine NaN.
+
+**Erkenntnis:** Die Restabweichung kam von der numerischen Ableitung der Classic-Fläche. Mit einer Ableitung zweiter Ordnung sank sie von 0,023° auf 0,0026°.
 
 ## Entscheidungen
 

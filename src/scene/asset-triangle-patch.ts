@@ -51,6 +51,8 @@ export interface PatchParams {
    * so linked patches with opposite handles meet without a crease.
    */
   surface?: PatchSurfaceMode;
+  /** Width of the smoothing strip along linked edges (share of the patch, 0.1–0.6); absent = 0.3. */
+  edgeBlend?: number;
   /** Edge segments linked to another patch (stored on both sides); absent means none. */
   edgeLinks?: PatchEdgeLink[];
 }
@@ -117,6 +119,7 @@ export function clonePatchParams(params: PatchParams): PatchParams {
     edgeParams: { ...params.edgeParams },
     ...(params.mirror ? { mirror: { ...params.mirror } } : {}),
     ...(params.surface ? { surface: params.surface } : {}),
+    ...(params.edgeBlend !== undefined ? { edgeBlend: params.edgeBlend } : {}),
     ...(params.edgeLinks ? { edgeLinks: params.edgeLinks.map((link) => ({ ...link })) } : {}),
   };
 }
