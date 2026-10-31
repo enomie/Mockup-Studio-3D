@@ -37,6 +37,13 @@ export class PatchEdgeLinkSync {
     }
   }
 
+  /** Pulls the partners of `sourceIds` along right now (the given patches win). */
+  runFrom(sourceIds: readonly string[]): void {
+    const byId = new Map(this.host.getEntities().map((entity) => [entity.id, entity]));
+    const updates = propagateEdgeLinks(sourceIds, (id) => byId.get(id));
+    for (const [entityId, points] of updates) {this.host.writePatchPoints(entityId, points);}
+  }
+
   private run(): void {
     this.scheduled = false;
     const sources = [...this.pendingSources];

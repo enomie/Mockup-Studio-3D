@@ -9,6 +9,7 @@ import {
   OctahedronGeometry,
   Quaternion,
   SphereGeometry,
+  BoxGeometry,
   TorusGeometry,
   Vector3,
   type Object3D,
@@ -61,8 +62,24 @@ export function closestAxisParamToRay(origin: Vector3, dir: Vector3, ray: Ray): 
 
 export type PatchSubTarget = PatchHandleSelection;
 
+/** Shift state for Shift+drag (break a smooth joint); tracked globally, the gizmo has no event. */
+let shiftHeld = false;
+if (typeof window !== 'undefined') {
+  const track = (event: KeyboardEvent) => { shiftHeld = event.shiftKey; };
+  window.addEventListener('keydown', track, { capture: true });
+  window.addEventListener('keyup', track, { capture: true });
+  window.addEventListener('pointerdown', (event) => { shiftHeld = event.shiftKey; }, { capture: true });
+  window.addEventListener('blur', () => { shiftHeld = false; });
+}
+
+function isShiftHeld(): boolean {
+  return shiftHeld;
+}
+
 interface PointHelpers {
   anchor: Mesh;
+  /** Ring around the anchor of a smooth joint (faces the camera). */
+  jointRing: Mesh;
   handleNext: Mesh;
   handlePrev: Mesh;
   handleCrossIn: Mesh;
@@ -76,6 +93,10 @@ interface PointHelpers {
 interface HelperResources {
   anchorGeo: SphereGeometry;
   anchorMat: MeshBasicNodeMaterial;
+  /** Corner joint anchor: a cube instead of a sphere. */
+  cornerJointGeo: BoxGeometry;
+  jointRingGeo: TorusGeometry;
+  jointRingMat: MeshBasicNodeMaterial;
   edgeAnchorGeo: SphereGeometry;
   edgeAnchorMat: MeshBasicNodeMaterial;
   handleGeo: OctahedronGeometry;
@@ -111,6 +132,9 @@ function createHelperResources(): HelperResources {
   return {
     anchorGeo: new SphereGeometry(0.025, 16, 16),
     anchorMat: overlayMeshMaterial(0x0284c7),
+    cornerJointGeo: new BoxGeometry(0.04, 0.04, 0.04),
+    jointRingGeo: new TorusGeometry(0.038, 0.005, 8, 40),
+    jointRingMat: overlayMeshMaterial(0x22c55e),
     // Edge points: purple and a bit smaller than the corners
     edgeAnchorGeo: new SphereGeometry(0.021, 16, 16),
     edgeAnchorMat: overlayMeshMaterial(0xa855f7),
@@ -179,7 +203,13 @@ export class TrianglePatchGizmoController {
       return mesh;
     };
 
+    const jointRing = new Mesh(this.helperResources.jointRingGeo, this.helperResources.jointRingMat);
+    jointRing.renderOrder = 999;
+    jointRing.frustumCulled = false;
+    jointRing.visible = false;
+    jointRing.onBeforeRender = (_renderer, _scene, camera) => { jointRing.quaternion.copy(camera.quaternion); };
     const helpers: PointHelpers = {
+      jointRing,
       anchor: isCorner
         ? handleMesh(anchorGeo, anchorMat, 'pos')
         : handleMesh(edgeAnchorGeo, edgeAnchorMat, 'pos'),
@@ -191,7 +221,9 @@ export class TrianglePatchGizmoController {
       linePrev: line(2, linePinkMat),
       lineCross: line(3, lineYellowMat),
     };
+    helpers.anchor.userData.defaultGeometry = helpers.anchor.geometry;
     this.helperGroup.add(
+      helpers.jointRing,
       helpers.anchor,
       helpers.handleNext,
       helpers.handlePrev,
@@ -206,6 +238,7 @@ export class TrianglePatchGizmoController {
 
   private disposePointHelpers(helpers: PointHelpers): void {
     this.helperGroup.remove(
+      helpers.jointRing,
       helpers.anchor,
       helpers.handleNext,
       helpers.handlePrev,
@@ -459,6 +492,7 @@ export class TrianglePatchGizmoController {
     parentObject.updateMatrixWorld(true);
 
     this.ensurePointHelpers(params);
+    const linkedIds = new Set((params.edgeLinks ?? []).flatMap((l) => [l.startPointId, l.endPointId]));
     for (const node of params.points) {
       const h = this.pointHelpers.get(node.id);
       if (!h) {continue;}
@@ -472,6 +506,13 @@ export class TrianglePatchGizmoController {
       const pCrossOut = toWorld(node.handleCrossOut);
 
       h.anchor.position.copy(pPos);
+      // Joint marker: smooth = round anchor with a ring, corner = cube.
+      const joint = linkedIds.has(node.id) ? node.joint ?? 'corner' : null;
+      h.anchor.geometry = joint === 'corner'
+        ? this.helperResources.cornerJointGeo
+        : (h.anchor.userData.defaultGeometry as BufferGeometry);
+      h.jointRing.visible = joint === 'smooth';
+      h.jointRing.position.copy(pPos);
       h.handleNext.position.copy(pNext);
       h.handlePrev.position.copy(pPrev);
       h.handleCrossIn.position.copy(pCrossIn);
@@ -549,6 +590,8 @@ export class TrianglePatchGizmoController {
         }
       }
     } else {
+      // Shift while dragging a handle breaks a smooth joint (Illustrator-style corner).
+      if (isShiftHeld() && node.joint === 'smooth') {node.joint = 'corner';}
       // Handle moved
       node[targetKey].x = newLocal.x;
       node[targetKey].y = newLocal.y;

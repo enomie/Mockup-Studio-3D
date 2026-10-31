@@ -249,6 +249,8 @@ export interface SceneApi {
   /** Highlights a patch edge segment (or none); used by edge copy/paste/link. */
   selectPatchEdge(selection: PatchEdgeSelection | null): void;
   getPatchEdgeSelection(): PatchEdgeSelection | null;
+  /** Aligns all patches linked to `entityId` to it now (edges and smooth joints). */
+  syncPatchLinksFrom(entityId: string): void;
   /** Undo/redo of scene object changes. */
   undo(): void;
   redo(): void;

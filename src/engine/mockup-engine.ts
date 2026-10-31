@@ -691,6 +691,10 @@ export class MockupEngine implements SceneApi {
     this.emit();
   }
 
+  syncPatchLinksFrom(entityId: string): void {
+    this.edgeLinkSync.runFrom([entityId]);
+  }
+
   undo(): void {
     void this.history.undo();
   }
@@ -758,6 +762,8 @@ export class MockupEngine implements SceneApi {
     if (linked) {
       const { points, edgeParams, edgeLinks } = linked.partnerParams;
       this.setKindParams('patch', linked.partnerId, { points, edgeParams, edgeLinks });
+      // The new shared point starts smooth: align the partner to this patch.
+      this.edgeLinkSync.runFrom([entityId]);
     }
     this.patchGizmo.selectTarget({ entityId, pointId: inserted.pointId, targetKey: 'pos' });
     this.gizmoInteraction.refresh();

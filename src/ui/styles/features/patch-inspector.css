@@ -82,3 +82,11 @@
 .patch-point-inspector-detail {
   padding-left: var(--space-2);
 }
+
+/* Joint toggle (Smooth / Corner) on points of linked edges */
+.patch-joint-toggle {
+  flex: none;
+  padding: 0 var(--space-1);
+  font-size: var(--font-sm, 11px);
+  white-space: nowrap;
+}

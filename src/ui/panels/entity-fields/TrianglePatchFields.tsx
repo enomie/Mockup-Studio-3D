@@ -3,6 +3,8 @@ import { ClipboardPaste, Copy, Trash2, X } from 'lucide-react';
 import { Icon } from '@/ui/components/Icon';
 import { removePatchPoint } from '@/scene/triangle-patch-point-edit';
 import { mergeLinksOnRemove } from '@/scene/triangle-patch-linked-edit';
+import { crossHandleKeyAt, isEdgeLinkValid } from '@/scene/triangle-patch-edge-link';
+import { setPatchJoint } from '@/ui/store/patch-edge-store';
 import { PanelToggleGroup, type PanelToggleOption } from '@/ui/components/PanelToggleGroup';
 import { SubPanelSection } from '@/ui/components/SubPanelSection';
 import { PanelSelect } from '@/ui/components/PanelSelect';
@@ -258,6 +260,28 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
   };
 
   const surfaceMode: PatchSurfaceMode = patchParams.surface ?? 'classic';
+  const entities = useAppStore((s) => s.entities);
+  const findEntity = (id: string) => entities.find((e) => e.id === id);
+  /** Joint state of a point on a linked edge, or null when the point is not shared. */
+  const jointInfo = (node: PatchPoint): { label: string; title: string; star: boolean } | null => {
+    const links = (patchParams.edgeLinks ?? []).filter(
+      (l) => (l.startPointId === node.id || l.endPointId === node.id) && isEdgeLinkValid(entity, l, findEntity),
+    );
+    if (links.length === 0) {return null;}
+    const star = crossHandleKeyAt(patchParams, node.id, links[0], links.length) === null;
+    if (star) {
+      return { label: 'Shared', title: 'Shared by several linked edges: cannot be smooth', star: true };
+    }
+    const smooth = node.joint === 'smooth';
+    return {
+      label: smooth ? 'Smooth' : 'Corner',
+      title: smooth
+        ? 'Smooth joint: the linked patch follows this side (click for Corner; Shift+drag a handle also breaks it)'
+        : 'Corner joint: both sides are free (click for Smooth: the linked patch aligns to this side)',
+      star: false,
+    };
+  };
+
   const mirror: PatchMirror = patchParams.mirror ?? { x: false, y: false, z: false };
   const setMirrorAxis = (axis: keyof PatchMirror, checked: boolean) => {
     setKindParams('patch', entity.id, { mirror: { ...mirror, [axis]: checked } });
@@ -326,6 +350,21 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
                       }
                     }}
                   />
+                  {jointInfo(node) ? (
+                    <button
+                      type="button"
+                      className="btn patch-joint-toggle"
+                      aria-label={`Joint ${node.name}: ${jointInfo(node)?.label ?? ''}`}
+                      title={jointInfo(node)?.title}
+                      disabled={jointInfo(node)?.star}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPatchJoint(entity.id, node.id, node.joint === 'smooth' ? 'corner' : 'smooth');
+                      }}
+                    >
+                      🔗 {jointInfo(node)?.label}
+                    </button>
+                  ) : null}
                   <button
                     type="button"
                     className="btn btn--icon"

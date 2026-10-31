@@ -73,8 +73,15 @@ describe('insert on a linked edge', () => {
       expect(q.x).toBeCloseTo(p.x, 6);
       expect(q.y).toBeCloseTo(p.y, 6);
       expect(q.z).toBeCloseTo(p.z, 6);
-      // Already consistent: nothing to propagate.
-      expect(propagateEdgeLinks(['A'], find2).size).toBe(0);
+      // The new shared point starts smooth on both sides.
+      expect(A2.patchParams.points.find((pt) => pt.id === inserted.pointId)?.joint).toBe('smooth');
+      expect(B2.patchParams.points.find((pt) => pt.id === newLink.partnerEndPointId)?.joint).toBe('smooth');
+      // One sync aligns the partner's cross handle; after that everything is stable.
+      const aligned = propagateEdgeLinks(['A'], find2).get('B');
+      const B3 = aligned ? { ...B2, patchParams: { ...B2.patchParams, points: aligned } } : B2;
+      const find3 = (id: string) => (id === 'A' ? A2 : id === 'B' ? B3 : undefined);
+      expect(propagateEdgeLinks(['A'], find3).size).toBe(0);
+      expect(propagateEdgeLinks(['B'], find3).size).toBe(0);
     });
   }
 

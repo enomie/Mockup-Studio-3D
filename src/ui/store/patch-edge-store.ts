@@ -1,5 +1,11 @@
 import { useSyncExternalStore } from 'react';
-import { defaultPatchParamsForKind, isPatchAssetKind, type PatchParams } from '@/scene/asset-triangle-patch';
+import {
+  defaultPatchParamsForKind,
+  isPatchAssetKind,
+  type PatchJoint,
+  type PatchParams,
+  type PatchPoint,
+} from '@/scene/asset-triangle-patch';
 import type { AssetEntity } from '@/scene/entity-types';
 import {
   applyEdgeShape,
@@ -145,15 +151,37 @@ export function pastePatchEdge(entityId: string, segment: PatchSegment, link: bo
   };
   // Re-read the source: detaching partners may have touched it.
   const sourceNow = findPatch(source.entity.id) ?? source;
+  // New links start with smooth joints at both ends (decision C2).
+  const sourceEnds = [clip.segment.startPointId, clip.segment.endPointId];
   setKindParams('patch', source.entity.id, {
+    points: withSmoothJoints(sourceNow.params.points, sourceEnds),
     edgeLinks: [...withoutSegmentLinks(sourceNow.params, clip.segment), sourceLink],
   });
   const targetNow = findPatch(entityId) ?? target;
   setKindParams('patch', entityId, {
-    points,
+    points: withSmoothJoints(points, [segment.startPointId, segment.endPointId]),
     edgeLinks: [...withoutSegmentLinks(targetNow.params, segment), targetLink],
   });
+  // The copied side wins: align the target's cross handles to it.
+  store.sceneApi?.syncPatchLinksFrom(source.entity.id);
   return true;
+}
+
+function withSmoothJoints(points: readonly PatchPoint[], ids: readonly string[]): PatchPoint[] {
+  return points.map((point) => (ids.includes(point.id) ? { ...point, joint: 'smooth' as const } : point));
+}
+
+/**
+ * Sets the joint of a shared point. Switching to smooth aligns the partner to this patch
+ * (the selected side wins); the partner gets the same joint state.
+ */
+export function setPatchJoint(entityId: string, pointId: string, joint: PatchJoint): void {
+  const owner = findPatch(entityId);
+  if (!owner) {return;}
+  setKindParams('patch', entityId, {
+    points: owner.params.points.map((point) => (point.id === pointId ? { ...point, joint } : point)),
+  });
+  store.sceneApi?.syncPatchLinksFrom(entityId);
 }
 
 export function unlinkPatchEdge(entityId: string, link: PatchEdgeLink): void {

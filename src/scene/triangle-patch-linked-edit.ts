@@ -66,10 +66,14 @@ export function splitLinkOnInsert(
     linkBetween(link.partnerStartPointId, q, owner.id, link.startPointId, p),
     linkBetween(q, link.partnerEndPointId, owner.id, p, link.endPointId),
   ];
+  const smooth = (params: PatchParams, id: string): PatchParams => ({
+    ...params,
+    points: params.points.map((point) => (point.id === id ? { ...point, joint: 'smooth' as const } : point)),
+  });
   return {
-    ownerParams: { ...insert.params, edgeLinks: ownerLinks },
+    ownerParams: smooth({ ...insert.params, edgeLinks: ownerLinks }, p),
     partnerId: partner.id,
-    partnerParams: { ...partnerInsert.params, edgeLinks: partnerLinks },
+    partnerParams: smooth({ ...partnerInsert.params, edgeLinks: partnerLinks }, q),
   };
 }
 

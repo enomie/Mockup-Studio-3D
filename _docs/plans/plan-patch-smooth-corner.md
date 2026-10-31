@@ -1,6 +1,6 @@
 # Plan: Schritt C – Smooth / Corner an gemeinsamen Punkten
 
-Status: **C1 erledigt** – C2 (Bedienung) offen
+Status: **C1 + C2 erledigt** – C3 offen (zu besprechen)
 Vorgänger: Schritt A (Kanten verbinden), Schritt B (`plan-patch-surface-tangent.md`, Smooth Edges)
 
 ---
@@ -114,6 +114,15 @@ Tests: `src/engine/patch-smooth-joint.test.ts`. Aufbau: zwei ungleiche Smooth-Ed
 **Nebenbei behoben (aus Schritt A):** Bei zwei Links zum selben Partner (geteilte Kante) wurde pro Durchlauf nur der erste angeglichen. Jetzt werden alle Links zu einem Partner gemeinsam angewendet.
 
 **Achse an Kantenpunkten:** Richtung pinker Handle → pinker Handle durch den Punkt (eine Achse für beide Links des Punkts, sonst könnten sich die Patches gegenseitig korrigieren).
+
+## Umsetzung C2
+
+- Link Edge: beide Enden starten **Smooth**, die kopierte Seite gibt vor (sofortiger Sync).
+- Punkt auf verbundener Kante einfügen: neuer Punkt auf beiden Seiten **Smooth**, Partner wird ausgerichtet.
+- Inspector: Punktzeile zeigt **🔗 Smooth / 🔗 Corner** (Klick schaltet um; bei Smooth gibt der aktuelle Patch vor), Sternpunkte als **🔗 Shared** (nicht schaltbar).
+- **Shift + Ziehen** an einem Handle eines Smooth-Punkts → Corner (beide Seiten).
+- Viewport: Smooth = Anker mit grünem Ring (zur Kamera gedreht), Corner = Würfel-Anker; nur an Punkten verbundener Kanten.
+- Browser-Test: Link → beide Seiten Smooth; Toggle → Partner folgt; Undo = ein Schritt. Shift-Ziehen und die Anker-Darstellung konnten in der Testumgebung (kein sichtbarer Viewport) nicht geprüft werden.
 
 ## Entscheidungen
 
