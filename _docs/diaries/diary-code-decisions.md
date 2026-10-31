@@ -6,6 +6,21 @@ Kurze Historie: **wie** wir uns entschieden haben (Warum, Alternativen). Require
 
 ## Einträge
 
+### 2026-10-31 — Gemeinsame Punkte statt synchronisierter Kopien (Patches)
+- **Entscheidung:** Legt man zwei Patch-Kanten zusammen, werden aus 4 Punkten **2 Knoten** – einmal in der Szene gespeichert, von beiden Patches benutzt (`PatchPoint.nodeId`). Handles eines Knotens bilden Paare, die gekoppelt gegenüber liegen; **Shift** löst ein Paar, **Align handles opposite** stellt es per Mittelwert zurück. Kein „Partner“, keine Sonderfarben, keine Schalter. Doku: [`../triangle-patch/shared-points-and-edges.md`](../triangle-patch/shared-points-and-edges.md).
+- **Grund:** Der Nutzer will „einen gemeinsamen Punkt, nur einen, an jeder Seite“. Jede Variante mit zwei synchron gehaltenen Kopien zeigte den Punkt doppelt (zwei Namen, zwei Auswahlen, Partner-Handles) – mehr Synchronisation macht daraus nie *einen* Punkt.
+- **Verworfen (der Reihe nach, Code entfernt):**
+  - *Synchronisierte Kopien* (Kanten-Link + Partner-Abgleich).
+  - *Smooth Edges* (eigene transfinite Fläche mit exakter Rand-Neigung): glatt, aber Form schlechter als Classic (flache Ränder, Beule statt Kuppel). Ersetzt durch **Classic + Kanten-Korrektur** nur im Streifen an gemeinsamen Kanten.
+  - *Smooth/Corner-Schalter*, *Edge-/Surface-Schalter*, *Coupled/Independent*, *Yellow/Pink-Pair-Schalter*, *Partner-Handles in Sonderfarbe*: alles Varianten, die dem Nutzer Begriffe statt eines Punkts gaben.
+  - *Wippe* zwischen den zwei gelben Handles eines Punkts (Cross Out hatte keine Wirkung auf die Fläche).
+- **Lehre:** Bei Gestaltungs-Werkzeugen erst das mentale Modell des Nutzers klären („wie viele Punkte siehst du?“), dann Mathematik und Daten danach ausrichten – nicht umgekehrt.
+
+### 2026-10-31 — Undo/Redo über Schnappschüsse
+- **Entscheidung:** Verlauf speichert Schnappschüsse (Entities, Store-Einstellungen wie Licht/Environment/Bibliotheken, Patch-Knoten), max. 100 Schritte; eine Maus-Geste = ein Schritt, sonst nach 400 ms Ruhe; Änderungen ohne Nutzereingabe (Nachladen) und laufende Physik erzeugen keine Schritte. Buttons rechts im Sub-Navbar, Ctrl/Cmd+Z, Ctrl/Cmd+Shift+Z, Ctrl+Y.
+- **Grund:** Entities sind unveränderlich – Schnappschüsse sind billig und decken jede künftige Funktion automatisch ab.
+- **Verworfen:** Befehls-Umkehr pro Funktion (aufwendig, fehleranfällig).
+
 ### 2026-10-30 — Erst Plan-Doc, dann Code
 - **Entscheidung:** Vor jeder Änderung ein Plan in `_docs/plans/plan-<thema>.md`; Code erst nach Freigabe (Regel in `AGENTS.md`).
 - **Grund:** Johann will Richtung und offene Punkte vorher sehen, nicht nachträglich korrigieren.
