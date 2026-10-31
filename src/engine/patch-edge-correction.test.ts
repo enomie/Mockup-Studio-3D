@@ -6,8 +6,9 @@ import {
   type PatchParams,
   type PatchPoint,
 } from '@/scene/asset-triangle-patch';
-import type { AssetEntity, EntityTransform, Vec3 } from '@/scene/entity-types';
-import { propagateEdgeLinks, type PatchEdgeLink } from '@/scene/triangle-patch-edge-link';
+import type { Vec3 } from '@/scene/entity-types';
+import type { PatchEdgeLink } from '@/scene/triangle-patch-edge-link';
+import { averageOpposite } from '@/scene/patch-nodes';
 import { buildTrianglePatchGeometry, evalEdge, evalPatchSurfacePoint } from './triangle-patch-geometry';
 import { evalQuadPatchSurfacePoint } from './quad-patch-geometry';
 import {
@@ -21,7 +22,6 @@ import {
 const v = (x: number, y: number, z: number): Vec3 => ({ x, y, z });
 const lerp = (a: Vec3, b: Vec3, t: number): Vec3 => v(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t, a.z + (b.z - a.z) * t);
 const add = (a: Vec3, b: Vec3): Vec3 => v(a.x + b.x, a.y + b.y, a.z + b.z);
-const identity: EntityTransform = { position: v(0, 0, 0), rotation: v(0, 0, 0) };
 
 /** Classic triangle with straight edges; edge 0 (c0 -> c1) has an edge point in the middle. */
 function triangle(prefix: string, c: [Vec3, Vec3, Vec3], middleCross: Vec3, cornerLift: number, joint: PatchJoint): PatchParams {
@@ -41,10 +41,6 @@ function triangle(prefix: string, c: [Vec3, Vec3, Vec3], middleCross: Vec3, corn
   return { divisions: 24, points, cornerIds: [ids[0], ids[2], ids[3]], edgeParams: { [ids[1]]: 0.5 } };
 }
 
-function entity(id: string, params: PatchParams, transform = identity): AssetEntity {
-  return { id, type: 'asset', name: id, assetKind: 'triangle-patch', screenImageId: null, sizeScale: 1, visible: true, transform, patchParams: params };
-}
-
 /** Unequal pair, shared edge (0,0,0)-(1,0,0) (B reversed), third corners lifted differently. */
 function linkedPair(joint: PatchJoint) {
   const a = triangle('a', [v(0, 0, 0), v(1, 0, 0), v(0.5, 1, 0.3)], v(0, 0.15, 0.25), 0.2, joint);
@@ -53,12 +49,40 @@ function linkedPair(joint: PatchJoint) {
     ({ startPointId: s, endPointId: e, partnerEntityId: partner, partnerStartPointId: ps, partnerEndPointId: pe });
   a.edgeLinks = [link('ac0', 'am', 'bc1', 'bm', 'B'), link('am', 'ac1', 'bm', 'bc0', 'B')];
   b.edgeLinks = [link('bc1', 'bm', 'ac0', 'am', 'A'), link('bm', 'bc0', 'am', 'ac1', 'A')];
-  const A = entity('A', a);
-  let B = entity('B', b);
-  // Smooth joints couple the cross handles (step C): sync once from A.
-  const synced = propagateEdgeLinks(['A'], (id) => (id === 'A' ? A : B)).get('B');
-  if (synced) {B = { ...B, patchParams: { ...b, points: synced } };}
-  return { a: A.patchParams!, b: B.patchParams! };
+  if (joint === 'smooth') {coupleOpposite(a, b);}
+  return { a, b };
+}
+
+/**
+ * Puts the facing handles of the shared points opposite (average across the x-axis edge),
+ * as shared points do: yellow <-> yellow, and at the corners the neighboring-edge pinks.
+ */
+function coupleOpposite(a: PatchParams, b: PatchParams): void {
+  const axis = new Vector3(1, 0, 0);
+  const pairs: [string, string, 'handleNext' | 'handlePrev' | null, 'handleNext' | 'handlePrev' | null][] = [
+    ['ac0', 'bc1', 'handlePrev', 'handleNext'],
+    ['am', 'bm', null, null],
+    ['ac1', 'bc0', 'handleNext', 'handlePrev'],
+  ];
+  const get = (params: PatchParams, id: string): PatchPoint => {
+    const found = params.points.find((p) => p.id === id);
+    if (!found) {throw new Error(`missing ${id}`);}
+    return found;
+  };
+  const off = (p: PatchPoint, k: 'handleNext' | 'handlePrev' | 'handleCrossIn') => new Vector3(p[k].x - p.pos.x, p[k].y - p.pos.y, p[k].z - p.pos.z);
+  const set = (p: PatchPoint, k: 'handleNext' | 'handlePrev' | 'handleCrossIn', o: Vector3) => { p[k] = add(p.pos, v(o.x, o.y, o.z)); };
+  for (const [ida, idb, ka, kb] of pairs) {
+    const pa = get(a, ida);
+    const pb = get(b, idb);
+    const [ya, yb] = averageOpposite(off(pa, 'handleCrossIn'), off(pb, 'handleCrossIn'), axis);
+    set(pa, 'handleCrossIn', ya);
+    set(pb, 'handleCrossIn', yb);
+    if (ka && kb) {
+      const [qa, qb] = averageOpposite(off(pa, ka), off(pb, kb), axis);
+      set(pa, ka, qa);
+      set(pb, kb, qb);
+    }
+  }
 }
 
 type Surface = (u: number, vv: number, w: number) => Vector3;

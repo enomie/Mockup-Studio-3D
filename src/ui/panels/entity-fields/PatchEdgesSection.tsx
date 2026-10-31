@@ -1,4 +1,4 @@
-import { ArrowLeftRight, ClipboardPaste, Copy, Link, Unlink, X } from 'lucide-react';
+import { ClipboardPaste, Copy, Link, Unlink, X } from 'lucide-react';
 import { Icon } from '@/ui/components/Icon';
 import { SubPanelSection } from '@/ui/components/SubPanelSection';
 import { useAppStore } from '@/ui/store/use-app-store';
@@ -7,7 +7,6 @@ import type { AssetEntity } from '@/scene/entity-types';
 import { isEdgeLinkValid, isSameSegment, listPatchSegments } from '@/scene/triangle-patch-edge-link';
 import {
   copyPatchEdge,
-  flipPatchEdgeLink,
   pastePatchEdge,
   segmentLabel,
   selectPatchEdge,
@@ -31,9 +30,6 @@ export function PatchEdgesSection({ entity, params }: PatchEdgesSectionProps) {
   const selEnd = useAppStore((s) => s.patchEdgeSelection?.endPointId);
   const clipboard = usePatchEdgeClipboard();
   const findEntity = (id: string) => entities.find((e) => e.id === id);
-  /** Joined into shared points: direction is fixed, no Flip. */
-  const isNodeSegment = (segment: { startPointId: string; endPointId: string }) =>
-    [segment.startPointId, segment.endPointId].every((id) => params.points.find((p) => p.id === id)?.nodeId);
 
   return (
     <SubPanelSection title="Edges">
@@ -97,17 +93,6 @@ export function PatchEdgesSection({ entity, params }: PatchEdgesSectionProps) {
                   <span className="panel-field-label" title={valid ? 'Linked edge' : 'Link is broken (partner deleted or edge split)'}>
                     {valid ? '🔗' : '⚠'} {partnerLabel}
                   </span>
-                  {valid && !isNodeSegment(segment) ? (
-                    <button
-                      type="button"
-                      className="btn btn--icon"
-                      aria-label="Flip linked edge direction"
-                      title="Flip direction (this edge stays, the partner follows)"
-                      onClick={() => { flipPatchEdgeLink(entity.id, link); }}
-                    >
-                      <Icon icon={ArrowLeftRight} />
-                    </button>
-                  ) : null}
                   <button
                     type="button"
                     className="btn btn--icon"

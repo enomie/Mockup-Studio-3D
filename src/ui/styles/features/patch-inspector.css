@@ -83,17 +83,4 @@
   padding-left: var(--space-2);
 }
 
-/* Coupled / Independent toggle on points of shared edges */
-.patch-joint-toggle {
-  flex: none;
-  padding: 0 var(--space-1);
-  font-size: var(--font-sm, 11px);
-  white-space: nowrap;
-}
 
-/* Marker for points on shared edges */
-.patch-joint-badge {
-  flex: none;
-  font-size: var(--font-sm, 11px);
-  white-space: nowrap;
-}

@@ -4,7 +4,6 @@ import {
   type SceneHistoryState,
 } from './history/scene-history-controller';
 import { attachHistoryInputTracking } from './history/history-input-tracking';
-import { PatchEdgeLinkSync } from './patch-edge-link-sync';
 import { PatchNodeSync } from './patch-node-sync';
 import {
   alignNodeOpposite,
@@ -17,7 +16,6 @@ import {
 } from '@/scene/patch-nodes';
 import { segmentHandleKeys, type PatchSegment } from '@/scene/triangle-patch-edge-link';
 import { splitLinkOnInsert } from '@/scene/triangle-patch-linked-edit';
-import { alignSharedPairAverage } from '@/scene/triangle-patch-coupled-pairs';
 import { type Camera, type Mesh, Scene, type WebGPURenderer } from 'three/webgpu';
 import type { Rgb } from '@/colors/rgb';
 import { SCENE_DEFAULTS } from '@/config/scene-defaults';
@@ -148,7 +146,6 @@ export class MockupEngine implements SceneApi {
   private gravityScale = DEFAULT_GRAVITY_SCALE;
   private readonly gizmoInteraction: GizmoInteractionController;
   private readonly history: SceneHistoryController;
-  private readonly edgeLinkSync: PatchEdgeLinkSync;
   private readonly nodeSync: PatchNodeSync;
   private readonly detachHistoryInput: () => void;
 
@@ -227,11 +224,6 @@ export class MockupEngine implements SceneApi {
       restorePatchNodes: (nodes) => { this.registry.setPatchNodes(nodes); },
     });
     this.detachHistoryInput = attachHistoryInputTracking(this.history);
-    this.edgeLinkSync = new PatchEdgeLinkSync({
-      getEntities: () => this.registry.getEntities(),
-      isRestoring: () => this.history.isRestoring(),
-      writePatchPoints: (entityId, points) => { this.setKindParams('patch', entityId, { points }); },
-    });
     this.nodeSync = new PatchNodeSync({
       getEntities: () => this.registry.getEntities(),
       getPatchNodes: () => this.registry.getPatchNodes(),
@@ -240,7 +232,6 @@ export class MockupEngine implements SceneApi {
       writePatchPoints: (entityId, points) => { this.setKindParams('patch', entityId, { points }); },
     });
     registry.subscribeEntities(() => { this.nodeSync.onEntitiesChanged(); });
-    registry.subscribeEntities(() => { this.edgeLinkSync.onEntitiesChanged(); });
     registry.subscribeEntities(() => {
       if (this.patchAddPoint.getSelectedSegment()) {this.patchAddPoint.syncSelectedLine();}
     });
@@ -747,10 +738,6 @@ export class MockupEngine implements SceneApi {
     this.registry.setPatchNodes(this.registry.getPatchNodes().map((n) => (n.id === nodeId ? alignNodeOpposite(n) : n)));
   }
 
-  syncPatchLinksFrom(entityId: string): void {
-    this.edgeLinkSync.runFrom([entityId]);
-  }
-
   undo(): void {
     void this.history.undo();
   }
@@ -832,11 +819,6 @@ export class MockupEngine implements SceneApi {
     if (linked && partnerParams) {
       const { points, edgeParams, edgeLinks } = partnerParams;
       this.setKindParams('patch', linked.partnerId, { points, edgeParams, edgeLinks });
-      if (!startPoint?.nodeId || !endPoint?.nodeId) {
-        // Old-style linked edge: the yellow pair starts opposite on the average direction.
-        const aligned = alignSharedPairAverage(entityId, inserted.pointId, 'yellow', (id) => this.registry.getRuntime(id)?.entity);
-        for (const [id, points2] of aligned) {this.setKindParams('patch', id, { points: points2 });}
-      }
     }
     this.patchGizmo.selectTarget({ entityId, pointId: inserted.pointId, targetKey: 'pos' });
     this.gizmoInteraction.refresh();

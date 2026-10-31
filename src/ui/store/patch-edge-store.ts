@@ -16,7 +16,6 @@ import {
   type PatchSegment,
 } from '@/scene/triangle-patch-edge-link';
 import type { PatchEdgeSelection } from '@/engine/triangle-patch-add-point-tool';
-import { alignSharedPairAverage, type HandlePair } from '@/scene/triangle-patch-coupled-pairs';
 import { setKindParams } from './app-store-asset-params';
 import * as store from './app-store-internals';
 
@@ -141,31 +140,6 @@ export function pastePatchEdge(entityId: string, segment: PatchSegment, link: bo
   return true;
 }
 
-/** Puts one pair at a shared point opposite on the average direction and couples it (both patches). */
-function alignPair(entityId: string, pointId: string, pair: HandlePair): void {
-  const updates = alignSharedPairAverage(entityId, pointId, pair, (id) => store.state.entities.find((e) => e.id === id));
-  for (const [id, points] of updates) {setKindParams('patch', id, { points });}
-}
-
-/**
- * Couples a pair at a shared point (opposite on the average direction = "Align opposite
- * (average)") or frees it. The state is the same on both patches.
- */
-export function setSharedPair(entityId: string, pointId: string, pair: HandlePair, coupled: boolean): void {
-  if (coupled) {
-    alignPair(entityId, pointId, pair);
-  } else {
-    const owner = findPatch(entityId);
-    if (!owner) {return;}
-    setKindParams('patch', entityId, {
-      points: owner.params.points.map((point) => (point.id !== pointId
-        ? point
-        : pair === 'yellow' ? { ...point, joint: 'corner' as const } : { ...point, pinkPair: 'free' as const })),
-    });
-  }
-  store.sceneApi?.syncPatchLinksFrom(entityId);
-}
-
 export function unlinkPatchEdge(entityId: string, link: PatchEdgeLink): void {
   const owner = findPatch(entityId);
   if (!owner) {return;}
@@ -193,37 +167,6 @@ function withoutNodes(points: readonly PatchPoint[], ids: readonly string[]): Pa
     if (!ids.includes(point.id) || !point.nodeId) {return point;}
     const { nodeId: _node, ...rest } = point;
     return rest;
-  });
-}
-
-/** Reverses which ends belong together; this patch keeps its edge, the partner follows. */
-export function flipPatchEdgeLink(entityId: string, link: PatchEdgeLink): void {
-  const owner = findPatch(entityId);
-  const partner = findPatch(link.partnerEntityId);
-  if (!owner || !partner) {return;}
-  const segment = { startPointId: link.startPointId, endPointId: link.endPointId };
-  const flipped: PatchEdgeLink = {
-    ...link,
-    partnerStartPointId: link.partnerEndPointId,
-    partnerEndPointId: link.partnerStartPointId,
-  };
-  const partnerSegment = { startPointId: flipped.partnerStartPointId, endPointId: flipped.partnerEndPointId };
-  const back: PatchEdgeLink = {
-    startPointId: flipped.partnerStartPointId,
-    endPointId: flipped.partnerEndPointId,
-    partnerEntityId: entityId,
-    partnerStartPointId: link.startPointId,
-    partnerEndPointId: link.endPointId,
-  };
-  const shape = captureEdgeShape(owner.params, owner.entity.transform, segment);
-  const points = shape ? applyEdgeShape(partner.params, partner.entity.transform, partnerSegment, shape) : null;
-
-  setKindParams('patch', entityId, {
-    edgeLinks: [...withoutSegmentLinks(owner.params, segment), flipped],
-  });
-  setKindParams('patch', partner.entity.id, {
-    ...(points ? { points } : {}),
-    edgeLinks: [...withoutSegmentLinks(partner.params, partnerSegment), back],
   });
 }
 

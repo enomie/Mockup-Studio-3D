@@ -1,7 +1,6 @@
 import { Euler, Quaternion, Vector3 } from 'three';
 import type { PatchParams, PatchPoint } from './asset-triangle-patch';
 import type { AssetEntity, EntityTransform, Vec3 } from './entity-types';
-import { averageOpposite } from './triangle-patch-coupled-pairs';
 import { segmentHandleKeys, type PatchEdgeLink, type PatchSegment } from './triangle-patch-edge-link';
 
 /**
@@ -92,6 +91,35 @@ function edgeAxis(node: PatchNode): Vector3 | null {
     if (v.lengthSq() > EPS) {return v.normalize();}
   }
   return null;
+}
+
+// --- Average opposite ------------------------------------------------------------------
+
+/**
+ * Two vectors put opposite on their average direction (only the part across `axis` when
+ * given; the parts along it stay). Lengths are kept. Symmetric in a and b.
+ */
+export function averageOpposite(a: Vector3, b: Vector3, axis?: Vector3): [Vector3, Vector3] {
+  const unitAxis = axis && axis.lengthSq() > 1e-20 ? axis.clone().normalize() : null;
+  const alongA = unitAxis ? a.dot(unitAxis) : 0;
+  const alongB = unitAxis ? b.dot(unitAxis) : 0;
+  const perpA = unitAxis ? a.clone().addScaledVector(unitAxis, -alongA) : a.clone();
+  const perpB = unitAxis ? b.clone().addScaledVector(unitAxis, -alongB) : b.clone();
+  const la = perpA.length();
+  const lb = perpB.length();
+  if (la < 1e-12 && lb < 1e-12) {return [a.clone(), b.clone()];}
+  const dir = new Vector3();
+  if (la > 1e-12) {dir.addScaledVector(perpA, 1 / la);}
+  if (lb > 1e-12) {dir.addScaledVector(perpB, -1 / lb);}
+  if (dir.lengthSq() < 1e-20) {dir.copy(perpA).normalize();} // a and b point the same way
+  dir.normalize();
+  const outA = dir.clone().multiplyScalar(la);
+  const outB = dir.clone().multiplyScalar(-lb);
+  if (unitAxis) {
+    outA.addScaledVector(unitAxis, alongA);
+    outB.addScaledVector(unitAxis, alongB);
+  }
+  return [outA, outB];
 }
 
 // --- Creating nodes ------------------------------------------------------------------
@@ -538,4 +566,14 @@ export function nextSharedNodeName(nodes: readonly PatchNode[], taken: readonly 
   let i = 1;
   while (used.has(`Shared ${i}`)) {i++;}
   return `Shared ${i}`;
+}
+
+/**
+ * Which pair a patch's own handle of a shared point belongs to (for Shift + drag): the
+ * yellow pair, the pink pair, or none (the pink running along the shared edge).
+ */
+export function pairOfOwnHandle(node: PatchNode, use: PatchNodeUse, key: string): 'yellow' | 'pink' | null {
+  const slot = key === 'handleNext' ? use.next : key === 'handlePrev' ? use.prev : key === 'handleCrossIn' ? use.cross : null;
+  if (!slot || !pairWith(node, slot)) {return null;}
+  return slot === use.cross ? 'yellow' : 'pink';
 }

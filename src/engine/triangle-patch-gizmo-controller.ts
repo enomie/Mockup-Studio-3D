@@ -27,10 +27,10 @@ import {
   isPatchAssetKind,
 } from '@/scene/asset-triangle-patch';
 import type { EntityRegistry } from './entity-registry';
-import { applyInnerPinkCoupling, pairOfHandle } from '@/scene/triangle-patch-coupled-pairs';
 import {
   extraSlotsFor,
   nodeSlotWorld,
+  pairOfOwnHandle,
   setNodeSlot,
   type PatchNode,
   type PatchNodeUse,
@@ -614,10 +614,11 @@ export class TrianglePatchGizmoController {
       }
     } else {
       // Shift while dragging frees the pair of the dragged handle (yellow or pink).
-      if (isShiftHeld()) {
-        const pair = pairOfHandle(params, node.id, targetKey);
-        if (pair === 'yellow' && node.joint === 'smooth') {node.joint = 'corner';}
-        if (pair === 'pink' && node.pinkPair === 'coupled') {node.pinkPair = 'free';}
+      const shared = this.nodeAndUse(node);
+      if (isShiftHeld() && shared) {
+        const pair = pairOfOwnHandle(shared.node, shared.use, targetKey);
+        if (pair === 'yellow') {node.joint = 'corner';}
+        if (pair === 'pink') {node.pinkPair = 'free';}
       }
       if (targetKey === 'handleCrossOut' || targetKey === 'sharedPink') {
         // Extra handle of a shared point: edit the node directly (Shift frees its pair).
@@ -627,8 +628,8 @@ export class TrianglePatchGizmoController {
       node[targetKey].x = newLocal.x;
       node[targetKey].y = newLocal.y;
       node[targetKey].z = newLocal.z;
-      // Handles move on their own; a coupled pink pair inside a shared edge turns along.
-      this.commitPoint(this.activeEntityId, applyInnerPinkCoupling(params, node, targetKey));
+      // Every handle moves on its own; on a shared point the node turns coupled partners.
+      this.commitPoint(this.activeEntityId, node);
       return true;
     }
 

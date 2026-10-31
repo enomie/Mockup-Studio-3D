@@ -6,7 +6,6 @@ import {
   captureEdgeShape,
   isEdgeLinkValid,
   listPatchSegments,
-  propagateEdgeLinks,
   reverseEdgeShape,
   segmentHandleKeys,
   shouldReverseForTarget,
@@ -107,7 +106,7 @@ describe('edge copy and paste', () => {
   });
 });
 
-describe('edge link propagation', () => {
+describe('edge links', () => {
   function linkedPair(flip = false) {
     const a = defaultPatchParamsForKind('triangle-patch');
     const b = defaultPatchParamsForKind('triangle-patch');
@@ -119,45 +118,12 @@ describe('edge link propagation', () => {
     return { A, B, l };
   }
 
-  it('moves the partner edge onto the source edge (world space) and is idempotent', () => {
-    const { A, B, l } = linkedPair();
-    const entities = new Map([[A.id, A], [B.id, B]]);
-    const updates = propagateEdgeLinks(['A'], (id) => entities.get(id));
-    const bPoints = updates.get('B');
-    expect(bPoints).toBeDefined();
-    const B2 = { ...B, patchParams: { ...(B.patchParams!), points: bPoints ?? [] } };
-    const srcShape = captureEdgeShape(A.patchParams!, A.transform, { startPointId: l.startPointId, endPointId: l.endPointId });
-    const dstShape = captureEdgeShape(B2.patchParams, B2.transform, { startPointId: l.partnerStartPointId, endPointId: l.partnerEndPointId });
-    expect(srcShape && dstShape).toBeTruthy();
-    if (!srcShape || !dstShape) {return;}
-    expectClose(dstShape.start, srcShape.start);
-    expectClose(dstShape.endHandle, srcShape.endHandle);
-
-    entities.set('B', B2);
-    expect(propagateEdgeLinks(['A'], (id) => entities.get(id)).size).toBe(0);
-    expect(propagateEdgeLinks(['B'], (id) => entities.get(id)).size).toBe(0);
-  });
-
-  it('follows flipped links', () => {
-    const { A, B, l } = linkedPair(true);
-    const entities = new Map([[A.id, A], [B.id, B]]);
-    const bPoints = propagateEdgeLinks(['A'], (id) => entities.get(id)).get('B') ?? [];
-    const shape = captureEdgeShape({ ...(B.patchParams!), points: bPoints }, B.transform, {
-      startPointId: l.partnerStartPointId, endPointId: l.partnerEndPointId,
-    });
-    const src = captureEdgeShape(A.patchParams!, A.transform, { startPointId: l.startPointId, endPointId: l.endPointId });
-    if (!shape || !src) {throw new Error('missing shape');}
-    expectClose(shape.start, src.start);
-    expectClose(shape.end, src.end);
-  });
-
   it('ignores links whose partner is gone or whose segment was split', () => {
     const { A, B, l } = linkedPair();
     expect(isEdgeLinkValid(A, l, () => undefined)).toBe(false);
     const split = insertPatchPoint(B.patchParams!, 1, 0.5).params;
     const B2 = { ...B, patchParams: split };
     expect(isEdgeLinkValid(A, l, (id) => (id === 'B' ? B2 : undefined))).toBe(false);
-    expect(propagateEdgeLinks(['A'], (id) => (id === 'A' ? A : id === 'B' ? B2 : undefined)).size).toBe(0);
   });
 
   it('removing a point drops the links that touch it', () => {

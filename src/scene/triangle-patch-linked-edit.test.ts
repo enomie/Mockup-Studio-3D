@@ -5,7 +5,7 @@ import {
   captureEdgeShape,
   isEdgeLinkValid,
   listPatchSegments,
-  propagateEdgeLinks,
+  applyEdgeShape,
   type PatchEdgeLink,
 } from './triangle-patch-edge-link';
 import { mergeLinksOnRemove, splitLinkOnInsert } from './triangle-patch-linked-edit';
@@ -34,7 +34,9 @@ function linkedPair(reverse: boolean) {
   };
   const A = patchEntity('A', { ...a, edgeLinks: [l] }, { position: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } });
   let B = patchEntity('B', { ...b, edgeLinks: [back] }, { position: { x: 2, y: 0, z: 1 }, rotation: { x: 0, y: 0.7, z: 0 } });
-  const synced = propagateEdgeLinks(['A'], (id) => (id === 'A' ? A : B)).get('B');
+  // Same shared edge in world space on both sides.
+  const shape = captureEdgeShape(A.patchParams!, A.transform, { startPointId: l.startPointId, endPointId: l.endPointId });
+  const synced = shape ? applyEdgeShape(B.patchParams!, B.transform, { startPointId: l.partnerStartPointId, endPointId: l.partnerEndPointId }, shape) : null;
   if (synced) {B = { ...B, patchParams: { ...(B.patchParams!), points: synced } };}
   return { A, B };
 }
@@ -76,12 +78,6 @@ describe('insert on a linked edge', () => {
       // The new shared point starts smooth on both sides.
       expect(A2.patchParams.points.find((pt) => pt.id === inserted.pointId)?.joint).toBe('smooth');
       expect(B2.patchParams.points.find((pt) => pt.id === newLink.partnerEndPointId)?.joint).toBe('smooth');
-      // One sync aligns the partner's cross handle; after that everything is stable.
-      const aligned = propagateEdgeLinks(['A'], find2).get('B');
-      const B3 = aligned ? { ...B2, patchParams: { ...B2.patchParams, points: aligned } } : B2;
-      const find3 = (id: string) => (id === 'A' ? A2 : id === 'B' ? B3 : undefined);
-      expect(propagateEdgeLinks(['A'], find3).size).toBe(0);
-      expect(propagateEdgeLinks(['B'], find3).size).toBe(0);
     });
   }
 

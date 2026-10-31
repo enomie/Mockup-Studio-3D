@@ -3,7 +3,6 @@ import { ClipboardPaste, Copy, Trash2, X } from 'lucide-react';
 import { Icon } from '@/ui/components/Icon';
 import { removePatchPoint } from '@/scene/triangle-patch-point-edit';
 import { mergeLinksOnRemove } from '@/scene/triangle-patch-linked-edit';
-import { applyInnerPinkCoupling } from '@/scene/triangle-patch-coupled-pairs';
 import { alignPatchNode, setPatchNodeSlot } from '@/ui/store/patch-edge-store';
 import {
   extraSlotsFor,
@@ -192,8 +191,8 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
       };
 
       nodeCopy[selectedTargetKey][axis] = value;
-      // Handles move on their own; a coupled pink pair inside a shared edge turns along.
-      commitPoint(applyInnerPinkCoupling(patchParams, nodeCopy, selectedTargetKey));
+      // Every handle moves on its own; on a shared point the node turns coupled partners.
+      commitPoint(nodeCopy);
     }
   };
 

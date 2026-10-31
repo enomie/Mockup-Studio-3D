@@ -1,6 +1,6 @@
 # Plan: Gemeinsame Punkte wirklich EINMAL – „Knoten“, die mehrere Patches benutzen
 
-Status: **N1 + N2 erledigt** – N3 (Aufräumen) offen
+Status: **N1 + N2 + N3 erledigt**
 Ersetzt das bisherige Modell „jeder Patch hat eigene Punkte, Kopien werden synchron gehalten“ (Schritt A Link, C1/C2/C3, Coupled Pairs, Shared-Point-Plan). Die Flächen-Mathematik (Classic + Kanten-Korrektur D) bleibt.
 
 ---
@@ -121,3 +121,12 @@ Knoten liegen in **Weltkoordinaten** (sie gehören keinem Patch). Die Patches le
 - **Unlink** → die Endpunkte werden wieder getrennte Punkte (sofern nicht Teil eines weiteren gemeinsamen Segments). „Flip“ bei Knoten-Kanten ausgeblendet.
 - Browser-Test: Link → 2 Knoten; Handle-Liste vollständig; „Yellow 2“ im Patch 2 bearbeitet → Punkt in Patch 1 ändert sich; Einfügen → 3 Knoten; Unlink eines Teilsegments → nur dessen freier Endpunkt wird getrennt; Undo stellt alles wieder her.
 - Nicht prüfbar (kein sichtbarer Viewport): Ziehen der Zusatz-Handles und Shift im Viewport.
+
+## Umsetzung N3 (Aufräumen)
+
+- Entfernt: alte Kanten-Synchronisation (`PatchEdgeLinkSync`, `propagateEdgeLinks`, Partner-Abgleich der Handles), Modul `triangle-patch-coupled-pairs` (Paar-Schalter, Partner-Handles, Mittelwert-Kopie), „Flip“, Store-Funktionen für die alten Paar-Schalter, alte Tests dazu.
+- Mittelwert (`averageOpposite`) lebt jetzt im Knoten-Modul.
+- Shift im Gizmo arbeitet über die Paare des Knotens (`pairOfOwnHandle`); rosa/gelbe Handles bewegen sich sonst einzeln, gekoppelte Partner dreht der Knoten.
+- Bleibt (als Aufzeichnung gemeinsamer Segmente, gebraucht von Kanten-Korrektur, Einfügen/Löschen, Panel „Edges“): `edgeLinks`. One-time „Paste Edge“ bleibt.
+- Tests der Kanten-Korrektur stellen die Gegenüber-Lage jetzt per Mittelwert her (wie die Knoten) statt über die alte Synchronisation.
+- Browser-Ablauf (Link, Handle-Liste, Yellow 2 bearbeiten, Einfügen, Unlink, Undo) unverändert grün.

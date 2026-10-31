@@ -258,8 +258,6 @@ export interface SceneApi {
   setPatchNodeSlot(nodeId: string, slot: string, worldOffset: Vec3, free: boolean): void;
   /** "Align handles opposite" on a shared point. */
   alignPatchNode(nodeId: string): void;
-  /** Aligns all patches linked to `entityId` to it now (edges and smooth joints). */
-  syncPatchLinksFrom(entityId: string): void;
   /** Undo/redo of scene object changes. */
   undo(): void;
   redo(): void;
