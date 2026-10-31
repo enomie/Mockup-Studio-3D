@@ -1,6 +1,6 @@
 # Plan: Schritt C3 – Smooth / Corner für die pinken Handles innerhalb eines Patches
 
-Status: **Entwurf – wartet auf Freigabe**
+Status: **Abgestimmt – wartet auf Start**
 Vorgänger: `plan-patch-smooth-corner.md` (C1/C2: Gelenke zwischen verbundenen Patches)
 
 ---
@@ -74,8 +74,12 @@ Zwei getrennte Einstellungen, die sich nicht in die Quere kommen:
 - **C3a – Regel + Daten + Tests** (gemeinsamer Helfer für Gizmo und Inspector, Übertragung an Partner, Shift-Präzisierung).
 - **C3b – Bedienung:** Toggle im Inspector, Würfel-Handles im Viewport.
 
-## Offene Fragen an dich
+## Entscheidungen
 
-1. **Bestehende Kantenpunkte:** (a) bleiben Corner (nichts ändert sich, Smooth per Toggle), oder (b) automatisch Smooth, wenn ihre pinken Handles schon (fast) auf einer Linie liegen (< 1°)? Vorschlag: **(b)** – fühlt sich natürlicher an, ändert keine Form.
-2. Corner-Darstellung der pinken Handles als **Würfel** – ok?
-3. Shift-Präzisierung (bricht nur, was zum gezogenen Handle gehört) – ok?
+1. Bestehende Kantenpunkte: **(b)** automatisch Smooth, wenn die pinken Handles schon (fast) auf einer Linie liegen (< 1°), sonst Corner.
+2. Corner-Darstellung der pinken Handles als **Würfel**. → ja
+3. Shift bricht nur, was zum gezogenen Handle gehört. → ja
+
+## Offen
+
+- Gelbe Handles: Die beiden gelben Handles eines Punkts (`handleCrossIn` / `handleCrossOut`) sind heute fest gegenüber gekoppelt („Wippe“, schon vor C vorhanden). `handleCrossOut` hat keine Wirkung auf die Fläche. Wie damit umgehen → mit dem Nutzer klären.
