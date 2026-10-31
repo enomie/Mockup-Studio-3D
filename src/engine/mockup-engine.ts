@@ -450,6 +450,7 @@ export class MockupEngine implements SceneApi {
 
   removeEntity(entityId: string): void {
     if (this.patchAddPoint.getEntityId() === entityId) {this.patchAddPoint.stop();}
+    if (this.patchGizmo.getActiveEntityId() === entityId) {this.patchGizmo.setActiveEntity(null);}
     this.assets.removeAsset(entityId);
     this.gizmoInteraction.refresh();
     this.emit();
@@ -470,6 +471,7 @@ export class MockupEngine implements SceneApi {
   setEntityTransform(entityId: string, partial: Partial<EntityTransform>): void {
     this.registry.updateTransform(entityId, partial);
     this.syncRigidPrimitivePoseFromRuntimeIfFixed(entityId);
+    this.patchGizmo.syncHelpersFromEntity();
     this.invalidateViewport();
     this.notifySceneApiListeners();
   }
@@ -1037,6 +1039,7 @@ export class MockupEngine implements SceneApi {
     this.gizmo.updateCamera(camera);
     this.environment.updateFrame(camera);
     this.lighting.updateFrame();
+    this.patchGizmo.updateFrame();
 
     this.renderViewportFrame();
 

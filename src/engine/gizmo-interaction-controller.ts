@@ -214,6 +214,7 @@ export class GizmoInteractionController {
 
     registry.syncTransformFromObject(selected.entity.id);
     this.deps.syncFixedRigidPose(selected.entity.id);
+    patchGizmo.syncHelpersFromEntity();
     this.deps.emit();
   }
 

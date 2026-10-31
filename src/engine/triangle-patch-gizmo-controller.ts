@@ -360,6 +360,10 @@ export class TrianglePatchGizmoController {
     return this.helperGroup.visible ? this.handleMeshes : [];
   }
 
+  getActiveEntityId(): string | null {
+    return this.activeEntityId;
+  }
+
   getActiveTarget(): PatchSubTarget | null {
     return this.activeTarget;
   }
@@ -380,6 +384,7 @@ export class TrianglePatchGizmoController {
       this.helperGroup.visible = false;
       this.activeTarget = null;
       this.lengthDrag = null;
+      this.clearHelpers();
       return;
     }
 
@@ -387,6 +392,8 @@ export class TrianglePatchGizmoController {
     if (!runtime || !isPatchAssetKind(runtime.entity.assetKind)) {
       this.helperGroup.visible = false;
       this.activeTarget = null;
+      this.lengthDrag = null;
+      this.clearHelpers();
       return;
     }
 
@@ -417,6 +424,27 @@ export class TrianglePatchGizmoController {
     };
     this.syncLengthRing();
     return this.activeTarget;
+  }
+
+  /** Removes every per-point helper set (e.g. after the active patch was deleted). */
+  clearHelpers(): void {
+    for (const helpers of this.pointHelpers.values()) {this.disposePointHelpers(helpers);}
+    this.pointHelpers.clear();
+    this.handleMeshes.length = 0;
+    this.lengthRing.visible = false;
+  }
+
+  /**
+   * Per-frame sync: keeps helpers glued to the patch while it moves (gizmo, panel,
+   * physics, undo) and drops them once the active patch no longer exists.
+   */
+  updateFrame(): void {
+    if (!this.activeEntityId || !this.helperGroup.visible) {return;}
+    if (!this.registry.getRuntime(this.activeEntityId)) {
+      this.setActiveEntity(null);
+      return;
+    }
+    this.syncHelpersFromEntity();
   }
 
   syncHelpersFromEntity(): void {
