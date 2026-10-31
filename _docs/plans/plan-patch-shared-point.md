@@ -37,18 +37,18 @@ Heute existiert ein gemeinsamer Punkt zweimal (je Patch, eigener Name, eigene Sc
 ## Bedienung im Detail
 
 **Inspector**
-- Punktliste: ein gemeinsamer Punkt erscheint als **„Point 2 ⇄ Patch 2“** (eigener Name ⇄ Partner-Patch).
-- Wird er gewählt (egal in welchem Patch), zeigt der Detailbereich **eine** Handle-Liste für beide Patches, z. B.:
+- Punktliste: ein gemeinsamer Punkt erscheint **einmal mit einem Namen** (kein „⇄ Patch 2“, kein Hinweis auf einen zweiten Patch).
+- Wird er gewählt (egal von wo), zeigt der Detailbereich **eine** Handle-Liste des Punkts, neutral benannt – z. B.:
   - Anchor Point
-  - Pink along edge (forward / backward)
-  - Yellow (Patch 1), Yellow (Patch 2)
-  - Pink neighboring edge (Patch 1), Pink neighboring edge (Patch 2) – nur an Endpunkten
+  - Pink 1, Pink 2 (entlang der Kante)
+  - Yellow 1, Yellow 2 (das gegenüberliegende Paar quer zur Kante)
+  - an Endpunkten zusätzlich Pink 3, Pink 4 (das gegenüberliegende Paar der Nachbarkanten)
 - Darunter ein Hinweis, ob alles gegenüber ist („All handles opposite“) oder welche Handles gelöst sind, und der Knopf **„Align handles opposite“** (nur aktiv, wenn etwas gelöst ist).
-- X/Y/Z bzw. Length eines Handles des anderen Patches ändern dessen Handle direkt.
+- X/Y/Z bzw. Length jedes Handles direkt änderbar – welcher Patch intern betroffen ist, sieht man nicht.
 
 **Viewport**
 - **Ein Anker** für den gemeinsamen Punkt, mit allen Handles beider Patches drumherum.
-- Handles des Partner-Patches in leicht anderer Farbe (wie heute das orange Gegenüber), damit erkennbar ist, zu welcher Fläche sie gehören.
+- **Alle Handles in den normalen Farben** (rosa = rosa, gelb = gelb). Keine Sonderfarbe, kein „Partner“ – das heutige orange Gegenüber wird ein normaler gelber Handle.
 - Gekoppeltes Paar: Linie durchgehend durch den Anker; gelöstes Paar: zwei getrennte Linien.
 
 ---
@@ -69,7 +69,12 @@ Heute existiert ein gemeinsamer Punkt zweimal (je Patch, eigener Name, eigene Sc
 - Gleicher gemeinsamer Punkt von Patch A und Patch B aus gewählt → gleiche Handle-Liste, gleiche Werte.
 - Bestehende Kopplungs-/Korrektur-Tests bleiben grün (Knick < 0,1°).
 
+## Grundsatz (Nutzer)
+
+> Es gibt keinen „Partner“. Ein gemeinsamer Punkt ist ein Punkt mit seinen Handles. Dass intern zwei Patches dahinterstehen, ist in der Bedienung nirgends sichtbar (keine Sonderfarben, keine Patch-Namen an Handles).
+
 ## Entscheidungen
 
 1. Ein Knopf, der **alle** gelösten Handles am Punkt zurücksetzt. → ja
-2. Handles beider Patches immer sichtbar, auch wenn nur einer gewählt ist. → ja
+2. Alle Handles des Punkts immer sichtbar, auch wenn nur einer der Patches gewählt ist. → ja
+3. Keine Sonderfarbe, keine Patch-Namen an Handles – kein „Partner“ in der Bedienung. → ja
