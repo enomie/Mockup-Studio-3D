@@ -29,7 +29,7 @@ Bezüge: [`requirements-lighting.md`](./requirements-lighting.md), [`requirement
 | **Assets / Kamera** | unverändert | unverändert | unverändert |
 | **User-Save** | Save as light rig | Save as environment | — |
 
-**Trennung (2026-10-30):** Environments enthalten **keine** Lichter mehr. Ein Environment zu laden ändert weder Lichter noch `activeLightingPresetId`; ein Light rig zu laden ändert die Umgebung nicht. Lichtwerte liegen nur in `builtin-light-rigs.ts` → [`plan-environments-vs-light-rigs.md`](../planning/plan-environments-vs-light-rigs.md).
+**Trennung (2026-10-30):** Environments enthalten **keine** Lichter mehr. Ein Environment zu laden ändert weder Lichter noch `activeLightingPresetId`; ein Light rig zu laden ändert die Umgebung nicht. Lichtwerte liegen nur in `builtin-light-rigs.ts`.
 
 ---
 

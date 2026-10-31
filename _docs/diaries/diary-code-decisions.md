@@ -6,6 +6,10 @@ Kurze Historie: **wie** wir uns entschieden haben (Warum, Alternativen). Require
 
 ## Einträge
 
+### 2026-10-31 — Umgesetzte Pläne werden gelöscht
+- **Entscheidung:** Nach der Umsetzung kommt ein Plan aus `_docs/plans/` weg; aktueller Stand → Feature-Doku/Requirements, Begründung → dieses Tagebuch, Plan selbst → Git-Historie. Alle 13 umgesetzten Pläne entfernt.
+- **Grund:** Veraltete Pläne widersprechen dem Code und verwirren (viele Zwischenstände).
+
 ### 2026-10-31 — Gemeinsame Punkte statt synchronisierter Kopien (Patches)
 - **Entscheidung:** Legt man zwei Patch-Kanten zusammen, werden aus 4 Punkten **2 Knoten** – einmal in der Szene gespeichert, von beiden Patches benutzt (`PatchPoint.nodeId`). Handles eines Knotens bilden Paare, die gekoppelt gegenüber liegen; **Shift** löst ein Paar, **Align handles opposite** stellt es per Mittelwert zurück. Kein „Partner“, keine Sonderfarben, keine Schalter. Doku: [`../triangle-patch/shared-points-and-edges.md`](../triangle-patch/shared-points-and-edges.md).
 - **Grund:** Der Nutzer will „einen gemeinsamen Punkt, nur einen, an jeder Seite“. Jede Variante mit zwei synchron gehaltenen Kopien zeigte den Punkt doppelt (zwei Namen, zwei Auswahlen, Partner-Handles) – mehr Synchronisation macht daraus nie *einen* Punkt.

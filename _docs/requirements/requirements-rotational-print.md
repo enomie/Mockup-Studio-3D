@@ -2,7 +2,7 @@
 
 Ein Prinzip für alle Lathe-Objekte mit Bild: **Getränkedose, Blechdose, Weinflasche, Stift**. Der Druck liegt **im Körpermaterial**, es gibt **kein** separates Etikett-Mesh mehr.
 
-Bezüge: [`requirements-images.md`](./requirements-images.md), [`requirements-assets-beverage-can.md`](./requirements-assets-beverage-can.md), [`requirements-assets-tin-can.md`](./requirements-assets-tin-can.md), [`requirements-assets-wine-bottle.md`](./requirements-assets-wine-bottle.md), [`requirements-assets-pen.md`](./requirements-assets-pen.md). Planung: [`plan-rotational-print.md`](../planning/plan-rotational-print.md), Bestandsaufnahme: [`plan-rotational-print-inventory.md`](../planning/plan-rotational-print-inventory.md).
+Bezüge: [`requirements-images.md`](./requirements-images.md), [`requirements-assets-beverage-can.md`](./requirements-assets-beverage-can.md), [`requirements-assets-tin-can.md`](./requirements-assets-tin-can.md), [`requirements-assets-wine-bottle.md`](./requirements-assets-wine-bottle.md), [`requirements-assets-pen.md`](./requirements-assets-pen.md)..
 
 **Status:** implementiert (2026-10-30).
 

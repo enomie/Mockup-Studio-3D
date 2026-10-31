@@ -6,7 +6,7 @@ Bezüge: [`requirements-environment.md`](./requirements-environment.md), [`requi
 
 **Bestand (Inventur):** `EnvironmentsPanel.tsx`, `shell-nav.ts` (`environments` vor `assets`, Icon `CloudSun`), `builtin-environments.ts` (`ENVIRONMENT_PRESETS`, `environmentFromSceneDefaults()`), `environment-preset-types.ts` (`EnvironmentSnapshot`), `environment-snapshot.ts` (`applyEnvironmentSnapshot`), Store-Slice in `app-store.ts` (`environments`, `activeEnvironmentId`, `loadEnvironment`, `saveCurrentAsEnvironment`, `updateEnvironment`, `duplicateEnvironment`, `removeEnvironment`). Scene-API: `applyEnvironmentSnapshot` auf `MockupEngine`. Default-Built-in = `SCENE_DEFAULTS`.
 
-**Status:** v1 **implementiert** — drei Built-ins, Apply, Save/Rename/Duplicate/Remove (User). **Offen:** Left-Nav **Scenes** (eigenes Feature), Confirm bei Apply mit manuell geändertem Look, Persistenz im Projekt-Save, `captureEnvironmentSnapshot` auf Scene-API (Capture läuft v1 nur im Store). **2026-10-30:** Lichter aus Environments entfernt → [`plan-environments-vs-light-rigs.md`](../planning/plan-environments-vs-light-rigs.md).
+**Status:** v1 **implementiert** — drei Built-ins, Apply, Save/Rename/Duplicate/Remove (User). **Offen:** Left-Nav **Scenes** (eigenes Feature), Confirm bei Apply mit manuell geändertem Look, Persistenz im Projekt-Save, `captureEnvironmentSnapshot` auf Scene-API (Capture läuft v1 nur im Store). **2026-10-30:** Lichter aus Environments entfernt.
 
 **Namens-Trennung (UI):** **Environments** (Plural, **links**) = Preset-Bibliothek. **Environment** (Singular, **rechts**) = Live-Panel für Sky/Reflections/Fog/Ground. Kein Umbenennen des Right-Nav nötig; Labels in der Shell klar halten.
 
