@@ -1,6 +1,6 @@
 # Plan: Gemeinsame Punkte wirklich EINMAL – „Knoten“, die mehrere Patches benutzen
 
-Status: **freigegeben – N1 in Umsetzung**
+Status: **N1 erledigt** – N2 (Bedienung) offen
 Ersetzt das bisherige Modell „jeder Patch hat eigene Punkte, Kopien werden synchron gehalten“ (Schritt A Link, C1/C2/C3, Coupled Pairs, Shared-Point-Plan). Die Flächen-Mathematik (Classic + Kanten-Korrektur D) bleibt.
 
 ---
@@ -102,3 +102,11 @@ Knoten liegen in **Weltkoordinaten** (sie gehören keinem Patch). Die Patches le
 | Großer Umbau an Patch-Daten, Gizmo, Inspector | in Phasen, N1 rein getestet bevor UI angefasst wird |
 | Undo muss Knoten mitnehmen | Knoten in den bestehenden Schnappschuss aufnehmen; Test „Zusammenlegen → Undo → Redo“ |
 | Patch-Bewegung (Frage 1) | Verhalten festlegen und testen |
+
+## Umsetzung N1
+
+- `src/scene/patch-nodes.ts`: Knoten (Weltkoordinaten, Handles je einmal in „Slots“, Paare `across`/`line`, Nutzer = Patch-Punkte), `joinSharedEdge` (4 Punkte → 2 Knoten, Mittelwert, alles gegenüber + gekoppelt), `createInnerNode` (für eingefügte Punkte), `applyPointEditToNode` (Bearbeitung → Knoten, gekoppelte Paare drehen mit, Shift löst), `alignNodeOpposite`, `moveNodeWithPatch` (Entscheidung b), `removeNodeUse`, `resolvePatchPoints`, `reconcilePatchNodes` (Abgleich nach jeder Änderung).
+- `PatchPoint.nodeId`: Punkt ist Sicht auf einen Knoten.
+- Engine: Knoten im Entity-Registry, Undo/Redo-Schnappschuss enthält Knoten, `PatchNodeSync` gleicht nach jeder Änderung ab. Alte Kanten-Synchronisation überspringt Kanten, deren Enden Knoten sind.
+- Tests: `patch-nodes.test.ts` (11) – 4 → 2, ein Name, gemeinsamer Kanten-Handle, Paare gegenüber, Bearbeiten über Patch A erreicht Patch B, Shift/Align, Verschieben nimmt Knoten mit, Patch löschen löst Knoten auf, Idempotenz; `patch-nodes-crease.test.ts` – Knick < 0,1° zwischen zwei unterschiedlich gedrehten Patches.
+- Bedienung noch unverändert (N2): „Link“ im Panel erzeugt noch das alte Modell.

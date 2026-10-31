@@ -23,6 +23,11 @@ export interface PatchPoint {
    * and backward pink), 'free' leaves it free. Absent = free.
    */
   pinkPair?: PatchPairMode;
+  /**
+   * Set when this point is a shared node used by several patches (see patch-nodes): the
+   * node is the single source of truth; the fields above are this patch's view of it.
+   */
+  nodeId?: string;
 }
 
 export type PatchPairMode = 'coupled' | 'free';
@@ -116,6 +121,7 @@ export function clonePatchPoint(point: PatchPoint): PatchPoint {
     handleCrossOut: { ...point.handleCrossOut },
     ...(point.joint ? { joint: point.joint } : {}),
     ...(point.pinkPair ? { pinkPair: point.pinkPair } : {}),
+    ...(point.nodeId ? { nodeId: point.nodeId } : {}),
   };
 }
 

@@ -1,3 +1,4 @@
+import type { PatchNode } from '@/scene/patch-nodes';
 import type { Object3D } from 'three/webgpu';
 import {
   cloneAssetFaces,
@@ -97,6 +98,8 @@ export class EntityRegistry {
 
   private readonly entityListeners = new Set<EntityChangeListener>();
   private entitiesSnapshot: readonly AssetEntity[] | null = null;
+  /** Shared patch points used by several patches (frozen list, replaced on every change). */
+  private patchNodes: readonly PatchNode[] = Object.freeze([]);
   private readonly selectionListeners = new Set<SelectionChangeListener>();
 
   subscribeEntities(listener: EntityChangeListener): () => void {
@@ -126,6 +129,17 @@ export class EntityRegistry {
       [...this.entities.values()].map((entry) => entry.entity),
     );
     return this.entitiesSnapshot;
+  }
+
+  getPatchNodes(): readonly PatchNode[] {
+    return this.patchNodes;
+  }
+
+  /** Replaces the shared patch points (undo/redo, node edits); notifies entity listeners. */
+  setPatchNodes(nodes: readonly PatchNode[]): void {
+    if (nodes === this.patchNodes) {return;}
+    this.patchNodes = Object.freeze([...nodes]);
+    this.emitEntities();
   }
 
   getSelectedEntityId(): string | null {

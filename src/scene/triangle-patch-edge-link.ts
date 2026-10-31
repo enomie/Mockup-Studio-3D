@@ -372,6 +372,9 @@ export function propagateEdgeLinks(
       let points = partnerParams.points;
       for (const link of sourceParams.edgeLinks ?? []) {
         if (link.partnerEntityId !== partnerId || !isEdgeLinkValid(source, link, current)) {continue;}
+        // Edges joined into shared nodes are kept in line by the nodes themselves.
+        const ends = sourceParams.points.filter((p) => p.id === link.startPointId || p.id === link.endPointId);
+        if (ends.length === 2 && ends.every((p) => p.nodeId)) {continue;}
         const shape = captureEdgeShape(sourceParams, source.transform, {
           startPointId: link.startPointId,
           endPointId: link.endPointId,

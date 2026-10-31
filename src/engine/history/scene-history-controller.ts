@@ -1,4 +1,5 @@
 import type { AssetEntity } from '@/scene/entity-types';
+import type { PatchNode } from '@/scene/patch-nodes';
 import { describeEntityChange } from './entity-history-diff';
 import { HistoryStack } from './history-stack';
 
@@ -22,6 +23,9 @@ export interface SceneHistoryHost {
   isRecordingSuspended(): boolean;
   /** Called whenever undo/redo availability may have changed. */
   onStateChanged(): void;
+  /** Shared patch points (nodes); part of every step when provided. */
+  getPatchNodes?(): readonly PatchNode[];
+  restorePatchNodes?(nodes: readonly PatchNode[]): void;
 }
 
 /**
@@ -39,7 +43,10 @@ export interface HistorySettingsAdapter {
 interface SceneSnapshot {
   entities: readonly AssetEntity[];
   settings: unknown;
+  nodes: readonly PatchNode[];
 }
+
+const NO_NODES: readonly PatchNode[] = [];
 
 interface PendingTimer {
   set(callback: () => void, ms: number): unknown;
@@ -80,7 +87,11 @@ export class SceneHistoryController {
   }
 
   private capture(): SceneSnapshot {
-    return { entities: this.host.getEntities(), settings: this.settings?.capture() };
+    return {
+      entities: this.host.getEntities(),
+      settings: this.settings?.capture(),
+      nodes: this.host.getPatchNodes?.() ?? NO_NODES,
+    };
   }
 
   /** Call on every entity or settings change. */
@@ -122,7 +133,8 @@ export class SceneHistoryController {
     const current = this.capture();
     const settingsLabel = this.settings?.describe(this.baseline.settings, current.settings) ?? null;
     const sameSettings = settingsLabel === null;
-    if (current.entities === this.baseline.entities && sameSettings) {return;}
+    const sameNodes = current.nodes === this.baseline.nodes;
+    if (current.entities === this.baseline.entities && sameSettings && sameNodes) {return;}
     // Keep the old settings object when nothing changed so snapshots stay shareable.
     if (sameSettings) {current.settings = this.baseline.settings;}
     const fromUser = this.userActivity;
@@ -134,7 +146,7 @@ export class SceneHistoryController {
     const entityDiff = describeEntityChange(this.baseline.entities, current.entities);
     const label = entityDiff && settingsLabel
       ? `${entityDiff.label}, ${settingsLabel.toLowerCase()}`
-      : entityDiff?.label ?? settingsLabel;
+      : entityDiff?.label ?? settingsLabel ?? (sameNodes ? null : 'Edit shared points');
     if (label) {
       this.stack.record({ before: this.baseline, after: current, label });
       this.host.onStateChanged();
@@ -171,12 +183,19 @@ export class SceneHistoryController {
       if (this.settings && !this.settings.equals(target.settings, from.settings)) {
         this.settings.restore(target.settings);
       }
+      if (target.nodes !== from.nodes) {
+        this.host.restorePatchNodes?.(target.nodes);
+      }
       if (target.entities !== from.entities) {
         await this.host.restoreEntities(target.entities);
       }
     } finally {
       this.restoring = false;
-      this.baseline = { entities: this.host.getEntities(), settings: target.settings };
+      this.baseline = {
+        entities: this.host.getEntities(),
+        settings: target.settings,
+        nodes: this.host.getPatchNodes?.() ?? NO_NODES,
+      };
     }
     const focus = describeEntityChange(from.entities, target.entities)?.focusEntityId;
     if (focus && target.entities.some((entity) => entity.id === focus)) {this.host.focusEntity(focus);}

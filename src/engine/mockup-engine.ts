@@ -5,6 +5,7 @@ import {
 } from './history/scene-history-controller';
 import { attachHistoryInputTracking } from './history/history-input-tracking';
 import { PatchEdgeLinkSync } from './patch-edge-link-sync';
+import { PatchNodeSync } from './patch-node-sync';
 import { splitLinkOnInsert } from '@/scene/triangle-patch-linked-edit';
 import { alignSharedPairAverage } from '@/scene/triangle-patch-coupled-pairs';
 import { type Camera, type Mesh, Scene, type WebGPURenderer } from 'three/webgpu';
@@ -138,6 +139,7 @@ export class MockupEngine implements SceneApi {
   private readonly gizmoInteraction: GizmoInteractionController;
   private readonly history: SceneHistoryController;
   private readonly edgeLinkSync: PatchEdgeLinkSync;
+  private readonly nodeSync: PatchNodeSync;
   private readonly detachHistoryInput: () => void;
 
   private constructor(
@@ -211,6 +213,8 @@ export class MockupEngine implements SceneApi {
         this.rigidTest.getPhase() !== 'idle' ||
         this.physics.needsSimulationStep(),
       onStateChanged: () => { this.notifySceneApiListeners(); },
+      getPatchNodes: () => this.registry.getPatchNodes(),
+      restorePatchNodes: (nodes) => { this.registry.setPatchNodes(nodes); },
     });
     this.detachHistoryInput = attachHistoryInputTracking(this.history);
     this.edgeLinkSync = new PatchEdgeLinkSync({
@@ -218,6 +222,14 @@ export class MockupEngine implements SceneApi {
       isRestoring: () => this.history.isRestoring(),
       writePatchPoints: (entityId, points) => { this.setKindParams('patch', entityId, { points }); },
     });
+    this.nodeSync = new PatchNodeSync({
+      getEntities: () => this.registry.getEntities(),
+      getPatchNodes: () => this.registry.getPatchNodes(),
+      setPatchNodes: (nodes) => { this.registry.setPatchNodes(nodes); },
+      isRestoring: () => this.history.isRestoring(),
+      writePatchPoints: (entityId, points) => { this.setKindParams('patch', entityId, { points }); },
+    });
+    registry.subscribeEntities(() => { this.nodeSync.onEntitiesChanged(); });
     registry.subscribeEntities(() => { this.edgeLinkSync.onEntitiesChanged(); });
     registry.subscribeEntities(() => {
       if (this.patchAddPoint.getSelectedSegment()) {this.patchAddPoint.syncSelectedLine();}
