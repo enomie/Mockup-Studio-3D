@@ -1,123 +1,83 @@
-# Plan: Punkt-Copy/Paste, Kanten-Copy/Paste & gemeinsame Kanten (Patches)
+# Plan: Patch-Punkte & gemeinsame Kanten
 
-Status: **Entwurf – wartet auf Freigabe**
-Betrifft: Triangle-/Quad-Patches (`asset-triangle-patch`)
-
----
-
-## Ziel
-
-1. **A – Punkt kopieren/einfügen:** Position + Handles eines Punkts auf einen Punkt eines anderen (oder desselben) Patches übertragen.
-2. **B – Kante kopieren/einfügen bzw. verbinden:** Eine Kante (Segment zwischen zwei benachbarten Punkten) auf eine Kante eines anderen Patches übertragen – einmalig oder dauerhaft gekoppelt.
-3. **Smooth/Corner wie in Illustrator:** An gemeinsamen Punkten bilden die gelben Cross-Handles beider Patches ein Handle-Paar. Standard = gegenüberliegend gekoppelt (fließender Übergang), Alt-Ziehen bricht die Kopplung (Knick).
+Status:
+- **Phase 1 (Punkt Copy/Paste): erledigt**
+- **Schritt A (Kanten Copy/Paste + Link, nur Linie): in Umsetzung**
+- Schritt B (neue Flächen-Mathematik) und C (Smooth/Corner): offen, eigener Plan vor Start
 
 ---
 
-## Begriffe
+## Befund (Prüfung vor Phase 2)
 
-- **Punkt:** `PatchPoint` – Anker `pos` + 4 Handles: pink `handleNext`/`handlePrev` (entlang der Kante), gelb `handleCrossIn`/`handleCrossOut` (quer zur Kante).
-- **Kante:** immer das **Segment zwischen zwei benachbarten Punkten** einer Patch-Seite (entspricht `PatchEdgeSegment` / `locatePatchEdgeSegment`). Nicht die ganze Seite. Es werden nie Punkte gelöscht oder ergänzt.
-- **Smooth-Paar:** zwei Handles, die durch denselben Anker in entgegengesetzte Richtung zeigen. Richtung gekoppelt, Länge je Seite frei.
-- **Corner:** Paar aufgebrochen, beide Handles unabhängig.
+Messung mit zwei Dreiecks-Patches, gemeinsame Kante, gelbe Handles exakt gegenüberliegend gekoppelt:
 
----
+| Fall | Steigung Blau | Steigung Rot | Knick |
+|---|---|---|---|
+| symmetrisch | 29,6° | −29,6° | 0° |
+| unterschiedliche Form/Größe | 29,6° | −18,9° | ≈ 10° |
 
-## A) Punkt kopieren / einfügen
+- Die gelben Handles (`handleCrossIn`) steuern **nicht** die Neigung an der Kante, sondern eine Wölbung (`27·u·v·w`), die an der Kante ausläuft. Die Neigung an der Kante hängt zusätzlich von den anderen Kanten und der Patch-Größe ab.
+- `handleCrossOut` fließt nicht in die Fläche ein.
+- Ecken haben nur **einen** gelben Handle für beide angrenzenden Kanten.
+- **Die Kanten-Kurven selbst sind exakt** (Coons-Rand): Punkte + pinke Handles bestimmen die Kante vollständig.
 
-**Verhalten**
-- Copy speichert in einer app-internen Zwischenablage (nicht System-Clipboard): `pos` + alle 4 Handles, Handles **relativ zum Anker** (Offset), damit sie nach dem Einfügen identisch aussehen.
-- Paste setzt beim Zielpunkt `pos` und Handles (Anker + Offsets). Einmalige Übernahme, keine Kopplung.
-- Paste-Varianten (Dropdown am Paste-Button): *Alles* (Standard), *Nur Position*, *Nur Handles*.
-- Patch-Transformation (Position/Rotation/Skalierung der Entity) wird berücksichtigt: intern in Weltkoordinaten kopieren, beim Einfügen in Lokalkoordinaten des Ziel-Patches umrechnen.
-- Ein Undo-Schritt pro Paste.
-
-**UI**
-- Point & Handle Inspector: pro Punktzeile Icon-Buttons **Copy** / **Paste** (neben „Remove“). Paste nur aktiv, wenn etwas kopiert ist.
-- Statuszeile unter der Liste: „Copied: Patch 1 · P3“ + ✕ zum Leeren.
-- Tastatur: **Ctrl/Cmd+C / Ctrl/Cmd+V**, wenn ein Patch-Punkt im Viewport ausgewählt ist (nicht, wenn ein Textfeld Fokus hat).
+**Folgerung:** Eine gemeinsame *Linie* ist sicher machbar. Ein garantiert *fließender* Übergang ist mit der heutigen Flächen-Mathematik nicht möglich – dafür braucht es Schritt B.
 
 ---
 
-## B) Kante kopieren / einfügen / verbinden
+## Phase 1 – Punkt kopieren / einfügen (erledigt)
 
-**Kante auswählen**
-- Neuer Modus **„Select Edge“** (Button im Panel, Esc beendet) – nutzt die bestehende Hover-Logik aus `triangle-patch-add-point-tool.ts` (`findClosestEdgeHit`, Hover-Radius ~14 px), trifft aber das **Segment** zwischen zwei Punkten statt einer Position t.
-- Hover hebt das Segment hervor, Klick wählt es (bleibt markiert).
+Copy/Paste pro Punktzeile im Inspector + Ctrl/Cmd+C/V; Modi: Position & Handles / nur Position / nur Handles; Welt↔Lokal-Umrechnung.
 
-**Ablauf**
-1. Segment an Patch 1 wählen → **Copy Edge**
-2. Segment an Patch 2 wählen → **Paste Edge** als:
-   - **Paste** – einmalig: beide Endpunkte (`pos`) + pinke Handles entlang des Segments übernehmen. Gelbe Handles bleiben wie sie sind.
-   - **Link** – wie Paste, plus dauerhafte Kopplung (siehe unten). Gelbe Handles an beiden Enden starten als **Smooth-Paar** (Zielseite wird gegenüber der Quellseite ausgerichtet, behält ihre Länge).
-- **Die kopierte Kante gibt die Form vor.**
-- **Richtung:** Zuordnung der Enden automatisch nach Nähe (Start ↔ nächstgelegenes Ende). Button **„Flip“** dreht die Zuordnung um (bei Link auch nachträglich).
-- **Nachbarkanten:** Die Endpunkte gehören auch zu den Nachbarsegmenten im selben Patch – diese verformen sich mit. Gewollt.
+---
 
-**Kopplung (Link) – Datenmodell**
-- Neue Szenen-Liste von Links, z. B.
+## Schritt A – Kanten kopieren / einfügen / verbinden (nur Linie)
+
+**Begriff Kante:** Segment zwischen zwei **benachbarten** Punkten einer Patch-Seite. Es werden nie Punkte gelöscht oder ergänzt.
+
+**Was zu einer Kante gehört:** Position beider Endpunkte + die beiden pinken Handles, die ins Segment zeigen. Gelbe Handles gehören **nicht** dazu (bleiben je Patch frei).
+
+**Bedienung**
+- Patch-Panel, neue Sektion **„Edges“**: Liste aller Segmente („P1 – P2“, …). Pro Zeile: **Copy Edge**, **Paste Edge**, **Link Edge**; bei verbundenen Kanten: Partner-Anzeige („🔗 Patch 2 · P4 – P5“), **Flip**, **Unlink**.
+- **Pick Edge** (Button): Klick auf eine Kante im Viewport wählt das Segment (gleiche Hover-Logik wie „Add Point“). Gewähltes Segment wird im Viewport hervorgehoben und in der Liste markiert.
+- **Paste Edge:** einmalige Übernahme (Endpunkte + Segment-Handles).
+- **Link Edge:** wie Paste + dauerhafte Kopplung. Die kopierte Kante gibt die Form vor.
+- **Richtung:** automatisch nach Nähe der Endpunkte (Welt-Koordinaten); **Flip** dreht die Zuordnung (beim Link: die Seite, an der man Flip drückt, gibt vor).
+- Beim Verschieben eines Endpunkts gehen seine übrigen Handles mit (wie beim normalen Verschieben).
+
+**Datenmodell**
+- `PatchParams.edgeLinks?: PatchEdgeLink[]`, in **beiden** Patches gespeichert:
   ```
-  PatchEdgeLink {
-    id
-    a: { entityId, startPointId, endPointId }
-    b: { entityId, startPointId, endPointId }   // Reihenfolge = Zuordnung (Flip tauscht)
-    cornerAt: { start: boolean, end: boolean }  // Corner-Status pro gemeinsamem Endpunkt
-  }
+  PatchEdgeLink { startPointId, endPointId, partnerEntityId, partnerStartPointId, partnerEndPointId }
   ```
-- Gekoppelt sind: `pos` der Endpunkte und die pinken Handles des Segments (die anderen pinken Handles der Punkte bleiben frei, falls sie zu Nachbarsegmenten gehören – Zuordnung je nach Laufrichtung prüfen).
-- Gelbe Handles: gekoppelt nach Smooth/Corner (siehe nächster Abschnitt).
-- Bearbeitung an einer Seite → Propagation auf die andere (in Weltkoordinaten, mit Umrechnung in die jeweilige Entity-Transformation).
-- Wird eine Patch-Entity verschoben/gedreht: Link bleibt bestehen, die **verschobene** Seite gibt vor, die andere folgt (zu bestätigen in der Umsetzung, Alternative: Link bei Entity-Transform auflösen).
-- Löschen eines Patches oder eines Endpunkts → betroffene Links werden entfernt.
-- Spiegelkopien (Mirror) nehmen an Links nicht teil (nur das Original).
+  (`start ↔ partnerStart`, `end ↔ partnerEnd`).
+- Keine zentrale Liste → Undo/Redo deckt Links automatisch ab (sie sind Teil der Patch-Daten).
+- **Gültigkeit** wird beim Lesen geprüft: Partner existiert, beide Segmente sind (noch) benachbart. Ungültige Links (Partner gelöscht, Punkt eingefügt/entfernt) werden ignoriert und im Panel als „broken“ mit Unlink angezeigt – nichts geht kaputt.
+- Punkt entfernen, der zu einem Link gehört → Link wird in diesem Patch entfernt.
 
-**UI**
-- Neue Sektion **„Shared Edges“** im Patch-Panel (zwischen Mirror und Inspector): Liste der Links dieses Patches, z. B. „P2–P3 ↔ Patch 2 · P1–P4“, pro Eintrag **Flip** und **Unlink**. Unlink lässt alles, wo es gerade ist.
-- Viewport: gelinkte Segmente in eigener Farbe (z. B. grün).
-- Inspector: Punkte auf gelinkten Segmenten mit 🔗 und Hinweis „linked with Patch 2 · P1“.
+**Synchronisation (Engine)**
+- Ein Sync-Baustein beobachtet Patch-Änderungen (Parameter **und** Transform). Der geänderte Patch ist die Quelle; Partner werden in Welt-Koordinaten nachgezogen (inkl. Ketten über mehrere Patches, jeder Patch höchstens einmal pro Durchlauf).
+- Schreibt nur, wenn sich Werte wirklich unterscheiden (> 1e-9) → kein Ping-Pong.
+- Während Undo/Redo-Wiederherstellung inaktiv (Stand ist bereits konsistent).
+- Verschieben eines Patches allein → Partner-Kante verformt sich mit (Entscheid 1a). Gemeinsames Verschieben kommt mit Mehrfachauswahl.
+- Spiegelkopien (Mirror) nehmen nicht teil.
 
----
-
-## C) Smooth / Corner (Illustrator-Prinzip)
-
-**Gemeinsame Punkte (Link)**
-- Am gemeinsamen Endpunkt bilden der gelbe Handle von Patch A (quer zur Kante, in A hinein) und der gelbe Handle von Patch B (in B hinein) ein Paar.
-- **Smooth (Standard):** Drehen des einen dreht den anderen gegenüber mit; Längen unabhängig → fließender Übergang (obere Skizze).
-- **Corner:** per **Alt-Ziehen** am Handle aufgebrochen → Handles unabhängig → Knick an der gemeinsamen Linie (untere Skizze). Status bleibt bestehen (wie in Illustrator).
-- Pro Endpunkt einzeln: eine Kante kann an einem Ende fließen, am anderen knicken.
-- Rückweg: Toggle **Smooth / Corner** im Inspector. Beim Zurück auf Smooth gibt der **ausgewählte** Handle die Richtung vor, der andere springt gegenüber und behält seine Länge.
-- Darstellung: Smooth-Paar als durchgehende Linie; Corner-Punkt mit anderer Ankerform (Quadrat statt Kreis).
-
-**Innerhalb eines Patches (pinke Handles) – optional, Phase 3**
-- Dasselbe Prinzip für `handleNext`/`handlePrev` an Kantenpunkten (Nicht-Ecken). Aktuell sind sie unabhängig (keine Kopplung im Gizmo-Controller gefunden). Neues Feld pro Punkt `smooth?: boolean`; Standard für **bestehende** Szenen: Corner (= heutiges Verhalten, nichts ändert sich beim Laden).
-
-**Modifier-Taste**
-- Alt wie in Illustrator. Prüfen, ob Alt im Viewport (Browser/OS, z. B. Linux-Fenstermanager) kollidiert; Fallback: Toggle im Inspector reicht immer.
+**Tests**
+- Segmente auflisten, Segment-Handles je Laufrichtung.
+- Paste mit Auto-Richtung und Flip, verdrehte/verschobene Patches.
+- Propagation: Quelle → Partner exakt, idempotent, Ketten, ungültige Links ignoriert.
+- Undo/Redo eines Link-Vorgangs = ein Schritt.
 
 ---
 
-## Phasen
+## Schritt B – Flächen-Mathematik mit echter Rand-Neigung (später, eigener Plan)
 
-1. **Phase 1 – A:** Punkt-Copy/Paste (Zwischenablage, Inspector-Buttons, Shortcuts, Welt↔Lokal-Umrechnung, Undo).
-2. **Phase 2 – B + C (Links):** Segment-Auswahlmodus, Copy/Paste Edge, `PatchEdgeLink`-Modell inkl. Speichern/Laden, Propagation, Shared-Edges-Sektion, Smooth/Corner an gemeinsamen Punkten mit Alt-Ziehen.
-3. **Phase 3 – optional:** Smooth/Corner auch für pinke Handles innerhalb eines Patches.
+- Gelber Handle = tatsächliche Neigung der Fläche an der Kante (Coons/Gregory mit Hermite-Querableitungen).
+- Ecken bekommen eigene gelbe Handles pro angrenzender Kante.
+- Als **Option pro Patch** („Surface: Classic / Tangent“), alte Patches unverändert.
+- Nachweis per Messung: Knick an gekoppelter Kante = 0° auch bei ungleichen Patches.
 
-Jede Phase einzeln committen und mit dir testen.
+## Schritt C – Smooth / Corner (nach B)
 
----
-
-## Tests (Vitest)
-
-- Punkt-Copy/Paste: Handles relativ korrekt, Welt↔Lokal bei gedrehtem/skaliertem Ziel-Patch, Teil-Paste.
-- Segment-Hit-Test: richtiges Segment bei Kanten mit Zwischenpunkten.
-- Paste Edge: Zuordnung nach Nähe, Flip.
-- Link-Propagation: Anker/pinke Handles synchron; Smooth-Paar dreht gegenüber, Längen bleiben; Corner unabhängig; Re-Smooth richtet nach ausgewähltem Handle aus.
-- Unlink / Löschen von Patch oder Punkt räumt Links auf.
-- Laden alter Szenen ohne Links/`smooth` unverändert.
-
----
-
-## Offene Punkte
-
-- Verhalten beim Verschieben einer ganzen gelinkten Entity (folgt der Partner oder wird der Link gelöst?).
-- Welcher der beiden gelben Handles (`handleCrossIn`/`handleCrossOut`) am Endpunkt jeweils zum Segment gehört – in Umsetzung anhand der Laufrichtung festlegen.
-- Alt-Taste: Kollisionen prüfen.
+- Gemeinsamer Punkt: gelbe Handles beider Patches als Paar; Standard Smooth (gegenüber, Längen frei), **Corner** per Modifier-Taste beim Ziehen (nicht Alt; freie Taste wird in B/C festgelegt) oder Toggle im Inspector.
+- Optional dasselbe für pinke Handles innerhalb eines Patches.
