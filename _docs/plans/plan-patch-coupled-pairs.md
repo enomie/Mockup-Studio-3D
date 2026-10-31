@@ -1,6 +1,6 @@
 # Plan: Gekoppelte Kanten – zwei Handle-Paare pro Punkt (Orange & Rosa)
 
-Status: **Entwurf – wartet auf Freigabe**
+Status: **umgesetzt**
 Ersetzt die Bedienung aus `plan-patch-simplify-coupling.md` (ein Schalter „Coupled / Independent“), baut auf C1 (Kopplung) und D (Kanten-Korrektur) auf.
 
 ---
@@ -89,3 +89,15 @@ Nur **Punkte auf gekoppelten Kanten**: beide Endpunkte und jeder später eingef�
 ## Offene Fragen
 
 – keine (alle im Gespräch geklärt) –
+
+## Umsetzung
+
+- Neues Modul `src/scene/triangle-patch-coupled-pairs.ts`: Mittelwert (`averageOpposite`), „Align opposite (average)“ je Paar (`alignSharedPairAverage`), Paar eines Handles für Shift (`pairOfHandle`), Mitdrehen des rosa Paars an inneren Punkten (`applyInnerPinkCoupling`).
+- Link-Sync: Orange-Paar (gelb ↔ gelb, quer zur Kante gegenüber) und Rosa-Paar an Endpunkten (Nachbarkanten-Rosa ↔ Partner) getrennt; beide Zustände werden übertragen. Rosa an inneren Punkten wird über die gemeinsame Kante ohnehin geteilt.
+- Kanten-Korrektur (D): an Kantenpunkten zählt das Orange-Paar, an Ecken das Rosa-Paar.
+- Link Edge: an beiden Endpunkten beide Paare per Mittelwert gegenüber + gekoppelt. Punkt einfügen: beide Paare gekoppelt, Orange per Mittelwert (Rosa ist durch die Teilung schon gegenüber).
+- Shift + Ziehen löst das Paar des gezogenen Handles.
+- Inspector (gewählter Punkt auf gemeinsamer Kante): „Yellow pair: Coupled / Free“ und „Pink pair: Coupled / Free“, bei Free zusätzlich „Align opposite (average)“. Punktzeile: 🔗 als Kennzeichen.
+- Abweichung vom Plan: Gekoppelte Paare werden im Viewport **nicht** gestrichelt/durchgehend unterschieden (nur der Ring für Orange-gekoppelt bleibt). Kann bei Bedarf nachgezogen werden.
+- Tests: `triangle-patch-coupled-pairs.test.ts` (8); Korrektur- und Kopplungs-Tests auf beide Paare umgestellt (Knick-Messung weiterhin < 0,1°).
+- Browser: nach Link beide Paare gekoppelt (beide Patches); Yellow → Free auf beiden Patches; „Align opposite (average)“ koppelt wieder auf beiden.

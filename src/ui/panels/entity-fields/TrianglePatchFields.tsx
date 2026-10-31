@@ -3,8 +3,9 @@ import { ClipboardPaste, Copy, Trash2, X } from 'lucide-react';
 import { Icon } from '@/ui/components/Icon';
 import { removePatchPoint } from '@/scene/triangle-patch-point-edit';
 import { mergeLinksOnRemove } from '@/scene/triangle-patch-linked-edit';
-import { crossHandleKeyAt, isEdgeLinkValid } from '@/scene/triangle-patch-edge-link';
-import { setPatchJoint } from '@/ui/store/patch-edge-store';
+import { applyInnerPinkCoupling, type HandlePair } from '@/scene/triangle-patch-coupled-pairs';
+import { isEdgeLinkValid, sharedPointRole } from '@/scene/triangle-patch-edge-link';
+import { setSharedPair } from '@/ui/store/patch-edge-store';
 import { PanelToggleGroup, type PanelToggleOption } from '@/ui/components/PanelToggleGroup';
 import { SubPanelSection } from '@/ui/components/SubPanelSection';
 import { RangeSlider } from '@/ui/components/RangeSlider';
@@ -61,6 +62,16 @@ const PASTE_MODES: { key: PatchPointPasteMode; label: string }[] = [
   { key: 'all', label: 'Position & Handles' },
   { key: 'position', label: 'Position Only' },
   { key: 'handles', label: 'Handles Only' },
+];
+
+const PAIR_OPTIONS: PanelToggleOption<'coupled' | 'free'>[] = [
+  { key: 'coupled', label: 'Coupled', title: 'Both handles stay opposite: drag one, the other turns along (lengths free)' },
+  { key: 'free', label: 'Free', title: 'Both handles move independently (Shift+drag a handle also frees its pair)' },
+];
+
+const PAIRS: { pair: HandlePair; label: string }[] = [
+  { pair: 'yellow', label: 'Yellow pair' },
+  { pair: 'pink', label: 'Pink pair' },
 ];
 
 const TARGETS: { key: PatchHandleTarget; label: string; color: string }[] = [
@@ -157,8 +168,8 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
       };
 
       nodeCopy[selectedTargetKey][axis] = value;
-      // Every handle moves on its own (no seesaw, no automatic pink pairing).
-      commitPoint(nodeCopy);
+      // Handles move on their own; a coupled pink pair inside a shared edge turns along.
+      commitPoint(applyInnerPinkCoupling(patchParams, nodeCopy, selectedTargetKey));
     }
   };
 
@@ -213,18 +224,11 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
       (l) => (l.startPointId === node.id || l.endPointId === node.id) && isEdgeLinkValid(entity, l, findEntity),
     );
     if (links.length === 0) {return null;}
-    const star = crossHandleKeyAt(patchParams, node.id, links[0], links.length) === null;
+    const star = sharedPointRole(patchParams, node.id, links) === 'star';
     if (star) {
-      return { label: 'Shared', title: 'Shared by several linked edges: cannot be coupled', star: true };
+      return { label: 'Shared', title: 'Shared by several linked edges: pairs cannot be coupled', star: true };
     }
-    const coupled = node.joint === 'smooth';
-    return {
-      label: coupled ? 'Coupled' : 'Independent',
-      title: coupled
-        ? 'Coupled: the linked patch mirrors this point, the transition stays smooth (click for Independent; Shift+drag a handle also does this)'
-        : 'Independent: each patch is set freely at this point (click to couple: the linked patch follows this side)',
-      star: false,
-    };
+    return { label: '', title: 'Point on a shared edge: handle pairs can be coupled (see below)', star: false };
   };
 
   const mirror: PatchMirror = patchParams.mirror ?? { x: false, y: false, z: false };
@@ -303,19 +307,9 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
                     }}
                   />
                   {jointInfo(node) ? (
-                    <button
-                      type="button"
-                      className="btn patch-joint-toggle"
-                      aria-label={`Joint ${node.name}: ${jointInfo(node)?.label ?? ''}`}
-                      title={jointInfo(node)?.title}
-                      disabled={jointInfo(node)?.star}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setPatchJoint(entity.id, node.id, node.joint === 'smooth' ? 'corner' : 'smooth');
-                      }}
-                    >
-                      🔗 {jointInfo(node)?.label}
-                    </button>
+                    <span className="patch-joint-badge" title={jointInfo(node)?.title}>
+                      🔗{jointInfo(node)?.star ? ' Shared' : ''}
+                    </span>
                   ) : null}
                   <button
                     type="button"
@@ -360,6 +354,33 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
 
                 {selected ? (
                   <div className="patch-point-inspector-detail panel-field-stack">
+                    {jointInfo(node) && !jointInfo(node)?.star ? (
+                      <>
+                        {PAIRS.map(({ pair, label }) => {
+                          const coupled = pair === 'yellow' ? node.joint === 'smooth' : node.pinkPair === 'coupled';
+                          return (
+                            <div key={pair} className="panel-field-stack">
+                              <PanelToggleGroup
+                                label={label}
+                                options={PAIR_OPTIONS}
+                                active={{ coupled, free: !coupled }}
+                                onToggle={(mode) => { setSharedPair(entity.id, node.id, pair, mode === 'coupled'); }}
+                              />
+                              {coupled ? null : (
+                                <button
+                                  type="button"
+                                  className="btn"
+                                  title="Put both handles of this pair opposite on their average direction (lengths stay) and couple them"
+                                  onClick={() => { setSharedPair(entity.id, node.id, pair, true); }}
+                                >
+                                  Align opposite (average)
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </>
+                    ) : null}
                     <label htmlFor={`patch-target-${entity.id}`} className="panel-field-label">
                       Handle
                     </label>

@@ -68,7 +68,7 @@ export function splitLinkOnInsert(
   ];
   const smooth = (params: PatchParams, id: string): PatchParams => ({
     ...params,
-    points: params.points.map((point) => (point.id === id ? { ...point, joint: 'smooth' as const } : point)),
+    points: params.points.map((point) => (point.id === id ? { ...point, joint: 'smooth' as const, pinkPair: 'coupled' as const } : point)),
   });
   return {
     ownerParams: smooth({ ...insert.params, edgeLinks: ownerLinks }, p),

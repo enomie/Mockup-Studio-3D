@@ -36,7 +36,7 @@ function triangle(prefix: string, c: [Vec3, Vec3, Vec3], middleCross: Vec3, corn
     handlePrev: lerp(pos[i], pos[(i + 3) % 4], 1 / 3),
     handleCrossIn: add(pos[i], cross[i]),
     handleCrossOut: add(pos[i], v(-cross[i].x, -cross[i].y, -cross[i].z)),
-    ...(i < 3 ? { joint } : {}),
+    ...(i < 3 ? { joint, pinkPair: joint === 'smooth' ? 'coupled' as const : 'free' as const } : {}),
   }));
   return { divisions: 24, points, cornerIds: [ids[0], ids[2], ids[3]], edgeParams: { [ids[1]]: 0.5 } };
 }
@@ -156,7 +156,7 @@ describe('classic surface with linked-edge correction', () => {
     const [p0, p1] = q.points;
     const params: PatchParams = {
       ...q,
-      points: q.points.map((p) => (p.id === p0.id || p.id === p1.id ? { ...p, joint: 'smooth' as const } : p)),
+      points: q.points.map((p) => (p.id === p0.id || p.id === p1.id ? { ...p, joint: 'smooth' as const, pinkPair: 'coupled' as const } : p)),
       edgeLinks: [{ startPointId: p0.id, endPointId: p1.id, partnerEntityId: 'X', partnerStartPointId: 'x0', partnerEndPointId: 'x1' }],
     };
     const prepared = prepareEdgeCorrection(params)!;

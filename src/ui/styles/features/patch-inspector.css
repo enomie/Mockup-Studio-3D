@@ -90,3 +90,10 @@
   font-size: var(--font-sm, 11px);
   white-space: nowrap;
 }
+
+/* Marker for points on shared edges */
+.patch-joint-badge {
+  flex: none;
+  font-size: var(--font-sm, 11px);
+  white-space: nowrap;
+}

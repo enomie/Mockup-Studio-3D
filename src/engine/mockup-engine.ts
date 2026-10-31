@@ -6,6 +6,7 @@ import {
 import { attachHistoryInputTracking } from './history/history-input-tracking';
 import { PatchEdgeLinkSync } from './patch-edge-link-sync';
 import { splitLinkOnInsert } from '@/scene/triangle-patch-linked-edit';
+import { alignSharedPairAverage } from '@/scene/triangle-patch-coupled-pairs';
 import { type Camera, type Mesh, Scene, type WebGPURenderer } from 'three/webgpu';
 import type { Rgb } from '@/colors/rgb';
 import { SCENE_DEFAULTS } from '@/config/scene-defaults';
@@ -762,8 +763,10 @@ export class MockupEngine implements SceneApi {
     if (linked) {
       const { points, edgeParams, edgeLinks } = linked.partnerParams;
       this.setKindParams('patch', linked.partnerId, { points, edgeParams, edgeLinks });
-      // The new shared point starts smooth: align the partner to this patch.
-      this.edgeLinkSync.runFrom([entityId]);
+      // The new shared point starts coupled: yellow pair opposite on the average direction
+      // (the pink pair is already opposite from the curve split).
+      const aligned = alignSharedPairAverage(entityId, inserted.pointId, 'yellow', (id) => this.registry.getRuntime(id)?.entity);
+      for (const [id, points] of aligned) {this.setKindParams('patch', id, { points });}
     }
     this.patchGizmo.selectTarget({ entityId, pointId: inserted.pointId, targetKey: 'pos' });
     this.gizmoInteraction.refresh();

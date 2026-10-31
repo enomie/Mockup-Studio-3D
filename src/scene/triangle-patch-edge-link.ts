@@ -143,7 +143,7 @@ const EPSILON = 1e-9;
 function pointsDiffer(a: readonly PatchPoint[], b: readonly PatchPoint[]): boolean {
   if (a.length !== b.length) {return true;}
   const keys = ['pos', 'handleNext', 'handlePrev', 'handleCrossIn', 'handleCrossOut'] as const;
-  return a.some((p, i) => p.joint !== b[i].joint || keys.some((k) => dist(p[k], b[i][k]) > EPSILON));
+  return a.some((p, i) => p.joint !== b[i].joint || p.pinkPair !== b[i].pinkPair || keys.some((k) => dist(p[k], b[i][k]) > EPSILON));
 }
 
 /** A link that still makes sense: partner exists, both segments are neighbors, partner links back. */
@@ -252,7 +252,40 @@ function sub(a: Vec3, b: Vec3): Vec3 {
   return { x: a.x - b.x, y: a.y - b.y, z: a.z - b.z };
 }
 
-/** Applies the smooth joints of `link` from the source patch onto the partner points. */
+/** How a point sits on shared edges: end of one shared segment, inside a shared edge, or a star point. */
+export type SharedPointRole = 'end' | 'inner' | 'star';
+
+export function sharedPointRole(params: PatchParams, pointId: string, links: readonly PatchEdgeLink[]): SharedPointRole {
+  if (links.length === 1) {return 'end';}
+  if (
+    links.length === 2 &&
+    links[0].partnerEntityId === links[1].partnerEntityId &&
+    !params.cornerIds.includes(pointId)
+  ) {return 'inner';}
+  return 'star';
+}
+
+/** At an end point: the pink handle that does not run along the shared segment. */
+export function offSegmentPinkKey(params: PatchParams, pointId: string, link: PatchSegment): 'handleNext' | 'handlePrev' | null {
+  const other = link.startPointId === pointId ? link.endPointId : link.startPointId;
+  const keys = segmentHandleKeys(params, pointId, other);
+  if (!keys) {return null;}
+  return keys.a === 'handleNext' ? 'handlePrev' : 'handleNext';
+}
+
+/** Shared edge direction at a point (local): along the segment at end points, pink to pink inside. */
+export function sharedAxisAt(point: PatchPoint, role: SharedPointRole, params: PatchParams, link: PatchSegment): Vec3 | null {
+  if (role === 'inner') {return sub(point.handleNext, point.handlePrev);}
+  const other = link.startPointId === point.id ? link.endPointId : link.startPointId;
+  const keys = segmentHandleKeys(params, point.id, other);
+  return keys ? sub(point[keys.a], point.pos) : null;
+}
+
+/**
+ * Applies the coupled pairs of `link` from the source patch onto the partner points:
+ * yellow pair (joint) and, at end points, the pink pair (neighboring edge pinks). Both
+ * pair states are copied to the partner.
+ */
 function applyJoints(
   source: AssetEntity,
   sourceParams: PatchParams,
@@ -272,18 +305,25 @@ function applyJoints(
     const sPoint = sourceParams.points.find((p) => p.id === sId);
     const pPoint = points.find((p) => p.id === pId);
     if (!sPoint || !pPoint) {continue;}
-    const joint = sPoint.joint ?? 'corner';
-    let nextPoint: PatchPoint = pPoint.joint === sPoint.joint ? pPoint : { ...pPoint, joint };
-    if (joint === 'smooth') {
-      const sKey = crossHandleKeyAt(sourceParams, sId, segment, linksAtPoint(source, sourceParams, sId, findEntity).length);
-      const currentPartner = { ...partnerParams, points };
-      const pKey = crossHandleKeyAt(currentPartner, pId, partnerSegment, linksAtPoint(partner, currentPartner, pId, findEntity).length);
-      const keys = segmentHandleKeys(sourceParams, sId, sId === segment.startPointId ? segment.endPointId : segment.startPointId);
-      if (sKey && pKey && keys) {
-        // Edge points: one axis through the point (pink to pink) so both of its links agree.
-        const axis = sKey === 'handleCrossIn'
-          ? sub(sPoint.handleNext, sPoint.handlePrev)
-          : sub(sPoint[keys.a], sPoint.pos);
+    let nextPoint: PatchPoint = pPoint;
+    if (pPoint.joint !== sPoint.joint || pPoint.pinkPair !== sPoint.pinkPair) {
+      nextPoint = { ...pPoint, joint: sPoint.joint ?? 'corner', pinkPair: sPoint.pinkPair ?? 'free' };
+    }
+    const currentPartner = { ...partnerParams, points };
+    const sRole = sharedPointRole(sourceParams, sId, linksAtPoint(source, sourceParams, sId, findEntity));
+    const pRole = sharedPointRole(currentPartner, pId, linksAtPoint(partner, currentPartner, pId, findEntity));
+    const axis = sRole === 'star' || pRole === 'star' ? null : sharedAxisAt(sPoint, sRole, sourceParams, segment);
+    if (axis && sPoint.joint === 'smooth') {
+      const aligned = alignSmoothCrossHandle(
+        { point: sPoint, key: 'handleCrossIn', transform: source.transform, axis },
+        { point: nextPoint, key: 'handleCrossIn', transform: partner.transform },
+      );
+      if (aligned) {nextPoint = aligned;}
+    }
+    if (axis && sPoint.pinkPair === 'coupled' && sRole === 'end' && pRole === 'end') {
+      const sKey = offSegmentPinkKey(sourceParams, sId, segment);
+      const pKey = offSegmentPinkKey(currentPartner, pId, partnerSegment);
+      if (sKey && pKey) {
         const aligned = alignSmoothCrossHandle(
           { point: sPoint, key: sKey, transform: source.transform, axis },
           { point: nextPoint, key: pKey, transform: partner.transform },

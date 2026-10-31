@@ -2,9 +2,7 @@ import { useSyncExternalStore } from 'react';
 import {
   defaultPatchParamsForKind,
   isPatchAssetKind,
-  type PatchJoint,
   type PatchParams,
-  type PatchPoint,
 } from '@/scene/asset-triangle-patch';
 import type { AssetEntity } from '@/scene/entity-types';
 import {
@@ -17,6 +15,7 @@ import {
   type PatchSegment,
 } from '@/scene/triangle-patch-edge-link';
 import type { PatchEdgeSelection } from '@/engine/triangle-patch-add-point-tool';
+import { alignSharedPairAverage, type HandlePair } from '@/scene/triangle-patch-coupled-pairs';
 import { setKindParams } from './app-store-asset-params';
 import * as store from './app-store-internals';
 
@@ -151,36 +150,44 @@ export function pastePatchEdge(entityId: string, segment: PatchSegment, link: bo
   };
   // Re-read the source: detaching partners may have touched it.
   const sourceNow = findPatch(source.entity.id) ?? source;
-  // New links start with smooth joints at both ends (decision C2).
-  const sourceEnds = [clip.segment.startPointId, clip.segment.endPointId];
   setKindParams('patch', source.entity.id, {
-    points: withSmoothJoints(sourceNow.params.points, sourceEnds),
     edgeLinks: [...withoutSegmentLinks(sourceNow.params, clip.segment), sourceLink],
   });
   const targetNow = findPatch(entityId) ?? target;
   setKindParams('patch', entityId, {
-    points: withSmoothJoints(points, [segment.startPointId, segment.endPointId]),
+    points,
     edgeLinks: [...withoutSegmentLinks(targetNow.params, segment), targetLink],
   });
-  // The copied side wins: align the target's cross handles to it.
-  store.sceneApi?.syncPatchLinksFrom(source.entity.id);
+  // New links: both pairs at both end points coupled, opposite on the average direction.
+  for (const pointId of [segment.startPointId, segment.endPointId]) {
+    alignPair(entityId, pointId, 'yellow');
+    alignPair(entityId, pointId, 'pink');
+  }
   return true;
 }
 
-function withSmoothJoints(points: readonly PatchPoint[], ids: readonly string[]): PatchPoint[] {
-  return points.map((point) => (ids.includes(point.id) ? { ...point, joint: 'smooth' as const } : point));
+/** Puts one pair at a shared point opposite on the average direction and couples it (both patches). */
+function alignPair(entityId: string, pointId: string, pair: HandlePair): void {
+  const updates = alignSharedPairAverage(entityId, pointId, pair, (id) => store.state.entities.find((e) => e.id === id));
+  for (const [id, points] of updates) {setKindParams('patch', id, { points });}
 }
 
 /**
- * Sets the joint of a shared point. Switching to smooth aligns the partner to this patch
- * (the selected side wins); the partner gets the same joint state.
+ * Couples a pair at a shared point (opposite on the average direction = "Align opposite
+ * (average)") or frees it. The state is the same on both patches.
  */
-export function setPatchJoint(entityId: string, pointId: string, joint: PatchJoint): void {
-  const owner = findPatch(entityId);
-  if (!owner) {return;}
-  setKindParams('patch', entityId, {
-    points: owner.params.points.map((point) => (point.id === pointId ? { ...point, joint } : point)),
-  });
+export function setSharedPair(entityId: string, pointId: string, pair: HandlePair, coupled: boolean): void {
+  if (coupled) {
+    alignPair(entityId, pointId, pair);
+  } else {
+    const owner = findPatch(entityId);
+    if (!owner) {return;}
+    setKindParams('patch', entityId, {
+      points: owner.params.points.map((point) => (point.id !== pointId
+        ? point
+        : pair === 'yellow' ? { ...point, joint: 'corner' as const } : { ...point, pinkPair: 'free' as const })),
+    });
+  }
   store.sceneApi?.syncPatchLinksFrom(entityId);
 }
 

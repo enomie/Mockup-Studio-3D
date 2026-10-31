@@ -33,7 +33,7 @@ function triangle(prefix: string, c: [Vec3, Vec3, Vec3], middleCross: Vec3, join
     handlePrev: lerp(pos[i], pos[(i + 3) % 4], 1 / 3),
     handleCrossIn: add(pos[i], cross[i]),
     handleCrossOut: add(pos[i], v(-cross[i].x, -cross[i].y, -cross[i].z)),
-    ...(i < 3 ? { joint } : {}),
+    ...(i < 3 ? { joint, pinkPair: joint === 'smooth' ? 'coupled' as const : 'free' as const } : {}),
   }));
   return {
     divisions: 24,

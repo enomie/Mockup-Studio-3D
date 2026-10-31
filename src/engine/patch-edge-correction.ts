@@ -160,8 +160,14 @@ export function prepareEdgeCorrection(params: PatchParams): PreparedEdgeCorrecti
       const segment = { startPointId: a.id, endPointId: b.id };
       const dir0 = acrossDirection(params, a, segment, linksAt(a.id), 'handleNext');
       const dir1 = acrossDirection(params, b, segment, linksAt(b.id), 'handlePrev');
-      const sigma0 = a.joint === 'smooth' && dir0 ? 1 : 0;
-      const sigma1 = b.joint === 'smooth' && dir1 ? 1 : 0;
+      // Coupled where the pair that decides the surface direction there is coupled:
+      // the yellow pair at edge points, the pink pair (neighboring edge) at corners.
+      const coupled = (p: PatchPoint) => {
+        const key = crossHandleKeyAt(params, p.id, segment, linksAt(p.id));
+        return key === 'handleCrossIn' ? p.joint === 'smooth' : p.pinkPair === 'coupled';
+      };
+      const sigma0 = coupled(a) && dir0 ? 1 : 0;
+      const sigma1 = coupled(b) && dir1 ? 1 : 0;
       if (sigma0 === 0 && sigma1 === 0) {continue;}
       segments.push({
         t0: knots[k].t,

@@ -27,7 +27,7 @@ import {
   isPatchAssetKind,
 } from '@/scene/asset-triangle-patch';
 import type { EntityRegistry } from './entity-registry';
-import { crossHandleKeyAt } from '@/scene/triangle-patch-edge-link';
+import { applyInnerPinkCoupling, pairOfHandle } from '@/scene/triangle-patch-coupled-pairs';
 
 export const PATCH_GIZMO_HANDLE_ROLE = 'patchGizmoHandle';
 
@@ -595,9 +595,11 @@ export class TrianglePatchGizmoController {
         }
       }
     } else {
-      // Shift while dragging a coupled handle makes the shared point independent.
-      if (isShiftHeld() && node.joint === 'smooth' && this.isCoupledHandle(params, node.id, targetKey)) {
-        node.joint = 'corner';
+      // Shift while dragging frees the pair of the dragged handle (yellow or pink).
+      if (isShiftHeld()) {
+        const pair = pairOfHandle(params, node.id, targetKey);
+        if (pair === 'yellow' && node.joint === 'smooth') {node.joint = 'corner';}
+        if (pair === 'pink' && node.pinkPair === 'coupled') {node.pinkPair = 'free';}
       }
       if (targetKey === 'handleCrossOut') {
         // The counterpart is the partner's yellow handle: edit the partner patch.
@@ -608,23 +610,13 @@ export class TrianglePatchGizmoController {
       node[targetKey].x = newLocal.x;
       node[targetKey].y = newLocal.y;
       node[targetKey].z = newLocal.z;
-      // Every handle moves on its own (no seesaw, no automatic pink pairing).
-      this.commitPoint(this.activeEntityId, node);
+      // Handles move on their own; a coupled pink pair inside a shared edge turns along.
+      this.commitPoint(this.activeEntityId, applyInnerPinkCoupling(params, node, targetKey));
       return true;
     }
 
     this.commitPoint(this.activeEntityId, node);
     return true;
-  }
-
-  /**
-   * Whether `key` is a handle that follows the coupled/independent mode at a shared point:
-   * the yellow handle, or at an end point the pink handle of the neighboring edge.
-   */
-  private isCoupledHandle(params: PatchParams, pointId: string, key: PatchHandleTarget): boolean {
-    if (key === 'handleCrossIn' || key === 'handleCrossOut') {return true;}
-    const links = (params.edgeLinks ?? []).filter((l) => l.startPointId === pointId || l.endPointId === pointId);
-    return links.some((l) => crossHandleKeyAt(params, pointId, l, links.length) === key);
   }
 
   /** Partner patch and point sharing `pointId` over an edge link, or null. */
