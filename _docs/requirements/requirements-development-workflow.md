@@ -43,7 +43,7 @@ Siehe auch: [`requirements-code.md`](./requirements-code.md) (technische Regeln)
 ---
 
 **Category:** Workflow  
-**Title:** Übergangsdocs (`_docs/planning/`)  
+**Title:** Übergangsdocs (`_docs/plans/`)  
 **Description:** Größere Modell- oder Architekturwechsel **zuerst** in einem **Übergangsdoc** planen (Ist/Soll, Phasen, offene Punkte, Checkliste welche Requirement-Dateien folgen) — **ohne** sofort die normativen Kategorie-Dateien zu überschreiben. Beispiel: [`../planning/transition-material-profile-and-entity-albedo.md`](../planning/transition-material-profile-and-entity-albedo.md). Nach Freigabe: Inhalt in `requirements-architecture.md` und betroffene Kategorien **überführen**; Übergangsdoc als erledigt markieren oder archivieren. Index-Verweis in `requirements-and-project-description.md`.
 
 ---

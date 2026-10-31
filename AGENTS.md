@@ -12,7 +12,7 @@
 
 
 ## Planning Before Code
-- **Never start coding straight away.** For every new feature or change, first write a plan as a doc in `_docs/planning/` (`plan-<topic>.md`, German or English).
+- **Never start coding straight away.** For every new feature or change, first write a plan as a doc in `_docs/plans/` (`plan-<topic>.md`, German or English).
 - Present the plan and wait for the user's approval before touching `src/**`.
 - Read-only investigation for the plan is fine; implementation starts only after approval.
 

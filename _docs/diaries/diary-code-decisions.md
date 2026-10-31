@@ -7,7 +7,7 @@ Kurze Historie: **wie** wir uns entschieden haben (Warum, Alternativen). Require
 ## Einträge
 
 ### 2026-10-30 — Erst Plan-Doc, dann Code
-- **Entscheidung:** Vor jeder Änderung ein Plan in `_docs/planning/plan-<thema>.md`; Code erst nach Freigabe (Regel in `AGENTS.md`).
+- **Entscheidung:** Vor jeder Änderung ein Plan in `_docs/plans/plan-<thema>.md`; Code erst nach Freigabe (Regel in `AGENTS.md`).
 - **Grund:** Johann will Richtung und offene Punkte vorher sehen, nicht nachträglich korrigieren.
 
 ### 2026-10-30 — Environments ohne Lichter
@@ -725,7 +725,7 @@ Kurze Historie: **wie** wir uns entschieden haben (Warum, Alternativen). Require
 - **Entscheidung:** Schema- und API-Wechsel **ohne** deprecated-Felder — nie parallel „alt aber ignoriert“ im Zielmodell; alte Saves **einmal** beim Load migrieren, danach nur neues Format.
 - **Grund:** Klarheit in Types/Saves; kein Doppelpflege (Material-`color` vs. Asset-Albedo).
 - **Verworfen:** `color` am MaterialPreset als deprecated behalten; dauerhaft ignorierte Legacy-Keys im gespeicherten JSON.
-- **Docs:** `_docs/planning/transition-material-profile-and-entity-albedo.md`.
+- **Docs:** `_docs/plans/transition-material-profile-and-entity-albedo.md`.
 
 ### 2026-10-10 — Fabric cloth — Asset-Scope & Physik-Roadmap
 - **Entscheidung:** Neues Asset **`fabric-cloth`** (UI **Fabric cloth**); v1 = steife Plane, Bild **DoubleSide** (vorne+hinten), optional **Border** (Breite/Dicke/Farbe); Referenzbreite **45 cm**, Platzhalter quadratisch; Ausbaustufen **wavy** (prozedural) dann **physical**.

@@ -4,7 +4,7 @@ import { bandUToTextureS, labelImageUSpan } from './beverage-can-label-unfold';
 /**
  * Shared "wrap an image around the lathe axis" mapping for rotational assets
  * (beverage can, tin can, wine bottle, pen). Pure math; TSL mirror lives in
- * `rotational-print-nodes.ts`. Plan: _docs/planning/plan-rotational-print.md
+ * `rotational-print-nodes.ts`. Plan: _docs/plans/plan-rotational-print.md
  */
 
 /** Geometry attribute holding print UVs; `uv` stays free for procedural grain and tangents. */
