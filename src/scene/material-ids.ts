@@ -19,6 +19,9 @@ export const MATERIAL_GLASS_FROSTED_PANE_ID = 'material-glass-frosted-pane';
 export const MATERIAL_GLASS_FROSTED_SOLID_ID = 'material-glass-frosted-solid';
 export const MATERIAL_GRID_PAPER_ID = 'material-grid-paper';
 export const MATERIAL_GRID_LINES_ID = 'material-grid-lines';
+export const MATERIAL_PAINT_METALLIC_ID = 'material-paint-metallic';
+export const MATERIAL_ZEBRA_ANALYSIS_ID = 'material-zebra-analysis';
+export const MATERIAL_WIREFRAME_ID = 'material-wireframe';
 
 /** Load migration: material-silver → material-chrome. */
 const LEGACY_MATERIAL_SILVER_ID = 'material-silver';

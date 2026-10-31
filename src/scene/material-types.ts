@@ -18,7 +18,10 @@ export type ProceduralProfileId =
   | 'plastic-matte'
   | 'plastic-smooth';
 
-export type MaterialKind = 'solid-pbr' | 'transmission' | 'textured';
+export type MaterialKind = 'solid-pbr' | 'transmission' | 'textured' | 'analysis';
+
+/** Unlit surface-inspection modes for `kind: 'analysis'` presets. */
+export type AnalysisMode = 'zebra' | 'wireframe';
 
 export type GlassVariant = 'pane' | 'solid';
 
@@ -59,6 +62,10 @@ export interface MaterialPreset {
   tint?: Rgb;
   /** Transmission: procedural glass-surface micro-normal strength (default in engine). */
   surfaceNormalScale?: number;
+  /** Analysis kind only: which unlit inspection shader to use. */
+  analysisMode?: AnalysisMode;
+  /** Zebra analysis only: stripe frequency of the reflection pattern. */
+  stripeScale?: number;
   /** Fabric cloth: Rapier drape when assigned via `fabricClothMaterialId`. */
   fabricDrape?: FabricDrapePreset;
 }

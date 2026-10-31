@@ -16,11 +16,14 @@ import {
   MATERIAL_GRID_PAPER_ID,
   MATERIAL_FABRIC_ID,
   MATERIAL_GOLD_ID,
+  MATERIAL_PAINT_METALLIC_ID,
   MATERIAL_PAPER_ID,
   MATERIAL_PLASTIC_MATTE_ID,
   MATERIAL_PLASTIC_SMOOTH_ID,
   MATERIAL_CONCRETE_POROUS_ID,
+  MATERIAL_WIREFRAME_ID,
   MATERIAL_WOOD_POROUS_ID,
+  MATERIAL_ZEBRA_ANALYSIS_ID,
   migrateMaterialId,
 } from '@/scene/material-ids';
 
@@ -137,6 +140,17 @@ export const MATERIAL_PRESETS: MaterialPreset[] = [
     tileScale: 28,
     seed: 0,
     anisotropy: 0.25,
+  },
+  {
+    id: MATERIAL_PAINT_METALLIC_ID,
+    name: 'Paint Metallic',
+    source: 'builtin',
+    kind: 'solid-pbr',
+    color: { r: 0x02 / 255, g: 0x84 / 255, b: 0xc7 / 255 },
+    roughness: 0.18,
+    metalness: 0.75,
+    clearcoat: 1,
+    clearcoatRoughness: 0.05,
   },
   {
     id: MATERIAL_PLASTIC_MATTE_ID,
@@ -301,6 +315,22 @@ export const MATERIAL_PRESETS: MaterialPreset[] = [
     roughness: 0.4,
     surfaceNormalScale: 0.2,
     tint: { r: 1, g: 1, b: 1 },
+  },
+  {
+    id: MATERIAL_ZEBRA_ANALYSIS_ID,
+    name: 'Zebra Analysis',
+    source: 'builtin',
+    kind: 'analysis',
+    analysisMode: 'zebra',
+    stripeScale: 16,
+  },
+  {
+    id: MATERIAL_WIREFRAME_ID,
+    name: 'Wireframe',
+    source: 'builtin',
+    kind: 'analysis',
+    analysisMode: 'wireframe',
+    color: { r: 0x38 / 255, g: 0xbd / 255, b: 0xf8 / 255 },
   },
 ];
 

@@ -14,6 +14,7 @@ import { Icon } from '@/ui/components/Icon';
 import { PanelSelect } from '@/ui/components/PanelSelect';
 import { PanelTextField } from '@/ui/components/PanelTextField';
 import { RangeSlider } from '@/ui/components/RangeSlider';
+import { DEFAULT_ZEBRA_STRIPE_SCALE } from '@/materials/analysis/analysis-material';
 import { SubPanel } from '@/ui/components/SubPanel';
 import { SubPanelSection } from '@/ui/components/SubPanelSection';
 import { sortByDisplayName } from '@/ui/utils/library-list-order';
@@ -132,6 +133,9 @@ function tileScaleConfig(profile: ProceduralProfileId | undefined): TileScaleCon
 }
 
 function kindLabel(preset: MaterialPreset): string {
+  if (preset.kind === 'analysis') {
+    return preset.analysisMode === 'wireframe' ? 'Wireframe' : 'Zebra analysis';
+  }
   if (preset.kind === 'transmission') {
     return preset.glassVariant === 'solid' ? 'Glass solid' : 'Glass pane';
   }
@@ -151,7 +155,7 @@ function generalProfileLabel(preset: MaterialPreset): string {
   if (preset.kind === 'textured') {
     return profileLabel(preset.proceduralProfile);
   }
-  if (preset.kind === 'transmission') {
+  if (preset.kind === 'transmission' || preset.kind === 'analysis') {
     return kindLabel(preset);
   }
   return 'Solid PBR';
@@ -188,6 +192,56 @@ function showClearcoatInFinish(preset: MaterialPreset): boolean {
   return (preset.clearcoat ?? 0) > 0;
 }
 
+const ZEBRA_STRIPE_SCALE_MIN = 2;
+const ZEBRA_STRIPE_SCALE_MAX = 64;
+
+/** Unlit inspection materials: only name, wireframe color and zebra stripe scale. */
+function AnalysisMaterialEditor({ preset }: { preset: MaterialPreset }) {
+  const isBuiltin = preset.source === 'builtin';
+  const isWireframe = preset.analysisMode === 'wireframe';
+  return (
+    <div className="panel-stack">
+      <SubPanelSection title="General">
+        <PanelTextField
+          id="material-name"
+          label="Name"
+          value={preset.name}
+          disabled={isBuiltin}
+          onChange={(name) => { updateMaterial(preset.id, { name }); }}
+        />
+        <div className="panel-field-row">
+          <span className="panel-field-label">Profile</span>
+          <span className="panel-field-controls panel-field-value">
+            {kindLabel(preset)}
+          </span>
+        </div>
+      </SubPanelSection>
+      {isWireframe ? (
+        <SubPanelSection title="Color">
+          <ColorPicker
+            label="Color"
+            value={preset.color ?? { r: 0.22, g: 0.74, b: 0.97 }}
+            onChange={(color) => { updateMaterial(preset.id, { color }); }}
+          />
+        </SubPanelSection>
+      ) : (
+        <SubPanelSection title="Stripes">
+          <RangeSlider
+            label="Stripe scale"
+            min={ZEBRA_STRIPE_SCALE_MIN}
+            max={ZEBRA_STRIPE_SCALE_MAX}
+            step={0.5}
+            value={preset.stripeScale ?? DEFAULT_ZEBRA_STRIPE_SCALE}
+            onChange={(value) => { updateMaterial(preset.id, { stripeScale: value }); }}
+            valueInputLabel="Stripe scale"
+            valueInputDecimals={1}
+          />
+        </SubPanelSection>
+      )}
+    </div>
+  );
+}
+
 interface MaterialEditorProps {
   preset: MaterialPreset;
 }
@@ -208,6 +262,10 @@ function MaterialEditor({ preset }: MaterialEditorProps) {
 
   const isOpaqueKind = preset.kind === 'solid-pbr' || preset.kind === 'textured';
   const showClearcoat = showClearcoatInFinish(preset);
+
+  if (preset.kind === 'analysis') {
+    return <AnalysisMaterialEditor preset={preset} />;
+  }
 
   return (
     <div className="panel-stack">

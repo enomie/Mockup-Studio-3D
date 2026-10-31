@@ -27,6 +27,7 @@ import {
 } from './image-surface-alpha';
 import { finishToMaterialId, type ImageSurfaceSettings } from '@/scene/image-surface';
 import { multiplyRgb, type Rgb } from '@/colors/rgb';
+import { createAnalysisMaterial } from '@/materials/analysis/analysis-material';
 import { createTexturedMaterial } from '@/materials/procedural';
 import type { ProceduralSurfaceRole } from '@/materials/procedural/procedural-params';
 import { applyGlassSurfaceToPhysicalMaterial } from '@/materials/procedural/glass-surface';
@@ -195,6 +196,9 @@ export function createMaterialFromPreset(
   preset: MaterialPreset,
   options: MaterialResolveOptions = {},
 ): MeshStandardNodeMaterial | MeshPhysicalNodeMaterial {
+  if (preset.kind === 'analysis') {
+    return createAnalysisMaterial(preset, options.tint);
+  }
   if (preset.kind === 'transmission') {
     if (
       options.surfaceRole === 'displayGlass' &&
