@@ -34,7 +34,7 @@ Jeder Punkt auf einer **gemeinsamen Kante** (beide Endpunkte und jeder später e
 - Neu eingefügter Punkt auf einer gemeinsamen Kante: **Coupled**.
 - Bestehende Links ohne gespeicherten Modus: **Independent** (nichts ändert sich von selbst).
 
-**Shift + Ziehen** an einem gekoppelten Handle → Punkt wird **Independent** (beide Patches).
+**Shift + Ziehen** an einem gekoppelten Handle (gelb; an Endpunkten auch der rosa Handle der Nachbarkante) → Punkt wird **Independent** (beide Patches). Shift an den rosa Handles entlang der gemeinsamen Kante ändert nichts am Modus.
 
 ---
 
@@ -68,5 +68,5 @@ Jeder Punkt auf einer **gemeinsamen Kante** (beide Endpunkte und jeder später e
 
 - Bestehende Kopplungs- und Korrektur-Tests bleiben grün.
 - Neu: rosa Handles werden nirgends mehr automatisch gekoppelt (auch nicht bei alten Daten mit `edgeTangent`).
-- Shift am gelben Handle → Independent; Shift am rosa Handle → keine Änderung des Modus.
+- Shift am gelben Handle bzw. am rosa Handle der Nachbarkante (Endpunkt) → Independent; Shift an rosa Handles entlang der gemeinsamen Kante → keine Änderung.
 - Eingefügter Punkt auf gemeinsamer Kante → Coupled auf beiden Seiten.
