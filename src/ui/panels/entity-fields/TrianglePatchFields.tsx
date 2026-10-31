@@ -4,7 +4,7 @@ import { Icon } from '@/ui/components/Icon';
 import { removePatchPoint } from '@/scene/triangle-patch-point-edit';
 import { mergeLinksOnRemove } from '@/scene/triangle-patch-linked-edit';
 import { crossHandleKeyAt, isEdgeLinkValid } from '@/scene/triangle-patch-edge-link';
-import { setPatchJoint } from '@/ui/store/patch-edge-store';
+import { retractPatchPinkHandles, setPatchEdgeTangent, setPatchJoint } from '@/ui/store/patch-edge-store';
 import { PanelToggleGroup, type PanelToggleOption } from '@/ui/components/PanelToggleGroup';
 import { SubPanelSection } from '@/ui/components/SubPanelSection';
 import { RangeSlider } from '@/ui/components/RangeSlider';
@@ -40,6 +40,7 @@ import {
 } from '@/scene/asset-triangle-patch';
 import {
   applyEdgeTangentRule,
+  resolveEdgeTangent,
   rotatePatchNodeHandlesAroundAnchor,
   translatePatchNodeAnchor,
 } from '@/scene/triangle-patch-node-edit';
@@ -64,12 +65,16 @@ const PASTE_MODES: { key: PatchPointPasteMode; label: string }[] = [
   { key: 'handles', label: 'Handles Only' },
 ];
 
+const SWITCH_OPTIONS: PanelToggleOption<'smooth' | 'corner'>[] = [
+  { key: 'smooth', label: 'Smooth', title: 'Runs through the point without a kink (handles on one line, lengths free)' },
+  { key: 'corner', label: 'Corner', title: 'Kink at the point (handles independent); Shift+drag a handle also sets this' },
+];
+
 const TARGETS: { key: PatchHandleTarget; label: string; color: string }[] = [
   { key: 'pos', label: 'Anchor Point', color: '#0284c7' },
   { key: 'handleNext', label: 'Handle Forward (Pink)', color: '#ec4899' },
   { key: 'handlePrev', label: 'Handle Backward (Pink)', color: '#ec4899' },
-  { key: 'handleCrossIn', label: 'Cross-Tangent In (Yellow)', color: '#eab308' },
-  { key: 'handleCrossOut', label: 'Cross-Tangent Out (Yellow)', color: '#eab308' },
+  { key: 'handleCrossIn', label: 'Surface Handle (Yellow)', color: '#eab308' },
 ];
 
 export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
@@ -362,6 +367,33 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
 
                 {selected ? (
                   <div className="patch-point-inspector-detail panel-field-stack">
+                    <PanelToggleGroup
+                        label="Edge"
+                        options={SWITCH_OPTIONS}
+                        active={{ smooth: resolveEdgeTangent(node) === 'smooth', corner: resolveEdgeTangent(node) === 'corner' }}
+                        onToggle={(mode) => {
+                          setPatchEdgeTangent(entity.id, node.id, mode, selectedTargetKey === 'handlePrev' ? 'handlePrev' : 'handleNext');
+                        }}
+                      />
+                    {corner && resolveEdgeTangent(node) === 'smooth' ? (
+                      <span className="panel-field-hint">Smooth at a patch corner flattens the patch there.</span>
+                    ) : null}
+                    {jointInfo(node) && !jointInfo(node)?.star ? (
+                      <PanelToggleGroup
+                          label="Surface"
+                          options={SWITCH_OPTIONS}
+                          active={{ smooth: node.joint === 'smooth', corner: node.joint !== 'smooth' }}
+                          onToggle={(mode) => { setPatchJoint(entity.id, node.id, mode); }}
+                        />
+                    ) : null}
+                    <button
+                      type="button"
+                      className="btn"
+                      title="Pull both pink handles into the point: a sharp point without rounding"
+                      onClick={() => { retractPatchPinkHandles(entity.id, node.id); }}
+                    >
+                      Retract handles
+                    </button>
                     <label htmlFor={`patch-target-${entity.id}`} className="panel-field-label">
                       Handle
                     </label>

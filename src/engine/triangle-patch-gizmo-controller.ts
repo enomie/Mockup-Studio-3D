@@ -28,7 +28,7 @@ import {
   isPatchAssetKind,
 } from '@/scene/asset-triangle-patch';
 import type { EntityRegistry } from './entity-registry';
-import { applyEdgeTangentRule } from '@/scene/triangle-patch-node-edit';
+import { applyEdgeTangentRule, resolveEdgeTangent } from '@/scene/triangle-patch-node-edit';
 
 export const PATCH_GIZMO_HANDLE_ROLE = 'patchGizmoHandle';
 
@@ -96,6 +96,10 @@ interface HelperResources {
   anchorMat: MeshBasicNodeMaterial;
   /** Corner joint anchor: a cube instead of a sphere. */
   cornerJointGeo: BoxGeometry;
+  /** Handle of a corner pair (edge or surface switch = corner): a small cube. */
+  cornerHandleGeo: BoxGeometry;
+  /** The partner patch's yellow handle shown as this point's counterpart. */
+  partnerYellowMat: MeshBasicNodeMaterial;
   jointRingGeo: TorusGeometry;
   jointRingMat: MeshBasicNodeMaterial;
   edgeAnchorGeo: SphereGeometry;
@@ -134,6 +138,8 @@ function createHelperResources(): HelperResources {
     anchorGeo: new SphereGeometry(0.025, 16, 16),
     anchorMat: overlayMeshMaterial(0x0284c7),
     cornerJointGeo: new BoxGeometry(0.04, 0.04, 0.04),
+    cornerHandleGeo: new BoxGeometry(0.026, 0.026, 0.026),
+    partnerYellowMat: overlayMeshMaterial(0xf59e0b),
     jointRingGeo: new TorusGeometry(0.038, 0.005, 8, 40),
     jointRingMat: overlayMeshMaterial(0x22c55e),
     // Edge points: purple and a bit smaller than the corners
@@ -223,6 +229,7 @@ export class TrianglePatchGizmoController {
       lineCross: line(3, lineYellowMat),
     };
     helpers.anchor.userData.defaultGeometry = helpers.anchor.geometry;
+    helpers.handleCrossOut.userData.defaultMaterial = helpers.handleCrossOut.material;
     this.helperGroup.add(
       helpers.jointRing,
       helpers.anchor,
@@ -297,7 +304,8 @@ export class TrianglePatchGizmoController {
 
   private activeLeverKey(): LeverKey | null {
     const key = this.activeTarget?.targetKey;
-    return key && key !== 'pos' ? key : null;
+    // The cross-out counterpart belongs to the partner patch: no length ring here.
+    return key && key !== 'pos' && key !== 'handleCrossOut' ? key : null;
   }
 
   private syncLengthRing(): void {
@@ -391,7 +399,7 @@ export class TrianglePatchGizmoController {
   }
 
   getPickables(): Mesh[] {
-    return this.helperGroup.visible ? this.handleMeshes : [];
+    return this.helperGroup.visible ? this.handleMeshes.filter((mesh) => mesh.visible) : [];
   }
 
   getActiveEntityId(): string | null {
@@ -504,9 +512,23 @@ export class TrianglePatchGizmoController {
       const pNext = toWorld(node.handleNext);
       const pPrev = toWorld(node.handlePrev);
       const pCrossIn = toWorld(node.handleCrossIn);
-      const pCrossOut = toWorld(node.handleCrossOut);
+      // Cross out = the counterpart: the partner patch's yellow handle (world position);
+      // without a partner there is no counterpart and the handle is hidden.
+      const partner = this.partnerCrossTarget(params, node.id);
+      const partnerTip = partner ? this.partnerCrossWorld(partner) : null;
+      const pCrossOut = partnerTip ?? toWorld(node.handleCrossOut);
+      h.handleCrossOut.visible = partnerTip !== null;
+      h.handleCrossOut.material = (partnerTip
+        ? this.helperResources.partnerYellowMat
+        : h.handleCrossOut.userData.defaultMaterial) as MeshBasicNodeMaterial;
 
       h.anchor.position.copy(pPos);
+      // Corner pairs show cube handles: pink by the edge switch, yellow by the surface joint.
+      const { handleGeo, cornerHandleGeo } = this.helperResources;
+      const edgeCorner = resolveEdgeTangent(node) === 'corner';
+      h.handleNext.geometry = edgeCorner ? cornerHandleGeo : handleGeo;
+      h.handlePrev.geometry = edgeCorner ? cornerHandleGeo : handleGeo;
+      h.handleCrossIn.geometry = linkedIds.has(node.id) && (node.joint ?? 'corner') === 'corner' ? cornerHandleGeo : handleGeo;
       // Joint marker: smooth = round anchor with a ring, corner = cube.
       const joint = linkedIds.has(node.id) ? node.joint ?? 'corner' : null;
       h.anchor.geometry = joint === 'corner'
@@ -521,7 +543,7 @@ export class TrianglePatchGizmoController {
 
       h.lineNext.geometry.setFromPoints([pPos, pNext]);
       h.linePrev.geometry.setFromPoints([pPos, pPrev]);
-      h.lineCross.geometry.setFromPoints([pCrossIn, pPos, pCrossOut]);
+      h.lineCross.geometry.setFromPoints(partnerTip ? [pCrossIn, pPos, pCrossOut] : [pCrossIn, pPos, pPos]);
     }
     this.syncLengthRing();
   }
@@ -600,6 +622,12 @@ export class TrianglePatchGizmoController {
           node.joint = 'corner';
         }
       }
+      if (targetKey === 'handleCrossOut') {
+        // The counterpart is the partner's yellow handle: edit the partner patch.
+        const partner = this.partnerCrossTarget(params, node.id);
+        if (partner) {this.movePartnerCross(partner, movedMesh.position, isShiftHeld());}
+        return true;
+      }
       node[targetKey].x = newLocal.x;
       node[targetKey].y = newLocal.y;
       node[targetKey].z = newLocal.z;
@@ -610,6 +638,49 @@ export class TrianglePatchGizmoController {
 
     this.commitPoint(this.activeEntityId, node);
     return true;
+  }
+
+  /** Partner patch and point sharing `pointId` over an edge link, or null. */
+  private partnerCrossTarget(params: PatchParams, pointId: string): { entityId: string; pointId: string } | null {
+    for (const link of params.edgeLinks ?? []) {
+      const partnerPointId = link.startPointId === pointId
+        ? link.partnerStartPointId
+        : link.endPointId === pointId ? link.partnerEndPointId : null;
+      if (!partnerPointId) {continue;}
+      const partnerParams = this.registry.getRuntime(link.partnerEntityId)?.entity.patchParams;
+      if (partnerParams && findPatchPoint(partnerParams, partnerPointId)) {
+        return { entityId: link.partnerEntityId, pointId: partnerPointId };
+      }
+    }
+    return null;
+  }
+
+  private partnerCrossWorld(target: { entityId: string; pointId: string }): Vector3 | null {
+    const runtime = this.registry.getRuntime(target.entityId);
+    const point = runtime?.entity.patchParams ? findPatchPoint(runtime.entity.patchParams, target.pointId) : undefined;
+    if (!runtime || !point) {return null;}
+    runtime.object.updateMatrixWorld(true);
+    const c = point.handleCrossIn;
+    return new Vector3(c.x, c.y, c.z).applyMatrix4(runtime.object.matrixWorld);
+  }
+
+  /** Moves the partner's yellow handle to `world`; Shift breaks the surface joint. */
+  private movePartnerCross(target: { entityId: string; pointId: string }, world: Vector3, shift: boolean): void {
+    const runtime = this.registry.getRuntime(target.entityId);
+    const params = runtime?.entity.patchParams;
+    const point = params ? findPatchPoint(params, target.pointId) : undefined;
+    if (!runtime || !params || !point) {return;}
+    runtime.object.updateMatrixWorld(true);
+    const local = world.clone().applyMatrix4(runtime.object.matrixWorld.clone().invert());
+    const next: PatchPoint = {
+      ...point,
+      handleCrossIn: { x: local.x, y: local.y, z: local.z },
+      ...(shift && point.joint === 'smooth' ? { joint: 'corner' as const } : {}),
+    };
+    this.registry.setKindParams('patch', target.entityId, { points: replacePatchPoint(params.points, next) });
+    const updated = this.registry.getRuntime(target.entityId)?.entity.patchParams;
+    if (updated) {this.onPatchChange?.(target.entityId, updated);}
+    this.syncHelpersFromEntity();
   }
 
   /** Entities are immutable: replaces one point through the registry, then resyncs helpers. */

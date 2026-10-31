@@ -1,6 +1,6 @@
 # Plan: Schritt C3 – Zwei Schalter pro Punkt: Kante und Fläche
 
-Status: **C3a erledigt** – C3b (Bedienung) offen
+Status: **C3a + C3b erledigt**
 Vorgänger: `plan-patch-smooth-corner.md` (C1/C2: Gelenke zwischen verbundenen Patches), `plan-patch-classic-edge-correction.md` (D: Classic + Kanten-Korrektur)
 
 ---
@@ -118,6 +118,13 @@ Die zwei Schalter sind **unabhängig**. Damit ist auch der allererste Wunsch abg
 - Verbundene Kanten: Kanten-Zustand wird an den Partner übertragen.
 - Tests: `src/scene/triangle-patch-edge-tangent.test.ts` (7). Shift im Gizmo ist nicht automatisch getestet (braucht echte Tastatur/Viewport).
 - Sichtbar ändert sich für dich bis C3b: die gelben Handles sind frei (keine Wippe), rosa Handles an geraden Punkten drehen gemeinsam, Shift trennt sie.
+
+## Umsetzung C3b
+
+- Inspector (gewählter Punkt): Schalter **Edge: Smooth/Corner** (alle Punkte; Hinweis bei Smooth an Patch-Ecke), **Surface: Smooth/Corner** (nur verbundene Punkte, nicht an Sternpunkten), Knopf **Retract handles**. Handle-Auswahl ohne „Cross Out“; gelber Handle heißt „Surface Handle (Yellow)“.
+- Viewport: rosa Handles als Würfel bei Edge = Corner; gelber Handle als Würfel bei Surface = Corner (verbundene Punkte).
+- Cross Out: unverbunden ausgeblendet und nicht anklickbar; verbunden = gelber Handle des Partners (Weltlage, orange), ziehbar → ändert den Partner (Shift → Surface Corner). Kein Längenring an diesem Gegenüber (Länge am Partner einstellen).
+- Browser-Test: Edge Smooth richtet den zweiten rosa Handle gegenüber aus; Corner; Retract zieht beide auf den Punkt; Surface-Schalter nur an verbundenen Punkten, Corner landet beim Partner. Viewport-Darstellung und Ziehen des Gegenübers nicht prüfbar (kein sichtbarer Viewport).
 
 ## Danach (eigener Plan)
 
