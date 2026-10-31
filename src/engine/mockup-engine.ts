@@ -1062,6 +1062,7 @@ export class MockupEngine implements SceneApi {
       camera,
       skyEnabled: overrides?.skyEnabled ?? this.environment.getSkyEnabled(),
       transparentBackground: overrides?.transparentBackground ?? false,
+      selectionOutline: overrides === undefined && this.selectionHighlight.hasAssetSelection(),
     });
   }
 

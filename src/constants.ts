@@ -97,10 +97,16 @@ export const CAMERA_ORTHO_MAX_ZOOM = 4;
 /** Pixels before a pointer down becomes a camera drag instead of a click. */
 export const VIEWPORT_CLICK_DRAG_THRESHOLD_PX = 4;
 
-/** Inverted-hull selection outline color (matches --color-accent-text). */
+/** Screen-space selection outline color (sRGB, matches --color-accent-text). */
 export const SELECTION_OUTLINE_COLOR = 0x4d9fff;
-export const SELECTION_OUTLINE_SCALE = 1.03;
-export const SELECTION_OUTLINE_RENDER_ORDER = 1000;
+/** Outline width in CSS pixels (scaled by device pixel ratio). */
+export const SELECTION_OUTLINE_WIDTH_PX = 2;
+/** Outline opacity where the selected object is hidden behind other geometry. */
+export const SELECTION_OUTLINE_OCCLUDED_OPACITY = 0.35;
+/** Fill opacity over occluded parts of the selected object. */
+export const SELECTION_OUTLINE_OCCLUDED_FILL_OPACITY = 0.12;
+/** Render layer marking meshes of the selected asset for the outline mask pass. */
+export const SELECTION_MASK_LAYER = 2;
 
 export const LIGHT_WIREFRAME_IDLE_OPACITY = 0.3;
 export const LIGHT_WIREFRAME_SELECTED_OPACITY = 1;

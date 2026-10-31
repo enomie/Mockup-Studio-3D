@@ -4,6 +4,7 @@ import {
   HalfFloatType,
   RGBAFormat,
   type Camera,
+  type Node,
   RenderPipeline,
   RenderTarget,
   type Scene,
@@ -13,6 +14,7 @@ import {
   VIEWPORT_MSAA_SAMPLES,
   VIEWPORT_SMAA_ENABLED,
 } from '@/constants';
+import { SelectionOutlinePass } from './selection-outline-pass';
 
 export interface ViewportFrameParams {
   skyScene: Scene;
@@ -21,6 +23,8 @@ export interface ViewportFrameParams {
   skyEnabled: boolean;
   /** When sky is skipped: clear color alpha 0 before the main pass (export capture only). */
   transparentBackground?: boolean;
+  /** Draw the screen-space selection outline (viewport only, never in exports). */
+  selectionOutline?: boolean;
 }
 
 /** Renders sky then main into a single MSAA target (sky pixels kept, depth cleared). */
@@ -60,6 +64,7 @@ export class ViewportRenderPipeline {
   private readonly compositeTarget: RenderTarget;
   private readonly pipelineSmaa: RenderPipeline;
   private readonly pipelineDirect: RenderPipeline;
+  private readonly selectionOutline: SelectionOutlinePass;
 
   constructor(renderer: WebGPURenderer) {
     this.renderer = renderer;
@@ -72,13 +77,27 @@ export class ViewportRenderPipeline {
     this.compositeTarget.texture.name = 'viewport.composite';
 
     const sceneColor = texture(this.compositeTarget.texture);
-    const outputNode = smaa(sceneColor);
-    this.pipelineSmaa = new RenderPipeline(renderer, outputNode);
-    this.pipelineDirect = new RenderPipeline(renderer, sceneColor);
+    this.selectionOutline = new SelectionOutlinePass();
+    this.pipelineSmaa = new RenderPipeline(
+      renderer,
+      this.selectionOutline.createOutputNode(smaa(sceneColor) as unknown as Node<'vec4'>),
+    );
+    this.pipelineSmaa.outputColorTransform = false;
+    this.pipelineDirect = new RenderPipeline(
+      renderer,
+      this.selectionOutline.createOutputNode(sceneColor),
+    );
+    this.pipelineDirect.outputColorTransform = false;
   }
 
   renderFrame(params: ViewportFrameParams): void {
     compositeSceneToTarget(this.renderer, this.compositeTarget, params);
+    this.selectionOutline.render(
+      this.renderer,
+      params.mainScene,
+      params.camera,
+      params.selectionOutline === true,
+    );
 
     if (params.transparentBackground) {
       this.renderer.setRenderTarget(null);
@@ -100,11 +119,13 @@ export class ViewportRenderPipeline {
     const w = Math.max(1, Math.floor(cssWidth * pixelRatio));
     const h = Math.max(1, Math.floor(cssHeight * pixelRatio));
     this.compositeTarget.setSize(w, h);
+    this.selectionOutline.setSize(w, h, pixelRatio);
   }
 
   dispose(): void {
     this.pipelineSmaa.dispose();
     this.pipelineDirect.dispose();
     this.compositeTarget.dispose();
+    this.selectionOutline.dispose();
   }
 }
