@@ -1,6 +1,6 @@
 # Plan: Classic-Fläche mit Kanten-Korrektur (ersetzt „Smooth Edges“)
 
-Status: **Entwurf – wartet auf Freigabe**
+Status: **Abgestimmt – wartet auf Start (D1)**
 Vorgänger: `plan-patch-surface-tangent.md` (Schritt B, Smooth Edges), `plan-patch-smooth-corner.md` (Schritt C, Gelenke)
 
 ---
@@ -43,7 +43,7 @@ Bezeichnungen pro Kante *i*: Parameter entlang der Kante `t`, Abstand von der Ka
    - Ergebnis an der Kante: Neigung = exakt `D_i` (bei Smooth).
 5. **Normalen:** wie bisher aus dem Dreiecksnetz; an den Randpunkten korrigierter Kanten **exakt** `Kantentangente × D` → keine Lichtkante an der Naht. Unverbundene Patches: Normalen wie heute.
 
-**Streifenbreite δ:** Startwert ≈ 0,3 (Anteil des Patches). Breiter = sanfterer Übergang, schmaler = mehr Classic. Erst fest, bei Bedarf später als Regler.
+**Streifenbreite δ:** Standard 0,3 (30 % des Patches), **Regler pro Patch** im Panel („Edge Blend“, 10–60 %). Breiter = sanfterer Übergang, schmaler = mehr Classic. Der Knick bleibt unabhängig von der Breite 0 – beide Patches dürfen verschiedene Breiten haben. Neues Feld `PatchParams.edgeBlend?` (fehlt = 0,3), Undo-fähig.
 
 **Wichtig:** Die Geometrie eines Patches hängt nur von **seinen eigenen Daten** ab (Links und Gelenke sind im Patch gespeichert, Handles werden von Schritt C gekoppelt). Kein Patch muss beim Aufbau den Partner lesen.
 
@@ -72,7 +72,7 @@ Bezeichnungen pro Kante *i*: Parameter entlang der Kante `t`, Abstand von der Ka
 ## Umsetzungsschritte
 
 - **D1 – Mathe + Tests + Messbericht** (neues Modul, Classic-Code bleibt unverändert).
-- **D2 – Einbau:** Mesh-Aufbau (Dreieck/Viereck) mit Korrektur, Randnormalen, Entfernen des Surface-Umschalters.
+- **D2 – Einbau:** Mesh-Aufbau (Dreieck/Viereck) mit Korrektur, Randnormalen, Regler „Edge Blend“, Entfernen des Surface-Umschalters.
 - **D3 – Dein Praxistest** (Vergleich mit Screenshot Classic/vorher).
 
 ---
@@ -88,7 +88,7 @@ Bezeichnungen pro Kante *i*: Parameter entlang der Kante `t`, Abstand von der Ka
 
 ---
 
-## Offene Fragen an dich
+## Entscheidungen
 
-1. Streifenbreite: erst **fest** (≈ 30 % des Patches) und später ggf. Regler – ok?
-2. Surface-Umschalter entfernen (Smooth Edges verschwindet) – ok?
+1. Streifenbreite: Standard **30 %**, mit **Regler** pro Patch. → ja
+2. Surface-Umschalter / Smooth Edges entfernen. → ja
