@@ -100,9 +100,7 @@ export function removeImage(imageId: string): void {
   detachImageFromScene(imageId);
   store.sceneApi?.releaseImageTexture(imageId);
 
-  if (image.objectUrl) {
-    URL.revokeObjectURL(image.objectUrl);
-  }
+  // The object URL stays alive: undo can bring the image back.
 
   store.setAppState({
     ...store.state,

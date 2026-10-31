@@ -5,6 +5,7 @@ import {
 } from '@/data/material-presets';
 import type { SceneApi } from '@/scene/scene-api';
 import * as store from './app-store-internals';
+import { historySettingsAdapter } from './app-store-history';
 
 export type { AppState } from './app-store-internals';
 
@@ -178,7 +179,11 @@ export const initAppStore = store.initAppStore;
 export const getAppState = store.getAppState;
 export const subscribe = store.subscribe;
 
+let historySettingsUnsubscribe: (() => void) | null = null;
+
 export function setSceneApi(api: SceneApi | null): void {
+  historySettingsUnsubscribe?.();
+  historySettingsUnsubscribe = null;
   store.engineUnsubscribe?.();
   store.setEngineUnsubscribeRef(null);
   store.setSceneApiRef(api);
@@ -217,6 +222,8 @@ export function setSceneApi(api: SceneApi | null): void {
     store.syncLightingToScene();
     api.applyViewportHelpers(store.state.viewportHelpers);
     store.syncEngineStateFromEngine();
+    api.setHistorySettingsAdapter(historySettingsAdapter);
+    historySettingsUnsubscribe = store.subscribe(() => { api.noteHistorySettingsChanged(); });
   } else {
     store.setAppState({ ...store.state, entities: [], selectedEntityId: null });
     store.emit();

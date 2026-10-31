@@ -1,4 +1,8 @@
-import { SceneHistoryController, type SceneHistoryState } from './history/scene-history-controller';
+import {
+  SceneHistoryController,
+  type HistorySettingsAdapter,
+  type SceneHistoryState,
+} from './history/scene-history-controller';
 import { attachHistoryInputTracking } from './history/history-input-tracking';
 import { type Camera, type Mesh, Scene, type WebGPURenderer } from 'three/webgpu';
 import type { Rgb } from '@/colors/rgb';
@@ -653,6 +657,14 @@ export class MockupEngine implements SceneApi {
 
   getHistoryState(): SceneHistoryState {
     return this.history.getState();
+  }
+
+  setHistorySettingsAdapter(adapter: HistorySettingsAdapter | null): void {
+    this.history.setSettingsAdapter(adapter);
+  }
+
+  noteHistorySettingsChanged(): void {
+    this.history.onEntitiesChanged();
   }
 
   /** Undo/redo restore: ends patch tools whose entity vanished, then rebuilds. */

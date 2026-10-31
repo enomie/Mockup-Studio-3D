@@ -131,4 +131,26 @@ describe('SceneHistoryController', () => {
     expect(s.entities).toEqual([a, b]);
     expect(s.focused).toEqual(['b']);
   });
+
+  it('records and restores settings alongside entities', async () => {
+    const s = setup([entity('a')]);
+    let settings = { fog: 1 };
+    const restored: unknown[] = [];
+    s.history.setSettingsAdapter({
+      capture: () => settings,
+      equals: (x, y) => JSON.stringify(x) === JSON.stringify(y),
+      describe: (x, y) => (JSON.stringify(x) === JSON.stringify(y) ? null : 'Edit environment'),
+      restore: (snap) => { restored.push(snap); settings = snap as { fog: number }; },
+    });
+    s.history.noteUserActivity();
+    settings = { fog: 2 };
+    s.history.onEntitiesChanged();
+    s.settle();
+    expect(s.history.getState().undoLabel).toBe('Edit environment');
+    await s.history.undo();
+    expect(settings).toEqual({ fog: 1 });
+    await s.history.redo();
+    expect(settings).toEqual({ fog: 2 });
+    expect(restored).toHaveLength(2);
+  });
 });

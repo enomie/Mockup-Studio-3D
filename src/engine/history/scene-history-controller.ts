@@ -24,6 +24,23 @@ export interface SceneHistoryHost {
   onStateChanged(): void;
 }
 
+/**
+ * Non-entity state kept in the history (lighting, environment, libraries). Owned by
+ * the UI store; the history only stores and hands back opaque snapshots.
+ */
+export interface HistorySettingsAdapter {
+  capture(): unknown;
+  equals(a: unknown, b: unknown): boolean;
+  restore(snapshot: unknown): void;
+  /** Short label for a change, e.g. "Edit lighting"; null when equal. */
+  describe(before: unknown, after: unknown): string | null;
+}
+
+interface SceneSnapshot {
+  entities: readonly AssetEntity[];
+  settings: unknown;
+}
+
 interface PendingTimer {
   set(callback: () => void, ms: number): unknown;
   clear(handle: unknown): void;
@@ -39,8 +56,9 @@ const defaultTimer: PendingTimer = {
  * becomes one step on release; other changes are grouped until SETTLE_MS of quiet.
  */
 export class SceneHistoryController {
-  private readonly stack = new HistoryStack<readonly AssetEntity[]>();
-  private baseline: readonly AssetEntity[];
+  private readonly stack = new HistoryStack<SceneSnapshot>();
+  private baseline: SceneSnapshot;
+  private settings: HistorySettingsAdapter | null = null;
   private pointerDown = false;
   private restoring = false;
   private suspended = false;
@@ -52,10 +70,20 @@ export class SceneHistoryController {
     private readonly host: SceneHistoryHost,
     private readonly timers: PendingTimer = defaultTimer,
   ) {
-    this.baseline = host.getEntities();
+    this.baseline = this.capture();
   }
 
-  /** Call on every entity change. */
+  /** Connects the settings source; resets the baseline so existing state is no step. */
+  setSettingsAdapter(adapter: HistorySettingsAdapter | null): void {
+    this.settings = adapter;
+    this.baseline = this.capture();
+  }
+
+  private capture(): SceneSnapshot {
+    return { entities: this.host.getEntities(), settings: this.settings?.capture() };
+  }
+
+  /** Call on every entity or settings change. */
   onEntitiesChanged(): void {
     if (this.restoring) {return;}
     if (this.host.isRecordingSuspended()) {
@@ -66,7 +94,7 @@ export class SceneHistoryController {
     if (this.suspended) {
       // Simulation ended: its result is the new starting point, not a step.
       this.suspended = false;
-      this.baseline = this.host.getEntities();
+      this.baseline = this.capture();
       return;
     }
     this.scheduleFlush();
@@ -87,17 +115,24 @@ export class SceneHistoryController {
   flush(): void {
     this.cancelTimer();
     if (this.restoring) {return;}
-    const current = this.host.getEntities();
-    if (current === this.baseline) {return;}
+    const current = this.capture();
+    const settingsLabel = this.settings?.describe(this.baseline.settings, current.settings) ?? null;
+    const sameSettings = settingsLabel === null;
+    if (current.entities === this.baseline.entities && sameSettings) {return;}
+    // Keep the old settings object when nothing changed so snapshots stay shareable.
+    if (sameSettings) {current.settings = this.baseline.settings;}
     const fromUser = this.userActivity;
     this.userActivity = this.pointerDown;
     if (!fromUser) {
       this.baseline = current;
       return;
     }
-    const diff = describeEntityChange(this.baseline, current);
-    if (diff) {
-      this.stack.record({ before: this.baseline, after: current, label: diff.label });
+    const entityDiff = describeEntityChange(this.baseline.entities, current.entities);
+    const label = entityDiff && settingsLabel
+      ? `${entityDiff.label}, ${settingsLabel.toLowerCase()}`
+      : entityDiff?.label ?? settingsLabel;
+    if (label) {
+      this.stack.record({ before: this.baseline, after: current, label });
       this.host.onStateChanged();
     }
     this.baseline = current;
@@ -126,16 +161,21 @@ export class SceneHistoryController {
     };
   }
 
-  private async restore(target: readonly AssetEntity[], from: readonly AssetEntity[]): Promise<void> {
+  private async restore(target: SceneSnapshot, from: SceneSnapshot): Promise<void> {
     this.restoring = true;
     try {
-      await this.host.restoreEntities(target);
+      if (this.settings && !this.settings.equals(target.settings, from.settings)) {
+        this.settings.restore(target.settings);
+      }
+      if (target.entities !== from.entities) {
+        await this.host.restoreEntities(target.entities);
+      }
     } finally {
       this.restoring = false;
-      this.baseline = this.host.getEntities();
+      this.baseline = { entities: this.host.getEntities(), settings: target.settings };
     }
-    const focus = describeEntityChange(from, target)?.focusEntityId;
-    if (focus && target.some((entity) => entity.id === focus)) {this.host.focusEntity(focus);}
+    const focus = describeEntityChange(from.entities, target.entities)?.focusEntityId;
+    if (focus && target.entities.some((entity) => entity.id === focus)) {this.host.focusEntity(focus);}
     this.host.onStateChanged();
   }
 

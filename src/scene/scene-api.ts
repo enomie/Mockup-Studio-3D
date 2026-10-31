@@ -1,4 +1,4 @@
-import type { SceneHistoryState } from '@/engine/history/scene-history-controller';
+import type { HistorySettingsAdapter, SceneHistoryState } from '@/engine/history/scene-history-controller';
 import type { KindParamFamily, KindParamsByFamily } from './kind-param-families';
 import type { Rgb } from '@/colors/rgb';
 import type {
@@ -246,6 +246,9 @@ export interface SceneApi {
   undo(): void;
   redo(): void;
   getHistoryState(): SceneHistoryState;
+  /** Connects lighting/environment/library state (owned by the UI store) to the history. */
+  setHistorySettingsAdapter(adapter: HistorySettingsAdapter | null): void;
+  noteHistorySettingsChanged(): void;
   loadBuiltinView(id: BuiltinCameraViewId): void;
   captureSlot(index: CameraSlotIndex): void;
   loadSlot(index: CameraSlotIndex): void;

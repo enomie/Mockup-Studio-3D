@@ -1,6 +1,6 @@
 # Plan: Undo / Redo
 
-Status: **Abgestimmt – wartet auf Start**
+Status: **Phase 1 + 2 umgesetzt**
 
 ## Ausgangslage
 

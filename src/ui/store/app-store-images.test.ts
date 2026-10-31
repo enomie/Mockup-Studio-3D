@@ -98,7 +98,8 @@ describe('app-store-images', () => {
 
     expect(setAssetImage).toHaveBeenCalledWith('e1', null);
     expect(releaseImageTexture).toHaveBeenCalledWith(userImage.id);
-    expect(revokeSpy).toHaveBeenCalledWith('blob:test');
+    // Kept alive so undo can restore the image.
+    expect(revokeSpy).not.toHaveBeenCalled();
 
     revokeSpy.mockRestore();
   });
