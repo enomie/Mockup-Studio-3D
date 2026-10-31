@@ -4,6 +4,7 @@ import {
   type SceneHistoryState,
 } from './history/scene-history-controller';
 import { attachHistoryInputTracking } from './history/history-input-tracking';
+import { PatchEdgeLinkSync } from './patch-edge-link-sync';
 import { type Camera, type Mesh, Scene, type WebGPURenderer } from 'three/webgpu';
 import type { Rgb } from '@/colors/rgb';
 import { SCENE_DEFAULTS } from '@/config/scene-defaults';
@@ -102,7 +103,12 @@ import {
   TrianglePatchGizmoController,
 } from './triangle-patch-gizmo-controller';
 import { insertPatchPoint } from '@/scene/triangle-patch-point-edit';
-import { TrianglePatchAddPointTool, type ViewportPointer } from './triangle-patch-add-point-tool';
+import {
+  TrianglePatchAddPointTool,
+  type PatchEdgeSelection,
+  type ViewportPointer,
+} from './triangle-patch-add-point-tool';
+import { locatePatchEdgeSegment } from '@/scene/asset-triangle-patch';
 import { SelectionController } from './selection-controller';
 import { SelectionHighlight } from './selection-highlight';
 import { ViewportInputController } from './viewport-input-controller';
@@ -129,6 +135,7 @@ export class MockupEngine implements SceneApi {
   private gravityScale = DEFAULT_GRAVITY_SCALE;
   private readonly gizmoInteraction: GizmoInteractionController;
   private readonly history: SceneHistoryController;
+  private readonly edgeLinkSync: PatchEdgeLinkSync;
   private readonly detachHistoryInput: () => void;
 
   private constructor(
@@ -168,6 +175,7 @@ export class MockupEngine implements SceneApi {
     this.patchGizmo.setPatchChangeListener((entityId) => {
       void this.assets.rebuildEntity(entityId);
       if (this.patchAddPoint.getEntityId() === entityId) {this.patchAddPoint.syncEdgeLines();}
+      this.patchAddPoint.syncSelectedLine();
       this.invalidateViewport();
       this.emit();
     });
@@ -203,6 +211,15 @@ export class MockupEngine implements SceneApi {
       onStateChanged: () => { this.notifySceneApiListeners(); },
     });
     this.detachHistoryInput = attachHistoryInputTracking(this.history);
+    this.edgeLinkSync = new PatchEdgeLinkSync({
+      getEntities: () => this.registry.getEntities(),
+      isRestoring: () => this.history.isRestoring(),
+      writePatchPoints: (entityId, points) => { this.setKindParams('patch', entityId, { points }); },
+    });
+    registry.subscribeEntities(() => { this.edgeLinkSync.onEntitiesChanged(); });
+    registry.subscribeEntities(() => {
+      if (this.patchAddPoint.getSelectedSegment()) {this.patchAddPoint.syncSelectedLine();}
+    });
     registry.subscribeEntities(() => { this.history.onEntitiesChanged(); });
     registry.subscribeEntities(() => { this.notifySceneApiListeners(); });
     registry.subscribeSelection(() => { this.notifySceneApiListeners(); });
@@ -636,6 +653,32 @@ export class MockupEngine implements SceneApi {
   }
 
   /** Starts the add-point mode for a patch, or stops it with null. */
+  setPatchEdgePickMode(entityId: string | null): void {
+    if (entityId) {
+      this.patchGizmo.selectTarget(null);
+      this.patchAddPoint.start(entityId, 'pick-edge');
+    } else {
+      this.patchAddPoint.stop();
+    }
+    this.gizmoInteraction.refresh();
+    this.emit();
+  }
+
+  getPatchEdgePickEntityId(): string | null {
+    return this.patchAddPoint.getPurpose() === 'pick-edge' ? this.patchAddPoint.getEntityId() : null;
+  }
+
+  selectPatchEdge(selection: PatchEdgeSelection | null): void {
+    this.patchAddPoint.setSelectedSegment(selection);
+    this.invalidateViewport();
+    this.emit();
+  }
+
+  getPatchEdgeSelection(): PatchEdgeSelection | null {
+    const selection = this.patchAddPoint.getSelectedSegment();
+    return selection ? { ...selection } : null;
+  }
+
   setPatchAddPointMode(entityId: string | null): void {
     if (entityId) {
       this.patchGizmo.selectTarget(null);
@@ -681,7 +724,7 @@ export class MockupEngine implements SceneApi {
   }
 
   getPatchAddPointEntityId(): string | null {
-    return this.patchAddPoint.getEntityId();
+    return this.patchAddPoint.getPurpose() === 'add-point' ? this.patchAddPoint.getEntityId() : null;
   }
 
   /** Places a point on the edge under the pointer, selects its anchor and ends the mode. */
@@ -690,6 +733,13 @@ export class MockupEngine implements SceneApi {
     const params = entityId ? this.registry.getRuntime(entityId)?.entity.patchParams : undefined;
     const hit = this.patchAddPoint.hitAt(pointer, camera);
     if (!entityId || !params || !hit) {return;}
+
+    if (this.patchAddPoint.getPurpose() === 'pick-edge') {
+      const { start, end } = locatePatchEdgeSegment(params, hit.edgeIndex, hit.t);
+      this.patchAddPoint.stop();
+      this.selectPatchEdge({ entityId, startPointId: start.id, endPointId: end.id });
+      return;
+    }
 
     const inserted = insertPatchPoint(params, hit.edgeIndex, hit.t);
     this.patchAddPoint.stop();

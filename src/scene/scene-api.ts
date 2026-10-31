@@ -1,3 +1,4 @@
+import type { PatchEdgeSelection } from '@/engine/triangle-patch-add-point-tool';
 import type { HistorySettingsAdapter, SceneHistoryState } from '@/engine/history/scene-history-controller';
 import type { KindParamFamily, KindParamsByFamily } from './kind-param-families';
 import type { Rgb } from '@/colors/rgb';
@@ -242,6 +243,12 @@ export interface SceneApi {
   /** Starts the viewport add-point mode for a triangle patch, or stops it with null. */
   setPatchAddPointMode(entityId: string | null): void;
   getPatchAddPointEntityId(): string | null;
+  /** Starts the viewport pick-edge mode for a patch, or stops it with null. */
+  setPatchEdgePickMode(entityId: string | null): void;
+  getPatchEdgePickEntityId(): string | null;
+  /** Highlights a patch edge segment (or none); used by edge copy/paste/link. */
+  selectPatchEdge(selection: PatchEdgeSelection | null): void;
+  getPatchEdgeSelection(): PatchEdgeSelection | null;
   /** Undo/redo of scene object changes. */
   undo(): void;
   redo(): void;

@@ -18,11 +18,12 @@ export function describeEntityChange(
   const removed = before.filter((entity) => !afterById.has(entity.id));
   const changed = after.filter((entity) => {
     const previous = beforeById.get(entity.id);
-    return previous !== undefined && previous !== entity;
+    // A new object with identical content (e.g. a field re-committing its value) is no change.
+    return previous !== undefined && previous !== entity && JSON.stringify(previous) !== JSON.stringify(entity);
   });
 
   if (added.length + removed.length + changed.length === 0) {
-    const reordered = before.length !== after.length || before.some((entity, i) => after[i] !== entity);
+    const reordered = before.length !== after.length || before.some((entity, i) => after[i].id !== entity.id);
     return reordered ? { label: 'Reorder objects', focusEntityId: null } : null;
   }
 

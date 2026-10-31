@@ -5,6 +5,7 @@ import {
   type PatchParams,
 } from './asset-triangle-patch';
 import type { Vec3 } from './entity-types';
+import { dropEdgeLinksForPoint } from './triangle-patch-edge-link';
 
 /** Keeps inserted points away from the ends of a segment so no segment collapses. */
 const MIN_SEGMENT_SPLIT = 0.02;
@@ -98,9 +99,9 @@ export function removePatchPoint(params: PatchParams, pointId: string): PatchPar
   const edgeParams = Object.fromEntries(
     Object.entries(params.edgeParams).filter(([id]) => id !== pointId),
   );
-  return {
+  return dropEdgeLinksForPoint({
     ...params,
     points: params.points.filter((point) => point.id !== pointId),
     edgeParams,
-  };
+  }, pointId);
 }

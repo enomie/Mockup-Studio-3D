@@ -1,3 +1,4 @@
+import type { PatchEdgeSelection } from '@/engine/triangle-patch-add-point-tool';
 import type { SceneHistoryState } from '@/engine/history/scene-history-controller';
 import { SCENE_DEFAULTS } from '@/config/scene-defaults';
 import { STARTER_IMAGES, type ImageAsset } from '@/data/image-assets';
@@ -92,6 +93,8 @@ export interface AppState {
   /** Patch whose viewport add-point mode is running, if any. */
   patchAddPointEntityId: string | null;
   history: SceneHistoryState;
+  patchEdgePickEntityId: string | null;
+  patchEdgeSelection: PatchEdgeSelection | null;
   camera: CameraSettings;
   exportImageFormat: ExportImageFormat;
   exportGroundSurface: ExportGroundSurface;
@@ -147,6 +150,8 @@ export let state: AppState = {
   patchHandleSelection: null,
   patchAddPointEntityId: null,
   history: { canUndo: false, canRedo: false, undoLabel: null, redoLabel: null },
+  patchEdgePickEntityId: null,
+  patchEdgeSelection: null,
   camera: cloneCameraSettings(camera.settings),
   exportImageFormat: 'png-transparent',
   exportGroundSurface: 'viewport',
@@ -278,6 +283,8 @@ export function syncEngineStateFromEngine(): void {
     patchHandleSelection: sceneApi.getPatchHandleSelection(),
     patchAddPointEntityId: sceneApi.getPatchAddPointEntityId(),
     history: sceneApi.getHistoryState(),
+    patchEdgePickEntityId: sceneApi.getPatchEdgePickEntityId(),
+    patchEdgeSelection: sceneApi.getPatchEdgeSelection(),
     camera: cloneCameraSettings(sceneApi.getCameraSettings()),
   };
   emit();

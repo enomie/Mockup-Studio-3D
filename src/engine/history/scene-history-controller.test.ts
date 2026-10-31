@@ -153,4 +153,11 @@ describe('SceneHistoryController', () => {
     expect(settings).toEqual({ fog: 2 });
     expect(restored).toHaveLength(2);
   });
+
+  it('ignores re-committed identical values', () => {
+    const s = setup([entity('a', 1)]);
+    s.change([entity('a', 1)]);
+    s.settle();
+    expect(s.history.getState().canUndo).toBe(false);
+  });
 });

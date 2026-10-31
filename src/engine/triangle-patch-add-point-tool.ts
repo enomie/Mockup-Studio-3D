@@ -15,7 +15,8 @@ import {
   isPatchAssetKind,
   type PatchParams,
 } from '@/scene/asset-triangle-patch';
-import { evalEdge } from './triangle-patch-geometry';
+import { evalCubicBezierEdge, evalEdge } from './triangle-patch-geometry';
+import { segmentHandleKeys } from '@/scene/triangle-patch-edge-link';
 import type { EntityRegistry } from './entity-registry';
 
 /** Samples per edge for hover hit testing and the edge highlight lines. */
@@ -77,9 +78,21 @@ export function findClosestEdgeHit(
  * Viewport mode for placing new points on the edges of one triangle patch: highlights the
  * edges, shows a preview sphere under the pointer and reports the edge hit on click.
  */
+export type PatchEdgeToolPurpose = 'add-point' | 'pick-edge';
+
+/** A picked edge segment (two neighboring boundary points of one patch). */
+export interface PatchEdgeSelection {
+  entityId: string;
+  startPointId: string;
+  endPointId: string;
+}
+
 export class TrianglePatchAddPointTool {
   private readonly registry: EntityRegistry;
   private entityId: string | null = null;
+  private purpose: PatchEdgeToolPurpose = 'add-point';
+  private selectedSegment: PatchEdgeSelection | null = null;
+  private readonly selectedLine: Line;
   private readonly preview: Mesh;
   private readonly edgeLines: Line[] = [];
 
@@ -110,6 +123,22 @@ export class TrianglePatchAddPointTool {
       depthWrite: false,
       toneMapped: false,
     });
+    this.selectedLine = new Line(
+      new BufferGeometry().setFromPoints(Array.from({ length: EDGE_SAMPLES + 1 }, () => new Vector3())),
+      new LineBasicNodeMaterial({
+        color: 0xf97316,
+        transparent: true,
+        opacity: 1,
+        depthTest: false,
+        depthWrite: false,
+        toneMapped: false,
+      }),
+    );
+    this.selectedLine.renderOrder = 998;
+    this.selectedLine.frustumCulled = false;
+    this.selectedLine.visible = false;
+    scene.add(this.selectedLine);
+
     for (let e = 0; e < MAX_PATCH_EDGES; e++) {
       const points = Array.from({ length: EDGE_SAMPLES + 1 }, () => new Vector3());
       const line = new Line(new BufferGeometry().setFromPoints(points), lineMaterial);
@@ -129,10 +158,15 @@ export class TrianglePatchAddPointTool {
     return this.entityId !== null;
   }
 
-  start(entityId: string): void {
+  getPurpose(): PatchEdgeToolPurpose {
+    return this.purpose;
+  }
+
+  start(entityId: string, purpose: PatchEdgeToolPurpose = 'add-point'): void {
     const kind = this.registry.getRuntime(entityId)?.entity.assetKind;
     if (!kind || !isPatchAssetKind(kind)) {return;}
     this.entityId = entityId;
+    this.purpose = purpose;
     this.preview.visible = false;
     this.syncEdgeLines();
   }
@@ -211,7 +245,41 @@ export class TrianglePatchAddPointTool {
     });
   }
 
+  getSelectedSegment(): PatchEdgeSelection | null {
+    return this.selectedSegment;
+  }
+
+  /** Highlights one segment (independent of the running mode); null hides it. */
+  setSelectedSegment(selection: PatchEdgeSelection | null): void {
+    this.selectedSegment = selection;
+    this.syncSelectedLine();
+  }
+
+  /** Re-samples the selected segment highlight; drops the selection when it no longer exists. */
+  syncSelectedLine(): void {
+    const sel = this.selectedSegment;
+    const runtime = sel ? this.registry.getRuntime(sel.entityId) : undefined;
+    const params = runtime?.entity.patchParams;
+    const keys = params && sel ? segmentHandleKeys(params, sel.startPointId, sel.endPointId) : null;
+    const a = params?.points.find((p) => p.id === sel?.startPointId);
+    const b = params?.points.find((p) => p.id === sel?.endPointId);
+    if (!runtime || !keys || !a || !b) {
+      this.selectedSegment = null;
+      this.selectedLine.visible = false;
+      return;
+    }
+    runtime.object.updateMatrixWorld(true);
+    const ordered = keys.a === 'handleNext' ? [a, b] : [b, a];
+    const points = Array.from({ length: EDGE_SAMPLES + 1 }, (_, i) =>
+      evalCubicBezierEdge(ordered[0], ordered[1], i / EDGE_SAMPLES).applyMatrix4(runtime.object.matrixWorld),
+    );
+    this.selectedLine.geometry.setFromPoints(points);
+    this.selectedLine.visible = true;
+  }
+
   dispose(): void {
+    this.selectedLine.removeFromParent();
+    this.selectedLine.geometry.dispose();
     this.preview.removeFromParent();
     this.preview.geometry.dispose();
     for (const line of this.edgeLines) {

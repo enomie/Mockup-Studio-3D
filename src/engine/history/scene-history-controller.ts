@@ -100,6 +100,10 @@ export class SceneHistoryController {
     this.scheduleFlush();
   }
 
+  isRestoring(): boolean {
+    return this.restoring;
+  }
+
   /** Call on user input (pointer, key, form input) so following changes count as steps. */
   noteUserActivity(): void {
     this.userActivity = true;

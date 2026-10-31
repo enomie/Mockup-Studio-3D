@@ -4,6 +4,7 @@ import { Icon } from '@/ui/components/Icon';
 import { removePatchPoint } from '@/scene/triangle-patch-point-edit';
 import { PanelToggleGroup, type PanelToggleOption } from '@/ui/components/PanelToggleGroup';
 import { SubPanelSection } from '@/ui/components/SubPanelSection';
+import { PatchEdgesSection } from './PatchEdgesSection';
 import { PanelAxisField } from '@/ui/components/PanelAxisField/PanelAxisField';
 import { MaterialSelect } from '@/ui/panels/MaterialSelect';
 import { useAppStore } from '@/ui/store/use-app-store';
@@ -120,7 +121,7 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
     const index = patchParams.points.findIndex((point) => point.id === pointId);
     const next = removePatchPoint(patchParams, pointId);
     if (next === patchParams) {return;}
-    setKindParams('patch', entity.id, { points: next.points, edgeParams: next.edgeParams });
+    setKindParams('patch', entity.id, { points: next.points, edgeParams: next.edgeParams, edgeLinks: next.edgeLinks });
     if (pointId === selectedPointId) {
       const previous = patchParams.points[(index - 1 + patchParams.points.length) % patchParams.points.length];
       handleSelectTarget(previous.id, 'pos');
@@ -258,6 +259,8 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
       <SubPanelSection title="Mirror">
         <PanelToggleGroup label="Axes" options={MIRROR_OPTIONS} active={mirror} onToggle={setMirrorAxis} />
       </SubPanelSection>
+
+      <PatchEdgesSection entity={entity} params={patchParams} />
 
       <SubPanelSection title="Point & Handle Inspector">
         <ul className="patch-point-inspector-list">

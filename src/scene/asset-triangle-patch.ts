@@ -1,5 +1,6 @@
 import type { AssetKind } from './asset-kind';
 import type { Vec3 } from './entity-types';
+import type { PatchEdgeLink } from './triangle-patch-edge-link';
 
 /** One control point on the patch boundary: anchor plus four tangent handles. */
 export interface PatchPoint {
@@ -37,6 +38,8 @@ export interface PatchParams {
   edgeParams: Record<string, number>;
   /** Live mirror copies across the local YZ / XZ / XY planes through the pivot; absent means none. */
   mirror?: PatchMirror;
+  /** Edge segments linked to another patch (stored on both sides); absent means none. */
+  edgeLinks?: PatchEdgeLink[];
 }
 
 /** Which local axes the patch is mirrored across (x flips X across the YZ plane, and so on). */
@@ -97,6 +100,7 @@ export function clonePatchParams(params: PatchParams): PatchParams {
     cornerIds: [...params.cornerIds],
     edgeParams: { ...params.edgeParams },
     ...(params.mirror ? { mirror: { ...params.mirror } } : {}),
+    ...(params.edgeLinks ? { edgeLinks: params.edgeLinks.map((link) => ({ ...link })) } : {}),
   };
 }
 
