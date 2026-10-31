@@ -1,6 +1,6 @@
 # Plan: Schritt C – Smooth / Corner an gemeinsamen Punkten
 
-Status: **Entwurf – wartet auf Freigabe**
+Status: **Abgestimmt – wartet auf Start (C1)**
 Vorgänger: Schritt A (Kanten verbinden), Schritt B (`plan-patch-surface-tangent.md`, Smooth Edges)
 
 ---
@@ -97,9 +97,12 @@ Beispiel Ecke: Kippst du in A die Nachbarkante nach oben, kippt die Nachbarkante
 
 ---
 
-## Offene Fragen an dich
+## Entscheidungen
 
-1. **Shift + Ziehen** zum Aufbrechen – ok?
-2. Bestehende Links bleiben Corner, neue Links starten Smooth – ok?
-3. Markierung im Viewport: Vorschlag **Smooth = runder Anker mit Ring**, **Corner = quadratischer Anker** – ok oder anderer Wunsch?
-4. C3 (pinke Handles innerhalb eines Patches) gleich mitmachen oder später?
+1. **Shift + Ziehen** am Quer-Handle bricht das Gelenk zu Corner auf. → **ja**
+2. Bestehende Links bleiben **Corner**, neue Links und neu eingefügte Punkte auf verbundenen Kanten starten **Smooth**. → **ja**
+3. Viewport-Markierung: **Smooth = runder Anker mit Ring**, **Corner = quadratischer Anker**. → **ja**
+
+## Offen
+
+- C3 (Smooth/Corner der pinken Handles innerhalb eines Patches): noch nicht entschieden – wird nach C2 besprochen.
