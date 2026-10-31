@@ -1,4 +1,4 @@
-import { Vector3 } from 'three/webgpu';
+import { type BufferGeometry, Vector3 } from 'three/webgpu';
 import {
   getPatchEdgeCount,
   getPatchEdgePoints,
@@ -294,3 +294,81 @@ export function evalEdgeCorrectedSurface(
 }
 
 export { triangleCoords as triangleEdgeCoordinates, quadCoords as quadEdgeCoordinates };
+
+// --- Mesh ----------------------------------------------------------------------------
+
+const _target = new Vector3();
+const _slope = new Vector3();
+const _tan = new Vector3();
+const _q0 = new Vector3();
+const _q1 = new Vector3();
+
+/**
+ * Exact surface normal on edge `edge` at t (edge tangent x corrected slope), or null when
+ * the point is not on a corrected segment.
+ */
+export function evalCorrectedBoundaryNormal(
+  prepared: PreparedEdgeCorrection,
+  edge: number,
+  t: number,
+  out: Vector3,
+): Vector3 | null {
+  if (!evalEdgeSlopeCorrection(prepared, edge, t, _corr, _target)) {return null;}
+  // Slope actually built: K + sigma (D - K) = classic slope + correction.
+  prepared.classic(prepared.fromEdge(edge, t, 0), _q0);
+  prepared.classic(prepared.fromEdge(edge, t, FD_STEP), _q1);
+  prepared.classic(prepared.fromEdge(edge, t, 2 * FD_STEP), _slope);
+  _slope.multiplyScalar(-1).addScaledVector(_q1, 4).addScaledVector(_q0, -3).multiplyScalar(1 / (2 * FD_STEP));
+  _slope.add(_corr);
+  const ta = Math.max(0, t - FD_STEP);
+  const tb = Math.min(1, t + FD_STEP);
+  prepared.classic(prepared.fromEdge(edge, tb, 0), _q1);
+  prepared.classic(prepared.fromEdge(edge, ta, 0), _tan);
+  _tan.subVectors(_q1, _tan);
+  out.copy(_tan).cross(_slope);
+  return out.lengthSq() > 1e-24 ? out.normalize() : null;
+}
+
+const _pos = new Vector3();
+const _normal = new Vector3();
+const _ref = new Vector3();
+
+/**
+ * Applies the linked-edge correction to a classic patch mesh in place (positions from the
+ * mesh UVs: triangle (u, v), quad (s, t)), then rebuilds normals and tangents. Boundary
+ * vertices of corrected segments get the exact normal so linked patches shade seamlessly.
+ */
+export function applyEdgeCorrectionToGeometry(geometry: BufferGeometry, prepared: PreparedEdgeCorrection): void {
+  const quad = prepared.sides === 4;
+  const position = geometry.getAttribute('position');
+  const uv = geometry.getAttribute('uv');
+  const coordsOf = (i: number): EdgeCoordinate[] => {
+    const a = uv.getX(i);
+    const b = uv.getY(i);
+    return quad ? quadCoords(a, b) : triangleCoords(a, b, Math.max(0, 1 - a - b));
+  };
+  for (let i = 0; i < position.count; i++) {
+    evalEdgeCorrectedSurface(prepared, coordsOf(i), _pos);
+    position.setXYZ(i, _pos.x, _pos.y, _pos.z);
+  }
+  position.needsUpdate = true;
+  geometry.computeVertexNormals();
+
+  const normal = geometry.getAttribute('normal');
+  for (let i = 0; i < position.count; i++) {
+    const coords = coordsOf(i);
+    // UVs are float32: a boundary vertex can be ~1e-8 off the edge.
+    const onEdges = coords.map((c, e) => (Math.abs(c.d) < 1e-6 ? e : -1)).filter((e) => e >= 0);
+    if (onEdges.length !== 1) {continue;} // inside, or a corner
+    const edge = onEdges[0];
+    if (!evalCorrectedBoundaryNormal(prepared, edge, coords[edge].t, _normal)) {continue;}
+    _ref.set(normal.getX(i), normal.getY(i), normal.getZ(i));
+    if (_normal.dot(_ref) < 0) {_normal.negate();}
+    normal.setXYZ(i, _normal.x, _normal.y, _normal.z);
+  }
+  normal.needsUpdate = true;
+  geometry.computeBoundingSphere();
+  geometry.computeBoundingBox();
+  geometry.computeTangents();
+  geometry.getAttribute('tangent').needsUpdate = true;
+}

@@ -1,6 +1,6 @@
 # Plan: Schritt B – Patch-Fläche mit echter Rand-Neigung
 
-Status: **B1 + B2 erledigt** – B3 (Praxistest) offen
+Status: **ersetzt** durch `plan-patch-classic-edge-correction.md` (Smooth Edges sah schlechter aus als Classic; Modus entfernt)
 Vorgänger: `plan-patch-point-copy-and-shared-edges.md` (Schritt A erledigt: Kanten verbinden, nur Linie)
 
 ---

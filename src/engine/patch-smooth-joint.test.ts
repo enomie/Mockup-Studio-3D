@@ -9,17 +9,18 @@ import {
   type PatchEdgeLink,
 } from '@/scene/triangle-patch-edge-link';
 import {
-  evalTransfiniteSurface,
-  prepareTransfiniteSurface,
+  evalEdgeCorrectedSurface,
+  prepareEdgeCorrection,
   triangleEdgeCoordinates,
-} from './patch-surface-transfinite';
+} from './patch-edge-correction';
+import { evalPatchSurfacePoint } from './triangle-patch-geometry';
 
 const v = (x: number, y: number, z: number): Vec3 => ({ x, y, z });
 const lerp = (a: Vec3, b: Vec3, t: number): Vec3 => v(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t, a.z + (b.z - a.z) * t);
 const add = (a: Vec3, b: Vec3): Vec3 => v(a.x + b.x, a.y + b.y, a.z + b.z);
 const identity: EntityTransform = { position: v(0, 0, 0), rotation: v(0, 0, 0) };
 
-/** Straight-edged Smooth Edges triangle; edge 0 (c0 -> c1) has an edge point m in the middle. */
+/** Straight-edged classic triangle; edge 0 (c0 -> c1) has an edge point m in the middle. */
 function triangle(prefix: string, c: [Vec3, Vec3, Vec3], middleCross: Vec3, joint: PatchJoint): PatchParams {
   const ids = [`${prefix}c0`, `${prefix}m`, `${prefix}c1`, `${prefix}c2`];
   const pos = [c[0], lerp(c[0], c[1], 0.5), c[1], c[2]];
@@ -39,7 +40,6 @@ function triangle(prefix: string, c: [Vec3, Vec3, Vec3], middleCross: Vec3, join
     points,
     cornerIds: [ids[0], ids[2], ids[3]],
     edgeParams: { [ids[1]]: 0.5 },
-    surface: 'smooth-edges',
   };
 }
 
@@ -72,9 +72,11 @@ function settle(A: AssetEntity, B: AssetEntity, source: 'A' | 'B') {
 }
 
 function edgeNormal(params: PatchParams, t: number): Vector3 {
-  const surface = prepareTransfiniteSurface(params);
-  const at = (u: number, w: number, out = new Vector3()) =>
-    evalTransfiniteSurface(surface, triangleEdgeCoordinates(u, 1 - u - w, w), out);
+  // Rendered surface: classic plus the linked-edge correction (none for corner joints).
+  const prepared = prepareEdgeCorrection(params);
+  const at = (u: number, w: number, out = new Vector3()) => (prepared
+    ? evalEdgeCorrectedSurface(prepared, triangleEdgeCoordinates(u, 1 - u - w, w), out)
+    : evalPatchSurfacePoint(params, u, 1 - u - w, w, out));
   const h = 1e-6;
   const p = at(1 - t, 0);
   const along = at(1 - t - h, 0).sub(p);

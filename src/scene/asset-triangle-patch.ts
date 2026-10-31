@@ -46,9 +46,8 @@ export interface PatchParams {
   /** Live mirror copies across the local YZ / XZ / XY planes through the pivot; absent means none. */
   mirror?: PatchMirror;
   /**
-   * Surface model. 'classic' (default when absent): Coons boundary plus a center bulge.
-   * 'smooth-edges': the surface leaves every edge in the direction of its cross handles,
-   * so linked patches with opposite handles meet without a crease.
+   * @deprecated Former surface switch ('smooth-edges'); ignored. Kept so stored scenes load.
+   * Linked edges are now smoothed by the edge correction (see edgeBlend).
    */
   surface?: PatchSurfaceMode;
   /** Width of the smoothing strip along linked edges (share of the patch, 0.1–0.6); absent = 0.3. */
@@ -118,7 +117,6 @@ export function clonePatchParams(params: PatchParams): PatchParams {
     cornerIds: [...params.cornerIds],
     edgeParams: { ...params.edgeParams },
     ...(params.mirror ? { mirror: { ...params.mirror } } : {}),
-    ...(params.surface ? { surface: params.surface } : {}),
     ...(params.edgeBlend !== undefined ? { edgeBlend: params.edgeBlend } : {}),
     ...(params.edgeLinks ? { edgeLinks: params.edgeLinks.map((link) => ({ ...link })) } : {}),
   };

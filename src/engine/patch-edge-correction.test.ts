@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Vector3 } from 'three/webgpu';
+import { Vector3 } from 'three/webgpu';
 import {
   defaultPatchParamsForKind,
   type PatchJoint,
@@ -8,9 +8,10 @@ import {
 } from '@/scene/asset-triangle-patch';
 import type { AssetEntity, EntityTransform, Vec3 } from '@/scene/entity-types';
 import { propagateEdgeLinks, type PatchEdgeLink } from '@/scene/triangle-patch-edge-link';
-import { evalEdge, evalPatchSurfacePoint } from './triangle-patch-geometry';
+import { buildTrianglePatchGeometry, evalEdge, evalPatchSurfacePoint } from './triangle-patch-geometry';
 import { evalQuadPatchSurfacePoint } from './quad-patch-geometry';
 import {
+  applyEdgeCorrectionToGeometry,
   evalEdgeCorrectedSurface,
   prepareEdgeCorrection,
   quadEdgeCoordinates,
@@ -166,5 +167,44 @@ describe('classic surface with linked-edge correction', () => {
     }
     const center = evalEdgeCorrectedSurface(prepared, quadEdgeCoordinates(0.5, 0.5));
     expect(center.distanceTo(evalQuadPatchSurfacePoint(params, 0.5, 0.5))).toBeLessThan(1e-12);
+  });
+
+  it('builds meshes whose normals match across the linked edge (no light seam)', () => {
+    const { a, b } = linkedPair('smooth');
+    const meshes = [a, b].map((params) => {
+      const geometry = buildTrianglePatchGeometry(params);
+      const prepared = prepareEdgeCorrection(params);
+      if (prepared) {applyEdgeCorrectionToGeometry(geometry, prepared);}
+      return geometry;
+    });
+    const boundary = (g: (typeof meshes)[number]) => {
+      const pos = g.getAttribute('position');
+      const nor = g.getAttribute('normal');
+      const out: { x: number; n: Vector3 }[] = [];
+      for (let i = 0; i < pos.count; i++) {
+        const x = pos.getX(i);
+        if (Math.abs(pos.getY(i)) < 1e-6 && Math.abs(pos.getZ(i)) < 1e-6 && x > 1e-6 && x < 1 - 1e-6) {
+          out.push({ x, n: new Vector3(nor.getX(i), nor.getY(i), nor.getZ(i)) });
+        }
+      }
+      return out;
+    };
+    const na = boundary(meshes[0]);
+    const nb = boundary(meshes[1]);
+    expect(na.length).toBeGreaterThan(10);
+    let worst = 0;
+    let matched = 0;
+    for (const pa of na) {
+      const pb = nb.find((q) => Math.abs(q.x - pa.x) < 1e-5);
+      if (!pb) {continue;}
+      matched++;
+      worst = Math.max(worst, (Math.acos(Math.min(1, Math.abs(pa.n.dot(pb.n)))) * 180) / Math.PI);
+    }
+    expect(matched).toBeGreaterThan(10);
+    expect(worst).toBeLessThan(0.1);
+    for (const g of meshes) {
+      expect(Array.from(g.getAttribute('normal').array).every(Number.isFinite)).toBe(true);
+      expect(Array.from(g.getAttribute('position').array).every(Number.isFinite)).toBe(true);
+    }
   });
 });

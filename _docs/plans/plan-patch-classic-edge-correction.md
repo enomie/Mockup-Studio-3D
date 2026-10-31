@@ -1,6 +1,6 @@
 # Plan: Classic-Fläche mit Kanten-Korrektur (ersetzt „Smooth Edges“)
 
-Status: **D1 erledigt (Mathe + Messung)** – D2 (Einbau) offen
+Status: **D1 + D2 erledigt** – D3 (Praxistest) offen
 Vorgänger: `plan-patch-surface-tangent.md` (Schritt B, Smooth Edges), `plan-patch-smooth-corner.md` (Schritt C, Gelenke)
 
 ---
@@ -105,6 +105,13 @@ Modul: `src/engine/patch-edge-correction.ts`, Tests: `patch-edge-correction.test
 - Ecken: keine NaN.
 
 **Erkenntnis:** Die Restabweichung kam von der numerischen Ableitung der Classic-Fläche. Mit einer Ableitung zweiter Ordnung sank sie von 0,023° auf 0,0026°.
+
+## Umsetzung D2
+
+- Mesh-Aufbau: Classic-Mesh wird gebaut, bei verbundenen Kanten mit Smooth-Gelenken werden die Punkte korrigiert (`applyEdgeCorrectionToGeometry`), Normalen neu, an Randpunkten korrigierter Segmente exakt (Kantentangente × Neigung). Test: Normalen beider Patches an der gemeinsamen Kante < 0,1°.
+- Panel: Sektion **„Linked Edges“** mit Regler **Edge Blend** (10–60 %, Standard 30 %), nur sichtbar, wenn der Patch verbundene Kanten hat. Undo-fähig.
+- Surface-Umschalter entfernt; `surface` wird beim Laden ignoriert. Modul `patch-surface-transfinite.ts` gelöscht.
+- Stolperstein: UVs sind float32 → Randpunkte liegen ~1e-8 neben der Kante; Erkennung mit Toleranz 1e-6.
 
 ## Entscheidungen
 

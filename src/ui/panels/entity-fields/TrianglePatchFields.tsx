@@ -7,7 +7,8 @@ import { crossHandleKeyAt, isEdgeLinkValid } from '@/scene/triangle-patch-edge-l
 import { setPatchJoint } from '@/ui/store/patch-edge-store';
 import { PanelToggleGroup, type PanelToggleOption } from '@/ui/components/PanelToggleGroup';
 import { SubPanelSection } from '@/ui/components/SubPanelSection';
-import { PanelSelect } from '@/ui/components/PanelSelect';
+import { RangeSlider } from '@/ui/components/RangeSlider';
+import { DEFAULT_EDGE_BLEND, MAX_EDGE_BLEND, MIN_EDGE_BLEND } from '@/engine/patch-edge-correction';
 import { PatchEdgesSection } from './PatchEdgesSection';
 import { PanelAxisField } from '@/ui/components/PanelAxisField/PanelAxisField';
 import { MaterialSelect } from '@/ui/panels/MaterialSelect';
@@ -34,7 +35,6 @@ import {
   replacePatchPoint,
   type PatchHandleTarget,
   type PatchMirror,
-  type PatchSurfaceMode,
   type PatchPoint,
   type PatchParams,
 } from '@/scene/asset-triangle-patch';
@@ -62,17 +62,6 @@ const PASTE_MODES: { key: PatchPointPasteMode; label: string }[] = [
   { key: 'position', label: 'Position Only' },
   { key: 'handles', label: 'Handles Only' },
 ];
-
-const SURFACE_OPTIONS: { value: PatchSurfaceMode; label: string }[] = [
-  { value: 'classic', label: 'Classic' },
-  { value: 'smooth-edges', label: 'Smooth Edges' },
-];
-
-/** With Smooth Edges, yellow corner handles drive the center bulge instead of the edge slope. */
-function targetLabel(key: PatchHandleTarget, label: string, mode: PatchSurfaceMode, corner: boolean): string {
-  if (mode !== 'smooth-edges' || key !== 'handleCrossIn') {return label;}
-  return corner ? 'Center Bulge (Yellow)' : 'Edge Slope (Yellow)';
-}
 
 const TARGETS: { key: PatchHandleTarget; label: string; color: string }[] = [
   { key: 'pos', label: 'Anchor Point', color: '#0284c7' },
@@ -259,7 +248,6 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
     commitPoint(nodeCopy);
   };
 
-  const surfaceMode: PatchSurfaceMode = patchParams.surface ?? 'classic';
   const entities = useAppStore((s) => s.entities);
   const findEntity = (id: string) => entities.find((e) => e.id === id);
   /** Joint state of a point on a linked edge, or null when the point is not shared. */
@@ -302,14 +290,21 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
         />
       </SubPanelSection>
 
-      <SubPanelSection title="Surface">
-        <PanelSelect
-          ariaLabel="Surface"
-          value={surfaceMode}
-          options={SURFACE_OPTIONS}
-          onChange={(value) => { setKindParams('patch', entity.id, { surface: value as PatchSurfaceMode }); }}
-        />
-      </SubPanelSection>
+      {patchParams.edgeLinks?.length ? (
+        <SubPanelSection title="Linked Edges">
+          <RangeSlider
+            label="Edge Blend"
+            min={MIN_EDGE_BLEND}
+            max={MAX_EDGE_BLEND}
+            step={0.01}
+            value={patchParams.edgeBlend ?? DEFAULT_EDGE_BLEND}
+            valueInputDecimals={0}
+            valueDisplayScale={100}
+            valueUnit="%"
+            onChange={(value) => { setKindParams('patch', entity.id, { edgeBlend: value }); }}
+          />
+        </SubPanelSection>
+      ) : null}
 
       <SubPanelSection title="Mirror">
         <PanelToggleGroup label="Axes" options={MIRROR_OPTIONS} active={mirror} onToggle={setMirrorAxis} />
@@ -419,7 +414,7 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
                     >
                       {TARGETS.map((t) => (
                         <option key={t.key} value={t.key}>
-                          {targetLabel(t.key, t.label, surfaceMode, isPatchCorner(patchParams, node.id))}
+                          {t.label}
                         </option>
                       ))}
                     </select>
