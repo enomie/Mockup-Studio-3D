@@ -1,4 +1,5 @@
-import { Vector3 } from 'three/webgpu';
+import { BufferGeometry, Float32BufferAttribute, Vector3 } from 'three/webgpu';
+import { ensureGeometryTangents } from '@/engine/geometry-tangents';
 import {
   getPatchCorners,
   getPatchEdgeCount,
@@ -291,4 +292,153 @@ export function evalTransfiniteBoundaryNormal(
   const edge = surface.edges[edgeIndex];
   evalPreparedEdgeTangent(edge, t, out);
   return out.cross(evalPreparedCross(edge, t, _cross)).normalize();
+}
+
+// --- Mesh building -----------------------------------------------------------------
+
+const _p = new Vector3();
+const _a = new Vector3();
+const _b = new Vector3();
+const _n = new Vector3();
+const _ref = new Vector3();
+
+/**
+ * Replaces the mesh normals with analytic ones: exact (edge tangent x cross derivative) on
+ * the boundary so linked patches shade seamlessly, finite differences of the surface inside.
+ * Each normal keeps the orientation of the triangle-averaged normal (front face).
+ */
+function applyAnalyticNormals(
+  geometry: BufferGeometry,
+  analytic: (index: number, out: Vector3) => boolean,
+): void {
+  geometry.computeVertexNormals();
+  const normals = geometry.getAttribute('normal');
+  for (let i = 0; i < normals.count; i++) {
+    if (!analytic(i, _n) || _n.lengthSq() < 1e-20) {continue;}
+    _n.normalize();
+    _ref.set(normals.getX(i), normals.getY(i), normals.getZ(i));
+    if (_n.dot(_ref) < 0) {_n.negate();}
+    normals.setXYZ(i, _n.x, _n.y, _n.z);
+  }
+  normals.needsUpdate = true;
+}
+
+/** Triangle patch mesh (same grid, UVs and winding as the classic triangle patch). */
+export function buildTransfiniteTriangleGeometry(params: PatchParams): BufferGeometry {
+  const surface = prepareTransfiniteSurface(params);
+  const divisions = Math.max(2, Math.min(64, params.divisions || 24));
+  const evalAt = (u: number, v: number, out: Vector3) =>
+    evalTransfiniteSurface(surface, triangleEdgeCoordinates(u, v, 1 - u - v), out);
+
+  const positions: number[] = [];
+  const uvs: number[] = [];
+  const domain: [number, number][] = [];
+  const grid: number[][] = [];
+  for (let i = 0; i <= divisions; i++) {
+    grid[i] = [];
+    for (let j = 0; j <= divisions - i; j++) {
+      grid[i][j] = domain.length;
+      const u = i / divisions;
+      const v = j / divisions;
+      evalAt(u, v, _p);
+      positions.push(_p.x, _p.y, _p.z);
+      uvs.push(u, v);
+      domain.push([u, v]);
+    }
+  }
+  const indices: number[] = [];
+  for (let i = 0; i < divisions; i++) {
+    for (let j = 0; j < divisions - i; j++) {
+      const p1 = grid[i][j];
+      const p2 = grid[i + 1][j];
+      const p3 = grid[i][j + 1];
+      indices.push(p1, p2, p3);
+      if (j < divisions - i - 1) {indices.push(p2, grid[i + 1][j + 1], p3);}
+    }
+  }
+
+  const geometry = new BufferGeometry();
+  geometry.setAttribute('position', new Float32BufferAttribute(positions, 3));
+  geometry.setAttribute('uv', new Float32BufferAttribute(uvs, 2));
+  geometry.setIndex(indices);
+
+  const h = 1e-4;
+  applyAnalyticNormals(geometry, (index, out) => {
+    const [u, v] = domain[index];
+    const w = 1 - u - v;
+    const eps = 1e-9;
+    const onEdge0 = w < eps;
+    const onEdge1 = u < eps;
+    const onEdge2 = v < eps;
+    if (Number(onEdge0) + Number(onEdge1) + Number(onEdge2) > 1) {return false;} // corner
+    if (onEdge0) {return Boolean(evalTransfiniteBoundaryNormal(surface, 0, v, out));}
+    if (onEdge1) {return Boolean(evalTransfiniteBoundaryNormal(surface, 1, w / (v + w), out));}
+    if (onEdge2) {return Boolean(evalTransfiniteBoundaryNormal(surface, 2, u / (w + u), out));}
+    // Inside: central differences along u and v (w compensates).
+    evalAt(u + h, v, _a).sub(evalAt(u - h, v, _b));
+    const du = out.copy(_a);
+    evalAt(u, v + h, _a).sub(evalAt(u, v - h, _b));
+    du.cross(_a);
+    return true;
+  });
+  ensureGeometryTangents(geometry);
+  return geometry;
+}
+
+/** Quad patch mesh (same grid, UVs and winding as the classic quad patch). */
+export function buildTransfiniteQuadGeometry(params: PatchParams): BufferGeometry {
+  const surface = prepareTransfiniteSurface(params);
+  const divisions = Math.max(2, Math.min(64, params.divisions || 24));
+  const row = divisions + 1;
+  const evalAt = (s: number, t: number, out: Vector3) =>
+    evalTransfiniteSurface(surface, quadEdgeCoordinates(s, t), out);
+
+  const positions = new Float32Array(row * row * 3);
+  const uvs = new Float32Array(row * row * 2);
+  for (let j = 0; j <= divisions; j++) {
+    for (let i = 0; i <= divisions; i++) {
+      const index = j * row + i;
+      evalAt(i / divisions, j / divisions, _p);
+      positions[index * 3] = _p.x;
+      positions[index * 3 + 1] = _p.y;
+      positions[index * 3 + 2] = _p.z;
+      uvs[index * 2] = i / divisions;
+      uvs[index * 2 + 1] = j / divisions;
+    }
+  }
+  const indices: number[] = [];
+  for (let j = 0; j < divisions; j++) {
+    for (let i = 0; i < divisions; i++) {
+      const a = j * row + i;
+      indices.push(a, a + 1, a + row + 1, a, a + row + 1, a + row);
+    }
+  }
+  const geometry = new BufferGeometry();
+  geometry.setAttribute('position', new Float32BufferAttribute(positions, 3));
+  geometry.setAttribute('uv', new Float32BufferAttribute(uvs, 2));
+  geometry.setIndex(indices);
+
+  const h = 1e-4;
+  applyAnalyticNormals(geometry, (index, out) => {
+    const i = index % row;
+    const j = Math.floor(index / row);
+    const s = i / divisions;
+    const t = j / divisions;
+    const onS0 = i === 0;
+    const onS1 = i === divisions;
+    const onT0 = j === 0;
+    const onT1 = j === divisions;
+    if ((onS0 || onS1) && (onT0 || onT1)) {return false;} // corner
+    if (onT0) {return Boolean(evalTransfiniteBoundaryNormal(surface, 0, s, out));}
+    if (onS1) {return Boolean(evalTransfiniteBoundaryNormal(surface, 1, t, out));}
+    if (onT1) {return Boolean(evalTransfiniteBoundaryNormal(surface, 2, 1 - s, out));}
+    if (onS0) {return Boolean(evalTransfiniteBoundaryNormal(surface, 3, 1 - t, out));}
+    evalAt(s + h, t, _a).sub(evalAt(s - h, t, _b));
+    const ds = out.copy(_a);
+    evalAt(s, t + h, _a).sub(evalAt(s, t - h, _b));
+    ds.cross(_a);
+    return true;
+  });
+  ensureGeometryTangents(geometry);
+  return geometry;
 }

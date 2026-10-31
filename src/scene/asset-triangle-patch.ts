@@ -38,9 +38,17 @@ export interface PatchParams {
   edgeParams: Record<string, number>;
   /** Live mirror copies across the local YZ / XZ / XY planes through the pivot; absent means none. */
   mirror?: PatchMirror;
+  /**
+   * Surface model. 'classic' (default when absent): Coons boundary plus a center bulge.
+   * 'smooth-edges': the surface leaves every edge in the direction of its cross handles,
+   * so linked patches with opposite handles meet without a crease.
+   */
+  surface?: PatchSurfaceMode;
   /** Edge segments linked to another patch (stored on both sides); absent means none. */
   edgeLinks?: PatchEdgeLink[];
 }
+
+export type PatchSurfaceMode = 'classic' | 'smooth-edges';
 
 /** Which local axes the patch is mirrored across (x flips X across the YZ plane, and so on). */
 export interface PatchMirror {
@@ -100,6 +108,7 @@ export function clonePatchParams(params: PatchParams): PatchParams {
     cornerIds: [...params.cornerIds],
     edgeParams: { ...params.edgeParams },
     ...(params.mirror ? { mirror: { ...params.mirror } } : {}),
+    ...(params.surface ? { surface: params.surface } : {}),
     ...(params.edgeLinks ? { edgeLinks: params.edgeLinks.map((link) => ({ ...link })) } : {}),
   };
 }

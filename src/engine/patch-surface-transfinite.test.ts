@@ -9,6 +9,8 @@ import type { Vec3 } from '@/scene/entity-types';
 import { insertPatchPoint } from '@/scene/triangle-patch-point-edit';
 import { evalEdge, evalPatchSurfacePoint } from './triangle-patch-geometry';
 import {
+  buildTransfiniteQuadGeometry,
+  buildTransfiniteTriangleGeometry,
   evalPreparedCross,
   evalTransfiniteSurface,
   prepareTransfiniteSurface,
@@ -178,5 +180,38 @@ describe('transfinite patch surface (Smooth Edges)', () => {
       worst = Math.max(worst, (Math.acos(Math.min(1, dot)) * 180) / Math.PI);
     }
     expect(worst).toBeLessThan(0.1);
+  });
+
+  it('builds meshes whose normals match across the shared edge (no light seam)', () => {
+    const a = buildTransfiniteTriangleGeometry(straightTriangle([v(0, 0, 0), v(1, 0, 0), v(0.5, 1, 0)], v(0, 0.2, 0.2)));
+    const b = buildTransfiniteTriangleGeometry(straightTriangle([v(1, 0, 0), v(0, 0, 0), v(0.9, -2.5, 0)], v(0, -0.1, -0.1)));
+    const boundary = (g: typeof a) => {
+      const pos = g.getAttribute('position');
+      const nor = g.getAttribute('normal');
+      const out: { x: number; n: [number, number, number] }[] = [];
+      for (let i = 0; i < pos.count; i++) {
+        const x = pos.getX(i);
+        if (Math.abs(pos.getY(i)) < 1e-6 && Math.abs(pos.getZ(i)) < 1e-6 && x > 1e-6 && x < 1 - 1e-6) {
+          out.push({ x, n: [nor.getX(i), nor.getY(i), nor.getZ(i)] });
+        }
+      }
+      return out;
+    };
+    const na = boundary(a);
+    const nb = boundary(b);
+    expect(na.length).toBeGreaterThan(10);
+    let worst = 0;
+    for (const pa of na) {
+      const pb = nb.find((q) => Math.abs(q.x - pa.x) < 1e-6);
+      if (!pb) {continue;}
+      const dot = Math.abs(pa.n[0] * pb.n[0] + pa.n[1] * pb.n[1] + pa.n[2] * pb.n[2]);
+      worst = Math.max(worst, (Math.acos(Math.min(1, dot)) * 180) / Math.PI);
+    }
+    expect(worst).toBeLessThan(0.1);
+    for (const g of [a, b, buildTransfiniteQuadGeometry(defaultPatchParamsForKind('quad-patch'))]) {
+      const arr = g.getAttribute('normal').array;
+      expect(Array.from(arr).every(Number.isFinite)).toBe(true);
+      expect(Array.from(g.getAttribute('position').array).every(Number.isFinite)).toBe(true);
+    }
   });
 });

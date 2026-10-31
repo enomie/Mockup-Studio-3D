@@ -5,6 +5,7 @@ import { removePatchPoint } from '@/scene/triangle-patch-point-edit';
 import { mergeLinksOnRemove } from '@/scene/triangle-patch-linked-edit';
 import { PanelToggleGroup, type PanelToggleOption } from '@/ui/components/PanelToggleGroup';
 import { SubPanelSection } from '@/ui/components/SubPanelSection';
+import { PanelSelect } from '@/ui/components/PanelSelect';
 import { PatchEdgesSection } from './PatchEdgesSection';
 import { PanelAxisField } from '@/ui/components/PanelAxisField/PanelAxisField';
 import { MaterialSelect } from '@/ui/panels/MaterialSelect';
@@ -31,6 +32,7 @@ import {
   replacePatchPoint,
   type PatchHandleTarget,
   type PatchMirror,
+  type PatchSurfaceMode,
   type PatchPoint,
   type PatchParams,
 } from '@/scene/asset-triangle-patch';
@@ -58,6 +60,17 @@ const PASTE_MODES: { key: PatchPointPasteMode; label: string }[] = [
   { key: 'position', label: 'Position Only' },
   { key: 'handles', label: 'Handles Only' },
 ];
+
+const SURFACE_OPTIONS: { value: PatchSurfaceMode; label: string }[] = [
+  { value: 'classic', label: 'Classic' },
+  { value: 'smooth-edges', label: 'Smooth Edges' },
+];
+
+/** With Smooth Edges, yellow corner handles drive the center bulge instead of the edge slope. */
+function targetLabel(key: PatchHandleTarget, label: string, mode: PatchSurfaceMode, corner: boolean): string {
+  if (mode !== 'smooth-edges' || key !== 'handleCrossIn') {return label;}
+  return corner ? 'Center Bulge (Yellow)' : 'Edge Slope (Yellow)';
+}
 
 const TARGETS: { key: PatchHandleTarget; label: string; color: string }[] = [
   { key: 'pos', label: 'Anchor Point', color: '#0284c7' },
@@ -244,6 +257,7 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
     commitPoint(nodeCopy);
   };
 
+  const surfaceMode: PatchSurfaceMode = patchParams.surface ?? 'classic';
   const mirror: PatchMirror = patchParams.mirror ?? { x: false, y: false, z: false };
   const setMirrorAxis = (axis: keyof PatchMirror, checked: boolean) => {
     setKindParams('patch', entity.id, { mirror: { ...mirror, [axis]: checked } });
@@ -261,6 +275,15 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
           slot="patchMaterialId"
           materials={materials}
           value={slots?.patchMaterialId ?? MATERIAL_ALUMINUM_BRUSHED_ID}
+        />
+      </SubPanelSection>
+
+      <SubPanelSection title="Surface">
+        <PanelSelect
+          ariaLabel="Surface"
+          value={surfaceMode}
+          options={SURFACE_OPTIONS}
+          onChange={(value) => { setKindParams('patch', entity.id, { surface: value as PatchSurfaceMode }); }}
         />
       </SubPanelSection>
 
@@ -357,7 +380,7 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
                     >
                       {TARGETS.map((t) => (
                         <option key={t.key} value={t.key}>
-                          {t.label}
+                          {targetLabel(t.key, t.label, surfaceMode, isPatchCorner(patchParams, node.id))}
                         </option>
                       ))}
                     </select>

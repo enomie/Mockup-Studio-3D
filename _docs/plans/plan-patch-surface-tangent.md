@@ -1,6 +1,6 @@
 # Plan: Schritt B – Patch-Fläche mit echter Rand-Neigung
 
-Status: **B1 erledigt (Mathe-Kern + Messung)** – B2 offen
+Status: **B1 + B2 erledigt** – B3 (Praxistest) offen
 Vorgänger: `plan-patch-point-copy-and-shared-edges.md` (Schritt A erledigt: Kanten verbinden, nur Linie)
 
 ---
@@ -105,7 +105,7 @@ Modul: `src/engine/patch-surface-transfinite.ts`, Tests: `patch-surface-transfin
 
 **Erkenntnis während der Messung:** Für die Glätte zählt nur der Anteil der Querableitung *quer* zur Kante. Dieser Anteil wird sphärisch interpoliert, der Anteil *entlang* der Kante getrennt als Zahl. Erst damit wurde der Knick zwischen Ecke und Kantenpunkt 0 (vorher bis 1,3°).
 
-**Für B2 offen:** Mesh-Aufbau im neuen Modus, Normalen analytisch (Randnormale = Kantentangente × Querableitung ist bereits als Funktion vorhanden), Umschalter im Panel.
+**B2 umgesetzt:** `PatchParams.surface` (`'classic'` | `'smooth-edges'`, fehlt = Classic), Mesh-Aufbau Dreieck/Viereck, Normalen analytisch (Rand exakt aus Kantentangente × Querableitung, innen finite Differenzen), Panel-Sektion „Surface“, gelbe Handles beschriftet als „Center Bulge“ (Ecke) bzw. „Edge Slope“ (Kantenpunkt). Test: Normalen beidseits der gemeinsamen Kante weichen < 0,1° ab.
 
 ---
 
