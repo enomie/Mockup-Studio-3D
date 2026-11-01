@@ -112,7 +112,7 @@ Verknüpfte Feature-Docs: [`requirements-scenes.md`](./requirements-scenes.md), 
 
 **Category:** Architecture  
 **Title:** Offene Querschnitts-Punkte (TBD)  
-**Description:** Noch zu klären und hier ergänzen: **Export** (Save, Presets, Pipeline) → [`requirements-export.md`](./requirements-export.md); **Camera/User-Slots in Scene Save**; Shadow-Settings global vs. pro Light; Performance-Budget bei N Lights; IndexedDB vs. inline Blob in Scene Save; HDRI-Asset-Pipeline; Decals auf Nicht-Asset-Meshes. **Asset-Kind-Registry** (Engine-Metadaten pro `AssetKind`, Entity-JSON unverändert in v1) → [`requirements-asset-kind-registry.md`](./requirements-asset-kind-registry.md) (spezifiziert). **Nicht im Code ausprobieren** — erst Requirement, dann Implementierung.
+**Description:** Noch zu klären und hier ergänzen: **Export** (Save, Presets, Pipeline) → [`requirements-export.md`](./requirements-export.md); **Camera/User-Slots in Scene Save**; Shadow-Settings global vs. pro Light; Performance-Budget bei N Lights; ~~IndexedDB vs. inline Blob~~ (entschieden: IndexedDB, Bilder als eigener Blob-Store → [`requirements-arrangements-and-persistence.md`](./requirements-arrangements-and-persistence.md)); HDRI-Asset-Pipeline; Decals auf Nicht-Asset-Meshes. **Asset-Kind-Registry** (Engine-Metadaten pro `AssetKind`, Entity-JSON unverändert in v1) → [`requirements-asset-kind-registry.md`](./requirements-asset-kind-registry.md) (spezifiziert). **Nicht im Code ausprobieren** — erst Requirement, dann Implementierung.
 
 ---
 

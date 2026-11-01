@@ -23,10 +23,11 @@ Zentrale Projektbeschreibung. Detail-Requirements in den verlinkten Kategorie-Da
 | [`requirements-environments.md`](./requirements-environments.md) | Environments-Bibliothek (Left): Atmosphäre-Presets, User-Save — v1 live |
 | [`requirements-reflections.md`](./requirements-reflections.md) | IBL, Reflection Intensity, Planar Mirror |
 | [`requirements-ground.md`](./requirements-ground.md) | Ground Panel: Materials Library, Schatten, Mirror; procedural tiling; Bild/Mapping später |
+| [`requirements-arrangements-and-persistence.md`](./requirements-arrangements-and-persistence.md) | **Arrangements** (Left): Asset-Zusammenstellungen, Built-ins + User; Auto-Save/Reload (IndexedDB); Settings → Reset all — v1 live |
 | [`requirements-scenes.md`](./requirements-scenes.md) | Scene-Presets: Built-ins, User-Save, Load |
 | [`requirements-images.md`](./requirements-images.md) | Images-Bibliothek, Upload, Starter, min. 10 |
 | [`requirements-planar-editor.md`](./requirements-planar-editor.md) | **Profiles** (Left): Built-in/User, Duplicate; **Planar Editor** im Viewport; Lathe/Extrude-Pfade |
-| [`requirements-history.md`](./requirements-history.md) | Undo/Redo (kontextuell); Workspace-Persistenz (IndexedDB), Browser-Neustart |
+| [`requirements-history.md`](./requirements-history.md) | Undo/Redo (kontextuell); Workspace-Persistenz (Konzept; umgesetzt → arrangements-and-persistence) |
 | [`requirements-image-surfaces.md`](./requirements-image-surfaces.md) | Bild-Flächen: Finish, Emissive, Passepartout (Zwei-Mesh-Engine) |
 | [`requirements-colors.md`](./requirements-colors.md) | Colors-Bibliothek, benannte RGB-Swatches, ColorPicker-Integration |
 | [`requirements-materials.md`](./requirements-materials.md) | Materials-Bibliothek, PBR-Presets, Built-ins, Zuweisung |

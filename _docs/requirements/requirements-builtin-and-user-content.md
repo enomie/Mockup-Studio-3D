@@ -8,7 +8,7 @@
 
 **Category:** Project  
 **Title:** Mitgeliefert vs. vom User angelegt  
-**Description:** Mockup Studio liefert **fertige Bausteine** mit: Asset-Katalog (platzierte Baustein-Typen), Starter-/Sample-**Images**, Built-in-**Colors** und **Materials**, Werk-**Environments**, **Light rigs**, **Scenes** und weitere Presets. Der User kann parallel **eigene** Einträge anlegen (Upload, „Save as …“, „Add …“, Duplicate einer Built-in-Kopie). **Ownership** ist maschinenlesbar über `source` (oder äquivalent, z. B. `starter` | `user` bei Images). **Nur** Einträge mit User-Ownership sind **löschbar**. Built-ins bleiben in jeder Session und in jedem neuen Projekt verfügbar; der User kann sie **laden/zuweisen**, aber nicht aus der App entfernen oder überschreiben.
+**Description:** Mockup Studio liefert **fertige Bausteine** mit: Asset-Katalog (platzierte Baustein-Typen), Starter-/Sample-**Images**, Built-in-**Colors** und **Materials**, Werk-**Environments**, **Light rigs**, **Arrangements**, **Scenes** und weitere Presets. Der User kann parallel **eigene** Einträge anlegen (Upload, „Save as …“, „Add …“, Duplicate einer Built-in-Kopie). **Ownership** ist maschinenlesbar über `source` (oder äquivalent, z. B. `starter` | `user` bei Images). **Nur** Einträge mit User-Ownership sind **löschbar**. Built-ins bleiben in jeder Session und in jedem neuen Projekt verfügbar; der User kann sie **laden/zuweisen**, aber nicht aus der App entfernen oder überschreiben.
 
 ---
 
@@ -36,9 +36,10 @@
 | **Materials** | `source: 'builtin'` | Add / Duplicate → `user` | `removeMaterial` nur user → [`requirements-materials.md`](./requirements-materials.md) |
 | **Environments** | Built-in Presets | Save as environment | `removeEnvironment` nur user → [`requirements-environments.md`](./requirements-environments.md) |
 | **Light rigs** | Built-in Presets | Save as lighting preset | `removeLightingPreset` nur user → [`requirements-lighting-presets.md`](./requirements-lighting-presets.md) |
+| **Arrangements** | Built-ins Clothing, Devices, Beverages | Add new (aktuelle Szenen-Assets) / Duplicate → `user` | `removeArrangement` nur user → [`requirements-arrangements-and-persistence.md`](./requirements-arrangements-and-persistence.md) |
 | **Scenes** | Built-in Scene-Presets | Save as scene | `deleteScene` nur user → [`requirements-scenes.md`](./requirements-scenes.md) |
 | **Asset-Katalog** | Alle Built-in-`assetKind` (Block, Dose, …) | **Gebaktes Stoff-User-Asset** (nach Freeze + Bake) → [`requirements-assets-fabric-cloth.md`](./requirements-assets-fabric-cloth.md) | Built-in-Kinds nicht löschbar; **User-Asset-Zeile** `removeUserBakedAsset` (TBD) nur `source: 'user'`; Sim-`fabric-cloth` nur **Entity** entfernen → [`requirements-assets.md`](./requirements-assets.md) |
-| **Szene-Entities** | Default-Szene-Inhalt nur via Built-in-**Scene**-Load | Drop / Place aus Katalog | `removeEntity` / Trash / Delete-Key → [`requirements-scene-placement.md`](./requirements-scene-placement.md) |
+| **Szene-Entities** | Default-Szene = Built-in-Arrangement **Clothing**; Ersetzen per Arrangement-Load | Drop / Place aus Katalog | `removeEntity` / Trash / Delete-Key → [`requirements-scene-placement.md`](./requirements-scene-placement.md) |
 
 **Nicht** unter diese Regel: Session-only UI (z. B. ColorPicker **Recent**), temporäre Physics-Test-Würfel, Export-Dateien auf Disk — kein Bibliotheks-Eintrag.
 

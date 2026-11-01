@@ -30,3 +30,11 @@ Code: `src/ui/persistence/*`.
 ## Settings (Right Main Panel → „Settings“)
 
 - **Reset all…** (mit Bestätigung) löscht beide IndexedDB-Stores und lädt die Seite neu. Danach ist alles im Werkszustand (Clothing, Default-Environment, …).
+
+## Offen
+
+- **Speicher voll** (`QuotaExceededError`): wird bisher nur in der Konsole gemeldet. Ziel: sichtbare UI-Warnung.
+- **Schema-Wechsel:** Bei neuer `schemaVersion` wird der Speicherstand verworfen. Sobald echte Nutzerdaten existieren → Migration (`migrateProjectV1toV2`).
+- **Kamera nur gedreht:** Orbit erreicht den Store nicht immer und wird dann erst bei `pagehide` gespeichert.
+- **Scenes** (Arrangement + Environment + Light rig + Kamera) bauen auf diesen Typen auf → [`requirements-scenes.md`](./requirements-scenes.md).
+- **Export/Import** als Projektdatei (später, Settings-Panel).
