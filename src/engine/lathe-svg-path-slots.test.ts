@@ -1,3 +1,5 @@
+import { readFileSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   extractLathePathPointsBySlot,
@@ -63,5 +65,32 @@ describe('lathe-svg-path-slots', () => {
     </svg>`;
     const points = extractLatheSubpathPointsBySlot(svg, 0, 8);
     expect(points.length).toBeGreaterThan(1);
+  });
+
+  it('reads Illustrator exports: CSS classes with color keywords and <rect>', () => {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+      <defs><style>
+        .cls-1 { stroke: red; stroke-miterlimit: 10; }
+        .cls-1, .cls-2 { fill: none; stroke-width: .28px; }
+        .cls-2 { stroke: lime; }
+      </style></defs>
+      <path class="cls-1" d="M0,0h10v20H0"/>
+      <rect class="cls-2" x="20" y="0" width="2" height="4" rx=".5" ry=".5"/>
+    </svg>`;
+    const slots = extractLathePathPointsBySlot(svg, 8);
+    expect(slots[0].length).toBeGreaterThan(2);
+    expect(slots[1].length).toBeGreaterThan(2);
+    const ringX = slots[1].map((p) => p.x);
+    expect(Math.min(...ringX)).toBeCloseTo(20, 3);
+    expect(Math.max(...ringX)).toBeCloseTo(22, 3);
+  });
+
+  it('shipped lathe SVGs follow the convention (mm viewBox, inline slot paths, no CSS)', () => {
+    const dir = join(process.cwd(), 'public', 'profiles', 'lathe');
+    for (const file of readdirSync(dir).filter((f) => f.endsWith('.svg'))) {
+      const text = readFileSync(join(dir, file), 'utf8');
+      expect(text, file).not.toMatch(/<style|<rect|width="|height="|transform=/);
+      expect(text, file).toMatch(/<path class="path_red" stroke="#ff0000"/);
+    }
   });
 });

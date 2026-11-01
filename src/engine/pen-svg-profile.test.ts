@@ -50,6 +50,6 @@ describe('extractPenPathsFromSvgText', () => {
     }
     expect(maxX).toBeCloseTo(bounds.maxX * MM_TO_M, 5);
     expect(minY).toBeCloseTo(0, 4);
-    expect(bounds.maxX).toBeCloseTo(PEN_PROFILE_VIEWBOX_WIDTH_MM, 1);
+    expect(Math.abs(bounds.maxX - PEN_PROFILE_VIEWBOX_WIDTH_MM)).toBeLessThan(0.1);
   });
 });

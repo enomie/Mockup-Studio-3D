@@ -1,28 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 94.2 322.8">
-  <defs>
-    <style>
-      .cls-1 {
-        stroke: red;
-        stroke-miterlimit: 10;
-      }
-
-      .cls-1, .cls-2 {
-        fill: none;
-        stroke-width: .28px;
-      }
-
-      .cls-2 {
-        stroke: lime;
-        stroke-miterlimit: 28.35;
-      }
-    </style>
-  </defs>
-  <!-- Generator: Adobe Illustrator 28.6.0, SVG Export Plug-In . SVG Version: 1.2.0 Build 709)  -->
-  <g>
-    <g id="Layer_1">
-      <path class="cls-1" d="M0,20.6h64.2c8.4,0,7.92-14.6,7.92-19.3h.34c0,22.4,21.24,36.2,21.24,52.2v244.3c0,6.2-16.2,13.2-18.5,17.5-2.8,5.1-2.3,7.1-4.9,7.1-9.5,0-25.9-10.1-70.2-10.1"/>
-      <rect class="cls-2" x="71.79" y=".17" width="1" height="2" rx=".39" ry=".39"/>
-    </g>
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 33 115.6054">
+  <path class="path_red" stroke="#ff0000" fill="none" d="M0,7.3296L22.6105,7.3296C25.5688,7.3296 25.3998,2.0916 25.3998,0.4054L25.5195,0.4054C25.5195,8.4418 33,13.3928 33,19.133L33,106.7797C33,109.0041 27.2946,111.5155 26.4845,113.0582C25.4984,114.8879 25.6745,115.6054 24.7588,115.6054C21.413,115.6054 15.6371,111.9819 0.0352,111.9819"/>
+  <path class="path_green" stroke="#00ff00" fill="none" d="M25.4209,0L25.4984,0A0.1374,0.1399 0 0 1 25.6358,0.1399L25.6358,0.5776A0.1374,0.1399 0 0 1 25.4984,0.7175L25.4209,0.7175A0.1374,0.1399 0 0 1 25.2836,0.5776L25.2836,0.1399A0.1374,0.1399 0 0 1 25.4209,0Z"/>
 </svg>

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 255 330.5">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 255 330.5">
   <!--
     Wheel Car — lathe profile, millimeters.
     x: along axle (width 255). y: down; axis y=330.5 (r=0). y=0: tread (r=330.5).
@@ -12,66 +12,8 @@
 
     Shoulder fillets on tire: convex outward (rubber outer contour), not chamfer into tread.
   -->
-  <defs>
-    <style>
-      .path_red {
-        fill: none;
-        stroke: #f00;
-        stroke-miterlimit: 10;
-      }
-
-      .path_green {
-        fill: none;
-        stroke: #0f0;
-        stroke-miterlimit: 10;
-      }
-
-      .path_blue {
-        fill: none;
-        stroke: #00f;
-        stroke-miterlimit: 10;
-      }
-
-      .guide {
-        fill: none;
-        stroke: #ccc;
-        stroke-dasharray: 2 2;
-      }
-    </style>
-  </defs>
-  <g id="wheel-car-profile">
-    <line class="guide" x1="0" y1="330.5" x2="255" y2="330.5"/>
-
-    <path
-      class="path_red"
-      d="M 17.03,0
-         H 237.97
-         C 247.37,0 255,7.63 255,17.03
-         V 67.02
-         C 255,72.25 250.75,76.5 245.52,76.5
-         H 9.48
-         C 4.25,76.5 0,72.25 0,67.02
-         V 17.03
-         C 0,7.63 7.63,0 17.03,0
-         Z"
-    />
-
-    <path
-      class="path_green"
-      d="M 10,76.5
-         H 245
-         V 94.59
-         H 10
-         Z"
-    />
-
-    <path
-      class="path_blue"
-      d="M 83.35,282.5
-         H 171.64
-         V 330.5
-         H 83.35
-         Z"
-    />
-  </g>
+  <path class="guide" stroke="#cccccc" fill="none" d="M0,330.5L255,330.5"/>
+  <path class="path_red" stroke="#ff0000" fill="none" d="M17.03,0L237.97,0C247.37,0 255,7.63 255,17.03L255,67.02C255,72.25 250.75,76.5 245.52,76.5L9.48,76.5C4.25,76.5 0,72.25 0,67.02L0,17.03C0,7.63 7.63,0 17.03,0Z"/>
+  <path class="path_green" stroke="#00ff00" fill="none" d="M10,76.5L245,76.5L245,94.59L10,94.59Z"/>
+  <path class="path_blue" stroke="#0000ff" fill="none" d="M83.35,282.5L171.64,282.5L171.64,330.5L83.35,330.5Z"/>
 </svg>

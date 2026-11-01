@@ -7,6 +7,27 @@ export interface LatheSvgPoint2 {
 
 export type LathePathSlot = 0 | 1 | 2;
 
+/** Canonical class per slot (shipped SVG convention). */
+export const LATHE_PATH_SLOT_CLASSES: Record<LathePathSlot, string> = {
+  0: 'path_red',
+  1: 'path_green',
+  2: 'path_blue',
+};
+
+/** Canonical stroke per slot (shipped SVG convention). */
+export const LATHE_PATH_SLOT_STROKES: Record<LathePathSlot, string> = {
+  0: '#ff0000',
+  1: '#00ff00',
+  2: '#0000ff',
+};
+
+/** CSS color keywords that Illustrator exports for the slot colors. */
+const NAMED_STROKE_HEX: Record<string, string> = {
+  red: '#ff0000',
+  lime: '#00ff00',
+  blue: '#0000ff',
+};
+
 const CLASS_TO_SLOT: Record<string, LathePathSlot> = {
   path_red: 0,
   path_green: 1,
@@ -31,6 +52,9 @@ function normalizeLatheStrokeHex(stroke: string | undefined): string | null {
     return null;
   }
   const trimmed = stroke.trim().toLowerCase();
+  if (trimmed in NAMED_STROKE_HEX) {
+    return NAMED_STROKE_HEX[trimmed];
+  }
   if (!trimmed.startsWith('#')) {
     return null;
   }
@@ -53,11 +77,10 @@ function pathStrokeHex(path: LatheSvgPathLike): string | null {
   return null;
 }
 
-/** CSS rules `.path_red { stroke: #f00 }` etc. */
+/** CSS rules `.path_red { stroke: #f00 }`, `.cls-1 { stroke: lime }` etc. (Illustrator exports). */
 export function parseLathePathClassStrokeMap(svgText: string): Map<string, string> {
   const map = new Map<string, string>();
-  const ruleRe =
-    /\.(path_red|path_green|path_blue)\s*\{[^}]*stroke:\s*(#[0-9a-fA-F]{3,8})/gi;
+  const ruleRe = /\.([\w-]+)\s*\{[^}]*?stroke:\s*(#[0-9a-fA-F]{3,8}|[a-zA-Z]+)\s*[;}]/gi;
   let match: RegExpExecArray | null;
   while ((match = ruleRe.exec(svgText)) !== null) {
     const normalized = normalizeLatheStrokeHex(match[2]);
@@ -68,12 +91,10 @@ export function parseLathePathClassStrokeMap(svgText: string): Map<string, strin
   return map;
 }
 
-export function lathePathSlotForSvgPath(
-  path: LatheSvgPathLike,
+function slotFromClassTokens(
+  classAttr: string,
   classStroke: Map<string, string>,
 ): LathePathSlot | null {
-  const node = path.userData?.node;
-  const classAttr = node?.getAttribute('class') ?? '';
   for (const token of classAttr.split(/\s+/)) {
     if (token.length === 0) {
       continue;
@@ -86,13 +107,42 @@ export function lathePathSlotForSvgPath(
       return STROKE_TO_SLOT[hexFromClass];
     }
   }
-
-  const inline = pathStrokeHex(path);
-  if (inline !== null && inline in STROKE_TO_SLOT) {
-    return STROKE_TO_SLOT[inline];
-  }
-
   return null;
+}
+
+function slotFromStroke(stroke: string | null | undefined): LathePathSlot | null {
+  const hex = normalizeLatheStrokeHex(stroke ?? undefined);
+  return hex !== null && hex in STROKE_TO_SLOT ? STROKE_TO_SLOT[hex] : null;
+}
+
+export function lathePathSlotForSvgPath(
+  path: LatheSvgPathLike,
+  classStroke: Map<string, string>,
+): LathePathSlot | null {
+  const node = path.userData?.node;
+  const fromClass = slotFromClassTokens(node?.getAttribute('class') ?? '', classStroke);
+  if (fromClass !== null) {
+    return fromClass;
+  }
+  const inline = pathStrokeHex(path);
+  return inline !== null && inline in STROKE_TO_SLOT ? STROKE_TO_SLOT[inline] : null;
+}
+
+/** Slot of a raw SVG element (class, then `stroke` attribute, then inline `style`). */
+export function lathePathSlotForElement(
+  el: Element,
+  classStroke: Map<string, string>,
+): LathePathSlot | null {
+  const fromClass = slotFromClassTokens(el.getAttribute('class') ?? '', classStroke);
+  if (fromClass !== null) {
+    return fromClass;
+  }
+  const fromAttr = slotFromStroke(el.getAttribute('stroke'));
+  if (fromAttr !== null) {
+    return fromAttr;
+  }
+  const styleStroke = /(?:^|;)\s*stroke\s*:\s*([^;]+)/i.exec(el.getAttribute('style') ?? '');
+  return slotFromStroke(styleStroke?.[1]);
 }
 
 function tessellatePathFirstShape(
