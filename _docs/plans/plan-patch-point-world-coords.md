@@ -19,3 +19,8 @@ Szene-Achse. Nur die Shared-Node-Extras werden schon umgerechnet (`nodeSlotLocal
 ## Tests
 Unit-Test für die Umrechnung: Patch bei (2, 0, 1), um Y gedreht; Punkt auf Welt-X = 0 setzen ergibt Weltposition
 mit x = 0 und unveränderten y/z.
+
+## Entscheidung (umgesetzt)
+- Entities haben keine Skalierung, Sperren ist also nicht nötig.
+- Kopieren/Einfügen arbeitet bereits in Szene-Koordinaten (`triangle-patch-point-clipboard.ts`), keine Änderung.
+- Umgesetzt wurden nur die Inspector-Felder; die Handle-Länge ist bei starrer Transformation identisch.

@@ -67,6 +67,16 @@ function toWorldOffset(local: Vec3, t: EntityTransform): Vec3 {
   return plain(vec(local).applyQuaternion(rotationOf(t)));
 }
 
+/** A patch-local point in scene (world) coordinates; used by the inspector fields. */
+export function patchLocalToWorld(local: Vec3, t: EntityTransform): Vec3 {
+  return plain(toWorldPoint(local, t));
+}
+
+/** A scene (world) point in the local space of a patch; inverse of patchLocalToWorld. */
+export function patchWorldToLocal(world: Vec3, t: EntityTransform): Vec3 {
+  return toLocalPoint(world, t);
+}
+
 function toLocalOffset(world: Vec3, t: EntityTransform): Vec3 {
   return plain(vec(world).applyQuaternion(rotationOf(t).invert()));
 }

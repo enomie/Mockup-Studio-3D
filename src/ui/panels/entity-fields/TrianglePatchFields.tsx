@@ -9,6 +9,8 @@ import {
   nodeHasFreePairs,
   nodeOffsetFromLocalTip,
   nodeSlotLocal,
+  patchLocalToWorld,
+  patchWorldToLocal,
 } from '@/scene/patch-nodes';
 import { PanelToggleGroup, type PanelToggleOption } from '@/ui/components/PanelToggleGroup';
 import { SubPanelSection } from '@/ui/components/SubPanelSection';
@@ -168,18 +170,18 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
     }
   };
 
+  // The fields show and take scene (world) coordinates; points are stored patch-local.
+  const activeWorld = patchLocalToWorld(activeVec, entity.transform);
   const updateCoord = (axis: 'x' | 'y' | 'z', value: number) => {
+    const local = patchWorldToLocal({ ...activeWorld, [axis]: value }, entity.transform);
 
     if (selectedExtra) {
-      writeExtra({ ...activeVec, [axis]: value });
+      writeExtra(local);
       return;
     }
     if (selectedTargetKey === 'sharedPink') {return;}
     if (selectedTargetKey === 'pos') {
-      commitPoint(translatePatchNodeAnchor(activeNode, {
-        ...activeNode.pos,
-        [axis]: value,
-      }));
+      commitPoint(translatePatchNodeAnchor(activeNode, local));
     } else {
       const nodeCopy = {
         ...activeNode,
@@ -190,7 +192,7 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
         handleCrossOut: { ...activeNode.handleCrossOut },
       };
 
-      nodeCopy[selectedTargetKey][axis] = value;
+      nodeCopy[selectedTargetKey] = local;
       // Every handle moves on its own; on a shared point the node turns coupled partners.
       commitPoint(nodeCopy);
     }
@@ -421,7 +423,7 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
                     <PanelAxisField
                       label="X"
                       unit="m"
-                      value={activeVec.x}
+                      value={activeWorld.x}
                       format={(val) => formatLengthMeters(val, LENGTH_DECIMALS)}
                       parse={parseLengthMetersInput}
                       onChange={(val) => { updateCoord('x', val); }}
@@ -429,7 +431,7 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
                     <PanelAxisField
                       label="Y"
                       unit="m"
-                      value={activeVec.y}
+                      value={activeWorld.y}
                       format={(val) => formatLengthMeters(val, LENGTH_DECIMALS)}
                       parse={parseLengthMetersInput}
                       onChange={(val) => { updateCoord('y', val); }}
@@ -437,7 +439,7 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
                     <PanelAxisField
                       label="Z"
                       unit="m"
-                      value={activeVec.z}
+                      value={activeWorld.z}
                       format={(val) => formatLengthMeters(val, LENGTH_DECIMALS)}
                       parse={parseLengthMetersInput}
                       onChange={(val) => { updateCoord('z', val); }}
