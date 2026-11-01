@@ -41,3 +41,5 @@ export const FABRIC_CLOTH_BAKE_SUBDIV_FACTOR = 3;
 /** Cap baked cloth vertices; the factor is lowered until the dense grid fits. */
 export const FABRIC_CLOTH_BAKE_MAX_VERTICES = 65536;
 
+/** Taubin smoothing passes on the sim grid before baking (removes contact jitter). */
+export const FABRIC_CLOTH_BAKE_SMOOTH_ITERATIONS = 2;

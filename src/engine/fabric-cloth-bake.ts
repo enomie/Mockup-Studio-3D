@@ -8,8 +8,10 @@ import { FABRIC_CLOTH_REST_PLANE_XY_ATTR } from '@/scene/asset-fabric-cloth';
 import type { FabricClothBakedMeshPayload } from '@/scene/user-baked-asset';
 import { upsampleGridCatmullRom } from '@/physics/cloth/catmull-rom-grid';
 import { writeClothGridNormals } from '@/physics/cloth/plane-vertices';
+import { normalizeVec3Array, taubinSmoothGrid } from '@/physics/cloth/taubin-smooth-grid';
 import {
   FABRIC_CLOTH_BAKE_MAX_VERTICES,
+  FABRIC_CLOTH_BAKE_SMOOTH_ITERATIONS,
   FABRIC_CLOTH_BAKE_SUBDIV_FACTOR,
 } from '@/physics/constants';
 import { readFabricClothMeshGrid } from './fabric-cloth-geometry';
@@ -233,9 +235,9 @@ function bakeSubdivFactor(nx: number, ny: number): number {
 }
 
 /**
- * Freezes the cloth: the sim grid is upsampled with Catmull-Rom splines (passes through
- * every sim vertex, smooth in between), normals come from the dense grid with the same
- * routine the live mesh uses, then rows are flipped into PlaneGeometry order.
+ * Freezes the cloth: the sim grid is Taubin-smoothed (removes contact jitter, border
+ * fixed), upsampled with Catmull-Rom splines, normals are computed on the sim grid like
+ * the live mesh and upsampled too, then rows are flipped into PlaneGeometry order.
  */
 export function bakeFabricClothMeshFromDeformed(
   clothMesh: Mesh,
@@ -248,12 +250,17 @@ export function bakeFabricClothMeshFromDeformed(
     meshLocalCenterline,
   );
 
-  const dense = upsampleGridCatmullRom(
-    coarsePositions,
-    segmentsW + 1,
-    segmentsH + 1,
-    bakeSubdivFactor(segmentsW + 1, segmentsH + 1),
-  );
+  const nx = segmentsW + 1;
+  const ny = segmentsH + 1;
+  const factor = bakeSubdivFactor(nx, ny);
+  const smoothed = taubinSmoothGrid(coarsePositions, nx, ny, FABRIC_CLOTH_BAKE_SMOOTH_ITERATIONS);
+  const dense = upsampleGridCatmullRom(smoothed, nx, ny, factor);
+  // Normals from the sim grid (same footprint as the live mesh), then upsampled —
+  // dense-grid normals would expose the spline's per-sim-vertex curvature kinks.
+  const coarseNormals = new Float32Array(smoothed.length);
+  writeClothGridNormals(smoothed, coarseNormals, nx, ny);
+  const denseNormals = upsampleGridCatmullRom(coarseNormals, nx, ny, factor).values;
+  normalizeVec3Array(denseNormals);
   const denseSegmentsW = dense.nx - 1;
   const denseSegmentsH = dense.ny - 1;
 
@@ -266,9 +273,6 @@ export function bakeFabricClothMeshFromDeformed(
   }
   const uvs = Array.from(geometry.getAttribute('uv').array as Float32Array);
   geometry.dispose();
-
-  const denseNormals = new Float32Array(dense.values.length);
-  writeClothGridNormals(dense.values, denseNormals, dense.nx, dense.ny);
 
   const footprint = fabricClothRestPlaneFootprintM(restPlane);
   return {
