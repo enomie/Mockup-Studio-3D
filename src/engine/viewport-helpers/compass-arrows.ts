@@ -3,7 +3,6 @@ import {
   BufferGeometry,
   Group,
   Mesh,
-  type MeshBasicNodeMaterial,
 } from 'three/webgpu';
 import {
   VIEWPORT_COMPASS_ARROW_HEAD_LENGTH_M,
@@ -75,12 +74,4 @@ export function createCompassArrowsHelper(): Group {
     group.add(mesh);
   }
   return group;
-}
-
-export function disposeCompassArrowsHelper(group: Group): void {
-  for (const child of group.children) {
-    const mesh = child as Mesh;
-    mesh.geometry.dispose();
-    (mesh.material as MeshBasicNodeMaterial).dispose();
-  }
 }

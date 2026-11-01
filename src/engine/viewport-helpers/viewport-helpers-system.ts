@@ -1,4 +1,4 @@
-import { Group, type Scene } from 'three/webgpu';
+import { Group, Mesh, type Material, type Scene } from 'three/webgpu';
 import { SCENE_DEFAULTS } from '@/config/scene-defaults';
 import type { ViewportHelpersState } from '@/scene/scene-api';
 import { createFloorGridHelper, createFloorGridMajorHelper } from './floor-grid';
@@ -43,6 +43,12 @@ export class ViewportHelpersSystem {
 
   dispose(): void {
     this.root.removeFromParent();
+    this.root.traverse((object) => {
+      if (!(object instanceof Mesh) && !('isLine' in object)) {return;}
+      const { geometry, material } = object as Mesh;
+      geometry.dispose();
+      for (const m of ([] as Material[]).concat(material)) {m.dispose();}
+    });
   }
 
   private applyVisibility(): void {
