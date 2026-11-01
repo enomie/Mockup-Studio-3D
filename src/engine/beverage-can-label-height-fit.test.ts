@@ -17,8 +17,8 @@ describe('beverage-can label height-fit', () => {
         6,
       );
     }
-    // Ring underside sits just below the overall top (classic: ~114.9 mm above the foot).
-    expect(beverageCanProfileMm('standard').labelTopFromFootMm).toBeCloseTo(114.888, 2);
+    // Ring underside sits just below the overall top (classic: ~113.1 mm above the foot).
+    expect(beverageCanProfileMm('standard').labelTopFromFootMm).toBeCloseTo(113.105, 2);
   });
 
   it('standard printable band aspect = circumference / band height', () => {

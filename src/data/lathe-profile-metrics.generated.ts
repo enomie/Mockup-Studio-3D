@@ -7,8 +7,8 @@ export const LATHE_PROFILE_METRICS_MM: Record<string, LatheSvgMetricsMm> = {
   'lathe-y-bottle-alsace-open.svg': {"bounds":{"minX":0,"maxX":38.1727,"minY":0,"maxY":290},"slots":[{"minX":0,"maxX":38.1727,"minY":0,"maxY":290},null,null]},
   'lathe-y-bottle-bordeaux-open.svg': {"bounds":{"minX":-0.0353,"maxX":38.1421,"minY":0,"maxY":290},"slots":[{"minX":-0.0353,"maxX":38.1421,"minY":0,"maxY":290},null,null]},
   'lathe-y-bottle-sparkling-open.svg': {"bounds":{"minX":0,"maxX":44.1703,"minY":0,"maxY":290},"slots":[{"minX":0,"maxX":44.1703,"minY":0,"maxY":290},null,null]},
-  'lathe-y-can-330ml-classic.svg': {"bounds":{"minX":0,"maxX":33,"minY":0,"maxY":115.6054},"slots":[{"minX":0,"maxX":33,"minY":0.4054,"maxY":115.6054},{"minX":25.2836,"maxX":25.6358,"minY":0,"maxY":0.7175},null]},
-  'lathe-y-can-330ml-sleek.svg': {"bounds":{"minX":0,"maxX":28.7,"minY":0,"maxY":146.4074},"slots":[{"minX":0,"maxX":28.7,"minY":0.3575,"maxY":146.4074},{"minX":25.1452,"maxX":25.4982,"minY":0,"maxY":0.7149},null]},
-  'lathe-y-pen-fountain.svg': {"bounds":{"minX":0,"maxX":10.0012,"minY":0,"maxY":199.9961},"slots":[{"minX":0,"maxX":9.9299,"minY":0,"maxY":75.6141},{"minX":0,"maxX":10.0012,"minY":76.4714,"maxY":79.5017},{"minX":0,"maxX":9.9236,"minY":3.9088,"maxY":199.9961}]},
-  'lathe-y-pen-marker.svg': {"bounds":{"minX":0,"maxX":9.9342,"minY":0,"maxY":199.9968},"slots":[{"minX":0,"maxX":9.9342,"minY":0,"maxY":19.3887},{"minX":8.9218,"maxX":9.9236,"minY":20.0625,"maxY":23.2304},{"minX":0,"maxX":9.9236,"minY":3.9088,"maxY":199.9968}]},
+  'lathe-y-can-330ml-classic.svg': {"bounds":{"minX":0,"maxX":33,"minY":0,"maxY":115.6054},"slots":[{"minX":0,"maxX":33,"minY":0.4054,"maxY":115.6054},{"minX":24.7097,"maxX":26.2097,"minY":0,"maxY":2.5},null]},
+  'lathe-y-can-330ml-sleek.svg': {"bounds":{"minX":0,"maxX":28.7,"minY":0,"maxY":146.4074},"slots":[{"minX":0,"maxX":28.7,"minY":0.3575,"maxY":146.4074},{"minX":24.5717,"maxX":26.0717,"minY":0,"maxY":2.5},null]},
+  'lathe-y-pen-fountain.svg': {"bounds":{"minX":0,"maxX":10,"minY":0,"maxY":199.9961},"slots":[{"minX":0,"maxX":9.9299,"minY":0,"maxY":75.6141},{"minX":9,"maxX":10,"minY":76.4714,"maxY":79.5017},{"minX":0,"maxX":9.9236,"minY":3.9088,"maxY":199.9961}]},
+  'lathe-y-pen-marker.svg': {"bounds":{"minX":0,"maxX":10,"minY":0,"maxY":199.9968},"slots":[{"minX":0,"maxX":9.9342,"minY":0,"maxY":19.3887},{"minX":9,"maxX":10,"minY":20.0271,"maxY":23.0575},{"minX":0,"maxX":9.9236,"minY":3.9088,"maxY":199.9968}]},
 };

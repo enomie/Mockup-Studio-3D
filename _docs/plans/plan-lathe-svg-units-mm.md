@@ -1,6 +1,6 @@
 # Plan: Lathe-SVGs — einheitliche Basis (1 Unit = 1 mm, SVG = einzige Größenquelle)
 
-**Status:** Freigegeben 2026-11-01 · A–F umgesetzt (offen: Pen-Fountain-Ring, visueller Check durch User)
+**Status:** Freigegeben 2026-11-01 · A–F umgesetzt (offen: visueller Check durch User)
 **Datum:** 2026-11-01
 **Bezug:** ersetzt Teile von [`plan-beverage-can-svg-ring.md`](./plan-beverage-can-svg-ring.md) (Normalisierung / Skalierung); der Ring-Teil dort bleibt gültig und wird auf dieser Basis umgesetzt.
 

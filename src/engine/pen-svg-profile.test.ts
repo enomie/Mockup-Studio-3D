@@ -52,10 +52,14 @@ describe('extractPenPathsFromSvgText', () => {
     expect(Math.abs(bounds.maxX - 10)).toBeLessThan(0.1);
   });
 
-  it('marker ring is a closed contour (ring around the shaft, not a disc)', () => {
-    const svgText = readFileSync(join(FIXTURE_DIR, 'lathe-y-pen-marker.svg'), 'utf8');
-    const { ring } = normalizePenPaths(extractPenPathsFromSvgText(svgText));
-    expect(Math.min(...ring.map((p) => p.x))).toBeGreaterThan(0.008);
-    expect(ring[0].distanceTo(ring[ring.length - 1])).toBeLessThan(1e-6);
+  it('rings are closed contours around the shaft (9–10 mm radius, not a disc)', () => {
+    for (const file of ['lathe-y-pen-marker.svg', 'lathe-y-pen-fountain.svg']) {
+      const svgText = readFileSync(join(FIXTURE_DIR, file), 'utf8');
+      const { ring } = normalizePenPaths(extractPenPathsFromSvgText(svgText));
+      const xs = ring.map((p) => p.x);
+      expect(Math.min(...xs), file).toBeCloseTo(0.009, 6);
+      expect(Math.max(...xs), file).toBeCloseTo(0.01, 6);
+      expect(ring[0].distanceTo(ring[ring.length - 1])).toBeLessThan(1e-6);
+    }
   });
 });
