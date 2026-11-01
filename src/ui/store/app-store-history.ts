@@ -12,6 +12,7 @@ const SETTINGS_GROUPS = {
     'environments', 'activeEnvironmentId',
   ],
   ground: ['ground'],
+  arrangements: ['arrangements', 'activeArrangementId'],
   materials: ['materials'],
   colors: ['colors'],
   images: ['images'],

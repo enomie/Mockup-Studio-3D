@@ -1,3 +1,4 @@
+import type { ArrangementContent } from '@/scene/arrangement-types';
 import {
   SceneHistoryController,
   type HistorySettingsAdapter,
@@ -499,6 +500,31 @@ export class MockupEngine implements SceneApi {
     this.selectEntity(entityId);
     this.emit();
     return entityId;
+  }
+
+  /**
+   * Replaces every asset with `content`; recorded as one undo step named `label`.
+   * `onStart` runs after pending changes are committed, so its store edits join the step.
+   */
+  async applyArrangement(
+    content: ArrangementContent,
+    label: string,
+    onStart?: () => void,
+  ): Promise<void> {
+    this.history.flush();
+    onStart?.();
+    this.patchAddPoint.stop();
+    this.patchGizmo.setActiveEntity(null);
+    this.handleSelect(null);
+    if (content.kind === 'spawn') {
+      this.assets.replaceWithSpawns(content.assets);
+    } else {
+      await this.assets.replaceWithEntities(content.entities);
+    }
+    this.history.commitStep(label);
+    this.gizmoInteraction.refresh();
+    this.emit();
+    this.invalidateViewport();
   }
 
   removeEntity(entityId: string): void {

@@ -1,3 +1,4 @@
+import type { ArrangementContent } from './arrangement-types';
 import type { PatchNode } from '@/scene/patch-nodes';
 import type { PatchSegment } from '@/scene/triangle-patch-edge-link';
 import type { PatchEdgeSelection } from '@/engine/triangle-patch-add-point-tool';
@@ -198,6 +199,12 @@ export interface SceneApi {
   buildBakeFabricClothDraft(entityId: string): BakeFabricClothDraft | null;
   addAssetFromUserBaked(userAsset: UserBakedAsset, spawn?: { x: number; z: number }): string;
   removeEntity(entityId: string): void;
+  /** Replaces every asset with an arrangement; one undo step named `label` (includes `onStart` edits). */
+  applyArrangement(
+    content: ArrangementContent,
+    label: string,
+    onStart?: () => void,
+  ): Promise<void>;
   selectEntity(entityId: string | null): void;
   getSelectedEntityId(): string | null;
   getEntities(): readonly AssetEntity[];

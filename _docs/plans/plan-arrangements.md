@@ -1,6 +1,6 @@
 # Plan: Arrangements (+ Persistenz & „Reset all“)
 
-Status: **Entwurf – wartet auf Freigabe**
+Status: **Freigegeben** – Umsetzung läuft
 
 ## Ziel
 
@@ -76,7 +76,7 @@ Bisher gibt es keine Persistenz. Vorschlag:
 
 ## Teil 3 – „Reset all“ im Right Main Panel
 
-- Neuer Eintrag in `RIGHT_SHELL_NAV`: `{ id: 'project', label: 'Project', icon: Settings }` (Name diskutierbar)
+- Neuer Eintrag in `RIGHT_SHELL_NAV`: `{ id: 'settings', label: 'Settings', icon: Settings }`
 - Sub-Panel mit Button **„Reset all…“** → Bestätigungsdialog → IndexedDB leeren, App in Default-Zustand (Clothing, Default-Environment, …).
 - Später erweiterbar (Export/Import Projektdatei).
 
@@ -94,6 +94,4 @@ Bisher gibt es keine Persistenz. Vorschlag:
 
 ## Offene Punkte
 
-- Icon / Position des Menüpunkts ok?
-- Name für das neue rechte Panel („Project“?)
-- Sollen beim Laden die Assets für die aktuelle Kamera neu gerahmt werden? (Vorschlag: nein)
+- Sollen beim Laden die Assets für die aktuelle Kamera neu gerahmt werden? → **Nein** (entschieden)

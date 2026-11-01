@@ -18,6 +18,14 @@ import {
   resolveBuiltinLightingPreset,
 } from '@/data/builtin-light-rigs';
 import { cloneMaterialPreset, MATERIAL_PRESETS } from '@/data/material-presets';
+import {
+  ARRANGEMENT_PRESETS,
+  BUILTIN_ARRANGEMENT_DEFAULT_ID,
+} from '@/data/builtin-arrangements';
+import {
+  cloneArrangementPreset,
+  type ArrangementPreset,
+} from '@/scene/arrangement-types';
 import { applyEnvironmentSnapshot } from '@/scene/environment-snapshot';
 import {
   cloneEnvironmentSnapshot,
@@ -87,6 +95,9 @@ export interface AppState {
   activeEnvironmentId: string;
   lightingPresets: LightingPreset[];
   activeLightingPresetId: string;
+  arrangements: ArrangementPreset[];
+  /** Last loaded or saved arrangement; null once nothing is loaded. */
+  activeArrangementId: string | null;
   entities: readonly AssetEntity[];
   userBakedAssets: UserBakedAsset[];
   selectedEntityId: string | null;
@@ -147,6 +158,8 @@ export let state: AppState = {
   activeEnvironmentId: BUILTIN_ENV_DEFAULT_ID,
   lightingPresets: LIGHTING_PRESETS.map(cloneLightingPreset),
   activeLightingPresetId: BUILTIN_LIGHT_DEFAULT_ID,
+  arrangements: ARRANGEMENT_PRESETS.map(cloneArrangementPreset),
+  activeArrangementId: BUILTIN_ARRANGEMENT_DEFAULT_ID,
   entities: [],
   userBakedAssets: [],
   selectedEntityId: null,

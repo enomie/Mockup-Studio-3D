@@ -6,6 +6,7 @@ import {
   Download,
   Droplet,
   Image,
+  LayoutGrid,
   LampFloor,
   Lightbulb,
   Package,
@@ -23,6 +24,7 @@ export interface ShellNavItem {
 export const LEFT_SHELL_NAV: ShellNavItem[] = [
   { id: 'environments', label: 'Environments', icon: CloudSun },
   { id: 'light-rigs', label: 'Light rigs', icon: LampFloor },
+  { id: 'arrangements', label: 'Arrangements', icon: LayoutGrid },
   { id: 'assets', label: 'Assets', icon: Package },
   { id: 'images', label: 'Images', icon: Image },
   { id: 'colors', label: 'Colors', icon: Droplet },

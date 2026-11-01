@@ -126,8 +126,14 @@ export class SceneHistoryController {
     if (!down) {this.scheduleFlush();}
   }
 
+  /** Commits all changes since the last step as one user step named `label`. */
+  commitStep(label: string): void {
+    this.userActivity = true;
+    this.flush(label);
+  }
+
   /** Commits pending changes as one step now. */
-  flush(): void {
+  flush(labelOverride?: string): void {
     this.cancelTimer();
     if (this.restoring) {return;}
     const current = this.capture();
@@ -144,9 +150,9 @@ export class SceneHistoryController {
       return;
     }
     const entityDiff = describeEntityChange(this.baseline.entities, current.entities);
-    const label = entityDiff && settingsLabel
+    const label = labelOverride ?? (entityDiff && settingsLabel
       ? `${entityDiff.label}, ${settingsLabel.toLowerCase()}`
-      : entityDiff?.label ?? settingsLabel ?? (sameNodes ? null : 'Edit shared points');
+      : entityDiff?.label ?? settingsLabel ?? (sameNodes ? null : 'Edit shared points'));
     if (label) {
       this.stack.record({ before: this.baseline, after: current, label });
       this.host.onStateChanged();

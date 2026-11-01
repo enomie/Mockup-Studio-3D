@@ -140,6 +140,14 @@ export {
 } from './app-store-environment-presets';
 
 export {
+  loadArrangement,
+  saveCurrentAsArrangement,
+  updateArrangement,
+  duplicateArrangement,
+  removeArrangement,
+} from './app-store-arrangements';
+
+export {
   loadLightingPreset,
   saveCurrentAsLightingPreset,
   updateLightingPreset,

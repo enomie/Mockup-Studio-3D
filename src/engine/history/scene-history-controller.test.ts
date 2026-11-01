@@ -59,6 +59,17 @@ describe('HistoryStack', () => {
 });
 
 describe('SceneHistoryController', () => {
+  it('commits a programmatic replace as one named step', async () => {
+    const a = entity('a');
+    const s = setup([a]);
+    s.silentChange([entity('b'), entity('c')]);
+    s.history.commitStep('Load arrangement Devices');
+    expect(s.history.getState()).toMatchObject({ canUndo: true, undoLabel: 'Load arrangement Devices' });
+
+    await s.history.undo();
+    expect(s.entities).toEqual([a]);
+  });
+
   it('records a settled change and undoes/redoes it', async () => {
     const a = entity('a');
     const s = setup([a]);

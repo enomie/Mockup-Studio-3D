@@ -104,10 +104,8 @@ import { disposeAssetGroup, populateAssetGroup } from './asset-meshes/index';
 import type { EntityRegistry } from './entity-registry';
 import type { ImageTextureLoader } from './image-texture-loader';
 import { MaterialResolver } from './material-resolver';
-import {
-  DEFAULT_SCENE_ASSETS,
-  type DefaultSceneAsset,
-} from '@/config/default-scene-assets';
+import { defaultArrangementSpawns } from '@/data/builtin-arrangements';
+import type { ArrangementSpawn } from '@/scene/arrangement-types';
 import type { ViewportInvalidation } from './viewport-invalidation';
 import {
   type AssetRebuildContext,
@@ -390,24 +388,46 @@ export class AssetSystem {
   }
 
   seedDefaultScene(): void {
-    for (const entry of DEFAULT_SCENE_ASSETS) {
-      const id = this.addAsset(entry.assetKind, entry.position);
-      this.applyDefaultSceneAssetOverrides(id, entry);
-    }
-    this.registry.reserveSpawnSlots(DEFAULT_SCENE_ASSETS.length);
+    this.spawnArrangement(defaultArrangementSpawns());
   }
 
-  private applyDefaultSceneAssetOverrides(
+  /** Removes every asset, then spawns `spawns` (built-in arrangement). */
+  replaceWithSpawns(spawns: readonly ArrangementSpawn[]): void {
+    for (const entity of [...this.registry.getEntities()]) {
+      this.removeAsset(entity.id);
+    }
+    this.spawnArrangement(spawns);
+  }
+
+  /** Replaces every asset with copies of `entities` under fresh ids (user arrangement). */
+  replaceWithEntities(entities: readonly AssetEntity[]): Promise<void> {
+    return this.restoreEntities(
+      entities.map((entity) => ({ ...entity, id: crypto.randomUUID() })),
+    );
+  }
+
+  private spawnArrangement(spawns: readonly ArrangementSpawn[]): void {
+    for (const entry of spawns) {
+      const id = this.addAsset(entry.assetKind, entry.position);
+      this.applyArrangementSpawnOverrides(id, entry);
+    }
+    this.registry.reserveSpawnSlots(spawns.length);
+  }
+
+  private applyArrangementSpawnOverrides(
     entityId: string,
-    entry: DefaultSceneAsset,
+    entry: ArrangementSpawn,
   ): void {
     const runtime = this.registry.getRuntime(entityId);
     if (!runtime) {return;}
 
-    if (entry.positionY !== undefined) {
-      const { x, z } = runtime.entity.transform.position;
+    if (entry.positionY !== undefined || entry.rotationYDeg !== undefined) {
+      const { position, rotation } = runtime.entity.transform;
       this.registry.updateTransform(entityId, {
-        position: { x, y: entry.positionY, z },
+        position: { ...position, y: entry.positionY ?? position.y },
+        rotation: entry.rotationYDeg === undefined
+          ? rotation
+          : { ...rotation, y: (entry.rotationYDeg * Math.PI) / 180 },
       });
       if (
         isRigidPrimitiveAssetKind(runtime.entity.assetKind) &&
