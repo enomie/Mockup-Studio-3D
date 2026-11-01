@@ -7,6 +7,7 @@ import {
 export const BUILTIN_ARRANGEMENT_CLOTHING_ID = 'builtin-arrangement-clothing';
 export const BUILTIN_ARRANGEMENT_DEVICES_ID = 'builtin-arrangement-devices';
 const BUILTIN_ARRANGEMENT_BEVERAGES_ID = 'builtin-arrangement-beverages';
+const BUILTIN_ARRANGEMENT_CAR_ID = 'builtin-arrangement-car';
 
 /** Arrangement the app starts with. */
 export const BUILTIN_ARRANGEMENT_DEFAULT_ID = BUILTIN_ARRANGEMENT_CLOTHING_ID;
@@ -38,6 +39,22 @@ const BEVERAGES_ASSETS: readonly ArrangementSpawn[] = [
   { assetKind: 'wine-bottle', position: { x: 0.08, z: -0.02 } },
 ];
 
+/**
+ * Sports car wheel layout (Porsche 911, 992): wheelbase 2450 mm, track front 1589 mm,
+ * rear 1557 mm (tire center to tire center). North (−Z) = driving direction;
+ * the wheel axle is +X by default, so no rotation is needed.
+ */
+const CAR_WHEELBASE_M = 2.45;
+const CAR_TRACK_FRONT_M = 1.589;
+const CAR_TRACK_REAR_M = 1.557;
+
+const CAR_ASSETS: readonly ArrangementSpawn[] = [
+  { assetKind: 'wheel-car', position: { x: -CAR_TRACK_FRONT_M / 2, z: -CAR_WHEELBASE_M / 2 } },
+  { assetKind: 'wheel-car', position: { x: CAR_TRACK_FRONT_M / 2, z: -CAR_WHEELBASE_M / 2 } },
+  { assetKind: 'wheel-car', position: { x: -CAR_TRACK_REAR_M / 2, z: CAR_WHEELBASE_M / 2 } },
+  { assetKind: 'wheel-car', position: { x: CAR_TRACK_REAR_M / 2, z: CAR_WHEELBASE_M / 2 } },
+];
+
 export const ARRANGEMENT_PRESETS: readonly ArrangementPreset[] = [
   {
     id: BUILTIN_ARRANGEMENT_CLOTHING_ID,
@@ -59,6 +76,13 @@ export const ARRANGEMENT_PRESETS: readonly ArrangementPreset[] = [
     source: 'builtin',
     description: 'Beverage cans and wine bottles',
     content: { kind: 'spawn', assets: BEVERAGES_ASSETS },
+  },
+  {
+    id: BUILTIN_ARRANGEMENT_CAR_ID,
+    name: 'Car',
+    source: 'builtin',
+    description: 'Four car wheels, sports car wheelbase and track (north = forward)',
+    content: { kind: 'spawn', assets: CAR_ASSETS },
   },
 ];
 

@@ -7,6 +7,7 @@
   - **Clothing**: Block + Silk-Fabric-Cloth (0,5 m hoch). **Start-Szene** der App.
   - **Devices**: Monitor, Tablet, Smartphone
   - **Beverages**: 2 Dosen, 2 Weinflaschen
+  - **Car**: 4 Wheel Car, Sportwagen-Maße (Porsche 911 / 992): Radstand 2450 mm, Spur vorne 1589 mm, hinten 1557 mm; Norden (−Z) = Fahrtrichtung
 - **Add new** speichert die aktuellen Szenen-Entities als User-Arrangement (`kind: 'entities'`, vollständige Entity-Snapshots). Name „My arrangement“, „My arrangement 2“ usw.
 - **Laden ersetzt** alle Assets der Szene. Das ist **ein** Undo-Schritt („Load arrangement <Name>“), der auch die aktive Markierung zurücksetzt. Die Kamera bleibt unverändert. User-Entities bekommen beim Laden neue IDs.
 - User-Arrangements: **Rename, Duplicate, Remove**. Built-ins lassen sich nur duplizieren. Duplicate und Remove ändern die Szene nicht.
