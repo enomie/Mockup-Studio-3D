@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import { ViewportFrame } from '@/ui/components/ViewportFrame';
+import { ProfileEditor } from '@/ui/profile-editor/ProfileEditor';
 import { useCameraViewShortcuts } from '@/ui/hooks/useCameraViewShortcuts';
 import { useViewportToolShortcuts } from '@/ui/hooks/useViewportToolShortcuts';
 import { usePatchPointClipboardShortcuts } from '@/ui/hooks/usePatchPointClipboardShortcuts';
@@ -44,6 +45,8 @@ export function AppShell() {
 
       <div className="app-shell__middle">
         <ViewportFrame />
+        {/* The 2D profile editor covers the viewport while open; the engine keeps running. */}
+        <ProfileEditor />
 
         {/* Panels float over the viewport; only the collapsed icon rails reserve space. */}
         <div className="app-shell__overlay app-shell__overlay--left">

@@ -1,4 +1,9 @@
 import type { ProfileEntry } from '@/scene/profile-library';
+
+export interface ProfileNodeSelection {
+  pathId: string;
+  index: number;
+}
 import type { PatchNode } from '@/scene/patch-nodes';
 import type { PatchEdgeSelection } from '@/engine/triangle-patch-add-point-tool';
 import type { SceneHistoryState } from '@/engine/history/scene-history-controller';
@@ -92,6 +97,10 @@ export interface AppState {
   colors: ColorPreset[];
   selectedColorId: string | null;
   selectedProfileId: string | null;
+  /** User profile open in the 2D editor (replaces the viewport), or null. */
+  editingProfileId: string | null;
+  /** Selected node in the 2D editor. */
+  profileNodeSelection: ProfileNodeSelection | null;
   environments: EnvironmentPreset[];
   activeEnvironmentId: string;
   lightingPresets: LightingPreset[];
@@ -158,6 +167,8 @@ export let state: AppState = {
   colors: COLOR_PRESETS.map(cloneColorPreset),
   selectedColorId: null,
   selectedProfileId: null,
+  editingProfileId: null,
+  profileNodeSelection: null,
   environments: ENVIRONMENT_PRESETS.map(cloneEnvironmentPreset),
   activeEnvironmentId: BUILTIN_ENV_DEFAULT_ID,
   lightingPresets: LIGHTING_PRESETS.map(cloneLightingPreset),

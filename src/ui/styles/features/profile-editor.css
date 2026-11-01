@@ -1,0 +1,114 @@
+/* 2D profile editor: replaces the viewport in the middle grid cell. */
+.app-shell__middle > .profile-editor {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.profile-editor {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  background: var(--color-surface-subtle);
+}
+
+.profile-editor__canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  user-select: none;
+  cursor: default;
+}
+
+.profile-editor__grid {
+  stroke: var(--color-border);
+  stroke-width: 1;
+  shape-rendering: crispEdges;
+}
+
+.profile-editor__grid--major {
+  stroke: var(--color-border-strong);
+  stroke-width: 1;
+  shape-rendering: crispEdges;
+}
+
+.profile-editor__axis {
+  stroke: var(--color-accent-border);
+  stroke-width: 1.5;
+}
+
+.profile-editor__path {
+  fill: none;
+  stroke-width: 1.5;
+  opacity: 0.55;
+  vector-effect: non-scaling-stroke;
+}
+
+.profile-editor__path--active {
+  stroke-width: 2.5;
+  opacity: 1;
+}
+
+.profile-editor__segment-hit {
+  fill: none;
+  stroke: transparent;
+  vector-effect: non-scaling-stroke;
+  cursor: copy;
+}
+
+.profile-editor__node {
+  fill: var(--color-bg);
+  stroke-width: 2;
+}
+
+.profile-editor__node--selected {
+  fill: var(--color-accent);
+  stroke: var(--color-accent) !important;
+}
+
+.profile-editor__handle-line {
+  stroke: var(--color-accent);
+  stroke-width: 1.5;
+}
+
+.profile-editor__handle {
+  fill: var(--color-accent);
+  stroke: var(--color-bg);
+  stroke-width: 2;
+}
+
+.profile-editor__hit {
+  fill: transparent;
+  cursor: move;
+}
+
+.profile-editor__bar {
+  position: absolute;
+  top: var(--space-4);
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+  transform: translateX(-50%);
+}
+
+.profile-editor__title {
+  font-weight: 600;
+}
+
+.profile-editor__hint {
+  position: absolute;
+  bottom: var(--space-4);
+  left: 50%;
+  max-width: 60%;
+  margin: 0;
+  font-size: var(--font-xs);
+  color: var(--color-text-muted);
+  text-align: center;
+  transform: translateX(-50%);
+  pointer-events: none;
+}

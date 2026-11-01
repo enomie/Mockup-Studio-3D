@@ -73,6 +73,10 @@ export {
   renameProfile,
   renameProfilePath,
   removeProfile,
+  openProfileEditor,
+  closeProfileEditor,
+  selectProfileNode,
+  editProfilePath,
 } from './app-store-profiles';
 
 export {

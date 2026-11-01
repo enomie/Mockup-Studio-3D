@@ -1,4 +1,4 @@
-import { Copy, Plus, Trash2 } from 'lucide-react';
+import { Copy, PenLine, Plus, Trash2 } from 'lucide-react';
 import { LATHE_PATH_SLOT_STROKES } from '@/engine/lathe-svg-path-slots';
 import {
   allProfiles,
@@ -9,12 +9,15 @@ import {
 } from '@/scene/profile-library';
 import type { ProfilePath } from '@/scene/profile-model';
 import { Icon } from '@/ui/components/Icon';
+import { ProfileNodeFields } from '@/ui/profile-editor/ProfileNodeFields';
 import { PanelTextField } from '@/ui/components/PanelTextField';
 import { SubPanel } from '@/ui/components/SubPanel';
 import { SubPanelSection } from '@/ui/components/SubPanelSection';
 import {
   addProfile,
+  closeProfileEditor,
   duplicateProfile,
+  openProfileEditor,
   removeProfile,
   renameProfile,
   renameProfilePath,
@@ -96,9 +99,20 @@ function EditablePaths({ entry }: { entry: ProfileEntry }) {
   );
 }
 
-function ProfileActions({ entry }: { entry: ProfileEntry }) {
+function ProfileActions({ entry, editing }: { entry: ProfileEntry; editing: boolean }) {
   return (
     <div className="material-editor-actions">
+      {entry.source === 'user' ? (
+        <button
+          type="button"
+          className="btn"
+          aria-pressed={editing}
+          onClick={() => { if (editing) {closeProfileEditor();} else {openProfileEditor(entry.id);} }}
+        >
+          <Icon icon={PenLine} size={16} strokeWidth={1.75} />
+          {editing ? 'Close editor' : 'Edit'}
+        </button>
+      ) : null}
       <button type="button" className="btn" onClick={() => duplicateProfile(entry.id)}>
         <Icon icon={Copy} size={16} strokeWidth={1.75} />
         Duplicate
@@ -118,13 +132,14 @@ function ProfileActions({ entry }: { entry: ProfileEntry }) {
 }
 
 function ProfileDetail({ entry }: { entry: ProfileEntry }) {
+  const editing = useAppStore((s) => s.editingProfileId === entry.id);
   if (entry.source === 'builtin') {
     return (
       <SubPanelSection title="Info">
         <ProfileInfo entry={entry} />
         <ReadOnlyPaths entry={entry} />
         <p className="profile-hint">Built-in profiles are read-only. Duplicate to edit.</p>
-        <ProfileActions entry={entry} />
+        <ProfileActions entry={entry} editing={false} />
       </SubPanelSection>
     );
   }
@@ -138,7 +153,8 @@ function ProfileDetail({ entry }: { entry: ProfileEntry }) {
       />
       <ProfileInfo entry={entry} />
       <EditablePaths entry={entry} />
-      <ProfileActions entry={entry} />
+      <ProfileActions entry={entry} editing={editing} />
+      {editing ? <ProfileNodeFields profile={entry} /> : null}
     </SubPanelSection>
   );
 }
