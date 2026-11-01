@@ -45,3 +45,10 @@ Fazit: Der Code ist in deutlich besserem Zustand als befürchtet. Es gibt keine 
 - **Schritt 2**: P2 Punkt 5 (ungenutzte Exports) in kleinen Commits, jeweils pro Bereich (data, engine, scene, ui).
 - **Schritt 3**: P3 Punkte 7 und 8.
 - **Schritt 4**: Bundle-Splitting (P4 Punkt 10) als eigener Plan.
+
+## Status (2026-11-01)
+- ✅ Schritt 1 – `55ddea5`
+- ✅ Schritt 2 – `ad2457a` (Fund: Viewport-Helper gaben GPU-Ressourcen nie frei), `482ccef`
+- ✅ Schritt 3 – `69a6710` (Fund: Patch-Gizmo ebenso), `33588ef`
+- ⏸ Schritt 4 (Bundle-Splitting) – bewusst zurückgestellt; die App braucht Three.js ohnehin sofort, der Nutzen ist aktuell gering.
+- Offen: `scripts/*.ts` behalten oder löschen? `renameUserBakedAsset` (gelöscht, nie in UI verdrahtet) ggf. als Feature zurückholen.
