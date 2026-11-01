@@ -1,4 +1,4 @@
-import { builtinProfileFile } from '@/scene/profile-library';
+import { builtinProfileFile } from '@/scene/builtin-profile-files';
 import { LATHE_PROFILE_METRICS_MM } from '@/data/lathe-profile-metrics.generated';
 import type { BeverageCanBodyProfile } from '@/engine/beverage-can-label-unfold';
 import { latheSlotBounds } from '@/engine/lathe-svg-metrics';

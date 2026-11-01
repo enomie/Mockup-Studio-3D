@@ -1,4 +1,4 @@
-import { builtinProfileFile } from '@/scene/profile-library';
+import { builtinProfileFile } from '@/scene/builtin-profile-files';
 import { builtinLatheProfileUrl } from '@/constants/builtin-profile-paths';
 import type { AssetKind } from './asset-kind';
 import { MM_TO_M } from '@/units/length';

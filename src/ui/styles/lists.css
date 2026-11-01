@@ -145,3 +145,27 @@
   object-fit: contain;
   padding: 2px;
 }
+
+.profile-path-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: var(--space-4) 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--font-xs);
+}
+
+.profile-path-list__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.profile-path-list__name {
+  flex: 1;
+}
+
+.profile-path-list__detail {
+  color: var(--color-text-muted);
+}
