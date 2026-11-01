@@ -75,8 +75,10 @@ export function selectImage(imageId: string | null): void {
   store.emit();
 }
 
-export async function addImagesFromFiles(files: FileList | File[]): Promise<void> {
+/** Adds the allowed image files; resolves to the names of files that failed to load. */
+export async function addImagesFromFiles(files: FileList | File[]): Promise<string[]> {
   const added: ImageAsset[] = [];
+  const failed: string[] = [];
 
   for (const file of Array.from(files)) {
     if (!isAllowedImageFile(file)) {continue;}
@@ -87,12 +89,15 @@ export async function addImagesFromFiles(files: FileList | File[]): Promise<void
       added.push(meta);
     } catch {
       URL.revokeObjectURL(objectUrl);
+      failed.push(file.name);
     }
   }
 
-  if (added.length === 0) {return;}
-  store.setAppState({ ...store.state, images: [...store.state.images, ...added] });
-  store.emit();
+  if (added.length > 0) {
+    store.setAppState({ ...store.state, images: [...store.state.images, ...added] });
+    store.emit();
+  }
+  return failed;
 }
 
 export function removeImage(imageId: string): void {

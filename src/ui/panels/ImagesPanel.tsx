@@ -63,8 +63,11 @@ export function ImagesPanel() {
   ): Promise<void> => {
     const files = event.target.files;
     if (!files?.length) {return;}
-    await addImagesFromFiles(files);
+    const failed = await addImagesFromFiles(files);
     event.target.value = '';
+    if (failed.length > 0) {
+      window.alert(`Could not load ${failed.length} image file(s):\n${failed.join('\n')}`);
+    }
   };
 
   return (

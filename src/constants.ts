@@ -151,9 +151,4 @@ export const DEFAULT_SIZE_SCALE = 1;
 /** JPEG quality for viewport export (`image/jpeg` second argument to canvas.toBlob). */
 export const EXPORT_JPEG_QUALITY = 0.92;
 
-/** CPU matte path (`export-shadow-matte.ts`) — min luminance delta for shadow alpha. */
-export const EXPORT_SHADOW_CATCHER_DELTA_MIN = 0.002;
-
-/** CPU matte path — scale for shadow alpha from beauty vs no-shadow luminance delta. */
-export const EXPORT_SHADOW_CATCHER_LUMINANCE_SCALE = 1;
 

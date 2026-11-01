@@ -102,7 +102,7 @@ describe('remapArrangementIds', () => {
     for (const entity of out.entities) {
       expect(entity.patchParams?.points.some((p) => p.nodeId !== undefined)).toBe(false);
     }
-    const before = entities[0].patchParams!.points.map((p) => p.pos);
+    const before = entities[0].patchParams.points.map((p) => p.pos);
     expect(out.entities[0].patchParams!.points.map((p) => p.pos)).toEqual(before);
   });
 });
