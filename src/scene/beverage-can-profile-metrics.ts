@@ -1,11 +1,12 @@
+import { builtinProfileFile } from '@/scene/profile-library';
 import { LATHE_PROFILE_METRICS_MM } from '@/data/lathe-profile-metrics.generated';
 import type { BeverageCanBodyProfile } from '@/engine/beverage-can-label-unfold';
 import { latheSlotBounds } from '@/engine/lathe-svg-metrics';
 
 /** Shipped profile SVG per body profile (public/profiles/lathe, 1 unit = 1 mm). */
 export const BEVERAGE_CAN_SVG_FILE: Record<BeverageCanBodyProfile, string> = {
-  standard: 'lathe-y-can-330ml-classic.svg',
-  sleek: 'lathe-y-can-330ml-sleek.svg',
+  standard: builtinProfileFile('can-330-classic'),
+  sleek: builtinProfileFile('can-330-sleek'),
 };
 
 /** Sizes measured from the profile SVG (mm, at sizeScale = 1). */

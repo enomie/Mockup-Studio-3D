@@ -1,6 +1,6 @@
 # Plan A: Reiter „Profiles“ im Main Left Panel
 
-Status: **Entwurf – wartet auf Freigabe.** Teil von `plan-profiles-2d-editor.md` (Schritt A).
+Status: **Umgesetzt** (Platzierung nach Assets, alle 8 Profile – vom User freigegeben). Teil von `plan-profiles-2d-editor.md` (Schritt A).
 
 ## Ziel
 Ein neuer Reiter „Profiles“ im linken Hauptpanel listet alle vorhandenen Profile.

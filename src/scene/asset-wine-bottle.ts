@@ -1,3 +1,4 @@
+import { builtinProfileFile } from '@/scene/profile-library';
 import { builtinLatheProfileUrl } from '@/constants/builtin-profile-paths';
 import type { AssetKind } from './asset-kind';
 import { clamp } from '@/units/math';
@@ -30,9 +31,9 @@ const WALL_THICKNESS_DEFAULT = 0.0025;
 
 /** Shipped profile SVG per body profile (public/profiles/lathe, 1 unit = 1 mm). */
 const WINE_BOTTLE_SVG_FILE: Record<WineBottleBodyProfile, string> = {
-  bordeaux: 'lathe-y-bottle-bordeaux-open.svg',
-  alsace: 'lathe-y-bottle-alsace-open.svg',
-  sparkling: 'lathe-y-bottle-sparkling-open.svg',
+  bordeaux: builtinProfileFile('bottle-bordeaux'),
+  alsace: builtinProfileFile('bottle-alsace'),
+  sparkling: builtinProfileFile('bottle-sparkling'),
 };
 
 function wineBottleBoundsMm(profile: WineBottleBodyProfile) {

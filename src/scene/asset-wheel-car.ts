@@ -1,3 +1,4 @@
+import { builtinProfileFile } from '@/scene/profile-library';
 import type { AssetKind } from './asset-kind';
 import { LATHE_PROFILE_METRICS_MM } from '@/data/lathe-profile-metrics.generated';
 import { MM_TO_M } from '@/units/length';
@@ -13,7 +14,7 @@ export interface WheelCarParams {
 const SPOKE_COUNT = 5 as const;
 
 /** Shipped x-lathe profile (public/profiles/lathe, 1 unit = 1 mm). */
-export const WHEEL_CAR_SVG_FILE = 'lathe-x-wheel-car.svg';
+export const WHEEL_CAR_SVG_FILE = builtinProfileFile('wheel-car');
 
 /** Reference sizes measured from the SVG (mm): axis = lowest point (y down), tread = y 0. */
 const WHEEL_CAR_SVG_BOUNDS_MM = LATHE_PROFILE_METRICS_MM[WHEEL_CAR_SVG_FILE].bounds;

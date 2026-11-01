@@ -66,6 +66,8 @@ export {
   removeMaterial,
 } from './app-store-materials';
 
+export { selectProfile } from './app-store-profiles';
+
 export {
   selectColor,
   addColor,

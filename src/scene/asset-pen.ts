@@ -1,3 +1,4 @@
+import { builtinProfileFile } from '@/scene/profile-library';
 import { builtinLatheProfileUrl } from '@/constants/builtin-profile-paths';
 import type { AssetKind } from './asset-kind';
 import { MM_TO_M } from '@/units/length';
@@ -11,8 +12,8 @@ export interface PenParams {
 
 /** Shipped profile SVG per pen profile (public/profiles/lathe, 1 unit = 1 mm). */
 const PEN_SVG_FILE: Record<PenBodyProfile, string> = {
-  marker: 'lathe-y-pen-marker.svg',
-  fountain: 'lathe-y-pen-fountain.svg',
+  marker: builtinProfileFile('pen-marker'),
+  fountain: builtinProfileFile('pen-fountain'),
 };
 
 export interface PenFootprintM {

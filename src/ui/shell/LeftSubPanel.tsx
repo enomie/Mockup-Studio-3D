@@ -5,6 +5,7 @@ import { EnvironmentsPanel } from '@/ui/panels/EnvironmentsPanel';
 import { LightRigsPanel } from '@/ui/panels/LightRigsPanel';
 import { ImagesPanel } from '@/ui/panels/ImagesPanel';
 import { MaterialsPanel } from '@/ui/panels/MaterialsPanel';
+import { ProfilesPanel } from '@/ui/panels/ProfilesPanel';
 import { ShellSubPanelProvider } from '@/ui/components/shell-sub-panel-context';
 
 interface LeftSubPanelProps {
@@ -26,6 +27,8 @@ export function LeftSubPanel({
     content = <ArrangementsPanel />;
   } else if (selectedId === 'assets') {
     content = <AssetsPanel />;
+  } else if (selectedId === 'profiles') {
+    content = <ProfilesPanel />;
   } else if (selectedId === 'images') {
     content = <ImagesPanel />;
   } else if (selectedId === 'colors') {

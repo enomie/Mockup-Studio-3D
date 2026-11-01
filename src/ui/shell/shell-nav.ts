@@ -12,6 +12,7 @@ import {
   Package,
   Palette,
   Settings,
+  Spline,
   Sun,
   type LucideIcon,
 } from 'lucide-react';
@@ -27,6 +28,7 @@ export const LEFT_SHELL_NAV: ShellNavItem[] = [
   { id: 'light-rigs', label: 'Light rigs', icon: LampFloor },
   { id: 'arrangements', label: 'Arrangements', icon: LayoutGrid },
   { id: 'assets', label: 'Assets', icon: Package },
+  { id: 'profiles', label: 'Profiles', icon: Spline },
   { id: 'images', label: 'Images', icon: Image },
   { id: 'colors', label: 'Colors', icon: Droplet },
   { id: 'materials', label: 'Materials', icon: Palette },

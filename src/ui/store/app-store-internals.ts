@@ -90,6 +90,7 @@ export interface AppState {
   selectedMaterialId: string | null;
   colors: ColorPreset[];
   selectedColorId: string | null;
+  selectedProfileId: string | null;
   environments: EnvironmentPreset[];
   activeEnvironmentId: string;
   lightingPresets: LightingPreset[];
@@ -153,6 +154,7 @@ export let state: AppState = {
   selectedMaterialId: null,
   colors: COLOR_PRESETS.map(cloneColorPreset),
   selectedColorId: null,
+  selectedProfileId: null,
   environments: ENVIRONMENT_PRESETS.map(cloneEnvironmentPreset),
   activeEnvironmentId: BUILTIN_ENV_DEFAULT_ID,
   lightingPresets: LIGHTING_PRESETS.map(cloneLightingPreset),

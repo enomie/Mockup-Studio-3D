@@ -113,3 +113,35 @@
   white-space: nowrap;
   text-overflow: ellipsis;
 }
+
+/* Read-only key/value rows (e.g. profile info). */
+.info-list {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-2) var(--space-4);
+  margin: 0;
+  font-size: var(--font-xs);
+}
+
+.info-list dt {
+  color: var(--color-text-muted);
+}
+
+.info-list dd {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.info-list__swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.tile__thumb--profile img {
+  object-fit: contain;
+  padding: 2px;
+}
