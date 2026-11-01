@@ -63,10 +63,10 @@ export const GEOMETRY_PARTS_PEN: readonly AssetGeometryPartDescriptor[] = [
 
 export const GEOMETRY_PARTS_WINE_BOTTLE: readonly AssetGeometryPartDescriptor[] = [
   partWithMaterial('body', 'Glass', 'glassMaterialId'),
-  visibilityOnlyPart('label', 'Label'),
   partWithMaterial('cork', 'Cork', 'corkMaterialId'),
   partWithMaterial('capsuleFoil', 'Capsule foil', 'capsuleFoilMaterialId'),
   partWithMaterial('capsuleDisc', 'Capsule disc', 'capsuleDiscMaterialId'),
+  visibilityOnlyPart('label', 'Label'),
 ];
 
 export const GEOMETRY_PARTS_NONE: readonly AssetGeometryPartDescriptor[] = [];

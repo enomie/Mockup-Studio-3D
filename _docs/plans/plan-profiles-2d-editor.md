@@ -31,8 +31,19 @@ modellieren können – aber nicht auf dem gewohnten CAD-Weg, sondern einfach un
 - Große, gut greifbare Handles (keine Minipunkte).
 - Gegenüberliegende (gespiegelte) Tangenten-Handles; Aufbrechen per Shift – wie bei der PATCH-Geometrie.
 
-## Offene Fragen
-- Datenmodell eines Profils (SVG-Pfad vs. eigene parametrische Struktur)?
-- Wie weit geht „parametrisch“ im MVP (Maße/Constraints oder nur numerische Punktwerte)?
-- Offene vs. geschlossene Pfade (Lathe braucht offen/halbes Profil, Extrusion geschlossen)?
-- Reihenfolge: A → B → C → D, Editor (E/F) wächst parallel ab B.
+## Entscheidungen (Besprechung 2026-11-01)
+
+1. **Speicherformat:** das, was einfacher geht – eigene parametrische Struktur ist ok, muss
+   nicht SVG sein. SVG-Import/-Export später andenken.
+   - **Benannte Pfade/Teile:** Pfade im Profil bekommen Namen, die 1:1 in den Asset-Details
+     erscheinen (Geometries / Materials), z. B. Wheel Car: „Tire“, „Rim“; Wine bottle: „Glass“,
+     „Cork“, „Capsule foil“, „Capsule disc“, „Label“.
+2. **Parametrisch (MVP):** was es für Flasche/Dose braucht – Positionen, Radien, Tangenten;
+   Segmenttypen: Gerade, Bogen (Radius), Kurve/Spline. Keine allgemeinen Constraints im MVP.
+3. **Offen vs. geschlossen:** über Typ/Kategorie des Profils (z. B. „Lathe“ = offenes
+   Halbprofil, „Extrusion“ = geschlossene Kontur).
+4. **Reihenfolge:** A (Profiles-Reiter) zuerst.
+
+## Nebenbei erledigt
+- Wine bottle: „Label“ steht in der Geometries-Liste jetzt ganz unten
+  (siehe `plan-wine-bottle-label-order.md`).
