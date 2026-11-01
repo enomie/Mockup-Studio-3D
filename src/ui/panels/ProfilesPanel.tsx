@@ -8,6 +8,7 @@ import {
   type ProfileEntry,
 } from '@/scene/profile-library';
 import type { ProfilePath } from '@/scene/profile-model';
+import { countProfileUsage } from '@/scene/profile-usage';
 import { Icon } from '@/ui/components/Icon';
 import { ProfileNodeFields } from '@/ui/profile-editor/ProfileNodeFields';
 import { PanelTextField } from '@/ui/components/PanelTextField';
@@ -17,6 +18,7 @@ import {
   addProfile,
   closeProfileEditor,
   duplicateProfile,
+  getAppState,
   openProfileEditor,
   removeProfile,
   renameProfile,
@@ -44,11 +46,18 @@ function PathSwatch({ path }: { path: ProfilePath }) {
   );
 }
 
+function usageLabel(count: number): string {
+  return count === 1 ? '1 asset' : `${count} assets`;
+}
+
 function ProfileInfo({ entry }: { entry: ProfileEntry }) {
+  const usage = useAppStore((s) => countProfileUsage(s.entities, entry.id));
   return (
     <dl className="info-list">
       <dt>Size</dt>
       <dd>{profileSizeLabel(entry) ?? '–'}</dd>
+      <dt>In scene</dt>
+      <dd>{usageLabel(usage)}</dd>
       {entry.usedBy ? (
         <>
           <dt>Used by</dt>
@@ -121,7 +130,14 @@ function ProfileActions({ entry, editing }: { entry: ProfileEntry; editing: bool
         <button
           type="button"
           className="btn btn--danger"
-          onClick={() => { removeProfile(entry.id); }}
+          onClick={() => {
+            const usage = countProfileUsage(getAppState().entities, entry.id);
+            const ok = usage === 0 || window.confirm(
+              `"${entry.name}" is used by ${usageLabel(usage)} in the scene. ` +
+              'Remove it anyway? Those assets will use the Bordeaux profile.',
+            );
+            if (ok) {removeProfile(entry.id);}
+          }}
         >
           <Icon icon={Trash2} size={16} strokeWidth={1.75} />
           Remove

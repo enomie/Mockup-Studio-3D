@@ -1,6 +1,6 @@
 # Plan C: Eigene Profile in der Weinflasche („Bottle“)
 
-Status: **Entwurf – wartet auf Freigabe.** Teil von `plan-profiles-2d-editor.md` (Schritt C).
+Status: **Umgesetzt.** Entscheidungen: nur Weinflasche, Neubau nach dem Loslassen, Nachfrage beim Löschen. Abweichung: Das Feld heißt weiter `wineBottleBodyProfile` (enthält jetzt die Profil-ID), alte Werte werden beim Auflösen übersetzt statt migriert. Stand: `_docs/requirements/requirements-profiles.md`.
 Aktueller Stand der Profile: `_docs/requirements/requirements-profiles.md`.
 
 ## Ziel

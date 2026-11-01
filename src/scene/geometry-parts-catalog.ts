@@ -61,11 +61,12 @@ export const GEOMETRY_PARTS_PEN: readonly AssetGeometryPartDescriptor[] = [
   partWithMaterial('penBody', 'Body', 'bodyMaterialId'),
 ];
 
+/** Labels fall back to these names; with a profile they come from its path names (slot). */
 export const GEOMETRY_PARTS_WINE_BOTTLE: readonly AssetGeometryPartDescriptor[] = [
-  partWithMaterial('body', 'Glass', 'glassMaterialId'),
-  partWithMaterial('cork', 'Cork', 'corkMaterialId'),
-  partWithMaterial('capsuleFoil', 'Capsule foil', 'capsuleFoilMaterialId'),
-  partWithMaterial('capsuleDisc', 'Capsule disc', 'capsuleDiscMaterialId'),
+  { ...partWithMaterial('body', 'Glass', 'glassMaterialId'), profileSlot: 0 },
+  { ...partWithMaterial('cork', 'Cork', 'corkMaterialId'), profileSlot: 3 },
+  { ...partWithMaterial('capsuleFoil', 'Capsule foil', 'capsuleFoilMaterialId'), profileSlot: 1 },
+  { ...partWithMaterial('capsuleDisc', 'Capsule disc', 'capsuleDiscMaterialId'), profileSlot: 2 },
   visibilityOnlyPart('label', 'Label'),
 ];
 

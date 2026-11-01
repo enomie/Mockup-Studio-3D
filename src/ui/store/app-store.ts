@@ -9,6 +9,7 @@ import {
 } from '@/data/material-presets';
 import type { SceneApi } from '@/scene/scene-api';
 import * as store from './app-store-internals';
+import { setRegisteredUserProfiles } from '@/scene/profile-registry';
 import { historySettingsAdapter } from './app-store-history';
 
 export type { AppState } from './app-store-internals';
@@ -77,6 +78,8 @@ export {
   closeProfileEditor,
   selectProfileNode,
   editProfilePath,
+  showProfilesPanel,
+  editProfileFromAsset,
 } from './app-store-profiles';
 
 export {
@@ -201,6 +204,10 @@ export {
 } from './app-store-export';
 
 export const initAppStore = store.initAppStore;
+
+// Scene and engine resolve user profiles through the registry; keep it in sync (incl. undo/load).
+setRegisteredUserProfiles(store.state.userProfiles);
+store.subscribe(() => { setRegisteredUserProfiles(store.state.userProfiles); });
 export const getAppState = store.getAppState;
 export const subscribe = store.subscribe;
 

@@ -99,6 +99,8 @@ export interface AppState {
   selectedProfileId: string | null;
   /** User profile open in the 2D editor (replaces the viewport), or null. */
   editingProfileId: string | null;
+  /** Ask the shell to show a left panel tab (seq makes repeated requests distinct). */
+  leftPanelRequest: { id: string; seq: number } | null;
   /** Selected node in the 2D editor. */
   profileNodeSelection: ProfileNodeSelection | null;
   environments: EnvironmentPreset[];
@@ -168,6 +170,7 @@ export let state: AppState = {
   selectedColorId: null,
   selectedProfileId: null,
   editingProfileId: null,
+  leftPanelRequest: null,
   profileNodeSelection: null,
   environments: ENVIRONMENT_PRESETS.map(cloneEnvironmentPreset),
   activeEnvironmentId: BUILTIN_ENV_DEFAULT_ID,

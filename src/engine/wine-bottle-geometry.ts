@@ -9,6 +9,7 @@ import {
 import {
   resolvedLabelWidthHeight,
   scaledWineBottleParams,
+  wineBottleNominalHeightM,
   type WineBottleParams,
 } from '@/scene/asset-wine-bottle';
 import {
@@ -158,7 +159,12 @@ export function computeWineBottleLabelPlane(
 export async function buildWineBottleMeshes(
   input: WineBottleMeshBuildInput,
 ): Promise<WineBottleMeshBuildResult> {
-  const scaled = scaledWineBottleParams(input.params, input.sizeScale);
+  // Height always from the current profile: a user profile may have been edited since.
+  const params = {
+    ...input.params,
+    heightM: wineBottleNominalHeightM(input.params.wineBottleBodyProfile),
+  };
+  const scaled = scaledWineBottleParams(params, input.sizeScale);
   const bodyProfile = scaled.wineBottleBodyProfile;
 
   const openWall = await loadWineBottleOpenWallProfile(bodyProfile, scaled.heightM);

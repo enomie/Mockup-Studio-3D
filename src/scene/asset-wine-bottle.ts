@@ -1,12 +1,47 @@
-import { builtinProfileFile } from '@/scene/builtin-profile-files';
-import { builtinLatheProfileUrl } from '@/constants/builtin-profile-paths';
 import type { AssetKind } from './asset-kind';
 import { clamp } from '@/units/math';
 import { MM_TO_M } from '@/units/length';
-import { LATHE_PROFILE_METRICS_MM } from '@/data/lathe-profile-metrics.generated';
-import { latheSlotBounds } from '@/engine/lathe-svg-metrics';
+import type { LatheBoundsMm } from '@/engine/lathe-svg-metrics';
+import type { ProfileEntry } from './profile-library';
+import {
+  canonicalProfileId,
+  findProfile,
+  registeredProfileMetrics,
+} from './profile-registry';
 
-export type WineBottleBodyProfile = 'bordeaux' | 'alsace' | 'sparkling';
+/**
+ * Profile id of the bottle body (any profile: built-in or user). Legacy short names
+ * ('bordeaux', 'alsace', 'sparkling') are still accepted and normalised.
+ */
+export type WineBottleBodyProfile = string;
+
+export const DEFAULT_WINE_BOTTLE_PROFILE_ID = 'bottle-bordeaux';
+
+/** Profile slot of the glass wall; the bottle needs it. */
+const GLASS_SLOT = 0;
+
+export interface ResolvedWineBottleProfile {
+  entry: ProfileEntry;
+  /** True when the requested profile is gone or has no glass path (Bordeaux is used). */
+  missing: boolean;
+}
+
+function glassBounds(entry: ProfileEntry): LatheBoundsMm | null {
+  return registeredProfileMetrics(entry)?.slots[GLASS_SLOT] ?? null;
+}
+
+/** The profile a bottle uses; falls back to Bordeaux when it is missing or unusable. */
+export function resolveWineBottleProfile(id: WineBottleBodyProfile): ResolvedWineBottleProfile {
+  const entry = findProfile(id);
+  if (entry && glassBounds(entry)) {
+    return { entry, missing: false };
+  }
+  const fallback = findProfile(DEFAULT_WINE_BOTTLE_PROFILE_ID);
+  if (!fallback) {
+    throw new Error('Built-in Bordeaux profile missing');
+  }
+  return { entry: fallback, missing: true };
+}
 
 export type WineBottleLabelSizeMode = 'height' | 'width';
 export type WineBottleLabelWrap = 'full' | 'partial';
@@ -29,23 +64,21 @@ export const WINE_BOTTLE_GLASS_TRANSMISSION_MESH_DEPTH_FACTOR = 0.4;
 
 const WALL_THICKNESS_DEFAULT = 0.0025;
 
-/** Shipped profile SVG per body profile (public/profiles/lathe, 1 unit = 1 mm). */
-const WINE_BOTTLE_SVG_FILE: Record<WineBottleBodyProfile, string> = {
-  bordeaux: builtinProfileFile('bottle-bordeaux'),
-  alsace: builtinProfileFile('bottle-alsace'),
-  sparkling: builtinProfileFile('bottle-sparkling'),
-};
-
-function wineBottleBoundsMm(profile: WineBottleBodyProfile) {
-  return LATHE_PROFILE_METRICS_MM[WINE_BOTTLE_SVG_FILE[profile]].bounds;
+function wineBottleBoundsMm(profile: WineBottleBodyProfile): LatheBoundsMm {
+  const { entry } = resolveWineBottleProfile(profile);
+  const metrics = registeredProfileMetrics(entry);
+  if (!metrics) {throw new Error(`No metrics for profile ${entry.id}`);}
+  return metrics.bounds;
 }
 
-function wineBottleGlassBoundsMm(profile: WineBottleBodyProfile) {
-  return latheSlotBounds(LATHE_PROFILE_METRICS_MM[WINE_BOTTLE_SVG_FILE[profile]], 0);
+function wineBottleGlassBoundsMm(profile: WineBottleBodyProfile): LatheBoundsMm {
+  const bounds = glassBounds(resolveWineBottleProfile(profile).entry);
+  if (!bounds) {throw new Error('Wine bottle profile has no glass path');}
+  return bounds;
 }
 
-/** Glass height (`path_red`) measured from the profile SVG (sizeScale = 1). */
-function wineBottleNominalHeightM(profile: WineBottleBodyProfile): number {
+/** Glass height (`path_red`) measured from the profile (sizeScale = 1). */
+export function wineBottleNominalHeightM(profile: WineBottleBodyProfile): number {
   const b = wineBottleGlassBoundsMm(profile);
   return (b.maxY - b.minY) * MM_TO_M;
 }
@@ -78,15 +111,11 @@ export function wineBottleFootprintAspect(
 const LABEL_SIZE_MIN = 0.02;
 const LABEL_SIZE_MAX = 0.25;
 
-export function wineBottleSvgUrl(profile: WineBottleBodyProfile): string {
-  return builtinLatheProfileUrl(WINE_BOTTLE_SVG_FILE[profile]);
-}
-
 export function defaultWineBottleParams(
-  profile: WineBottleBodyProfile = 'bordeaux',
+  profile: WineBottleBodyProfile = DEFAULT_WINE_BOTTLE_PROFILE_ID,
 ): WineBottleParams {
   return {
-    wineBottleBodyProfile: profile,
+    wineBottleBodyProfile: canonicalProfileId(profile),
     heightM: wineBottleNominalHeightM(profile),
     wallThicknessM: WALL_THICKNESS_DEFAULT,
     labelBottomOffsetM: 0.05,
@@ -135,10 +164,10 @@ export function clampWineBottleParams(
   partial: Partial<WineBottleParams>,
   base: WineBottleParams,
 ): WineBottleParams {
-  const profile = partial.wineBottleBodyProfile ?? base.wineBottleBodyProfile;
+  const profile = canonicalProfileId(partial.wineBottleBodyProfile ?? base.wineBottleBodyProfile);
   const profileDefaults =
     partial.wineBottleBodyProfile !== undefined &&
-    partial.wineBottleBodyProfile !== base.wineBottleBodyProfile
+    profile !== canonicalProfileId(base.wineBottleBodyProfile)
       ? defaultWineBottleParams(profile)
       : null;
 

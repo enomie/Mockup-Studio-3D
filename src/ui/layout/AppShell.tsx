@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { useAppStore } from '@/ui/store/use-app-store';
 import { ViewportFrame } from '@/ui/components/ViewportFrame';
 import { ProfileEditor } from '@/ui/profile-editor/ProfileEditor';
 import { useCameraViewShortcuts } from '@/ui/hooks/useCameraViewShortcuts';
@@ -32,6 +33,18 @@ export function AppShell() {
     setLeftSelected(id);
     setLeftSubCollapsed(false);
   }, []);
+
+  // Another panel asked to show a left tab (e.g. "Edit profile" in the bottle details).
+  const leftPanelRequest = useAppStore((s) => s.leftPanelRequest);
+  const [handledLeftRequest, setHandledLeftRequest] = useState(leftPanelRequest);
+  if (leftPanelRequest !== handledLeftRequest) {
+    setHandledLeftRequest(leftPanelRequest);
+    if (leftPanelRequest) {
+      setLeftSelected(leftPanelRequest.id);
+      setLeftMainCollapsed(false);
+      setLeftSubCollapsed(false);
+    }
+  }
 
   const handleRightSelect = useCallback((id: string) => {
     setRightSelected(id);

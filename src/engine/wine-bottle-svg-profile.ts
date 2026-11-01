@@ -1,8 +1,9 @@
 import { Vector2 } from 'three/webgpu';
+import { loadProfileSvgText, profileVersion } from '@/scene/profile-registry';
 import {
+  resolveWineBottleProfile,
   type WineBottleBodyProfile,
   wineBottleFootYMm,
-  wineBottleSvgUrl,
 } from '@/scene/asset-wine-bottle';
 import { latheSvgMmToMeters, prepareLatheProfile } from './lathe-contour';
 import {
@@ -13,8 +14,19 @@ import {
 
 export type WineBottleSvgPoint2 = LatheSvgPoint2;
 
-const rawPointsCache = new Map<WineBottleBodyProfile, WineBottleSvgPoint2[]>();
-const rawPartsCache = new Map<WineBottleBodyProfile, WineBottleRawParts>();
+/** Keyed by `profileCacheKey` (resolved profile id + edit version). */
+const rawPointsCache = new Map<string, WineBottleSvgPoint2[]>();
+const rawPartsCache = new Map<string, WineBottleRawParts>();
+
+/** Cache key of the profile a bottle really uses (after fallback) and its edit version. */
+function profileCacheKey(profile: WineBottleBodyProfile): string {
+  const { entry } = resolveWineBottleProfile(profile);
+  return `${entry.id}@${profileVersion(entry.id)}`;
+}
+
+async function loadBottleSvgText(profile: WineBottleBodyProfile, noCache: boolean): Promise<string> {
+  return loadProfileSvgText(resolveWineBottleProfile(profile).entry, noCache);
+}
 
 /** Capsule parts from the profile SVG (1 unit = 1 mm, y down); empty when the path is absent. */
 export interface WineBottleRawParts {
@@ -254,21 +266,16 @@ async function loadRawWineBottleSvgPoints(
   profile: WineBottleBodyProfile,
 ): Promise<WineBottleSvgPoint2[]> {
   const reloadSvgEachTime = import.meta.env.DEV && !import.meta.env.VITEST;
+  const key = profileCacheKey(profile);
   if (!reloadSvgEachTime) {
-    const cached = rawPointsCache.get(profile);
+    const cached = rawPointsCache.get(key);
     if (cached) {
       return cached;
     }
   }
-
-  const url = wineBottleSvgUrl(profile);
-  const response = await fetch(url, reloadSvgEachTime ? { cache: 'no-store' } : undefined);
-  if (!response.ok) {
-    throw new Error(`Failed to load SVG: ${url} (${response.status})`);
-  }
-  const points = extractOpenPathPointsFromSvgText(await response.text(), 48);
+  const points = extractOpenPathPointsFromSvgText(await loadBottleSvgText(profile, reloadSvgEachTime), 48);
   if (!reloadSvgEachTime) {
-    rawPointsCache.set(profile, points);
+    rawPointsCache.set(key, points);
   }
   return points;
 }
@@ -286,15 +293,11 @@ export async function loadWineBottlePartProfiles(
   profile: WineBottleBodyProfile,
   sizeScale = 1,
 ): Promise<WineBottlePartProfiles> {
-  let raw = rawPartsCache.get(profile);
+  const key = profileCacheKey(profile);
+  let raw = rawPartsCache.get(key);
   if (!raw) {
-    const url = wineBottleSvgUrl(profile);
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`Failed to load SVG: ${url} (${response.status})`);
-    }
-    raw = extractWineBottlePartsFromSvgText(await response.text());
-    rawPartsCache.set(profile, raw);
+    raw = extractWineBottlePartsFromSvgText(await loadBottleSvgText(profile, false));
+    rawPartsCache.set(key, raw);
   }
   return normalizeWineBottleParts(raw, wineBottleFootYMm(profile), sizeScale);
 }
@@ -303,14 +306,14 @@ export function setRawWineBottlePartsCache(
   profile: WineBottleBodyProfile,
   parts: WineBottleRawParts,
 ): void {
-  rawPartsCache.set(profile, parts);
+  rawPartsCache.set(profileCacheKey(profile), parts);
 }
 
 export function setRawWineBottleSvgPointsCache(
   profile: WineBottleBodyProfile,
   points: WineBottleSvgPoint2[],
 ): void {
-  rawPointsCache.set(profile, points);
+  rawPointsCache.set(profileCacheKey(profile), points);
 }
 
 export function clearRawWineBottleSvgPointsCache(): void {

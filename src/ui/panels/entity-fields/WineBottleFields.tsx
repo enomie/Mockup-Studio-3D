@@ -1,16 +1,26 @@
 import { getGeometryPartsForKind } from '@/scene/asset-kind-registry';
+import { Copy, PenLine } from 'lucide-react';
 import {
   defaultWineBottleParams,
-  type WineBottleBodyProfile,
+  resolveWineBottleProfile,
   type WineBottleLabelSizeMode,
   type WineBottleLabelWrap,
 } from '@/scene/asset-wine-bottle';
 import { formatLengthMeters, LENGTH_DECIMALS, parseLengthMetersInput } from '@/units/length';
 import { PanelAxisField } from '@/ui/components/PanelAxisField/PanelAxisField';
+import { Icon } from '@/ui/components/Icon';
 import { PanelSelect } from '@/ui/components/PanelSelect';
+import { allProfiles, profileUrl, type ProfileEntry } from '@/scene/profile-library';
+import { canonicalProfileId } from '@/scene/profile-registry';
+import { sortBuiltinThenUserByName } from '@/ui/utils/library-list-order';
 import { SubPanelSection } from '@/ui/components/SubPanelSection';
 import { ImageSurfaceFields } from '@/ui/panels/ImageSurfaceFields';
-import { setKindParams, setAssetScreenImage } from '@/ui/store/app-store';
+import {
+  duplicateProfile,
+  editProfileFromAsset,
+  setAssetScreenImage,
+  setKindParams,
+} from '@/ui/store/app-store';
 import { useAppStore } from '@/ui/store/use-app-store';
 import { GeometryPartsSection } from '@/ui/panels/GeometryPartsSection';
 import type { PictureFieldsProps } from './entity-fields-types';
@@ -22,10 +32,13 @@ export function WineBottleFields({
 }: PictureFieldsProps) {
   const materials = useAppStore((s) => s.materials);
   const params = {
-    ...defaultWineBottleParams('bordeaux'),
+    ...defaultWineBottleParams(),
     ...entity.wineBottleParams,
   };
   const hasLabelImage = Boolean(entity.screenImageId);
+  // Re-render on profile edits; the registry is kept in sync by the store.
+  useAppStore((s) => s.userProfiles);
+  const bodyProfile = resolveWineBottleProfile(params.wineBottleBodyProfile).entry;
 
   return (
     <>
@@ -46,24 +59,11 @@ export function WineBottleFields({
           entity={entity}
           materials={materials}
           parts={getGeometryPartsForKind(entity.assetKind)}
+          profilePathName={(slot) => bodyProfile.paths.find((path) => path.slot === slot)?.name}
         />
       </SubPanelSection>
 
-      <SubPanelSection title="Body profile">
-        <PanelSelect
-          label="Profile"
-          value={params.wineBottleBodyProfile}
-          options={[
-            { value: 'bordeaux', label: 'Bordeaux' },
-            { value: 'alsace', label: 'Alsace' },
-            { value: 'sparkling', label: 'Sparkling' },
-          ]}
-          onChange={(value) => { setKindParams('wineBottle', entity.id, {
-              wineBottleBodyProfile: value as WineBottleBodyProfile,
-            }); }
-          }
-        />
-      </SubPanelSection>
+      <BodyProfileSection entityId={entity.id} profileId={params.wineBottleBodyProfile} />
 
       <SubPanelSection title="Label placement">
         <PanelSelect
@@ -112,5 +112,66 @@ export function WineBottleFields({
         />
       </SubPanelSection>
     </>
+  );
+}
+
+function profileOptionLabel(entry: ProfileEntry): string {
+  return entry.source === 'builtin' && entry.usedBy ? `${entry.name} · ${entry.usedBy}` : entry.name;
+}
+
+function BodyProfileSection({ entityId, profileId }: { entityId: string; profileId: string }) {
+  const userProfiles = useAppStore((s) => s.userProfiles);
+  const value = canonicalProfileId(profileId);
+  const { entry, missing } = resolveWineBottleProfile(value);
+  const profiles = sortBuiltinThenUserByName(
+    allProfiles(userProfiles),
+    (profile) => profile.name,
+    (profile) => profile.source === 'builtin',
+  );
+  const options = profiles.map((profile) => ({ value: profile.id, label: profileOptionLabel(profile) }));
+  if (missing) {
+    options.unshift({ value, label: 'Missing profile' });
+  }
+  const setProfile = (id: string) => {
+    setKindParams('wineBottle', entityId, { wineBottleBodyProfile: id });
+  };
+
+  return (
+    <SubPanelSection title="Body profile">
+      <div className="body-profile">
+        <span className="tile__thumb tile__thumb--profile">
+          <img src={profileUrl(entry)} alt="" />
+        </span>
+        <div className="body-profile__select">
+          <PanelSelect label="Profile" value={value} options={options} onChange={setProfile} />
+        </div>
+      </div>
+      {missing ? (
+        <p className="profile-hint">Profile missing or without a glass path – using Bordeaux.</p>
+      ) : null}
+      <div className="material-editor-actions">
+        {entry.source === 'user' && !missing ? (
+          <button type="button" className="btn" onClick={() => { editProfileFromAsset(entry.id); }}>
+            <Icon icon={PenLine} size={16} strokeWidth={1.75} />
+            Edit profile
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="btn"
+            onClick={() => {
+              const copyId = duplicateProfile(entry.id);
+              if (copyId) {
+                setProfile(copyId);
+                editProfileFromAsset(copyId);
+              }
+            }}
+          >
+            <Icon icon={Copy} size={16} strokeWidth={1.75} />
+            Duplicate & edit
+          </button>
+        )}
+      </div>
+    </SubPanelSection>
   );
 }

@@ -109,6 +109,7 @@ import type {
 } from '@/scene/kind-param-families';
 import { EntityRegistry } from './entity-registry';
 import { AssetSystem } from './asset-system';
+import { ProfileRebuildScheduler } from './profile-rebuild-scheduler';
 import { ImageTextureLoader } from './image-texture-loader';
 import { GizmoController } from './gizmo-controller';
 import { GizmoInteractionController } from './gizmo-interaction-controller';
@@ -150,6 +151,7 @@ export class MockupEngine implements SceneApi {
   private readonly history: SceneHistoryController;
   private readonly nodeSync: PatchNodeSync;
   private readonly detachHistoryInput: () => void;
+  private readonly profileRebuild: ProfileRebuildScheduler;
 
   private constructor(
     private readonly container: HTMLElement,
@@ -226,6 +228,10 @@ export class MockupEngine implements SceneApi {
       restorePatchNodes: (nodes) => { this.registry.setPatchNodes(nodes); },
     });
     this.detachHistoryInput = attachHistoryInputTracking(this.history);
+    this.profileRebuild = new ProfileRebuildScheduler({
+      getEntities: () => this.registry.getEntities(),
+      rebuildEntity: (entityId) => this.assets.rebuildEntity(entityId),
+    });
     this.nodeSync = new PatchNodeSync({
       getEntities: () => this.registry.getEntities(),
       getPatchNodes: () => this.registry.getPatchNodes(),
@@ -1169,6 +1175,7 @@ export class MockupEngine implements SceneApi {
     this.disposed = true;
 
     this.detachHistoryInput();
+    this.profileRebuild.dispose();
     this.viewportInput.dispose();
     this.patchAddPoint.dispose();
     this.selectionHighlight.dispose();

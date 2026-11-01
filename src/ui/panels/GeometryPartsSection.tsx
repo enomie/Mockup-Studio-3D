@@ -18,6 +18,8 @@ interface GeometryPartsSectionProps {
   entity: AssetEntity;
   materials: MaterialPreset[];
   parts: readonly AssetGeometryPartDescriptor[];
+  /** Path name per profile slot; replaces the label of parts with `profileSlot`. */
+  profilePathName?: (slot: number) => string | undefined;
 }
 
 function resolveMaterialIdForSlot(
@@ -37,7 +39,11 @@ export function GeometryPartsSection({
   entity,
   materials,
   parts,
+  profilePathName,
 }: GeometryPartsSectionProps) {
+  const labelOf = (descriptor: AssetGeometryPartDescriptor): string =>
+    (descriptor.profileSlot !== undefined ? profilePathName?.(descriptor.profileSlot) : undefined)
+      ?? descriptor.label;
   const slots = entity.materials;
   const visibility = migrateGeometryVisibility(
     entity.assetKind,
@@ -52,7 +58,7 @@ export function GeometryPartsSection({
           return (
             <PanelCheckbox
               key={descriptor.part}
-              label={descriptor.label}
+              label={labelOf(descriptor)}
               checked={isGeometryVisible(visibility, descriptor.part)}
               onChange={(checked) => { setGeometryVisible(entity.id, descriptor.part, checked); }
               }
@@ -66,7 +72,7 @@ export function GeometryPartsSection({
             key={descriptor.part}
             entityId={entity.id}
             part={descriptor.part}
-            label={descriptor.label}
+            label={labelOf(descriptor)}
             slot={slot}
             visible={isGeometryVisible(visibility, descriptor.part)}
             materialId={resolveMaterialIdForSlot(entity.assetKind, slots, slot)}

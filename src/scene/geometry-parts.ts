@@ -9,6 +9,8 @@ export interface AssetGeometryPartDescriptor {
   ui: GeometryPartUiMode;
   materialSlot?: MaterialEntitySlot;
   defaultVisible?: boolean;
+  /** Profile path slot this part is built from; its path name replaces `label`. */
+  profileSlot?: number;
 }
 
 export function geometryVisibilityFromPartDescriptors(

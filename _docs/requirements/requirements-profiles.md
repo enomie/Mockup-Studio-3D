@@ -4,7 +4,7 @@
 oder am Editor im selben Commit nachgezogen. Die Pläne in `_docs/plans/plan-profiles-*.md` sind nur
 der Verlauf.
 
-Stand: A und B (B1 Datenmodell, B2 Verwalten, B3 Editor) umgesetzt. C und D sind offen.
+Stand: A, B (B1 Datenmodell, B2 Verwalten, B3 Editor) und C (Profile in der Weinflasche) umgesetzt. D ist offen.
 
 ---
 
@@ -55,7 +55,7 @@ Stand: A und B (B1 Datenmodell, B2 Verwalten, B3 Editor) umgesetzt. C und D sind
 - **Wenn sich ein SVG ändert:** `npx tsx scripts/generate-lathe-profile-metrics.ts` und
   `npx tsx scripts/generate-builtin-profiles.ts` ausführen. Die Tests prüfen, dass die generierten
   Daten zu den SVGs passen und dass der Rückweg zu SVG weniger als 0,05 mm abweicht.
-- Die 3D-Assets laden bis Schritt C weiterhin direkt die SVG-Dateien.
+- Eingebaute Profile werden in 3D aus der Original-SVG gebaut, eigene aus `profileToSvg`.
 
 ## 4. Reiter „Profiles“ (`src/ui/panels/ProfilesPanel.tsx`)
 - Er steht im linken Hauptpanel nach „Assets“, mit dem Icon `Spline`.
@@ -70,6 +70,32 @@ Stand: A und B (B1 Datenmodell, B2 Verwalten, B3 Editor) umgesetzt. C und D sind
 - **Speichern:** Eigene Profile liegen im Projekt-Snapshot (`libraries.profiles`, IndexedDB). Ältere
   Projektstände ohne Profile laden weiterhin.
 - **Undo/Redo:** Die History-Gruppe `profiles` deckt `userProfiles` ab.
+- **In scene:** Die Info zeigt, wie viele Assets der Szene das Profil benutzen. **Remove** fragt
+  nach, wenn es benutzt wird. Diese Assets fallen dann auf Bordeaux zurück.
+
+## 4a. Profile in Assets (C): Weinflasche
+- **Nur die Weinflasche** benutzt bisher Profile. Dose, Stift und Rad folgen nach demselben Muster.
+- **Parameter:** `wineBottleParams.wineBottleBodyProfile` enthält die **Profil-ID** (z. B.
+  `bottle-bordeaux`, `user-profile-…`). Der Feldname blieb aus Kompatibilitätsgründen.
+  Alte Werte `bordeaux` / `alsace` / `sparkling` werden über `canonicalProfileId` weiter verstanden
+  und beim nächsten Ändern umgeschrieben.
+- **Slots der Flasche:** 0 = Glaswand (Pflicht), 1 = Capsule foil, 2 = Capsule disc, 3 = Cork.
+  Fehlende Teile werden nicht gebaut. Fehlt die Glaswand oder das Profil, wird **Bordeaux**
+  verwendet, und die Details zeigen „Profile missing … – using Bordeaux“.
+- **Jedes Profil ist wählbar**, auch Dose, Stift oder Rad (das Ergebnis darf „weird“ aussehen).
+- **Die Glaswand** wird beim Bauen auf den aufsteigenden Außenmantel reduziert
+  (`trimLatheProfileToAscendingOuterMantle`). Manche Ausbuchtungen nach außen wirken sich deshalb
+  nicht oder nur teilweise aus. Die Kapselteile und der Korken folgen dem Profil direkt.
+- **Details der Flasche, „Body profile“:**
+  - Auswahl aller Profile (eingebaute zuerst) mit Vorschau
+  - **Edit profile** bei eigenen Profilen, **Duplicate & edit** bei eingebauten (die Kopie wird
+    zugewiesen). Beide öffnen den Reiter Profiles und den Editor.
+- **Geometries:** Die Labels von Glass, Capsule foil, Capsule disc und Cork kommen aus den
+  Pfadnamen des Profils (`profileSlot` im Deskriptor). „Label“ bleibt fix und steht unten.
+- **Neubau:** `src/scene/profile-registry.ts` meldet geänderte Profile.
+  `src/engine/profile-rebuild-scheduler.ts` baut die betroffenen Flaschen **nach dem Loslassen**
+  neu, wenn 150 ms lang nichts mehr geändert wurde. Undo, Laden und Löschen lösen das ebenso aus.
+  Die Höhe der Flasche kommt beim Bauen immer frisch aus dem Profil.
 
 ## 5. 2D-Editor (B3)
 Mit **Edit** an einem eigenen Profil öffnet sich der Editor **anstelle des 3D-Viewports** in der Mitte.
@@ -115,6 +141,12 @@ Die Seitenpanels bleiben sichtbar. **Done** oder **Esc** schließt ihn wieder.
 | Store | `src/ui/store/app-store-profiles.ts` (`userProfiles`, `selectedProfileId`, `editingProfileId`, `profileNodeSelection`) |
 | Speichern | `src/ui/persistence/project-snapshot.ts`, `project-persistence.ts` |
 | Panel | `src/ui/panels/ProfilesPanel.tsx` |
+| Register für Szene und Engine (eigene Profile, Versionen, alte IDs) | `src/scene/profile-registry.ts` |
+| Nutzung in der Szene | `src/scene/profile-usage.ts` |
+| Weinflasche: Profil auflösen, Maße | `src/scene/asset-wine-bottle.ts` |
+| Weinflasche: Geometrie aus Profil | `src/engine/wine-bottle-svg-profile.ts`, `wine-bottle-geometry.ts` |
+| Neubau bei Profiländerung | `src/engine/profile-rebuild-scheduler.ts` |
+| Body profile in den Flaschen-Details | `src/ui/panels/entity-fields/WineBottleFields.tsx` |
 | Editor (Zeichenfläche, Ansicht, Zahlenfelder) | `src/ui/profile-editor/ProfileEditor.tsx`, `profile-editor-view.ts`, `ProfileNodeFields.tsx`, Styles in `src/ui/styles/features/profile-editor.css` |
 
 ## 7. Bewusst noch nicht drin
@@ -122,5 +154,5 @@ Die Seitenpanels bleiben sichtbar. **Done** oder **Esc** schließt ihn wieder.
   löschen
 - Fangen (Snapping), Constraints, Bemaßungen
 - SVG-Import und -Export für Nutzer
-- Eigene Profile in Assets verwenden (C), Extrusion-Asset (D)
-- Live-3D-Vorschau während der Bearbeitung
+- Eigene Profile in Dose, Stift und Rad, Extrusion-Asset (D)
+- Live-3D-Vorschau **während** des Ziehens (Neubau erst nach dem Loslassen)

@@ -152,3 +152,16 @@ export function removeProfile(id: string): void {
   });
   store.emit();
 }
+
+/** Shows the Profiles tab in the left panel. */
+export function showProfilesPanel(): void {
+  const seq = (store.state.leftPanelRequest?.seq ?? 0) + 1;
+  store.setAppState({ ...store.state, leftPanelRequest: { id: 'profiles', seq } });
+  store.emit();
+}
+
+/** Opens a user profile in the 2D editor and shows the Profiles tab. */
+export function editProfileFromAsset(profileId: string): void {
+  openProfileEditor(profileId);
+  showProfilesPanel();
+}
