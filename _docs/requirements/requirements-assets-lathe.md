@@ -104,7 +104,7 @@ Bis zu **10 Slots** pro SVG; **Slot = Strichfarbe** (überlebt jeden Illustrator
 |---|---|
 | **Strikt** | Nur Pfade mit Slot-Klasse **oder** normiertem RGB-Stroke zählen. Kein Fallback „erster `<path>` im Dokument“. |
 | **`fill: none`** | Authoring-Standard für Lathe-Konturen. |
-| **Semantik im Code** | Slot → Teil pro Asset (z. B. Pen: red=cap, green=ring, blue=body; Wheel: red=tire; Dose: red=Körper, green=Top-Ring; Flasche: red=Glas, green=Capsule-Foil, blue=Disc, magenta=Korken). |
+| **Semantik im Code** | Slot → Teil pro Asset (z. B. Pen: red=cap, green=ring, blue=body; Wheel: red=Reifen, green=Felgenring, blue=Nabe, orange=Speiche (Seitenansicht, extrudiert); Dose: red=Körper, green=Top-Ring; Flasche: red=Glas, green=Capsule-Foil, blue=Disc, magenta=Korken). |
 | **Hilfsgrafik** | Keine Slot-Klasse / kein Slot-Stroke (z. B. gestrichelte `.guide`-Linie am Rad). |
 
 **Code:** `extractLathePathPointsBySlot`, `extractLatheSubpathPointsBySlot` (Flasche: erstes Subpath am red-Slot).

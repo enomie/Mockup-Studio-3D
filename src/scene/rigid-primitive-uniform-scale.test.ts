@@ -62,18 +62,12 @@ describe('buildRigidPrimitiveUniformScalePartial', () => {
     expect(partial).toEqual({ radiusM: 0.3 });
   });
 
-  it('scales wheel-car linear params', () => {
+  it('does not bake wheel-car scale into params (uses sizeScale)', () => {
     const entity = {
       ...minimalEntity('wheel-car'),
       wheelCarParams: defaultWheelCarParams(),
     };
-    const base = defaultWheelCarParams();
-    const partial = buildRigidPrimitiveUniformScalePartial(entity, 2);
-    expect(partial).toMatchObject({
-      outerRadiusM: base.outerRadiusM * 2,
-      tireWidthM: base.tireWidthM * 2,
-      tireCornerRadiusMm: base.tireCornerRadiusMm * 2,
-    });
+    expect(buildRigidPrimitiveUniformScalePartial(entity, 2)).toBeNull();
   });
 
   it('returns null for factor 1', () => {

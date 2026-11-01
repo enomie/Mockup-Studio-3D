@@ -1,7 +1,6 @@
 import { defaultBlockParams, type BlockParams } from './asset-block';
 import { defaultCylinderParams } from './asset-cylinder';
 import { defaultSphereParams } from './asset-sphere';
-import { defaultWheelCarParams } from './asset-wheel-car';
 import { wheelCarVolumeM3 } from '@/physics/wheel-car-collider-shape';
 import { blockVolumeM3 } from '@/physics/block-collider-shape';
 import { cylinderVolumeM3 } from '@/physics/cylinder-collider-shape';
@@ -72,9 +71,8 @@ function sphereMassKgFromEntity(entity: AssetEntity): number {
 }
 
 function wheelCarMassKgFromEntity(entity: AssetEntity): number {
-  const params = entity.wheelCarParams ?? defaultWheelCarParams();
   return rigidMassKgFromVolumeM3(
-    wheelCarVolumeM3(params),
+    wheelCarVolumeM3(entity.sizeScale),
     resolvePhysicsDensityKgPerM3(entity),
   );
 }

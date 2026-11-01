@@ -1,7 +1,7 @@
 import type { Object3D } from 'three/webgpu';
 import type { AppMode } from '@/scene/scene-api';
 import { isFabricClothAssetKind } from '@/scene/asset-fabric-cloth';
-import { isRigidPrimitiveAssetKind } from '@/scene/rigid-primitive-asset';
+import { bakesUniformScaleIntoParams } from '@/scene/rigid-primitive-asset';
 import { isWallAssetKind } from '@/scene/asset-wall';
 import { clampSizeScale } from '@/scene/asset-sizing';
 import type { AssetSystem } from './asset-system';
@@ -241,7 +241,7 @@ export class GizmoInteractionController {
       (selected.object.scale.x + selected.object.scale.y + selected.object.scale.z) / 3;
     selected.object.scale.set(1, 1, 1);
     const entityId = selected.entity.id;
-    if (isRigidPrimitiveAssetKind(selected.entity.assetKind)) {
+    if (bakesUniformScaleIntoParams(selected.entity.assetKind)) {
       this.deps.applyAssetMutation(
         () => assets.applyRigidPrimitiveUniformScale(entityId, uniform),
         { refreshGizmo: true },

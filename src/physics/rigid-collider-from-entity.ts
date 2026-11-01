@@ -1,8 +1,7 @@
 import { defaultBlockParams } from '@/scene/asset-block';
 import { defaultCylinderParams } from '@/scene/asset-cylinder';
 import { defaultSphereParams } from '@/scene/asset-sphere';
-import { defaultWheelCarParams } from '@/scene/asset-wheel-car';
-import { wheelCarColliderShapeFromParams } from './wheel-car-collider-shape';
+import { wheelCarColliderShapeFromSizeScale } from './wheel-car-collider-shape';
 import type { AssetEntity } from '@/scene/entity-types';
 import { isRigidPrimitiveAssetKind } from '@/scene/rigid-primitive-asset';
 import { blockColliderShapeFromParams } from './block-collider-shape';
@@ -40,9 +39,7 @@ export function rigidColliderShapeFromEntity(
     case 'wheel-car':
       return {
         kind: 'wheelCar',
-        shape: wheelCarColliderShapeFromParams(
-          entity.wheelCarParams ?? defaultWheelCarParams(),
-        ),
+        shape: wheelCarColliderShapeFromSizeScale(entity.sizeScale),
       };
   }
 }

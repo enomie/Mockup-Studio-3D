@@ -1,23 +1,15 @@
 import type { AssetKind } from './asset-kind';
-import { clamp } from '@/units/math';
 import { LATHE_PROFILE_METRICS_MM } from '@/data/lathe-profile-metrics.generated';
+import { MM_TO_M } from '@/units/length';
 
+/**
+ * Shape and size come from the profile SVG; the instance scales via `entity.sizeScale`.
+ * Spoke width is engine-side (tangential extrusion of the drawn spoke side view).
+ */
 export interface WheelCarParams {
-  outerRadiusM: number;
-  tireWidthM: number;
-  rimRadiusM: number;
-  rimInsetM: number;
-  hubRadiusM: number;
-  hubDepthM: number;
-  tireCornerRadiusMm: number;
   spokeCount: 5;
 }
 
-const DIM_MIN = 0.01;
-const DIM_MAX = 2;
-const OUTER_RADIUS_MIN = 0.05;
-const CORNER_RADIUS_MM_MIN = 0;
-const MIN_SIDEWALL_M = 0.015;
 const SPOKE_COUNT = 5 as const;
 
 /** Shipped x-lathe profile (public/profiles/lathe, 1 unit = 1 mm). */
@@ -27,30 +19,25 @@ export const WHEEL_CAR_SVG_FILE = 'lathe-x-wheel-car.svg';
 const WHEEL_CAR_SVG_BOUNDS_MM = LATHE_PROFILE_METRICS_MM[WHEEL_CAR_SVG_FILE].bounds;
 export const WHEEL_CAR_SVG_AXIS_Y_MM = WHEEL_CAR_SVG_BOUNDS_MM.maxY;
 const WHEEL_CAR_SVG_OUTER_RADIUS_MM = WHEEL_CAR_SVG_AXIS_Y_MM - WHEEL_CAR_SVG_BOUNDS_MM.minY;
-export const WHEEL_CAR_SVG_TIRE_WIDTH_MM = WHEEL_CAR_SVG_BOUNDS_MM.maxX - WHEEL_CAR_SVG_BOUNDS_MM.minX;
+const WHEEL_CAR_SVG_TIRE_WIDTH_MM = WHEEL_CAR_SVG_BOUNDS_MM.maxX - WHEEL_CAR_SVG_BOUNDS_MM.minX;
 export const WHEEL_CAR_SVG_AXIAL_CENTER_MM =
   WHEEL_CAR_SVG_BOUNDS_MM.minX + WHEEL_CAR_SVG_TIRE_WIDTH_MM / 2;
 
-export function wheelCarUniformScale(outerRadiusM: number): number {
-  return outerRadiusM / (WHEEL_CAR_SVG_OUTER_RADIUS_MM / 1000);
+export interface WheelCarDimensionsM {
+  outerRadiusM: number;
+  tireWidthM: number;
 }
 
-export function wheelCarSizeRatio(outerRadiusM: number): number {
-  return outerRadiusM / defaultWheelCarParams().outerRadiusM;
-}
-
-/** Default 255/30 R20 sport low-profile reference. */
-export function defaultWheelCarParams(): WheelCarParams {
+/** Outer radius and tire width measured from the SVG × `sizeScale`. */
+export function wheelCarDimensionsM(sizeScale = 1): WheelCarDimensionsM {
   return {
-    outerRadiusM: 0.3305,
-    tireWidthM: 0.255,
-    rimRadiusM: 0.254,
-    rimInsetM: 0.01,
-    hubRadiusM: 0.048,
-    hubDepthM: 0.025,
-    tireCornerRadiusMm: 3.5,
-    spokeCount: SPOKE_COUNT,
+    outerRadiusM: WHEEL_CAR_SVG_OUTER_RADIUS_MM * MM_TO_M * sizeScale,
+    tireWidthM: WHEEL_CAR_SVG_TIRE_WIDTH_MM * MM_TO_M * sizeScale,
   };
+}
+
+export function defaultWheelCarParams(): WheelCarParams {
+  return { spokeCount: SPOKE_COUNT };
 }
 
 export function cloneWheelCarParams(params: WheelCarParams): WheelCarParams {
@@ -61,64 +48,10 @@ export function isWheelCarAssetKind(kind: AssetKind): kind is 'wheel-car' {
   return kind === 'wheel-car';
 }
 
+/** Legacy params (outerRadiusM, rimRadiusM, …) are dropped — sizes come from the SVG. */
 export function clampWheelCarParams(
-  partial: Partial<WheelCarParams>,
-  base: WheelCarParams,
+  _partial: Partial<WheelCarParams>,
+  _base: WheelCarParams,
 ): WheelCarParams {
-  const outerRadiusM = clamp(
-    partial.outerRadiusM ?? base.outerRadiusM,
-    OUTER_RADIUS_MIN,
-    DIM_MAX,
-  );
-  const uniform = wheelCarUniformScale(outerRadiusM);
-  const defaults = defaultWheelCarParams();
-  const refScale = wheelCarUniformScale(defaults.outerRadiusM);
-
-  const tireWidthM =
-    partial.outerRadiusM !== undefined
-      ? (WHEEL_CAR_SVG_TIRE_WIDTH_MM / 1000) * uniform
-      : clamp(partial.tireWidthM ?? base.tireWidthM, DIM_MIN, DIM_MAX);
-
-  let rimRadiusM = clamp(
-    partial.rimRadiusM ?? (defaults.rimRadiusM / refScale) * uniform,
-    DIM_MIN,
-    outerRadiusM - MIN_SIDEWALL_M,
-  );
-  const rimInsetM = clamp(
-    partial.rimInsetM ?? (defaults.rimInsetM / refScale) * uniform,
-    0,
-    tireWidthM * 0.25,
-  );
-  let hubRadiusM = clamp(
-    partial.hubRadiusM ?? (defaults.hubRadiusM / refScale) * uniform,
-    DIM_MIN,
-    rimRadiusM - DIM_MIN,
-  );
-  const hubDepthM = clamp(
-    partial.hubDepthM ?? (defaults.hubDepthM / refScale) * uniform,
-    DIM_MIN,
-    DIM_MAX,
-  );
-
-  rimRadiusM = Math.min(rimRadiusM, outerRadiusM - MIN_SIDEWALL_M);
-  hubRadiusM = Math.min(hubRadiusM, rimRadiusM - DIM_MIN);
-
-  const merged = {
-    outerRadiusM,
-    tireWidthM,
-    rimRadiusM,
-    rimInsetM,
-    hubRadiusM,
-    hubDepthM,
-    tireCornerRadiusMm: defaults.tireCornerRadiusMm,
-    spokeCount: SPOKE_COUNT,
-  };
-
-  const sidewallM = outerRadiusM - rimRadiusM;
-  const maxCornerMm = Math.min(sidewallM * 1000, tireWidthM * 500);
-
-  return {
-    ...merged,
-    tireCornerRadiusMm: clamp(merged.tireCornerRadiusMm, CORNER_RADIUS_MM_MIN, maxCornerMm),
-  };
+  return { spokeCount: SPOKE_COUNT };
 }

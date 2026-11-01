@@ -1,6 +1,6 @@
 # Plan: Wheel Car — alles aus SVG-Pfaden
 
-**Status:** Entwurf — wartet auf Freigabe
+**Status:** Freigegeben 2026-11-01 · umgesetzt (offen: visueller Check durch User)
 **Datum:** 2026-11-01
 **Bezug:** [`plan-lathe-svg-units-mm.md`](./plan-lathe-svg-units-mm.md), [`plan-wine-bottle-svg-capsule.md`](./plan-wine-bottle-svg-capsule.md) (10 Farb-Slots)
 
@@ -38,8 +38,14 @@ SVG = einzige Quelle für Form und Maße, wie bei Dose/Pen/Flasche.
 5. **Tote Parameter entfernen** (`rimRadiusM`, `rimInsetM`, `hubRadiusM`, `hubDepthM`, `tireCornerRadiusMm`) inkl. Panel-Feldern, `rigid-primitive-uniform-scale.ts`; Physik-Collider aus gemessenen Maßen × `sizeScale`.
 6. **Tests + Doku**: Teile aus Slots, keine Stirn-Ringe, Migration `outerRadiusM` → `sizeScale`, Collider-Maße; `requirements-assets-wheel-car.md`.
 
-## Offene Fragen
+## Entscheidungen (User)
 
-1. Speichen: **A**, **B** oder **C**?
-2. Welche Zusatzteile (Felgenschüssel, Bremsscheibe, Nabenkappe) willst du — und soll ich Startpfade dafür erzeugen?
-3. Größe auf `sizeScale` umstellen (einheitlich mit den anderen Assets) — ok?
+1. Speichen: **A** — Claude zeichnet den Seitenansicht-Pfad (`path_orange`).
+2. Zusatzteile: noch nicht.
+3. Größe auf `sizeScale`: ja, alles gleich.
+
+## Umsetzung (Ist)
+
+- Speichen-Pfad: Rechteck axial 115,5–139,5 mm (24 mm Tiefe, mittig), radial von Nabe bis Felgenring mit je 1 mm Überlappung; tangentiale Breite 18 mm (Engine-Konstante × `sizeScale`).
+- Wheel bleibt Rigid-Body (Physik), aber `bakesUniformScaleIntoParams` schließt `wheel-car` aus → Gizmo/Panel setzen `sizeScale`.
+- Keine Szenen-Migration: alte Szenen mit geändertem `outerRadiusM` laden in Standardgröße (es gibt keine Lade-Normalisierung für Entities).

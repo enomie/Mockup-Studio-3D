@@ -39,7 +39,7 @@ import {
 import { defaultBlockParams, isBlockAssetKind } from './asset-block';
 import { defaultCylinderParams, isCylinderAssetKind } from './asset-cylinder';
 import { defaultSphereParams, isSphereAssetKind } from './asset-sphere';
-import { defaultWheelCarParams, isWheelCarAssetKind } from './asset-wheel-car';
+import { isWheelCarAssetKind, wheelCarDimensionsM } from './asset-wheel-car';
 import {
   FABRIC_CLOTH_MESH_THICKNESS_M,
   FABRIC_CLOTH_PLACEHOLDER_ASPECT,
@@ -114,7 +114,7 @@ export function referenceFaceWidth(assetKind: AssetKind): number {
     case 'sphere':
       return defaultSphereParams().radiusM * 2;
     case 'wheel-car':
-      return defaultWheelCarParams().outerRadiusM * 2;
+      return wheelCarDimensionsM().outerRadiusM * 2;
     case 'beverage-can':
       return defaultBeverageCanParams('standard').diameterM;
     case 'tin-can':
@@ -389,8 +389,7 @@ export function computeFaceSize(
   }
 
   if (isWheelCarAssetKind(assetKind)) {
-    const params = entity?.wheelCarParams ?? defaultWheelCarParams();
-    const d = params.outerRadiusM * 2;
+    const d = wheelCarDimensionsM(clampSizeScale(sizeScale)).outerRadiusM * 2;
     return { width: d, height: d };
   }
 
@@ -459,9 +458,7 @@ export function assetFootprintHeight(
     case 'sphere':
       return (entity?.sphereParams?.radiusM ?? defaultSphereParams().radiusM) * 2;
     case 'wheel-car':
-      return (
-        entity?.wheelCarParams?.outerRadiusM ?? defaultWheelCarParams().outerRadiusM
-      ) * 2;
+      return wheelCarDimensionsM(scale).outerRadiusM * 2;
     case 'beverage-can': {
       const params = entity?.beverageCanParams ?? defaultBeverageCanParams('standard');
       return params.heightM * scale;

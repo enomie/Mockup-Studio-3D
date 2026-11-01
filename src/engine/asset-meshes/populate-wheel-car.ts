@@ -20,17 +20,19 @@ export async function addWheelCar(
   resolver: MaterialResolver,
   materials: AssetMaterialSlots = {},
   wheelCarParams: WheelCarParams = defaultWheelCarParams(),
+  sizeScale = 1,
 ): Promise<void> {
   disposeAssetGroup(group);
   const tireMaterialId = materials.tireMaterialId ?? MATERIAL_PLASTIC_MATTE_ID;
   const rimMaterialId = materials.rimMaterialId ?? MATERIAL_CHROME_ID;
   const tireMaterial = resolveMeshMaterial(resolver, tireMaterialId);
   const rimMaterial = resolveMeshMaterial(resolver, rimMaterialId);
-  const profiles = await loadWheelCarLatheProfiles(wheelCarParams.outerRadiusM);
+  const profiles = await loadWheelCarLatheProfiles(sizeScale);
   addWheelCarMeshesFromSvg(
     group,
     profiles,
     wheelCarParams,
+    sizeScale,
     tireMaterial,
     rimMaterial,
   );

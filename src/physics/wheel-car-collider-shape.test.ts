@@ -1,17 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import { defaultWheelCarParams } from '@/scene/asset-wheel-car';
+import { wheelCarDimensionsM } from '@/scene/asset-wheel-car';
 import { PHYSICS_COLLIDER_MARGIN_M } from './constants';
-import { wheelCarColliderShapeFromParams } from './wheel-car-collider-shape';
+import { wheelCarColliderShapeFromSizeScale } from './wheel-car-collider-shape';
 
-describe('wheelCarColliderShapeFromParams', () => {
-  it('uses outer radius and tire width with margin', () => {
-    const params = defaultWheelCarParams();
-    const shape = wheelCarColliderShapeFromParams(params);
-    expect(shape.radiusM).toBeCloseTo(params.outerRadiusM + PHYSICS_COLLIDER_MARGIN_M, 6);
-    expect(shape.halfHeightM).toBeCloseTo(
-      params.tireWidthM * 0.5 + PHYSICS_COLLIDER_MARGIN_M,
-      6,
-    );
-    expect(shape.centerOffsetY).toBe(params.outerRadiusM);
+describe('wheelCarColliderShapeFromSizeScale', () => {
+  it('uses SVG outer radius and tire width × sizeScale, with margin', () => {
+    for (const sizeScale of [1, 1.5]) {
+      const dims = wheelCarDimensionsM(sizeScale);
+      const shape = wheelCarColliderShapeFromSizeScale(sizeScale);
+      expect(shape.radiusM).toBeCloseTo(dims.outerRadiusM + PHYSICS_COLLIDER_MARGIN_M, 6);
+      expect(shape.halfHeightM).toBeCloseTo(dims.tireWidthM * 0.5 + PHYSICS_COLLIDER_MARGIN_M, 6);
+      expect(shape.centerOffsetY).toBe(dims.outerRadiusM);
+    }
+    expect(wheelCarDimensionsM(1).outerRadiusM).toBeCloseTo(0.3305, 6);
+    expect(wheelCarDimensionsM(1).tireWidthM).toBeCloseTo(0.255, 6);
   });
 });

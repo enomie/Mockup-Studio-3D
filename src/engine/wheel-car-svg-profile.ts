@@ -4,21 +4,23 @@ import {
   WHEEL_CAR_SVG_AXIS_Y_MM,
   WHEEL_CAR_SVG_FILE,
   WHEEL_CAR_SVG_AXIAL_CENTER_MM,
-  wheelCarUniformScale,
 } from '@/scene/asset-wheel-car';
+import { MM_TO_M } from '@/units/length';
+import { closeAndOrientLatheContour } from './lathe-contour';
 import {
   extractLathePathPointsBySlot,
   type LatheSvgPoint2,
 } from './lathe-svg-path-slots';
 
-;
+type WheelCarSvgPartId = 'tire' | 'rimOuter' | 'rimInner' | 'spoke';
 
-type WheelCarSvgPartId = 'tire' | 'rimOuter' | 'rimInner';
-
+/** Profiles in meters: x = radius, y = axial (centered on the tire). */
 export interface WheelCarLatheProfiles {
   tire: Vector2[];
   rimOuter: Vector2[];
   rimInner: Vector2[];
+  /** Spoke side view (`path_orange`), closed outline — extruded, not lathed. */
+  spoke: Vector2[];
 }
 
 type RawWheelCarPaths = Record<WheelCarSvgPartId, LatheSvgPoint2[]>;
@@ -34,39 +36,39 @@ export function extractWheelCarPathsFromSvgText(
     tire: slots[0],
     rimOuter: slots[1],
     rimInner: slots[2],
+    spoke: slots[6],
   };
 }
 
-/** SVG mm → Lathe profile (x = radius, y = axial) in meters, uniform scale from outer radius. */
-function normalizeWheelCarPartPoints(
-  raw: LatheSvgPoint2[],
-  outerRadiusM: number,
-): Vector2[] {
-  if (raw.length < 3 || outerRadiusM <= 0) {
+/** SVG mm (x = axial, y down to the axis) → meters (x = radius, y = axial), × `sizeScale`. */
+function wheelSvgMmToMeters(raw: LatheSvgPoint2[], sizeScale: number): Vector2[] {
+  const k = MM_TO_M * sizeScale;
+  return raw.map(
+    (p) =>
+      new Vector2(
+        Math.max(0, WHEEL_CAR_SVG_AXIS_Y_MM - p.y) * k,
+        (p.x - WHEEL_CAR_SVG_AXIAL_CENTER_MM) * k,
+      ),
+  );
+}
+
+/** Every wheel part is a closed outline: closed + wound CCW so lathe faces point outward. */
+function normalizeWheelCarPartPoints(raw: LatheSvgPoint2[], sizeScale: number): Vector2[] {
+  if (raw.length < 3 || sizeScale <= 0) {
     return [];
   }
-
-  const scale = wheelCarUniformScale(outerRadiusM);
-  const mPerMm = scale / 1000;
-  const normalized: Vector2[] = [];
-
-  for (const p of raw) {
-    const radiusM = (WHEEL_CAR_SVG_AXIS_Y_MM - p.y) * mPerMm;
-    const axialM = (p.x - WHEEL_CAR_SVG_AXIAL_CENTER_MM) * mPerMm;
-    normalized.push(new Vector2(radiusM, axialM));
-  }
-
-  return normalized;
+  return closeAndOrientLatheContour(wheelSvgMmToMeters(raw, sizeScale));
 }
 
 export function normalizeWheelCarPaths(
   raw: RawWheelCarPaths,
-  outerRadiusM: number,
+  sizeScale = 1,
 ): WheelCarLatheProfiles {
   return {
-    tire: normalizeWheelCarPartPoints(raw.tire, outerRadiusM),
-    rimOuter: normalizeWheelCarPartPoints(raw.rimOuter, outerRadiusM),
-    rimInner: normalizeWheelCarPartPoints(raw.rimInner, outerRadiusM),
+    tire: normalizeWheelCarPartPoints(raw.tire, sizeScale),
+    rimOuter: normalizeWheelCarPartPoints(raw.rimOuter, sizeScale),
+    rimInner: normalizeWheelCarPartPoints(raw.rimInner, sizeScale),
+    spoke: normalizeWheelCarPartPoints(raw.spoke, sizeScale),
   };
 }
 
@@ -101,10 +103,10 @@ export function clearRawWheelCarPathsCache(): void {
 }
 
 export async function loadWheelCarLatheProfiles(
-  outerRadiusM: number,
+  sizeScale = 1,
 ): Promise<WheelCarLatheProfiles> {
   const raw = await loadRawWheelCarPaths();
-  return normalizeWheelCarPaths(raw, outerRadiusM);
+  return normalizeWheelCarPaths(raw, sizeScale);
 }
 
 export function maxRadiusFromLatheProfile(points: Vector2[]): number {
@@ -113,24 +115,4 @@ export function maxRadiusFromLatheProfile(points: Vector2[]): number {
     maxR = Math.max(maxR, p.x);
   }
   return maxR;
-}
-
-/** Lathe profile uses x = radius, y = axial (meters). */
-export function latheProfileBandBounds(points: Vector2[]): {
-  minRadiusM: number;
-  maxRadiusM: number;
-  minAxialM: number;
-  maxAxialM: number;
-} {
-  let minRadiusM = Infinity;
-  let maxRadiusM = -Infinity;
-  let minAxialM = Infinity;
-  let maxAxialM = -Infinity;
-  for (const p of points) {
-    minRadiusM = Math.min(minRadiusM, p.x);
-    maxRadiusM = Math.max(maxRadiusM, p.x);
-    minAxialM = Math.min(minAxialM, p.y);
-    maxAxialM = Math.max(maxAxialM, p.y);
-  }
-  return { minRadiusM, maxRadiusM, minAxialM, maxAxialM };
 }

@@ -57,7 +57,10 @@ import {
   isPatchAssetKind,
 } from '@/scene/asset-triangle-patch';
 import { isWheelCarAssetKind } from '@/scene/asset-wheel-car';
-import { isRigidPrimitiveAssetKind } from '@/scene/rigid-primitive-asset';
+import {
+  bakesUniformScaleIntoParams,
+  isRigidPrimitiveAssetKind,
+} from '@/scene/rigid-primitive-asset';
 import {
   resolvePhysicsBodyMode,
   type PhysicsBodyMode,
@@ -558,7 +561,7 @@ export class AssetSystem {
     if (
       !runtime ||
       isWallAssetKind(runtime.entity.assetKind) ||
-      isRigidPrimitiveAssetKind(runtime.entity.assetKind) ||
+      bakesUniformScaleIntoParams(runtime.entity.assetKind) ||
       isFabricClothBakedAssetKind(runtime.entity.assetKind)
     ) {
       return;

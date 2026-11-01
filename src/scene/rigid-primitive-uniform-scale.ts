@@ -10,10 +10,6 @@ import {
   defaultSphereParams,
   type SphereParams,
 } from './asset-sphere';
-import {
-  defaultWheelCarParams,
-  type WheelCarParams,
-} from './asset-wheel-car';
 import { clampSizeScale } from './asset-sizing';
 import type { AssetEntity } from './entity-types';
 import { isRigidPrimitiveAssetKind } from './rigid-primitive-asset';
@@ -23,8 +19,7 @@ const SCALE_FACTOR_EPSILON = 1e-9;
 export type RigidPrimitiveScaleParamPatch =
   | Partial<BlockParams>
   | Partial<CylinderParams>
-  | Partial<SphereParams>
-  | Partial<WheelCarParams>;
+  | Partial<SphereParams>;
 
 /** Gizmo uniform scale factor → absolute param values (before mergeKindParamPatch clamp). */
 export function buildRigidPrimitiveUniformScalePartial(
@@ -67,17 +62,8 @@ export function buildRigidPrimitiveUniformScalePartial(
         radiusM: current.radiusM * scaledFactor,
       };
     }
-    case 'wheel-car': {
-      const current = entity.wheelCarParams ?? defaultWheelCarParams();
-      return {
-        outerRadiusM: current.outerRadiusM * scaledFactor,
-        tireWidthM: current.tireWidthM * scaledFactor,
-        rimRadiusM: current.rimRadiusM * scaledFactor,
-        rimInsetM: current.rimInsetM * scaledFactor,
-        hubRadiusM: current.hubRadiusM * scaledFactor,
-        hubDepthM: current.hubDepthM * scaledFactor,
-        tireCornerRadiusMm: current.tireCornerRadiusMm * scaledFactor,
-      };
-    }
+    case 'wheel-car':
+      // Scales via entity.sizeScale (see bakesUniformScaleIntoParams).
+      return null;
   }
 }

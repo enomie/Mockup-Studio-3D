@@ -8,7 +8,8 @@
       path_red   — tire (slot 1)
       path_green — rim outer ring (slot 2)
       path_blue  — rim inner / hub (slot 3)
-    Speichen: engine only.
+      path_orange — spoke, side view (radial × axial); engine extrudes it
+                    tangentially and repeats it around the axle
 
     Shoulder fillets on tire: convex outward (rubber outer contour), not chamfer into tread.
   -->
@@ -16,4 +17,5 @@
   <path class="path_red" stroke="#ff0000" fill="none" d="M17.03,0L237.97,0C247.37,0 255,7.63 255,17.03L255,67.02C255,72.25 250.75,76.5 245.52,76.5L9.48,76.5C4.25,76.5 0,72.25 0,67.02L0,17.03C0,7.63 7.63,0 17.03,0Z"/>
   <path class="path_green" stroke="#00ff00" fill="none" d="M10,76.5L245,76.5L245,94.59L10,94.59Z"/>
   <path class="path_blue" stroke="#0000ff" fill="none" d="M83.35,282.5L171.64,282.5L171.64,330.5L83.35,330.5Z"/>
+  <path class="path_orange" stroke="#ff8000" fill="none" d="M115.5,93.59L139.5,93.59L139.5,283.5L115.5,283.5Z"/>
 </svg>

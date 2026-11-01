@@ -628,6 +628,7 @@ async function rebuildRigidPrimitive(
       ctx.materialResolver,
       materials,
       entity.wheelCarParams ?? defaultWheelCarParams(),
+      entity.sizeScale,
     );
   }
 
