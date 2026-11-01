@@ -1,4 +1,28 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 81.9 410.2">
-  <path class="path_red" fill="none" stroke="#ff0000" stroke-miterlimit="10" d="M0,13.6h65.6C71.1,13.6,70.6,4,70.6,0h2c0,25.2,8.7,21.6,8.7,36.8v354.1c0,7.9-6.5,9.8-8.5,13.4-3.2,5.6-9.6,5.5-11.8,5.5-5,0-20.5-10.1-61-10.1"/>
+  <defs>
+    <style>
+      .cls-1 {
+        stroke: red;
+        stroke-miterlimit: 10;
+      }
+
+      .cls-1, .cls-2 {
+        fill: none;
+        stroke-width: .28px;
+      }
+
+      .cls-2 {
+        stroke: lime;
+        stroke-miterlimit: 28.35;
+      }
+    </style>
+  </defs>
+  <!-- Generator: Adobe Illustrator 28.6.0, SVG Export Plug-In . SVG Version: 1.2.0 Build 709)  -->
+  <g>
+    <g id="Layer_1">
+      <path class="cls-1" d="M0,13.6h65.6c5.5,0,5.96-8.37,5.96-12.37h.33c0,25.2,9.41,20.37,9.41,35.57v354.1c0,7.9-6.5,9.8-8.5,13.4-3.2,5.6-9.6,5.5-11.8,5.5-5,0-20.5-10.1-61-10.1"/>
+      <rect class="cls-2" x="71.23" y=".23" width="1" height="2" rx=".39" ry=".39"/>
+    </g>
+  </g>
 </svg>
