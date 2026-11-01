@@ -51,4 +51,4 @@ Fazit: Der Code ist in deutlich besserem Zustand als befürchtet. Es gibt keine 
 - ✅ Schritt 2 – `ad2457a` (Fund: Viewport-Helper gaben GPU-Ressourcen nie frei), `482ccef`
 - ✅ Schritt 3 – `69a6710` (Fund: Patch-Gizmo ebenso), `33588ef`
 - ⏸ Schritt 4 (Bundle-Splitting) – bewusst zurückgestellt; die App braucht Three.js ohnehin sofort, der Nutzen ist aktuell gering.
-- Offen: `scripts/*.ts` behalten oder löschen? `renameUserBakedAsset` (gelöscht, nie in UI verdrahtet) ggf. als Feature zurückholen.
+- Entschieden: `scripts/*.ts` bleiben (in knip als Entry eingetragen). `renameUserBakedAsset` bleibt gelöscht, Feature nicht gewünscht.
