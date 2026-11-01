@@ -1,81 +1,45 @@
-import { Vector2 } from 'three/webgpu';
+import type { Vector2 } from 'three/webgpu';
 import type { BeverageCanBodyProfile } from './beverage-can-label-unfold';
 import { beverageCanSvgUrl } from '@/scene/asset-beverage-can';
+import { beverageCanProfileMm } from '@/scene/beverage-can-profile-metrics';
+import { latheSvgMmToMeters, prepareLatheProfile } from './lathe-contour';
 import {
   extractLathePathPointsBySlot,
   type LatheSvgPoint2,
 } from './lathe-svg-path-slots';
 
-;
-
-const rawPointsCache = new Map<BeverageCanBodyProfile, LatheSvgPoint2[]>();
-
-export function normalizeSvgProfileToLathePoints(
-  rawPoints: LatheSvgPoint2[],
-  heightM: number,
-  diameterM: number,
-): Vector2[] {
-  if (rawPoints.length < 2 || heightM <= 0 || diameterM <= 0) {
-    return [];
-  }
-
-  let minX = Infinity;
-  let maxX = -Infinity;
-  let minY = Infinity;
-  let maxY = -Infinity;
-
-  for (const p of rawPoints) {
-    minX = Math.min(minX, p.x);
-    maxX = Math.max(maxX, p.x);
-    minY = Math.min(minY, p.y);
-    maxY = Math.max(maxY, p.y);
-  }
-
-  const spanY = maxY - minY;
-  const spanX = maxX - minX;
-  if (spanY <= 0 || spanX <= 0) {
-    return [];
-  }
-
-  const targetRadiusM = diameterM / 2;
-  const scaleY = heightM / spanY;
-  const scaleX = targetRadiusM / spanX;
-
-  const normalized: Vector2[] = [];
-  for (const p of rawPoints) {
-    const x = (p.x - minX) * scaleX;
-    const y = (maxY - p.y) * scaleY;
-    normalized.push(new Vector2(x, y));
-  }
-
-  return orientLatheProfileBottomToTop(normalized);
+/** Raw SVG paths (1 unit = 1 mm, y down): `path_red` body, `path_green` top ring. */
+export interface BeverageCanRawPaths {
+  body: LatheSvgPoint2[];
+  ring: LatheSvgPoint2[];
 }
 
-/** LatheGeometry expects the profile traced from bottom (y≈0) toward the top for outward-facing sides. */
-export function orientLatheProfileBottomToTop(points: Vector2[]): Vector2[] {
-  if (points.length < 2) {
-    return points;
-  }
-
-  const sampleCount = Math.min(4, points.length);
-  let sumFirst = 0;
-  let sumLast = 0;
-  for (let i = 0; i < sampleCount; i += 1) {
-    sumFirst += points[i].y;
-    sumLast += points[points.length - 1 - i].y;
-  }
-  const avgFirst = sumFirst / sampleCount;
-  const avgLast = sumLast / sampleCount;
-
-  if (avgFirst > avgLast) {
-    return [...points].reverse();
-  }
-  return points;
+/** Lathe profiles in meters (x = radius, y up, foot at y = 0). */
+export interface BeverageCanLatheProfiles {
+  body: Vector2[];
+  ring: Vector2[];
 }
 
-function extractPointsFromSvgText(svgText: string, curveSegments = 24): LatheSvgPoint2[] {
+const rawPathsCache = new Map<BeverageCanBodyProfile, BeverageCanRawPaths>();
+
+export function extractBeverageCanPathsFromSvgText(
+  svgText: string,
+  curveSegments = 24,
+): BeverageCanRawPaths {
   const slots = extractLathePathPointsBySlot(svgText, curveSegments);
-  return slots[0];
+  return { body: slots[0], ring: slots[1] };
+}
+
+/** SVG mm → meters without stretching; body and ring share one transform. */
+export function normalizeBeverageCanPaths(
+  raw: BeverageCanRawPaths,
+  footYMm: number,
+  sizeScale = 1,
+): BeverageCanLatheProfiles {
+  return {
+    body: prepareLatheProfile(latheSvgMmToMeters(raw.body, footYMm, sizeScale)),
+    ring: prepareLatheProfile(latheSvgMmToMeters(raw.ring, footYMm, sizeScale)),
+  };
 }
 
 async function fetchSvgText(url: string): Promise<string> {
@@ -86,34 +50,33 @@ async function fetchSvgText(url: string): Promise<string> {
   return response.text();
 }
 
-async function loadRawSvgProfilePoints(
+async function loadRawBeverageCanPaths(
   profile: BeverageCanBodyProfile,
-): Promise<LatheSvgPoint2[]> {
-  const cached = rawPointsCache.get(profile);
+): Promise<BeverageCanRawPaths> {
+  const cached = rawPathsCache.get(profile);
   if (cached) {
     return cached;
   }
-
-  const svgText = await fetchSvgText(beverageCanSvgUrl(profile));
-  const points = extractPointsFromSvgText(svgText);
-  rawPointsCache.set(profile, points);
-  return points;
+  const paths = extractBeverageCanPathsFromSvgText(
+    await fetchSvgText(beverageCanSvgUrl(profile)),
+  );
+  rawPathsCache.set(profile, paths);
+  return paths;
 }
 
-export function setRawSvgProfilePointsCache(
+export function setRawBeverageCanPathsCache(
   profile: BeverageCanBodyProfile,
-  points: LatheSvgPoint2[],
+  paths: BeverageCanRawPaths,
 ): void {
-  rawPointsCache.set(profile, points);
+  rawPathsCache.set(profile, paths);
 }
 
-export async function loadNormalizedLatheProfile(
+export async function loadBeverageCanLatheProfiles(
   profile: BeverageCanBodyProfile,
-  heightM: number,
-  diameterM: number,
-): Promise<Vector2[]> {
-  const raw = await loadRawSvgProfilePoints(profile);
-  return normalizeSvgProfileToLathePoints(raw, heightM, diameterM);
+  sizeScale = 1,
+): Promise<BeverageCanLatheProfiles> {
+  const raw = await loadRawBeverageCanPaths(profile);
+  return normalizeBeverageCanPaths(raw, beverageCanProfileMm(profile).footYMm, sizeScale);
 }
 
 /**

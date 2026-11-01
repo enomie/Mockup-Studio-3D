@@ -1,22 +1,21 @@
 import {
   LatheGeometry,
   Mesh,
-  Vector2,
   type BufferGeometry,
   type Material,
+  type Vector2,
 } from 'three/webgpu';
 import {
-  beverageCanTopRingYBounds,
+  beverageCanLabelTopM,
   scaledBeverageCanParams,
   type BeverageCanParams,
 } from '@/scene/asset-beverage-can';
-import { MM_TO_M } from '@/units/length';
 import {
   isGeometryVisible,
   type AssetGeometryVisibility,
 } from '@/scene/geometry-visibility';
 import {
-  loadNormalizedLatheProfile,
+  loadBeverageCanLatheProfiles,
   sampleProfileRadiusAtY,
 } from './beverage-can-svg-profile';
 import { applyRotationalPrintUv, PRINT_UV_ATTRIBUTE } from './rotational-print-mapping';
@@ -53,10 +52,9 @@ export function labelBandYBounds(params: BeverageCanParams): {
   labelY0: number;
   labelY1: number;
 } {
-  const topHalf = params.topRingHeightM * 0.5;
   return {
     labelY0: params.labelBottomOffsetM,
-    labelY1: params.heightM - topHalf,
+    labelY1: beverageCanLabelTopM(params),
   };
 }
 
@@ -124,24 +122,9 @@ export function buildCanHullLatheGeometry(
   return geometry;
 }
 
-/** Axisymmetric lip: lathe a radial×vertical rectangle; `topRingCenterRadiusMm` is the ring mid-radius. */
-export function buildTopRingGeometry(params: BeverageCanParams): BufferGeometry {
-  const { y0, y1 } = beverageCanTopRingYBounds(params);
-  const centerM = params.topRingCenterRadiusMm * MM_TO_M;
-  const halfThicknessM = params.topRingThicknessM * 0.5;
-  const rInnerM = Math.max(centerM - halfThicknessM, 1e-6);
-  const rOuterM = centerM + halfThicknessM;
-
-  const profile = [
-    new Vector2(rInnerM, y0),
-    new Vector2(rOuterM, y0),
-    new Vector2(rOuterM, y1),
-    new Vector2(rInnerM, y1),
-    new Vector2(rInnerM, y0),
-  ];
-
-  const geometry = new LatheGeometry(profile, LATHE_SEGMENTS, LATHE_SEAM_PHI_START);
-  applyLatheGeometryFootToY0(geometry);
+/** Top ring: lathe of the closed `path_green` contour (ring with a hole, not a disc). */
+export function buildTopRingGeometry(ringProfile: Vector2[]): BufferGeometry {
+  const geometry = new LatheGeometry(ringProfile, LATHE_SEGMENTS, LATHE_SEAM_PHI_START);
   geometry.computeVertexNormals();
   ensureGeometryTangents(geometry);
   return geometry;
@@ -153,18 +136,17 @@ export async function buildBeverageCanMeshes(
   const scaled = scaledBeverageCanParams(input.params, input.sizeScale);
   const profile = scaled.canBodyProfile;
 
-  const profilePoints = await loadNormalizedLatheProfile(
-    profile,
-    scaled.heightM,
-    scaled.diameterM,
-  );
+  const profiles = await loadBeverageCanLatheProfiles(profile, input.sizeScale);
 
-  if (profilePoints.length < 2) {
+  if (profiles.body.length < 2) {
     throw new Error(`Beverage can SVG profile empty: ${profile}`);
   }
+  if (profiles.ring.length < 3) {
+    throw new Error(`Beverage can SVG top ring (path_green) missing: ${profile}`);
+  }
 
-  const bodyGeometry = buildCanHullLatheGeometry(profilePoints, { params: scaled });
-  const ringGeometry = buildTopRingGeometry(scaled);
+  const bodyGeometry = buildCanHullLatheGeometry(profiles.body, { params: scaled });
+  const ringGeometry = buildTopRingGeometry(profiles.ring);
 
   const bodyVisible = isGeometryVisible(input.geometryVisibility, 'body');
   const topRingVisible = isGeometryVisible(input.geometryVisibility, 'topRing');
@@ -177,7 +159,6 @@ export async function buildBeverageCanMeshes(
   const topRingMesh = new Mesh(ringGeometry, input.topRingMetalMaterial);
   topRingMesh.name = 'beverage-can-top-ring';
   topRingMesh.userData.assetMeshRole = 'topRing';
-  topRingMesh.position.y = beverageCanTopRingYBounds(scaled).y0;
   topRingMesh.visible = topRingVisible;
 
   return { bodyMesh, topRingMesh };

@@ -17,7 +17,26 @@
 | **Achse & Pivot** | Pro Asset dokumentiert (z. B. Stift: **X = 0** Drehachse; Dose/Flasche: Fuß **y = 0**). Pfade müssen zur Achse passen — keine `transform` auf der Geometrie, die Maße verfälscht. |
 | **Profilwechsel = andere Form** | Andere Proportionen (längerer Stift, andere Flasche, anderes Rad) → **neues/überarbeitetes SVG**, **nicht** non-uniform Stretch im UI. |
 
-**Authoring:** Planar Editor / externe Tools → [`requirements-planar-editor.md`](./requirements-planar-editor.md). Bestehende Dateien, die noch **normalisiert** werden (Legacy-Skalierung auf Nennmaß), migrieren schrittweise auf **reine mm-Pfade** — Zielbild ist **kein** separates „Max radius“- oder „auf SVG-Breite skalieren“-Feld für den User.
+**Authoring:** Planar Editor / externe Tools → [`requirements-planar-editor.md`](./requirements-planar-editor.md). **Ist (2026-11):** alle mitgelieferten Dateien sind reine mm-Pfade; die Engine streckt **nicht** mehr auf Nennmaß — **SVG = einzige Größenquelle** (`heightM`/`diameterM` usw. werden gemessen, nicht gespeichert) → [`plan-lathe-svg-units-mm.md`](../plans/plan-lathe-svg-units-mm.md).
+
+**Dateiformat (mitgelieferte SVGs, normativ):**
+
+```xml
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 W H">
+  <path class="path_red" stroke="#ff0000" fill="none" d="…"/>
+</svg>
+```
+
+- `viewBox` in mm, **ohne** `width`/`height`, keine `transform`, kein `<style>`/CSS, nur `<path>` (kein `<rect>`).
+- Neu exportierte Dateien (z. B. Illustrator: CSS-Klassen `cls-*`, Farbnamen `red`/`lime`/`blue`, `<rect>`, pt-Einheiten) mit [`scripts/normalize-lathe-svgs.ts`](../../scripts/normalize-lathe-svgs.ts) in dieses Format bringen (Kurven bleiben erhalten). Die Engine liest solche Exporte zwar auch, mitgeliefert wird aber nur das normierte Format.
+- **Gemessene Maße** (sync verfügbar): [`scripts/generate-lathe-profile-metrics.ts`](../../scripts/generate-lathe-profile-metrics.ts) → `src/data/lathe-profile-metrics.generated.ts` (läuft in `predev`/`prebuild`; Test prüft Synchronität). Nach SVG-Änderung neu generieren.
+
+**Offene vs. geschlossene Kontur:**
+
+| Kontur | Ergebnis |
+|---|---|
+| **Offen** — läuft bis zur Achse (x = 0) | Volle Drehfläche bis zur Mitte (Körper, Kappe, Scheibe). |
+| **Geschlossen** — berührt die Achse **nicht** (Pillenform) | **Ring mit Loch** (Torus-artig), z. B. Dosen-Top-Ring, Stift-Ring. Engine schließt die Schleife und normiert die Laufrichtung → Zeichenrichtung egal. |
 
 ---
 
@@ -76,7 +95,7 @@
 |---|---|
 | **Strikt** | Nur Pfade mit Slot-Klasse **oder** normiertem RGB-Stroke zählen. Kein Fallback „erster `<path>` im Dokument“. |
 | **`fill: none`** | Authoring-Standard für Lathe-Konturen. |
-| **Semantik im Code** | Slot → Teil pro Asset (z. B. Pen: red=cap; Wheel: red=tire; Dose/Flasche: nur red). |
+| **Semantik im Code** | Slot → Teil pro Asset (z. B. Pen: red=cap, green=ring, blue=body; Wheel: red=tire; Dose: red=Körper, green=Top-Ring; Flasche: nur red). |
 | **Hilfsgrafik** | Keine Slot-Klasse / kein Slot-Stroke (z. B. gestrichelte `.guide`-Linie am Rad). |
 
 **Code:** `extractLathePathPointsBySlot`, `extractLatheSubpathPointsBySlot` (Flasche: erstes Subpath am red-Slot).
@@ -85,4 +104,4 @@
 
 **Category:** Assets — Lathe  
 **Title:** Code-Referenz  
-**Description:** Import-Pipeline pro Familie (Beispiele): [`lathe-svg-path-slots.ts`](../../src/engine/lathe-svg-path-slots.ts), [`pen-svg-profile.ts`](../../src/engine/pen-svg-profile.ts), [`beverage-can-svg-profile.ts`](../../src/engine/beverage-can-svg-profile.ts), [`wine-bottle-svg-profile.ts`](../../src/engine/wine-bottle-svg-profile.ts), Wheel [`wheel-car-svg-profile.ts`](../../src/engine/wheel-car-svg-profile.ts). Sizing-Footprint: [`asset-sizing.ts`](../../src/scene/asset-sizing.ts).
+**Description:** Import-Pipeline pro Familie (Beispiele): [`lathe-svg-path-slots.ts`](../../src/engine/lathe-svg-path-slots.ts), [`lathe-contour.ts`](../../src/engine/lathe-contour.ts) (mm → m, geschlossene Konturen), [`lathe-svg-metrics.ts`](../../src/engine/lathe-svg-metrics.ts), [`pen-svg-profile.ts`](../../src/engine/pen-svg-profile.ts), [`beverage-can-svg-profile.ts`](../../src/engine/beverage-can-svg-profile.ts), [`wine-bottle-svg-profile.ts`](../../src/engine/wine-bottle-svg-profile.ts), Wheel [`wheel-car-svg-profile.ts`](../../src/engine/wheel-car-svg-profile.ts). Sizing-Footprint: [`asset-sizing.ts`](../../src/scene/asset-sizing.ts).

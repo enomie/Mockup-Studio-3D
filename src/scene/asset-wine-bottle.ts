@@ -1,6 +1,8 @@
 import { builtinLatheProfileUrl } from '@/constants/builtin-profile-paths';
 import type { AssetKind } from './asset-kind';
 import { clamp } from '@/units/math';
+import { MM_TO_M } from '@/units/length';
+import { LATHE_PROFILE_METRICS_MM } from '@/data/lathe-profile-metrics.generated';
 
 export type WineBottleBodyProfile = 'bordeaux' | 'alsace' | 'sparkling';
 
@@ -9,6 +11,7 @@ export type WineBottleLabelWrap = 'full' | 'partial';
 
 export interface WineBottleParams {
   wineBottleBodyProfile: WineBottleBodyProfile;
+  /** Overall height — measured from the profile SVG (not user-editable). */
   heightM: number;
   wallThicknessM: number;
   capsuleFoilHeightM: number;
@@ -26,7 +29,6 @@ export const CAPSULE_FOIL_STANDOFF_M = 0.0004;
  */
 export const WINE_BOTTLE_GLASS_TRANSMISSION_MESH_DEPTH_FACTOR = 0.4;
 
-const HEIGHT_DEFAULT = 0.29;
 const WALL_THICKNESS_DEFAULT = 0.0025;
 const CORK_HEIGHT_M = 0.04;
 
@@ -36,15 +38,26 @@ const CORK_RADIUS_M: Record<WineBottleBodyProfile, number> = {
   sparkling: 0.01,
 };
 
-/** Max belly outer diameter at reference height — see requirements-assets-wine-bottle.md */
-const BELLY_OUTER_DIAMETER_M: Record<WineBottleBodyProfile, number> = {
-  bordeaux: 0.076,
-  alsace: 0.076,
-  sparkling: 0.088,
+/** Shipped profile SVG per body profile (public/profiles/lathe, 1 unit = 1 mm). */
+const WINE_BOTTLE_SVG_FILE: Record<WineBottleBodyProfile, string> = {
+  bordeaux: 'lathe-y-bottle-bordeaux-open.svg',
+  alsace: 'lathe-y-bottle-alsace-open.svg',
+  sparkling: 'lathe-y-bottle-sparkling-open.svg',
 };
 
+function wineBottleBoundsMm(profile: WineBottleBodyProfile) {
+  return LATHE_PROFILE_METRICS_MM[WINE_BOTTLE_SVG_FILE[profile]].bounds;
+}
+
+/** Overall bottle height measured from the profile SVG (sizeScale = 1). */
+export function wineBottleNominalHeightM(profile: WineBottleBodyProfile): number {
+  const b = wineBottleBoundsMm(profile);
+  return (b.maxY - b.minY) * MM_TO_M;
+}
+
+/** Max belly outer diameter measured from the profile SVG (sizeScale = 1). */
 export function wineBottleMaxOuterDiameterM(profile: WineBottleBodyProfile): number {
-  return BELLY_OUTER_DIAMETER_M[profile];
+  return wineBottleBoundsMm(profile).maxX * 2 * MM_TO_M;
 }
 
 /** Footprint width / body height for transform readouts (belly diameter, not label). */
@@ -56,8 +69,6 @@ export function wineBottleFootprintAspect(
   return wineBottleMaxOuterDiameterM(profile) / heightM;
 }
 
-const HEIGHT_MIN = 0.15;
-const HEIGHT_MAX = 0.4;
 const LABEL_SIZE_MIN = 0.02;
 const LABEL_SIZE_MAX = 0.25;
 const CAPSULE_FOIL_HEIGHT_MIN = 0.005;
@@ -66,14 +77,7 @@ const CAPSULE_DISC_HEIGHT_MIN = 0.001;
 const CAPSULE_DISC_HEIGHT_MAX = 0.03;
 
 export function wineBottleSvgUrl(profile: WineBottleBodyProfile): string {
-  switch (profile) {
-    case 'bordeaux':
-      return builtinLatheProfileUrl('lathe-y-bottle-bordeaux-open.svg');
-    case 'alsace':
-      return builtinLatheProfileUrl('lathe-y-bottle-alsace-open.svg');
-    case 'sparkling':
-      return builtinLatheProfileUrl('lathe-y-bottle-sparkling-open.svg');
-  }
+  return builtinLatheProfileUrl(WINE_BOTTLE_SVG_FILE[profile]);
 }
 
 export function corkRadiusMForProfile(profile: WineBottleBodyProfile): number {
@@ -89,7 +93,7 @@ export function defaultWineBottleParams(
 ): WineBottleParams {
   return {
     wineBottleBodyProfile: profile,
-    heightM: HEIGHT_DEFAULT,
+    heightM: wineBottleNominalHeightM(profile),
     wallThicknessM: WALL_THICKNESS_DEFAULT,
     capsuleFoilHeightM: 0.028,
     capsuleDiscHeightM: 0.002,
@@ -154,7 +158,8 @@ export function clampWineBottleParams(
     wineBottleBodyProfile: profile,
   };
 
-  const heightM = clamp(merged.heightM, HEIGHT_MIN, HEIGHT_MAX);
+  // Size comes from the profile SVG — stored values are ignored.
+  const heightM = wineBottleNominalHeightM(profile);
   const labelBottomOffsetM = clamp(merged.labelBottomOffsetM, 0, heightM * 0.85);
   const labelSizeM = clamp(merged.labelSizeM, LABEL_SIZE_MIN, LABEL_SIZE_MAX);
   const capsuleFoilHeightM = clamp(

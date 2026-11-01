@@ -1,6 +1,7 @@
 import { builtinLatheProfileUrl } from '@/constants/builtin-profile-paths';
 import type { AssetKind } from './asset-kind';
 import { MM_TO_M } from '@/units/length';
+import { LATHE_PROFILE_METRICS_MM } from '@/data/lathe-profile-metrics.generated';
 
 export type PenBodyProfile = 'marker' | 'fountain';
 
@@ -8,24 +9,23 @@ export interface PenParams {
   penBodyProfile: PenBodyProfile;
 }
 
-/** Shipped `pen-*.svg` viewBox (1 unit = 1 mm). */
-export const PEN_PROFILE_VIEWBOX_WIDTH_MM = 10;
-const PEN_PROFILE_VIEWBOX_HEIGHT_MM = 200;
+/** Shipped profile SVG per pen profile (public/profiles/lathe, 1 unit = 1 mm). */
+const PEN_SVG_FILE: Record<PenBodyProfile, string> = {
+  marker: 'lathe-y-pen-marker.svg',
+  fountain: 'lathe-y-pen-fountain.svg',
+};
 
 export interface PenFootprintM {
   widthM: number;
   heightM: number;
 }
 
+/** Measured from the profile SVG: `widthM` = max radius, `heightM` = overall length. */
 export function penNominalFootprintM(profile: PenBodyProfile): PenFootprintM {
-  switch (profile) {
-    case 'marker':
-    case 'fountain':
-      break;
-  }
+  const { bounds } = LATHE_PROFILE_METRICS_MM[PEN_SVG_FILE[profile]];
   return {
-    widthM: PEN_PROFILE_VIEWBOX_WIDTH_MM * MM_TO_M,
-    heightM: PEN_PROFILE_VIEWBOX_HEIGHT_MM * MM_TO_M,
+    widthM: bounds.maxX * MM_TO_M,
+    heightM: (bounds.maxY - bounds.minY) * MM_TO_M,
   };
 }
 
@@ -38,9 +38,7 @@ export function penFootprintAspect(profile: PenBodyProfile): number {
 }
 
 export function penSvgUrl(profile: PenBodyProfile): string {
-  return profile === 'marker'
-    ? builtinLatheProfileUrl('lathe-y-pen-marker.svg')
-    : builtinLatheProfileUrl('lathe-y-pen-fountain.svg');
+  return builtinLatheProfileUrl(PEN_SVG_FILE[profile]);
 }
 
 export function defaultPenParams(profile: PenBodyProfile = 'marker'): PenParams {

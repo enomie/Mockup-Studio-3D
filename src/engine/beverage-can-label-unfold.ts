@@ -3,16 +3,16 @@
  * Internal reference for geometry/UV — not exposed in the app UI.
  * Spec: requirements-assets-beverage-can.md
  */
+import { beverageCanProfileMm } from '@/scene/beverage-can-profile-metrics';
 
 export type BeverageCanBodyProfile = 'standard' | 'sleek';
 
 /** Shared metal zones (both 330 ml profiles) — mm */
 export const BEVERAGE_CAN_LABEL_METAL_ZONES_MM = {
   bottomMetalBandMm: 5,
-  topRingHeightMm: 2.5,
 } as const;
 
-/** Bottom band only — top 2.5 mm is separate `topRing` mesh, not subtracted from unfold height. */
+/** Bottom band only — the top ring (SVG `path_green`) is not subtracted from the unfold brief height. */
 const BEVERAGE_CAN_LABEL_BOTTOM_METAL_MM =
   BEVERAGE_CAN_LABEL_METAL_ZONES_MM.bottomMetalBandMm;
 
@@ -51,17 +51,15 @@ export interface LabelUnfoldPixels {
 
 const MM_PER_M = 1000;
 
-/** Closed-can height + BOD (mm). Label band derived via metal zones. */
+function bodyNominalMm(profile: BeverageCanBodyProfile): BeverageCanBodyNominalMm {
+  const mm = beverageCanProfileMm(profile);
+  return { canHeightMm: mm.bodyHeightMm, bodyDiameterMm: mm.bodyDiameterMm };
+}
+
+/** Closed-can body height + BOD (mm), measured from the profile SVG. */
 const BEVERAGE_CAN_BODY_NOMINAL_MM: Record<BeverageCanBodyProfile, BeverageCanBodyNominalMm> = {
-  standard: {
-    canHeightMm: 115.2,
-    bodyDiameterMm: 66,
-  },
-  sleek: {
-    canHeightMm: 146.05,
-    // 57.4 mm as exact tenths — avoids binary float of literal 57.4
-    bodyDiameterMm: 574 / 10,
-  },
+  standard: bodyNominalMm('standard'),
+  sleek: bodyNominalMm('sleek'),
 };
 
 export function computeLabelBandHeightMm(canHeightMm: number): number {
@@ -84,18 +82,17 @@ export function computeLabelUnfoldForProfile(profile: BeverageCanBodyProfile): L
   return computeLabelUnfoldMm(body.bodyDiameterMm, labelHeightMm);
 }
 
-/** Viewport / UV: mantle band between bottom metal and top ring (not artwork brief height). */
-export function computeLabelPrintableBandHeightMm(canHeightMm: number): number {
+/** Viewport / UV: mantle band from bottom metal up to the top ring underside (not artwork brief height). */
+export function computeLabelPrintableBandHeightMm(profile: BeverageCanBodyProfile): number {
   return (
-    canHeightMm -
-    BEVERAGE_CAN_LABEL_METAL_ZONES_MM.bottomMetalBandMm -
-    BEVERAGE_CAN_LABEL_METAL_ZONES_MM.topRingHeightMm
+    beverageCanProfileMm(profile).labelTopFromFootMm -
+    BEVERAGE_CAN_LABEL_METAL_ZONES_MM.bottomMetalBandMm
   );
 }
 
 export function computeLabelPrintableBandMm(profile: BeverageCanBodyProfile): LabelUnfoldMm {
   const body = BEVERAGE_CAN_BODY_NOMINAL_MM[profile];
-  const heightMm = computeLabelPrintableBandHeightMm(body.canHeightMm);
+  const heightMm = computeLabelPrintableBandHeightMm(profile);
   return computeLabelUnfoldMm(body.bodyDiameterMm, heightMm);
 }
 
@@ -139,11 +136,12 @@ export function bandUToTextureS(bandU: number, uSpan: number): number {
 }
 
 function nominalMmToM(
+  profile: BeverageCanBodyProfile,
   body: BeverageCanBodyNominalMm,
   labelHeightMm: number,
 ): BeverageCanNominalM {
   return {
-    heightM: body.canHeightMm / MM_PER_M,
+    heightM: beverageCanProfileMm(profile).heightMm / MM_PER_M,
     diameterM: body.bodyDiameterMm / MM_PER_M,
     labelHeightM: labelHeightMm / MM_PER_M,
     labelBottomOffsetM: BEVERAGE_CAN_LABEL_METAL_ZONES_MM.bottomMetalBandMm / MM_PER_M,
@@ -152,10 +150,12 @@ function nominalMmToM(
 
 const BEVERAGE_CAN_NOMINAL_BY_PROFILE: Record<BeverageCanBodyProfile, BeverageCanNominalM> = {
   standard: nominalMmToM(
+    'standard',
     BEVERAGE_CAN_BODY_NOMINAL_MM.standard,
     computeLabelBandHeightMm(BEVERAGE_CAN_BODY_NOMINAL_MM.standard.canHeightMm),
   ),
   sleek: nominalMmToM(
+    'sleek',
     BEVERAGE_CAN_BODY_NOMINAL_MM.sleek,
     computeLabelBandHeightMm(BEVERAGE_CAN_BODY_NOMINAL_MM.sleek.canHeightMm),
   ),

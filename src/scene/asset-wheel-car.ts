@@ -1,5 +1,6 @@
 import type { AssetKind } from './asset-kind';
 import { clamp } from '@/units/math';
+import { LATHE_PROFILE_METRICS_MM } from '@/data/lathe-profile-metrics.generated';
 
 export interface WheelCarParams {
   outerRadiusM: number;
@@ -19,11 +20,16 @@ const CORNER_RADIUS_MM_MIN = 0;
 const MIN_SIDEWALL_M = 0.015;
 const SPOKE_COUNT = 5 as const;
 
-/** SVG [`lathe-x-wheel-car.svg`](../../public/profiles/lathe/lathe-x-wheel-car.svg) reference size (mm). */
-const WHEEL_CAR_SVG_OUTER_RADIUS_MM = 330.5;
-export const WHEEL_CAR_SVG_TIRE_WIDTH_MM = 255;
-export const WHEEL_CAR_SVG_AXIS_Y_MM = 330.5;
-export const WHEEL_CAR_SVG_AXIAL_CENTER_MM = WHEEL_CAR_SVG_TIRE_WIDTH_MM / 2;
+/** Shipped x-lathe profile (public/profiles/lathe, 1 unit = 1 mm). */
+export const WHEEL_CAR_SVG_FILE = 'lathe-x-wheel-car.svg';
+
+/** Reference sizes measured from the SVG (mm): axis = lowest point (y down), tread = y 0. */
+const WHEEL_CAR_SVG_BOUNDS_MM = LATHE_PROFILE_METRICS_MM[WHEEL_CAR_SVG_FILE].bounds;
+export const WHEEL_CAR_SVG_AXIS_Y_MM = WHEEL_CAR_SVG_BOUNDS_MM.maxY;
+const WHEEL_CAR_SVG_OUTER_RADIUS_MM = WHEEL_CAR_SVG_AXIS_Y_MM - WHEEL_CAR_SVG_BOUNDS_MM.minY;
+export const WHEEL_CAR_SVG_TIRE_WIDTH_MM = WHEEL_CAR_SVG_BOUNDS_MM.maxX - WHEEL_CAR_SVG_BOUNDS_MM.minX;
+export const WHEEL_CAR_SVG_AXIAL_CENTER_MM =
+  WHEEL_CAR_SVG_BOUNDS_MM.minX + WHEEL_CAR_SVG_TIRE_WIDTH_MM / 2;
 
 export function wheelCarUniformScale(outerRadiusM: number): number {
   return outerRadiusM / (WHEEL_CAR_SVG_OUTER_RADIUS_MM / 1000);

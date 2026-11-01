@@ -2,6 +2,7 @@ import { Vector2 } from 'three/webgpu';
 import { builtinLatheProfileUrl } from '@/constants/builtin-profile-paths';
 import {
   WHEEL_CAR_SVG_AXIS_Y_MM,
+  WHEEL_CAR_SVG_FILE,
   WHEEL_CAR_SVG_AXIAL_CENTER_MM,
   wheelCarUniformScale,
 } from '@/scene/asset-wheel-car';
@@ -70,7 +71,7 @@ export function normalizeWheelCarPaths(
 }
 
 function wheelCarSvgUrl(): string {
-  return builtinLatheProfileUrl('lathe-x-wheel-car.svg');
+  return builtinLatheProfileUrl(WHEEL_CAR_SVG_FILE);
 }
 
 async function fetchSvgText(url: string): Promise<string> {

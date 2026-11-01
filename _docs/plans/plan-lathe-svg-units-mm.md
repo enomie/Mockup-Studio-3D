@@ -1,6 +1,6 @@
 # Plan: Lathe-SVGs — einheitliche Basis (1 Unit = 1 mm, SVG = einzige Größenquelle)
 
-**Status:** Entwurf — wartet auf Freigabe
+**Status:** Freigegeben 2026-11-01 · A–F umgesetzt (offen: Pen-Fountain-Ring, visueller Check durch User)
 **Datum:** 2026-11-01
 **Bezug:** ersetzt Teile von [`plan-beverage-can-svg-ring.md`](./plan-beverage-can-svg-ring.md) (Normalisierung / Skalierung); der Ring-Teil dort bleibt gültig und wird auf dieser Basis umgesetzt.
 
@@ -55,7 +55,7 @@ Offen: Dosen/Flaschen sind heute in X und Y **leicht unterschiedlich** skaliert 
 
 ### D. Parameter: abgeleitet statt gesetzt
 - `heightM`, `diameterM` (Dose), `heightM` (Flasche), `outerRadiusM`/`tireWidthM` (Rad): werden aus dem SVG **gemessen** (nach Laden, gecacht pro Profil). Nicht mehr in gespeicherte Szenen schreiben bzw. beim Laden ignorieren.
-- Sync-Verbraucher (Cover-Plane, `asset-sizing.ts`, Label-Band, Footprint) brauchen die Maße synchron → Variante: **Profil-Maße beim App-Start vorladen** (alle Lathe-SVGs sind klein, ~8 Dateien) und synchron aus Cache lesen; Tests setzen Cache direkt.
+- Sync-Verbraucher (Cover-Plane, `asset-sizing.ts`, Label-Band, Footprint) brauchen die Maße synchron → **umgesetzt als generierte Datei** statt Vorladen: `scripts/generate-lathe-profile-metrics.ts` misst alle SVGs → `src/data/lathe-profile-metrics.generated.ts` (in `predev`/`prebuild`, Test prüft Synchronität). Gleiches Muster wie `builtin-images.generated.ts`; kein Async beim App-Start.
 - Nennmaß-Tabellen (`BEVERAGE_CAN_BODY_NOMINAL_MM`, `BELLY_OUTER_DIAMETER_M`, `WHEEL_CAR_SVG_*_MM`, `PEN_PROFILE_VIEWBOX_*`) entfallen bzw. werden durch Messung ersetzt; Test sichert, dass gemessene Werte den bisherigen Nennmaßen entsprechen (±0,1 mm).
 - Rad: Parameter wie `rimRadiusM`, `hubRadiusM` prüfen — sind sie Geometrie aus SVG oder Engine-only (Speichen)? Nur SVG-gedeckte ableiten.
 
@@ -67,6 +67,13 @@ Offen: Dosen/Flaschen sind heute in X und Y **leicht unterschiedlich** skaliert 
 - Tests je Asset: gemessene Maße = Nennmaß; geschlossener Ring → Torus mit Loch; Illustrator-Export (CSS, Farbnamen, `<rect>`, pt) wird gelesen.
 - Doku: `requirements-assets-lathe.md` (Konvention normativ), Can/Bottle/Pen/Wheel-Requirements anpassen.
 - Checks: `npx vitest run`, `npm run lint`, `npm run build`, visuell alle Assets im Viewport.
+
+## Umsetzung (Ist)
+
+- Commit 1: A + B (Skript, Dateien, Slot-Leser für Illustrator-Exporte).
+- Commit 2: C + D + E + F zusammen (Ring braucht die mm-Transformation; Trennen hätte Zwischenstände mit kaputtem Ring erzeugt).
+- Label-Band: Aspect des Dosen-Bildes ändert sich leicht (Band jetzt bis Ring-Unterkante statt fix −2,5 mm).
+- Flaschen-Bauchdurchmesser jetzt gemessen (z. B. Bordeaux 76,3 statt 76,0 mm).
 
 ## Reihenfolge / Commits
 1. A + B (nur Dateien + Skript; Engine noch alt → Test: Normalisierung ergibt identische Geometrie).

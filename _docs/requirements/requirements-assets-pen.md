@@ -110,7 +110,7 @@ Stabile Katalog-ID über `kind`. Mehrfach-Instanzen unbegrenzt. Default-Szene: *
 **Zeichenregeln (Pflicht für Revisionen):**
 
 1. **Nur rechte Halbseite** (Lathe um **Y**); **ein Pfad pro Teil**.
-2. **Cap** = oberes Segment (Kappe); **Ring** = schmales Band (oft Rechteck im Profil); **Body** = Schaft inkl. Spitze unten — **ohne** Cap- und Ring-Geometrie duplizieren (keine Überlappung nötig; kleine Y-Überlappung an Soll-Grenzen ist ok, Meshes sind getrennt).
+2. **Cap** = oberes Segment (Kappe); **Ring** = schmales Band — **geschlossene Kontur** (Pillenform, berührt Achse nicht) → Ring mit Loch um den Schaft (Ist: marker; fountain noch offen bis zur Achse, Neuzeichnung folgt); **Body** = Schaft inkl. Spitze unten — **ohne** Cap- und Ring-Geometrie duplizieren (keine Überlappung nötig; kleine Y-Überlappung an Soll-Grenzen ist ok, Meshes sind getrennt).
 3. **Kein** Fill; Stroke-Kontur = Außenkontur des gedrehten Teils (wie Dosen-Silhouette).
 4. **Y-Achse:** Authoring oft **Y nach unten** (Illustrator) → Import **spiegelt** zu Engine (**Y nach oben**, Fuß bei `y = 0`) wie bei Beverage can / Wine bottle.
 
@@ -118,7 +118,7 @@ Stabile Katalog-ID über `kind`. Mehrfach-Instanzen unbegrenzt. Default-Szene: *
 
 | | **marker** | **fountain** |
 |---|---|---|
-| **Ring — Y-Lage** (groß) | ~**56,8** … **65,4** (SVG-Einheiten) | ~**216,8** … **225,4** |
+| **Ring — Y-Lage** (mm von oben) | ~**20,1** … **23,2** | ~**76,5** … **79,5** |
 | **Cap** | kürzer, breiterer Schulterblock oben | längere Kappe / Griffkolben oben |
 | **Body** | langer gerader Schaft + Spitze | Schaft mit längerem oberen Abschnitt vor Ring |
 

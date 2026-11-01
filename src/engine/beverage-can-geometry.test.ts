@@ -3,7 +3,6 @@ import { join } from 'node:path';
 import { Vector2 } from 'three/webgpu';
 import { describe, expect, it } from 'vitest';
 import { defaultBeverageCanParams } from '@/scene/asset-beverage-can';
-import { MM_TO_M } from '@/units/length';
 import { computeLabelUnfoldForProfile } from './beverage-can-label-unfold';
 import {
   buildCanHullLatheGeometry,
@@ -11,22 +10,19 @@ import {
   labelBandYBounds,
 } from './beverage-can-geometry';
 import {
+  extractBeverageCanPathsFromSvgText,
   latheProfileBounds,
-  normalizeSvgProfileToLathePoints,
-  setRawSvgProfilePointsCache,
+  normalizeBeverageCanPaths,
 } from './beverage-can-svg-profile';
+import { beverageCanProfileMm } from '@/scene/beverage-can-profile-metrics';
 
 const PUBLIC_LATHE = join(process.cwd(), 'public', 'profiles', 'lathe');
 
-/** Right-half silhouette stub (radius × height in arbitrary SVG units). */
-function syntheticCanSilhouette(): { x: number; y: number }[] {
-  return [
-    { x: 0, y: 0 },
-    { x: 40, y: 0 },
-    { x: 40, y: 280 },
-    { x: 35, y: 300 },
-    { x: 0, y: 300 },
-  ];
+function loadShippedProfiles(profile: 'standard' | 'sleek') {
+  const file =
+    profile === 'standard' ? 'lathe-y-can-330ml-classic.svg' : 'lathe-y-can-330ml-sleek.svg';
+  const raw = extractBeverageCanPathsFromSvgText(readFileSync(join(PUBLIC_LATHE, file), 'utf8'));
+  return normalizeBeverageCanPaths(raw, beverageCanProfileMm(profile).footYMm);
 }
 
 function syntheticCylinderProfile(params: ReturnType<typeof defaultBeverageCanParams>) {
@@ -40,25 +36,31 @@ function syntheticCylinderProfile(params: ReturnType<typeof defaultBeverageCanPa
 }
 
 describe('beverage-can-svg-profile', () => {
-  it('normalizes silhouette units to nominal height and BOD', () => {
+  it('reads SVG mm 1:1 (no stretch): body = nominal height and BOD', () => {
+    const expected = { standard: [115.2, 66], sleek: [146.05, 57.4] } as const;
     for (const profile of ['standard', 'sleek'] as const) {
-      const params = defaultBeverageCanParams(profile);
-      const lathe = normalizeSvgProfileToLathePoints(
-        syntheticCanSilhouette(),
-        params.heightM,
-        params.diameterM,
-      );
-      const bounds = latheProfileBounds(lathe);
-      expect(bounds.maxY - bounds.minY).toBeCloseTo(params.heightM, 3);
-      expect(bounds.maxRadius).toBeCloseTo(params.diameterM / 2, 3);
+      const { body } = loadShippedProfiles(profile);
+      const bounds = latheProfileBounds(body);
+      expect((bounds.maxY - bounds.minY) * 1000).toBeCloseTo(expected[profile][0], 1);
+      expect(bounds.maxRadius * 2000).toBeCloseTo(expected[profile][1], 1);
+      expect(bounds.minY).toBeCloseTo(0, 6);
     }
   });
 
-  it('loads cached raw points for integration (file present)', () => {
-    const svgText = readFileSync(join(PUBLIC_LATHE, 'lathe-y-can-330ml-classic.svg'), 'utf8');
-    expect(svgText.includes('<path')).toBe(true);
-    setRawSvgProfilePointsCache('standard', syntheticCanSilhouette());
-    expect(syntheticCanSilhouette().length).toBeGreaterThan(2);
+  it('top ring shares the body transform and sits at the top, off the axis', () => {
+    for (const profile of ['standard', 'sleek'] as const) {
+      const { ring } = loadShippedProfiles(profile);
+      const params = defaultBeverageCanParams(profile);
+      const bounds = latheProfileBounds(ring);
+      expect(bounds.maxY).toBeCloseTo(params.heightM, 6);
+      expect(Math.min(...ring.map((p) => p.x))).toBeGreaterThan(0.02);
+    }
+  });
+
+  it('size params come from the SVG', () => {
+    const params = defaultBeverageCanParams('standard');
+    expect(params.heightM * 1000).toBeCloseTo(beverageCanProfileMm('standard').heightMm, 6);
+    expect(params.diameterM * 1000).toBeCloseTo(66, 3);
   });
 });
 
@@ -94,8 +96,7 @@ describe('beverage-can-geometry', () => {
   });
 
   it('lathe seam is placed at −Z (back), not on front +Z', () => {
-    const params = defaultBeverageCanParams('standard');
-    const ring = buildTopRingGeometry(params);
+    const ring = buildTopRingGeometry(loadShippedProfiles('standard').ring);
     const pos = ring.getAttribute('position');
     let maxZ = -Infinity;
     let minZ = Infinity;
@@ -122,22 +123,34 @@ describe('beverage-can-geometry', () => {
     expect(Math.abs(seamZ + maxZ)).toBeLessThan(0.02);
   });
 
-  it('top ring is a lathe rectangle around center radius', () => {
-    const params = defaultBeverageCanParams('standard');
-    const ring = buildTopRingGeometry(params);
-    ring.computeBoundingBox();
-    const box = ring.boundingBox!;
-    expect(box.min.y).toBeCloseTo(0, 4);
-    expect(box.max.y - box.min.y).toBeCloseTo(params.topRingHeightM, 4);
-    const maxR = Math.max(
-      Math.abs(box.max.x),
-      Math.abs(box.min.x),
-      Math.abs(box.max.z),
-      Math.abs(box.min.z),
-    );
-    const centerM = params.topRingCenterRadiusMm * MM_TO_M;
-    const halfT = params.topRingThicknessM * 0.5;
-    expect(maxR).toBeCloseTo(centerM + halfT, 3);
+  it('top ring revolves into a ring with a hole and outward normals', () => {
+    const { ring } = loadShippedProfiles('standard');
+    const geometry = buildTopRingGeometry(ring);
+    const pos = geometry.getAttribute('position');
+    const normal = geometry.getAttribute('normal');
+    const radii: number[] = [];
+    let outerChecked = 0;
+    const maxR = Math.max(...ring.map((p) => p.x));
+    for (let i = 0; i < pos.count; i += 1) {
+      const r = Math.hypot(pos.getX(i), pos.getZ(i));
+      radii.push(r);
+      if (r > maxR - 1e-7) {
+        const dot = (normal.getX(i) * pos.getX(i) + normal.getZ(i) * pos.getZ(i)) / r;
+        expect(dot).toBeGreaterThan(0);
+        outerChecked += 1;
+      }
+    }
+    expect(outerChecked).toBeGreaterThan(0);
+    expect(Math.min(...radii)).toBeGreaterThan(0.02);
+  });
+
+  it('label band ends at the top ring underside', () => {
+    for (const profile of ['standard', 'sleek'] as const) {
+      const params = defaultBeverageCanParams(profile);
+      const { ring } = loadShippedProfiles(profile);
+      const { labelY1 } = labelBandYBounds(params);
+      expect(labelY1).toBeCloseTo(latheProfileBounds(ring).minY, 6);
+    }
   });
 
   it('label unfold aspect matches profile table', () => {

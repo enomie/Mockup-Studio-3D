@@ -1,7 +1,6 @@
 import { Vector2 } from 'three/webgpu';
 import { penSvgUrl, type PenBodyProfile } from '@/scene/asset-pen';
-import { MM_TO_M } from '@/units/length';
-import { orientLatheProfileBottomToTop } from './beverage-can-svg-profile';
+import { latheSvgMmToMeters, prepareLatheProfile } from './lathe-contour';
 import {
   extractLathePathPointsBySlot,
   type LatheSvgPoint2,
@@ -63,15 +62,7 @@ function normalizePenPartPoints(
   if (raw.length < 2) {
     return [];
   }
-
-  const normalized: Vector2[] = [];
-  for (const p of raw) {
-    const x = p.x * MM_TO_M;
-    const y = (bounds.maxY - p.y) * MM_TO_M;
-    normalized.push(new Vector2(x, y));
-  }
-
-  return orientLatheProfileBottomToTop(normalized);
+  return prepareLatheProfile(latheSvgMmToMeters(raw, bounds.maxY));
 }
 
 function scalePenLatheProfiles(

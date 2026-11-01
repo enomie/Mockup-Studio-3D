@@ -3,7 +3,6 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { MM_TO_M } from '@/units/length';
-import { PEN_PROFILE_VIEWBOX_WIDTH_MM } from '@/scene/asset-pen';
 import {
   extractPenPathsFromSvgText,
   globalBoundsFromRawPaths,
@@ -50,6 +49,13 @@ describe('extractPenPathsFromSvgText', () => {
     }
     expect(maxX).toBeCloseTo(bounds.maxX * MM_TO_M, 5);
     expect(minY).toBeCloseTo(0, 4);
-    expect(Math.abs(bounds.maxX - PEN_PROFILE_VIEWBOX_WIDTH_MM)).toBeLessThan(0.1);
+    expect(Math.abs(bounds.maxX - 10)).toBeLessThan(0.1);
+  });
+
+  it('marker ring is a closed contour (ring around the shaft, not a disc)', () => {
+    const svgText = readFileSync(join(FIXTURE_DIR, 'lathe-y-pen-marker.svg'), 'utf8');
+    const { ring } = normalizePenPaths(extractPenPathsFromSvgText(svgText));
+    expect(Math.min(...ring.map((p) => p.x))).toBeGreaterThan(0.008);
+    expect(ring[0].distanceTo(ring[ring.length - 1])).toBeLessThan(1e-6);
   });
 });

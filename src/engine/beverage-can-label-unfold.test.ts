@@ -28,7 +28,7 @@ describe('beverage-can-label-unfold', () => {
   it('sleek 330 ml label sleeve unfold', () => {
     const unfold = computeLabelUnfoldForProfile('sleek');
     expect(unfold.bodyDiameterMm).toBeCloseTo(57.4, 6);
-    expect(unfold.heightMm).toBeCloseTo(141.05, 6);
+    expect(unfold.heightMm).toBeCloseTo(141.05, 3);
     expect(unfold.circumferenceMm).toBeCloseTo(Math.PI * (574 / 10), 6);
     expect(unfold.widthMm).toBeCloseTo(180.327418316, 3);
 

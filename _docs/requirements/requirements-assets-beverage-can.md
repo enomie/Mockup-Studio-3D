@@ -6,7 +6,9 @@ Parametrischer **Getränkedosen**-Baustein (klassische **330-ml-Aluminiumdose**,
 
 **Status:** **nicht implementiert** — nur Requirements.
 
-**v1-Scope:** Ein Built-in `beverage-can`; **330 ml** in zwei **Körperprofilen** (**Standard** und **Sleek**); **real scale**; **Dosenformat fix** — Bild bestimmt **nicht** Höhe/BOD/Profil (Ausnahme zu Image-driven sizing → [`requirements-assets.md`](./requirements-assets.md)); **Alu-Körper** = **SVG-Silhouette → `LatheGeometry`** + **parametrischer Mantel-Endring** (2,5 × 1,5 mm); **Label** = **`screenImageId` auf dem Lathe-Mesh** (Cover auf festem Band); **`sizeScale`** = **uniform** auf **gesamte** Dose; Szene-Panel **Geometries**; **Kein** Pull-Tab, **kein** Verschluss-Mesh in v1.
+**v1-Scope:** Ein Built-in `beverage-can`; **330 ml** in zwei **Körperprofilen** (**Standard** und **Sleek**); **real scale**; **Dosenformat fix** — Bild bestimmt **nicht** Höhe/BOD/Profil (Ausnahme zu Image-driven sizing → [`requirements-assets.md`](./requirements-assets.md)); **Alu-Körper** = **SVG-Silhouette → `LatheGeometry`** + **Top-Ring aus SVG** (`path_green`, geschlossene Kontur → Ring mit Loch); **Label** = **`screenImageId` auf dem Lathe-Mesh** (Cover auf festem Band); **`sizeScale`** = **uniform** auf **gesamte** Dose; Szene-Panel **Geometries**; **Kein** Pull-Tab, **kein** Verschluss-Mesh in v1.
+
+> **Ist (2026-11) — ersetzt die parametrischen Ring-/Label-Angaben unten:** Profil-SVG in **mm** (1 Unit = 1 mm) ist die **einzige Größenquelle**: `heightM` (Gesamthöhe inkl. Ring), `diameterM` (BOD) werden gemessen, nicht gespeichert. **Top-Ring** = `path_green` im selben SVG (keine `topRing*`-Params mehr). **Label-Band** oben = **Ring-Unterkante** (gemessen; classic ≈ 114,9 mm über Fuß). Plan → [`plan-lathe-svg-units-mm.md`](../plans/plan-lathe-svg-units-mm.md), [`plan-beverage-can-svg-ring.md`](../plans/plan-beverage-can-svg-ring.md).
 
 **Lathe (Querschnitt):** SVG-Pfade in **mm**, nur **uniform** skalieren, Szene-Panel-Ziel **Size** + gekoppeltes Width/Height → [`requirements-assets-lathe.md`](./requirements-assets-lathe.md).
 
@@ -132,8 +134,6 @@ Gerundete Pixelmaße können vom exakten Ratio um **±1 px** abweichen — für 
 | `bottomStandDiameterM` | **0,04732** (Band 47,24–47,40) | **0,04724** |
 | `labelBottomOffsetM` | **0,0050** | **0,0050** |
 | `labelHeightM` | **0,1077** | **0,13855** |
-| `topRingHeightM` | **0,0025** | **0,0025** |
-| `topRingThicknessM` | **0,0015** | **0,0015** |
 | `closureOuterDiameterM` | **0,0540** | **0,0540** |
 | `closureInnerDiameterM` | **0,0524** | **0,0524** |
 | `bottomMetalBandM` | **0,0050** | **0,0050** |
@@ -195,7 +195,7 @@ Gerundete Pixelmaße können vom exakten Ratio um **±1 px** abweichen — für 
 |---|---|---|---|---|
 | 1 | **Hülle — Blech** (`body`) | **`LatheGeometry`** aus **SVG-Profil** (volle Silhouette, eine Materialfläche) | `metalMaterialId` | — |
 | 2 | **Label-Mantel** (`label`) | **Offener Mantel** (`buildOpenMantleGeometry`) zwischen `labelBottomOffsetM` und `heightM − topRingHeightM` — nur wenn **`screenImageId`** gesetzt | Bild-PBR + `imageSurfaces` | `screenImageId` |
-| 3 | **Mantel-Endring** (`topRing`) | Parametrisch — siehe **Endring — Platzierung** | `metalMaterialId` | — |
+| 3 | **Mantel-Endring** (`topRing`) | **`LatheGeometry`** aus **`path_green`** (geschlossene Kontur) | `metalMaterialId` | — |
 
 **Label auf der Hülle (Stand 2026-10-30):** Kein separates Label-Mesh mehr — die Hülle bleibt vollständig und wird im Band über `printUv` **im Metall-Material** bedruckt (Default **Substrate 1** = Direktdruck) → [`requirements-rotational-print.md`](./requirements-rotational-print.md). *Historisch:* Mit Bild fehlen die **Zylinder-Mantel-Dreiecke** in der Hülle (nur Schulter/Boden-Chime im **y**-Band bleiben Blech); der Label-Mantel schließt das Band (gleicher Radius). **Ohne Bild:** volle Hülle inkl. Band. UV/Mapping unverändert (zylindrisches Unfold, Front **+Z**).
 
@@ -219,8 +219,8 @@ Gerundete Pixelmaße können vom exakten Ratio um **±1 px** abweichen — für 
 
 | Datei | URL | `canBodyProfile` | `viewBox` (Ist, Authoring) |
 |---|---|---|---|
-| [`lathe-y-can-330ml-classic.svg`](../../public/profiles/lathe/lathe-y-can-330ml-classic.svg) | `/profiles/lathe/lathe-y-can-330ml-classic.svg` | **`standard`** | `0 0 94.185 322.799` |
-| [`lathe-y-can-330ml-sleek.svg`](../../public/profiles/lathe/lathe-y-can-330ml-sleek.svg) | `/profiles/lathe/lathe-y-can-330ml-sleek.svg` | **`sleek`** | `0 0 81.854 410.248` |
+| [`lathe-y-can-330ml-classic.svg`](../../public/profiles/lathe/lathe-y-can-330ml-classic.svg) | `/profiles/lathe/lathe-y-can-330ml-classic.svg` | **`standard`** | `0 0 33 115.6054` (mm) |
+| [`lathe-y-can-330ml-sleek.svg`](../../public/profiles/lathe/lathe-y-can-330ml-sleek.svg) | `/profiles/lathe/lathe-y-can-330ml-sleek.svg` | **`sleek`** | `0 0 28.7 146.4075` (mm) |
 
 **Status:** Silhouetten **vom User geliefert** (2026-10-09). Referenz-Render: [`../images/330ml-standard.png`](../images/330ml-standard.png), [`../images/330ml-sleek.png`](../images/330ml-sleek.png).
 
