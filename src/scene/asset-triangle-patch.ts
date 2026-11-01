@@ -61,7 +61,7 @@ export interface PatchParams {
   cornerIds: string[];
   /** Edge parameter t in (0, 1) of every non-corner point on its edge. */
   edgeParams: Record<string, number>;
-  /** Live mirror copies across the local YZ / XZ / XY planes through the pivot; absent means none. */
+  /** Live mirror copies across the scene (world) YZ / XZ / XY planes through the origin; absent means none. */
   mirror?: PatchMirror;
   /**
    * @deprecated Former surface switch ('smooth-edges'); ignored. Kept so stored scenes load.
@@ -76,7 +76,7 @@ export interface PatchParams {
 
 type PatchSurfaceMode = 'classic' | 'smooth-edges';
 
-/** Which local axes the patch is mirrored across (x flips X across the YZ plane, and so on). */
+/** Which scene axes the patch is mirrored across (x flips world X across the YZ plane, and so on). */
 export interface PatchMirror {
   x: boolean;
   y: boolean;

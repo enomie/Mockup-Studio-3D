@@ -1,5 +1,6 @@
 import {
   DoubleSide,
+  Matrix4,
   Mesh,
   MeshStandardNodeMaterial,
   type Group,
@@ -53,17 +54,50 @@ export function addTrianglePatch(
 
   group.add(mesh);
 
-  // Mirror copies share geometry and material; the negative scale flips the
-  // winding, which three.js compensates for via the negative determinant.
+  // Mirror copies share geometry and material and are mirrored across the scene
+  // (world) planes, not the asset's own pivot planes; the negative determinant
+  // flips the winding, which three.js compensates for.
   for (const sign of getPatchMirrorSigns(patchParams.mirror)) {
     const copy = new Mesh(geometry, material);
-    copy.scale.set(sign.x, sign.y, sign.z);
     copy.castShadow = true;
     copy.receiveShadow = true;
     copy.userData.isAssetScreen = true;
     copy.userData.assetMeshRole = 'trianglePatchMirror';
+    copy.userData.patchMirrorSign = { ...sign };
+    applyWorldMirror(copy, new Matrix4().makeScale(sign.x, sign.y, sign.z));
     group.add(copy);
   }
   return mesh;
+}
+
+/**
+ * Keeps `copy.matrixWorld = mirror * parent.matrixWorld`, so the copy is the
+ * parent's content reflected across the world planes through the origin and
+ * follows every move, rotation and scale of the asset without a rebuild.
+ */
+function applyWorldMirror(copy: Mesh, mirror: Matrix4): void {
+  copy.matrixAutoUpdate = false;
+  const syncWorld = (): void => {
+    if (copy.parent) {
+      copy.matrixWorld.multiplyMatrices(mirror, copy.parent.matrixWorld);
+    } else {
+      copy.matrixWorld.copy(mirror);
+    }
+    // Keep the local matrix consistent for code that reads it (e.g. exporters).
+    if (copy.parent) {
+      copy.matrix.copy(copy.parent.matrixWorld).invert().multiply(copy.matrixWorld);
+    } else {
+      copy.matrix.copy(copy.matrixWorld);
+    }
+    copy.matrix.decompose(copy.position, copy.quaternion, copy.scale);
+    copy.matrixWorldNeedsUpdate = false;
+  };
+  copy.updateMatrixWorld = (): void => {
+    syncWorld();
+  };
+  copy.updateWorldMatrix = (updateParents: boolean): void => {
+    if (updateParents && copy.parent) {copy.parent.updateWorldMatrix(true, false);}
+    syncWorld();
+  };
 }
 

@@ -57,9 +57,9 @@ interface TrianglePatchFieldsProps {
 }
 
 const MIRROR_OPTIONS: PanelToggleOption<keyof PatchMirror>[] = [
-  { key: 'x', label: 'X', title: 'Mirror across the YZ plane (flips X)' },
-  { key: 'y', label: 'Y', title: 'Mirror across the XZ plane (flips Y); the copy may sit below the ground' },
-  { key: 'z', label: 'Z', title: 'Mirror across the XY plane (flips Z)' },
+  { key: 'x', label: 'X', title: 'Mirror across the scene YZ plane (world X = 0)' },
+  { key: 'y', label: 'Y', title: 'Mirror across the scene XZ plane (world Y = 0); the copy sits below the ground' },
+  { key: 'z', label: 'Z', title: 'Mirror across the scene XY plane (world Z = 0)' },
 ];
 
 const PASTE_MODES: { key: PatchPointPasteMode; label: string }[] = [
