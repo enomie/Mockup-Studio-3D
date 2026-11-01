@@ -40,8 +40,11 @@ modellieren können – aber nicht auf dem gewohnten CAD-Weg, sondern einfach un
      „Cork“, „Capsule foil“, „Capsule disc“, „Label“.
 2. **Parametrisch (MVP):** was es für Flasche/Dose braucht – Positionen, Radien, Tangenten;
    Segmenttypen: Gerade, Bogen (Radius), Kurve/Spline. Keine allgemeinen Constraints im MVP.
-3. **Offen vs. geschlossen:** über Typ/Kategorie des Profils (z. B. „Lathe“ = offenes
-   Halbprofil, „Extrusion“ = geschlossene Kontur).
+3. **Offen vs. geschlossen ist kein Kriterium (korrigiert):** Auch offene Pfade lassen sich
+   extrudieren, dann entsteht kein Volumen, nur eine Hülle. Ein Profil ist einfach eine Sammlung
+   benannter Pfade. Ob ein Pfad offen oder geschlossen ist, ist eine Eigenschaft des Pfads.
+   Ob gedreht (Lathe) oder extrudiert wird, entscheidet das Asset, das das Profil nutzt.
+   Jedes Profil ist in Bottle und in Extrusion wählbar (das Ergebnis darf auch „weird“ aussehen).
 4. **Reihenfolge:** A (Profiles-Reiter) zuerst.
 
 ## Nebenbei erledigt
