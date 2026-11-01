@@ -1,77 +1,77 @@
-# Plan: Finish-Schieberegler statt Dropdown (Matt ↔ Glossy)
+# Plan: Ein Material „Paper“ mit Finish-Schieberegler (Matt ↔ Glossy)
 
-Status: **Entwurf – wartet auf Freigabe**
+Status: **Entwurf v2 – wartet auf Freigabe**
 
 ## Ziel
 
-Überall, wo heute das Dropdown „Finish: Matt / Glossy“ steht, gibt es stattdessen
-einen stufenlosen Schieberegler **„Finish (Matt ↔ Glossy)“** (0 = matt, 1 = glossy),
-genau wie bereits bei den Rotations-Assets (Dose, Flasche, Tasse).
-
-Betrifft:
-- Bild-Finish (Front/Back) aller Bildflächen: Picture, Print, Smartphone, Tablet, Monitor, Wand/Tapete, Faces im Image-Mode
-- Passepartout-Finish
+- „Paper“ und „Print Glossy“ werden zu **einem Material „Paper“** zusammengelegt.
+- Matt/Glossy ist kein eigenes Material mehr, sondern ein stufenloser Regler
+  **„Finish (Matt ↔ Glossy)“** (0 = matt, 1 = glossy).
+- Der Regler erscheint **genau dann, wenn auf der Fläche/dem Slot „Paper“ liegt**.
+- Der Gloss-Wert wird **pro Fläche bzw. pro Slot** gespeichert, nicht im Material
+  (Poster glossy + Passepartout matt, beide „Paper“).
+- Alle Matt/Glossy-Dropdowns verschwinden.
 
 ## Ist-Zustand
 
-- `src/scene/image-surface.ts`: `finish` / `passepartoutFinish` sind `'matt' | 'glossy'`.
-  `finishToMaterialId()` mappt auf zwei feste Presets: **Paper** (matt) bzw. **Print Glossy**.
-- `gloss?: number` gibt es schon, aber nur für Rotations-Assets (Print-Settings-Shader).
-- Renderer: `src/engine/material-resolver.ts` (Bild + Passepartout),
-  `src/engine/asset-meshes/populate-primitives.ts` (Tapete/Screen),
-  `src/engine/asset-meshes/rotational-print-populate.ts`, `src/scene/rotational-print.ts`.
-- UI: `src/ui/panels/ImageSurfaceFields.tsx` → `ImageFinishSelect` (Dropdown) vs. `RangeSlider` (nur Print-Settings).
-- Migration: `migrateImageSurfaces()` leitet `finish` aus alten Material-Slots ab.
+- Zwei Presets in `src/data/material-presets.ts`: Paper (`MATERIAL_PAPER_ID`) und
+  Print Glossy (`MATERIAL_GLOSSY_PRINT_ID`, `src/scene/material-ids.ts`).
+- Bildflächen: `ImageSurfaceSettings.finish` / `passepartoutFinish` (`'matt' | 'glossy'`),
+  `finishToMaterialId()` in `src/scene/image-surface.ts` wählt das Preset.
+- Rotations-Assets haben schon `gloss?: number` (eigener Print-Shader) – bleiben fachlich gleich.
+- Beide IDs werden außerdem direkt genutzt in: Book (Cover/Spine), Block, Cylinder, Sphere, Wall,
+  Print-Fields, `scene-defaults.ts`, `ground-settings.ts`, `engine/asset-meshes/shared.ts`,
+  `populate-primitives.ts`, `populate-book.ts`, `book-cover-material.ts`, `book-spine-texture.ts`.
 
 ## Konzept
 
-1. **Datenmodell**
-   - `ImageSurfaceSettings.gloss: number` (0–1) wird Pflichtfeld für das Bild.
-   - Neu `passepartoutGloss: number` (0–1).
-   - `finish` / `passepartoutFinish` werden entfernt (bzw. nur noch beim Laden gelesen).
-   - Defaults: Bild `gloss = 1` (heute glossy), Passepartout `passepartoutGloss = 0` (heute matt).
+### 1. Material
+- Print Glossy wird entfernt. Paper bekommt zwei Endpunkte für den Glanz
+  (Werte aus den heutigen beiden Presets übernommen): `roughness`, `clearcoat`,
+  `clearcoatRoughness` (+ ggf. `specularIntensity`) jeweils für matt und für glossy.
+- Neue Funktion `resolvePaperPreset(gloss)` → liefert das Paper-Preset mit interpolierten Werten.
+  Papier-Struktur (falls prozedural) wird mit steigendem Gloss abgeschwächt.
+- Im Spike prüfen, welche Felder die beiden Presets tatsächlich unterscheiden.
 
-2. **Migration beim Laden** (Szenen-/Projektdateien)
-   - `finish: 'matt'` → `gloss = 0`, `'glossy'` → `gloss = 1`; vorhandenes `gloss` hat Vorrang.
-   - analog `passepartoutFinish` → `passepartoutGloss`.
-   - Material-Slot-Migration (`finishFromMaterialId`) liefert direkt 0/1.
-   - Tests für alte Dateien (matt, glossy, gemischt, mit/ohne `gloss`).
+### 2. Datenmodell (Gloss pro Fläche/Slot)
+- Bildflächen: `gloss: number` (Bild) und `passepartoutGloss: number`; `finish`/`passepartoutFinish` entfallen.
+- Bildflächen-Material ist damit immer Paper (wie heute faktisch auch).
+- Andere Material-Slots, die Paper tragen können (Book-Cover, Block, Wall …):
+  optionales `slotGloss?: Partial<Record<SlotName, number>>` neben `AssetMaterialSlots`
+  (Name im Spike festlegen). Fehlt der Wert → Default des Slots.
+- Defaults: Bild 1, Passepartout 0, übrige Slots nach heutigem Default-Material
+  (war Print Glossy → 1, war Paper → 0).
 
-3. **Rendering: Interpolation zwischen den Presets**
-   - Neue Hilfsfunktion z. B. `resolveFinishPreset(gloss, resolvePreset)`:
-     lädt Paper- und Print-Glossy-Preset und interpoliert linear
-     `roughness`, `clearcoat`, `clearcoatRoughness`, `specularIntensity` (u. ä. numerische PBR-Werte).
-   - Nicht-numerische Eigenschaften (Typ, prozedurale Struktur, Papierfaser-Normal etc.):
-     von Paper übernehmen und deren Stärke mit `(1 - gloss)` ausblenden, falls vorhanden;
-     sonst Schwelle bei 0.5. → im Spike prüfen, welche Felder die beiden Presets wirklich haben.
-   - `finishToMaterialId()` entfällt bzw. bleibt nur für Migration.
-   - Rotations-Assets bleiben unverändert (nutzen `gloss` bereits).
+### 3. Migration beim Laden
+- Material-ID `material-glossy-print` → `material-paper` + Gloss 1 am betroffenen Slot.
+- `material-paper` → Gloss 0 (falls kein Wert vorhanden).
+- `finish: 'matt' | 'glossy'` → `gloss` 0 / 1; vorhandenes `gloss` hat Vorrang.
+- `passepartoutFinish` → `passepartoutGloss`.
+- Einbau in die bestehende `migrateMaterialId`-/`migrateImageSurfaces`-Logik.
+- Unit-Tests mit alten Szenen (matt, glossy, gemischt, Book/Block mit Print Glossy).
 
-4. **UI**
-   - `ImageFinishSelect` ersetzen durch `RangeSlider` „Finish (Matt ↔ Glossy)“, gleiche
-     Step-/Decimal-Konstanten wie bei Print-Settings (`NORMALIZED_STEP`, `NORMALIZED_DECIMALS`).
-   - Passepartout: „Passepartout finish (Matt ↔ Glossy)“.
-   - Damit gibt es für Rotations- und Flach-Assets denselben Regler, die Sonderverzweigung
-     `printSettings ? null : <ImageFinishSelect>` fällt weg.
+### 4. UI
+- `ImageFinishSelect` (Dropdown) wird durch `RangeSlider` ersetzt
+  (`NORMALIZED_STEP`, `NORMALIZED_DECIMALS` wie bei Print-Settings).
+- Bildfläche: „Finish (Matt ↔ Glossy)“; Passepartout: „Passepartout finish (Matt ↔ Glossy)“.
+- Material-Slot-Felder (Book, Block, Wall …): wenn gewählter Slot = Paper, Regler direkt darunter einblenden.
+- Print Glossy verschwindet aus allen Material-Auswahlen.
+- Rotations-Assets: bestehender Regler bleibt, Sonderverzweigung entfällt.
 
-5. **Allgemeine Regel (für künftige UI)**
-   - Notiz in `_docs/diaries/diary-code-decisions.md`: binäre/stufige Material-Eigenschaften
-     werden als Schieberegler (0–1) umgesetzt, nicht als Dropdown.
+### 5. Regel festhalten
+- Eintrag in `_docs/diaries/diary-code-decisions.md`: Material-Varianten, die sich nur in
+  einer Eigenschaft unterscheiden, werden **ein** Material mit Schieberegler – keine Dropdowns/Duplikate.
 
 ## Offene Fragen
-
-- **Materials-Panel-Kopplung:** Heute springt das Dropdown um, wenn im Materials-Panel Paper/Print Glossy
-  zugewiesen wird. Vorschlag: Bildflächen-Finish ist ab jetzt nur noch über den Regler steuerbar;
-  andere Material-Zuweisungen auf Bildflächen bleiben wie bisher (Regler dann wirkungslos → ausgrauen).
-- **Zwischenwerte-Optik:** Reicht lineare Interpolation, oder soll die Kurve (z. B. Roughness quadratisch)
-  angepasst werden, damit der Regler sich gleichmäßig anfühlt? Vorschlag: zuerst linear, visuell prüfen.
-- Gibt es weitere Dropdowns dieser Art (z. B. im Materials-Panel), die ebenfalls umgestellt werden sollen?
+- Lineare Interpolation reicht? Vorschlag: zuerst linear, visuell bei 0 / 0.5 / 1 prüfen, ggf. Kurve anpassen.
+- Gibt es weitere Material-Paare dieser Art (z. B. Plastic matte / glossy), die gleich behandelt werden sollen?
+  → zunächst nur Paper, Rest als eigener Plan.
 
 ## Schritte
-
-1. Spike: Paper- und Print-Glossy-Preset vergleichen, interpolierbare Felder festlegen.
-2. Datenmodell + Migration + Unit-Tests.
-3. Interpolations-Helper + Einbau in `material-resolver.ts` und `populate-primitives.ts`.
-4. UI-Umstellung in `ImageSurfaceFields.tsx`.
-5. Visuelle Prüfung (0 / 0.5 / 1) an Picture, Smartphone, Tapete, Passepartout.
-6. `npx vitest run`, `npm run lint`, `npm run build`, Commit auf `main`.
+1. Spike: Paper vs. Print Glossy vergleichen, Interpolationsfelder + Slot-Gloss-Struktur festlegen.
+2. Preset zusammenlegen, `resolvePaperPreset(gloss)` + Tests.
+3. Datenmodell + Migration + Tests.
+4. Renderer umstellen (`material-resolver.ts`, `populate-primitives.ts`, `populate-book.ts`, `shared.ts`, Book-Cover/Spine).
+5. UI umstellen (`ImageSurfaceFields.tsx`, Entity-Fields).
+6. Visuelle Prüfung an Picture, Smartphone, Tapete, Passepartout, Book, Block.
+7. `npx vitest run`, `npm run lint`, `npm run build`, Commit auf `main`.
