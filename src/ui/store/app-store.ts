@@ -1,3 +1,7 @@
+import {
+  onSceneApiConnected,
+  onSceneApiDisconnected,
+} from '@/ui/persistence/project-persistence';
 import { migrateMaterialId } from '@/scene/material-ids';
 import {
   cloneMaterialPreset,
@@ -190,6 +194,7 @@ export const subscribe = store.subscribe;
 let historySettingsUnsubscribe: (() => void) | null = null;
 
 export function setSceneApi(api: SceneApi | null): void {
+  if (store.sceneApi) {onSceneApiDisconnected();}
   historySettingsUnsubscribe?.();
   historySettingsUnsubscribe = null;
   store.engineUnsubscribe?.();
@@ -232,6 +237,7 @@ export function setSceneApi(api: SceneApi | null): void {
     store.syncEngineStateFromEngine();
     api.setHistorySettingsAdapter(historySettingsAdapter);
     historySettingsUnsubscribe = store.subscribe(() => { api.noteHistorySettingsChanged(); });
+    onSceneApiConnected(api);
   } else {
     store.setAppState({ ...store.state, entities: [], selectedEntityId: null });
     store.emit();

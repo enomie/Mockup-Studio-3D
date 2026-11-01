@@ -126,6 +126,13 @@ export class SceneHistoryController {
     if (!down) {this.scheduleFlush();}
   }
 
+  /** Takes the current state as the new starting point without recording a step. */
+  resetBaseline(): void {
+    this.cancelTimer();
+    this.userActivity = this.pointerDown;
+    this.baseline = this.capture();
+  }
+
   /** Commits all changes since the last step as one user step named `label`. */
   commitStep(label: string): void {
     this.userActivity = true;

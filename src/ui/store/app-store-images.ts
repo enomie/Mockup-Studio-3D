@@ -1,3 +1,4 @@
+import { registerImageBlob } from '@/ui/persistence/image-blob-registry';
 import {
   detectOrientation,
   STARTER_IMAGES,
@@ -82,6 +83,7 @@ export async function addImagesFromFiles(files: FileList | File[]): Promise<void
     const objectUrl = URL.createObjectURL(file);
     try {
       const meta = await loadImageMeta(file, objectUrl);
+      registerImageBlob(meta.id, file);
       added.push(meta);
     } catch {
       URL.revokeObjectURL(objectUrl);

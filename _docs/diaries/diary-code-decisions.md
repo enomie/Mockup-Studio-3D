@@ -6,6 +6,13 @@ Kurze Historie: **wie** wir uns entschieden haben (Warum, Alternativen). Require
 
 ## Einträge
 
+### 2026-11-01 — Arrangements + Persistenz + Reset all
+- **Entscheidung:** Neues Panel „Arrangements“. Built-ins sind Spawn-Regeln, damit Kind-Defaults aus dem Code gelten. User-Arrangements sind vollständige Entity-Snapshots. Laden ersetzt alle Assets als **ein** Undo-Schritt (`SceneHistoryController.commitStep(label)`). Die Start-Szene läuft über denselben Weg (Clothing); `DEFAULT_SCENE_ASSETS` ist weg.
+- **Persistenz:** IndexedDB statt localStorage, weil Bild-Blobs und gebackene Meshes zu groß sind. Built-ins werden nicht gespeichert (Ausnahme: Materials und Colors, weil editierbar), damit Code-Updates ankommen. Bei `schemaVersion`-Mismatch wird verworfen statt migriert (v1, noch keine Nutzerbasis).
+- **Reset all** liegt im neuen Right-Panel „Settings“: DB leeren + Reload ist einfacher und sicherer als jeden Store-Teil einzeln zurückzusetzen.
+- **Verworfen:** Arrangements mit Kamera/Licht (haben eigene Presets); Kamera beim Laden neu rahmen (User-Entscheid: nein).
+- Doku: `_docs/requirements/requirements-arrangements-and-persistence.md`.
+
 ### 2026-10-31 — Analysis-Materialien (Zebra, Wireframe) + Paint Metallic
 - **Entscheidung:** Die Shading-Modi der Patch-Demo werden **normale Built-in-Materialien** (neues `kind: 'analysis'` für Zebra/Wireframe, Paint Metallic als `solid-pbr` mit Clearcoat), für alle Slots, ohne Filter. Umsetzung als `MeshStandardNodeMaterial` + `outputNode` statt `MeshBasicNodeMaterial`.
 - **Grund:** User will sie wie jedes Material zuweisen; Render/Export und fehlendes Licht sind ok. `outputNode` ist ebenso unlit, hält aber den Rückgabetyp des Resolvers – keine Typ-Kaskade.

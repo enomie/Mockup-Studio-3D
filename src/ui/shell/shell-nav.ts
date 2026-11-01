@@ -11,6 +11,7 @@ import {
   Lightbulb,
   Package,
   Palette,
+  Settings,
   Sun,
   type LucideIcon,
 } from 'lucide-react';
@@ -38,4 +39,5 @@ export const RIGHT_SHELL_NAV: ShellNavItem[] = [
   { id: 'lighting', label: 'Lighting', icon: Lightbulb },
   { id: 'physics', label: 'Physics', icon: Atom },
   { id: 'export', label: 'Export', icon: Download },
+  { id: 'settings', label: 'Settings', icon: Settings },
 ];

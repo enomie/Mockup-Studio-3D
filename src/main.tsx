@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { APP_DISPLAY_NAME, APP_VERSION } from './app-meta';
 import { App } from './ui/App';
+import { loadPersistedProject } from './ui/persistence/project-persistence';
 import { initAppStore } from './ui/store/app-store';
 import './ui/styles/app.css';
 
@@ -12,8 +13,11 @@ document.title = `${APP_DISPLAY_NAME} v${APP_VERSION}`;
 const root = document.getElementById('root');
 if (!root) {throw new Error('#root not found');}
 
-createRoot(root).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-);
+// Restore the last session before the first render so panels show saved libraries.
+void loadPersistedProject().finally(() => {
+  createRoot(root).render(
+    <StrictMode>
+      <App />
+    </StrictMode>,
+  );
+});

@@ -57,6 +57,7 @@ import type {
   ImageResolver,
   LightingSettings,
   SceneApi,
+  SceneSessionState,
   SceneApiListener,
   ViewportHelpersState,
 } from '@/scene/scene-api';
@@ -500,6 +501,23 @@ export class MockupEngine implements SceneApi {
     this.selectEntity(entityId);
     this.emit();
     return entityId;
+  }
+
+  async restoreSession(session: SceneSessionState): Promise<void> {
+    this.patchAddPoint.stop();
+    this.patchGizmo.setActiveEntity(null);
+    this.handleSelect(null);
+    this.registry.setPatchNodes(session.patchNodes);
+    await this.restoreEntities(session.entities);
+    this.cameraSlots = session.cameraSlots.map((slot) =>
+      slot ? { ...slot, position: { ...slot.position }, target: { ...slot.target } } : null,
+    ) as [CameraSlot, CameraSlot, CameraSlot];
+    this.cameras.applyViewState(session.cameraView);
+    this.setPhysicsSettings({ gravityScale: session.gravityScale });
+    this.history.resetBaseline();
+    this.gizmoInteraction.refresh();
+    this.emit();
+    this.invalidateViewport();
   }
 
   /**

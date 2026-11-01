@@ -149,6 +149,15 @@ export type CameraSlotData = CameraViewState & { name: string };
 
 export type CameraSlot = CameraSlotData | null;
 
+/** Engine-owned state that survives a page reload (see project persistence). */
+export interface SceneSessionState {
+  entities: readonly AssetEntity[];
+  patchNodes: readonly PatchNode[];
+  cameraView: CameraViewState;
+  cameraSlots: [CameraSlot, CameraSlot, CameraSlot];
+  gravityScale: number;
+}
+
 export interface CameraSettings {
   projection: CameraProjection;
   fov: number;
@@ -199,6 +208,8 @@ export interface SceneApi {
   buildBakeFabricClothDraft(entityId: string): BakeFabricClothDraft | null;
   addAssetFromUserBaked(userAsset: UserBakedAsset, spawn?: { x: number; z: number }): string;
   removeEntity(entityId: string): void;
+  /** Restores a saved session (scene, patch points, camera, gravity) without an undo step. */
+  restoreSession(session: SceneSessionState): Promise<void>;
   /** Replaces every asset with an arrangement; one undo step named `label` (includes `onStart` edits). */
   applyArrangement(
     content: ArrangementContent,

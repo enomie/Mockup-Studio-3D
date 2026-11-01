@@ -3,6 +3,7 @@ import { EnvironmentSubPanel } from '@/ui/panels/EnvironmentSubPanel';
 import { ExportSubPanel } from '@/ui/panels/ExportSubPanel';
 import { LightingSubPanel } from '@/ui/panels/LightingSubPanel';
 import { PhysicsSubPanel } from '@/ui/panels/PhysicsSubPanel';
+import { SettingsSubPanel } from '@/ui/panels/SettingsSubPanel';
 import { SceneSubPanel } from '@/ui/panels/SceneSubPanel';
 import { ShellSubPanelProvider } from '@/ui/components/shell-sub-panel-context';
 
@@ -26,6 +27,8 @@ export function RightSubPanel({ selectedId, onToggleShellCollapse }: RightSubPan
     content = <PhysicsSubPanel />;
   } else if (selectedId === 'export') {
     content = <ExportSubPanel />;
+  } else if (selectedId === 'settings') {
+    content = <SettingsSubPanel />;
   }
 
   if (!content) {
