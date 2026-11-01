@@ -4,7 +4,6 @@ import { Icon } from '@/ui/components/Icon';
 import { SubPanel } from '@/ui/components/SubPanel';
 import { removeEntity, setEntityVisible, setSelectedEntity } from '@/ui/store/app-store';
 import { useAppStore } from '@/ui/store/use-app-store';
-import { ViewportHelpersBlock } from './ViewportHelpersBlock';
 
 /** Entity overview; the selected entity's settings open in `SceneDetailPanel`. */
 export function SceneSubPanel() {
@@ -71,9 +70,6 @@ export function SceneSubPanel() {
           })}
         </ul>
       )}
-      <div className="panel-stack">
-        <ViewportHelpersBlock />
-      </div>
     </SubPanel>
   );
 }

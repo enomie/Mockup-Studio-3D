@@ -12,7 +12,7 @@ import {
 } from '@/ui/store/app-store';
 import { useAppStore } from '@/ui/store/use-app-store';
 
-/** Viewport-only aids (grids, origin, compass, spot beams); not part of environments or exports. */
+/** Viewport aids (grids, origin, compass, spot beams); not part of environments, but rendered in exports when enabled. */
 export function ViewportHelpersBlock() {
   const viewportHelpers = useAppStore((s) => s.viewportHelpers);
   const [collapsed, setCollapsed] = useState(false);

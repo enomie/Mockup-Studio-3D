@@ -4,6 +4,7 @@ import { Icon } from '@/ui/components/Icon';
 import { SubPanel } from '@/ui/components/SubPanel';
 import { SubPanelSection } from '@/ui/components/SubPanelSection';
 import { resetProject } from '@/ui/persistence/project-persistence';
+import { ViewportHelpersBlock } from './ViewportHelpersBlock';
 
 export function SettingsSubPanel() {
   const [resetting, setResetting] = useState(false);
@@ -24,6 +25,9 @@ export function SettingsSubPanel() {
 
   return (
     <SubPanel title="Settings" side="right">
+      <div className="panel-stack">
+        <ViewportHelpersBlock />
+      </div>
       <SubPanelSection title="Project">
         <p className="panel-hint">
           Your work is saved automatically in this browser and restored on reload.
