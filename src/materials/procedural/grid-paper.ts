@@ -1,3 +1,4 @@
+import type { Node } from 'three/webgpu';
 import {
   abs,
   float,
@@ -32,8 +33,7 @@ function cellUnitLineThresholds(tileScale: number) {
   };
 }
 
- 
-function distanceToLineInCells(coord: any) {
+function distanceToLineInCells(coord: Node<'float'>) {
   return min(fract(coord), float(1).sub(fract(coord)));
 }
 

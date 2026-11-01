@@ -1,3 +1,4 @@
+import type { Node } from 'three/webgpu';
 import {
   bumpMap,
   clamp,
@@ -20,14 +21,12 @@ import type { ProceduralMaterialNodes, ProceduralMaterialParams } from './proced
  */
 const BUBBLE_NOISE_SCALE = 14;
 
- 
-
-function concretePorousSeedOffset(seed: any) {
+function concretePorousSeedOffset(seed: Node<'float'>) {
   return vec2(seed.mul(13.7), seed.mul(23.1));
 }
 
 /** Discrete roundish spots — no warp, no extra grain layers. */
-function buildConcreteBubbleMask(sampleUv: any, seed: any) {
+function buildConcreteBubbleMask(sampleUv: Node<'vec2'>, seed: Node<'float'>) {
   const poreNoise = mx_noise_float(vec3(sampleUv.mul(float(BUBBLE_NOISE_SCALE)), seed.add(4.2)));
 
   return smoothstep(float(0.6), float(0.55), poreNoise).mul(
@@ -36,10 +35,10 @@ function buildConcreteBubbleMask(sampleUv: any, seed: any) {
 }
 
 function buildConcretePorousFromMask(
-  spotMask: any,
+  spotMask: Node<'float'>,
   params: ProceduralMaterialParams,
-  sampleUvForRoughness: any,
-  seed: any,
+  sampleUvForRoughness: Node<'vec2'>,
+  seed: Node<'float'>,
 ): ProceduralMaterialNodes {
   const albedoMod = float(1).sub(spotMask.mul(0.32));
   const colorNode = vec3(params.color.r, params.color.g, params.color.b).mul(albedoMod);
@@ -93,4 +92,3 @@ export function buildConcretePorousNodes(
   return buildConcretePorousFromMask(spotMask, params, sampleUv, seed);
 }
 
- 

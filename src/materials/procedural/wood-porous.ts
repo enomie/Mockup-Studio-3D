@@ -1,3 +1,4 @@
+import type { Node } from 'three/webgpu';
 import {
   bumpMap,
   clamp,
@@ -25,13 +26,11 @@ const PORE_NOISE_SCALE = 34;
 const PORE_STRETCH_ALONG_GRAIN = 0.4;
 const PORE_STRETCH_ACROSS_GRAIN = 2.4;
 
- 
-
-function woodPorousSeedOffset(seed: any) {
+function woodPorousSeedOffset(seed: Node<'float'>) {
   return vec2(seed.mul(19.1), seed.mul(29.3));
 }
 
-function buildWoodPorousSpotMask(sampleUv: any, seed: any) {
+function buildWoodPorousSpotMask(sampleUv: Node<'vec2'>, seed: Node<'float'>) {
   const stretched = vec2(
     sampleUv.x.mul(float(PORE_STRETCH_ALONG_GRAIN)),
     sampleUv.y.mul(float(PORE_STRETCH_ACROSS_GRAIN)),
@@ -44,10 +43,10 @@ function buildWoodPorousSpotMask(sampleUv: any, seed: any) {
 }
 
 function buildWoodPorousFromSpotMask(
-  spotMask: any,
+  spotMask: Node<'float'>,
   params: ProceduralMaterialParams,
-  sampleUvForRoughness: any,
-  seed: any,
+  sampleUvForRoughness: Node<'vec2'>,
+  seed: Node<'float'>,
 ): ProceduralMaterialNodes {
   const albedoMod = float(1).sub(spotMask.mul(0.15));
   const colorNode = vec3(params.color.r, params.color.g, params.color.b).mul(albedoMod);
@@ -125,4 +124,3 @@ function buildWoodPorousMeter3d(params: ProceduralMaterialParams): ProceduralMat
   return { colorNode, normalNode, roughnessNode };
 }
 
- 

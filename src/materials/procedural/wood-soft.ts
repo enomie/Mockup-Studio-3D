@@ -1,3 +1,4 @@
+import type { Node } from 'three/webgpu';
 import {
   bumpMap,
   clamp,
@@ -18,14 +19,12 @@ import {
 import type { ProceduralMaterialNodes, ProceduralMaterialParams } from './procedural-types';
 import { proceduralNoise3 } from './tsl-noise';
 
- 
-
-function woodSoftSeedOffset(seed: any) {
+function woodSoftSeedOffset(seed: Node<'float'>) {
   return vec2(seed.mul(17.3), seed.mul(31.7));
 }
 
 /** Ring + pore grain in meter-scaled 2D UV (one tangent plane). */
-function buildWoodSoftGrainScalar(sampleUv: any, seed: any) {
+function buildWoodSoftGrainScalar(sampleUv: Node<'vec2'>, seed: Node<'float'>) {
   const warpX = mx_noise_float(vec3(sampleUv.x.mul(1.4), sampleUv.y.mul(0.5), seed)).mul(0.4);
   const warpY = mx_noise_float(
     vec3(sampleUv.x.mul(0.6), sampleUv.y.mul(1.1), seed.add(4.2)),
@@ -48,10 +47,10 @@ function buildWoodSoftGrainScalar(sampleUv: any, seed: any) {
 }
 
 function buildWoodSoftNodesFromGrain(
-  grain: any,
+  grain: Node<'float'>,
   params: ProceduralMaterialParams,
-  sampleUvForRoughness: any,
-  seed: any,
+  sampleUvForRoughness: Node<'vec2'>,
+  seed: Node<'float'>,
 ): ProceduralMaterialNodes {
   const albedoMod = mix(float(0.62), float(1.12), grain);
   const colorNode = vec3(params.color.r, params.color.g, params.color.b).mul(albedoMod);
@@ -134,4 +133,3 @@ function buildWoodSoftMeter3d(params: ProceduralMaterialParams): ProceduralMater
   return { colorNode, normalNode, roughnessNode };
 }
 
- 

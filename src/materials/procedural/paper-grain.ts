@@ -1,3 +1,4 @@
+import type { Node } from 'three/webgpu';
 import {
   bumpMap,
   clamp,
@@ -17,8 +18,8 @@ import { proceduralNoise3 } from './tsl-noise';
 
 function paperGrainScalarAt(
   sampleUv: ReturnType<typeof buildProceduralSampleUv>,
-   
-  seed: any,
+
+  seed: Node<'float'>,
 ) {
   const fiberStreaks = mx_noise_float(
     vec3(sampleUv.x.mul(0.25), sampleUv.y.mul(6), seed),
