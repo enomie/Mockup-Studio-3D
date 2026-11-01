@@ -6,6 +6,11 @@ Kurze Historie: **wie** wir uns entschieden haben (Warum, Alternativen). Require
 
 ## Einträge
 
+### 2026-11-01 — Fix: Arrangements verloren gemeinsame Patch-Punkte
+- **Entscheidung:** User-Arrangements speichern zusätzlich `patchNodes`. Beim Laden schreibt `remapArrangementIds` alle IDs neu: Entities, Nodes, `node.uses`, `PatchPoint.nodeId` und `edgeLinks.partnerEntityId`. Die letzte Verknüpfung war ebenfalls kaputt, sie ist beim Fix aufgefallen. Das Feld ist optional, daher kein `schemaVersion`-Sprung.
+- **Grund:** Vorher zeigten geladene Punkte auf Nodes, die es nicht gab, und verbundene Kanten waren getrennt.
+- **Verworfen:** Die alten IDs behalten: dann kollidiert zweimaliges Laden, und Undo/Redo kann alte und neue Entities verwechseln.
+
 ### 2026-11-01 — Arrangements + Persistenz + Reset all
 - **Entscheidung:** Neues Panel „Arrangements“. Built-ins sind Spawn-Regeln, damit Kind-Defaults aus dem Code gelten. User-Arrangements sind vollständige Entity-Snapshots. Laden ersetzt alle Assets als **ein** Undo-Schritt (`SceneHistoryController.commitStep(label)`). Die Start-Szene läuft über denselben Weg (Clothing); `DEFAULT_SCENE_ASSETS` ist weg.
 - **Persistenz:** IndexedDB statt localStorage, weil Bild-Blobs und gebackene Meshes zu groß sind. Built-ins werden nicht gespeichert (Ausnahme: Materials und Colors, weil editierbar), damit Code-Updates ankommen. Bei `schemaVersion`-Mismatch wird verworfen statt migriert (v1, noch keine Nutzerbasis).

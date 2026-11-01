@@ -43,12 +43,13 @@ export function loadArrangement(id: string): void {
 export function saveCurrentAsArrangement(): string {
   const id = `${USER_ARRANGEMENT_ID_PREFIX}${crypto.randomUUID()}`;
   const entities = store.sceneApi?.getEntities() ?? store.state.entities;
+  const patchNodes = store.sceneApi?.getPatchNodes() ?? store.state.patchNodes;
   const preset: ArrangementPreset = {
     id,
     name: nextArrangementSaveName(),
     source: 'user',
     createdAt: new Date().toISOString(),
-    content: { kind: 'entities', entities: [...entities] },
+    content: { kind: 'entities', entities: [...entities], patchNodes: [...patchNodes] },
   };
   store.setAppState({
     ...store.state,

@@ -537,9 +537,10 @@ export class MockupEngine implements SceneApi {
     if (content.kind === 'spawn') {
       this.assets.replaceWithSpawns(content.assets);
     } else {
-      await this.assets.replaceWithEntities(content.entities);
+      await this.assets.replaceWithEntities(content.entities, content.patchNodes ?? []);
     }
     this.history.commitStep(label);
+    this.patchGizmo.syncHelpersFromEntity();
     this.gizmoInteraction.refresh();
     this.emit();
     this.invalidateViewport();

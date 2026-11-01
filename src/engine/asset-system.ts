@@ -106,6 +106,8 @@ import type { ImageTextureLoader } from './image-texture-loader';
 import { MaterialResolver } from './material-resolver';
 import { defaultArrangementSpawns } from '@/data/builtin-arrangements';
 import type { ArrangementSpawn } from '@/scene/arrangement-types';
+import { remapArrangementIds } from '@/scene/arrangement-remap';
+import type { PatchNode } from '@/scene/patch-nodes';
 import type { ViewportInvalidation } from './viewport-invalidation';
 import {
   type AssetRebuildContext,
@@ -396,14 +398,21 @@ export class AssetSystem {
     for (const entity of [...this.registry.getEntities()]) {
       this.removeAsset(entity.id);
     }
+    this.registry.setPatchNodes([]);
     this.spawnArrangement(spawns);
   }
 
-  /** Replaces every asset with copies of `entities` under fresh ids (user arrangement). */
-  replaceWithEntities(entities: readonly AssetEntity[]): Promise<void> {
-    return this.restoreEntities(
-      entities.map((entity) => ({ ...entity, id: crypto.randomUUID() })),
-    );
+  /**
+   * Replaces every asset with copies of `entities` (user arrangement); entities and shared
+   * patch points get fresh ids so loading the same arrangement twice never collides.
+   */
+  replaceWithEntities(
+    entities: readonly AssetEntity[],
+    patchNodes: readonly PatchNode[],
+  ): Promise<void> {
+    const remapped = remapArrangementIds(entities, patchNodes);
+    this.registry.setPatchNodes(remapped.patchNodes);
+    return this.restoreEntities(remapped.entities);
   }
 
   private spawnArrangement(spawns: readonly ArrangementSpawn[]): void {

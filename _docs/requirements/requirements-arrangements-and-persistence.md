@@ -10,7 +10,7 @@
 - **Add new** speichert die aktuellen Szenen-Entities als User-Arrangement (`kind: 'entities'`, vollständige Entity-Snapshots). Name „My arrangement“, „My arrangement 2“ usw.
 - **Laden ersetzt** alle Assets der Szene. Das ist **ein** Undo-Schritt („Load arrangement <Name>“), der auch die aktive Markierung zurücksetzt. Die Kamera bleibt unverändert. User-Entities bekommen beim Laden neue IDs.
 - User-Arrangements: **Rename, Duplicate, Remove**. Built-ins lassen sich nur duplizieren. Duplicate und Remove ändern die Szene nicht.
-- Einschränkung: Gemeinsame Patch-Punkte (Triangle/Quad-Patch-Nodes) werden nicht mitgespeichert.
+- **Gemeinsame Patch-Punkte** (Patch-Nodes) und Kanten-Verknüpfungen (`edgeLinks`) werden mitgespeichert. Beim Laden bekommen Entities und Nodes neue IDs (`remapArrangementIds`), alle Verweise (`uses`, `PatchPoint.nodeId`, `partnerEntityId`) werden umgeschrieben. Fehlt ein Node (ältere Speicherstände), wird der Punkt zu einem normalen Punkt an seiner gespeicherten Position.
 
 Code: `src/scene/arrangement-types.ts`, `src/ui/store/app-store-arrangements.ts`, `src/ui/panels/ArrangementsPanel.tsx`, Engine `MockupEngine.applyArrangement` → `AssetSystem.replaceWithSpawns` / `replaceWithEntities`.
 

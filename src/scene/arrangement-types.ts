@@ -1,4 +1,5 @@
 import type { AssetEntity, AssetKind } from '@/scene/entity-types';
+import type { PatchNode } from '@/scene/patch-nodes';
 import type { MaterialEntitySlot } from '@/scene/material-types';
 
 export type ArrangementSource = 'builtin' | 'user';
@@ -23,7 +24,12 @@ export interface ArrangementSpawn {
  */
 export type ArrangementContent =
   | { kind: 'spawn'; assets: readonly ArrangementSpawn[] }
-  | { kind: 'entities'; entities: readonly AssetEntity[] };
+  | {
+      kind: 'entities';
+      entities: readonly AssetEntity[];
+      /** Shared patch points used by these entities; absent in arrangements saved before they were stored. */
+      patchNodes?: readonly PatchNode[];
+    };
 
 export interface ArrangementPreset {
   id: string;
@@ -43,6 +49,10 @@ export function cloneArrangementPreset(preset: ArrangementPreset): ArrangementPr
   const content: ArrangementContent =
     preset.content.kind === 'spawn'
       ? { kind: 'spawn', assets: [...preset.content.assets] }
-      : { kind: 'entities', entities: [...preset.content.entities] };
+      : {
+          kind: 'entities',
+          entities: [...preset.content.entities],
+          patchNodes: [...(preset.content.patchNodes ?? [])],
+        };
   return { ...preset, content };
 }
