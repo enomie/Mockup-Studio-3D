@@ -11,6 +11,7 @@ import {
   SphereGeometry,
   TorusGeometry,
   Vector3,
+  type Material,
   type Object3D,
   type Ray,
   type Sphere,
@@ -69,20 +70,6 @@ export function closestAxisParamToRay(origin: Vector3, dir: Vector3, ray: Ray): 
 }
 
 export type PatchSubTarget = PatchHandleSelection;
-
-/** Shift state for Shift+drag (break a smooth joint); tracked globally, the gizmo has no event. */
-let shiftHeld = false;
-if (typeof window !== 'undefined') {
-  const track = (event: KeyboardEvent) => { shiftHeld = event.shiftKey; };
-  window.addEventListener('keydown', track, { capture: true });
-  window.addEventListener('keyup', track, { capture: true });
-  window.addEventListener('pointerdown', (event) => { shiftHeld = event.shiftKey; }, { capture: true });
-  window.addEventListener('blur', () => { shiftHeld = false; });
-}
-
-function isShiftHeld(): boolean {
-  return shiftHeld;
-}
 
 interface PointHelpers {
   anchor: Mesh;
@@ -174,6 +161,9 @@ export class TrianglePatchGizmoController {
 
   /** Glowing ring on the active lever line: drag it to change only the lever length. */
   private readonly lengthRing: Mesh;
+  /** Shift state for Shift+drag (break a smooth joint); tracked on window, the gizmo has no event. */
+  private shiftHeld = false;
+  private readonly windowListeners = new AbortController();
   private lengthDrag: LengthDragState | null = null;
 
   private onPatchChange?: (entityId: string, params: PatchParams) => void;
@@ -188,6 +178,17 @@ export class TrianglePatchGizmoController {
 
     this.helperResources = createHelperResources();
     this.lengthRing = this.createLengthRing();
+    this.trackShiftKey();
+  }
+
+  private trackShiftKey(): void {
+    if (typeof window === 'undefined') {return;}
+    const options = { capture: true, signal: this.windowListeners.signal };
+    const track = (event: KeyboardEvent | PointerEvent) => { this.shiftHeld = event.shiftKey; };
+    window.addEventListener('keydown', track, options);
+    window.addEventListener('keyup', track, options);
+    window.addEventListener('pointerdown', track, options);
+    window.addEventListener('blur', () => { this.shiftHeld = false; }, { signal: this.windowListeners.signal });
   }
 
   setPatchChangeListener(listener: (entityId: string, params: PatchParams) => void): void {
@@ -615,7 +616,7 @@ export class TrianglePatchGizmoController {
     } else {
       // Shift while dragging frees the pair of the dragged handle (yellow or pink).
       const shared = this.nodeAndUse(node);
-      if (isShiftHeld() && shared) {
+      if (this.shiftHeld && shared) {
         const pair = pairOfOwnHandle(shared.node, shared.use, targetKey);
         if (pair === 'yellow') {node.joint = 'corner';}
         if (pair === 'pink') {node.pinkPair = 'free';}
@@ -664,7 +665,7 @@ export class TrianglePatchGizmoController {
     if (!slot) {return;}
     const p = found.node.pos;
     const offset = { x: world.x - p.x, y: world.y - p.y, z: world.z - p.z };
-    const next = setNodeSlot(found.node, slot, offset, isShiftHeld());
+    const next = setNodeSlot(found.node, slot, offset, this.shiftHeld);
     this.registry.setPatchNodes(this.registry.getPatchNodes().map((n) => (n.id === next.id ? next : n)));
     this.syncHelpersFromEntity();
   }
@@ -687,7 +688,12 @@ export class TrianglePatchGizmoController {
   }
 
   dispose(): void {
+    this.windowListeners.abort();
+    this.clearHelpers();
     this.scene.remove(this.helperGroup);
+    for (const resource of Object.values(this.helperResources) as { dispose(): void }[]) {resource.dispose();}
+    this.lengthRing.geometry.dispose();
+    (this.lengthRing.material as Material).dispose();
   }
 }
 
