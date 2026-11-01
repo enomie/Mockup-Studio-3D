@@ -28,6 +28,10 @@ import {
   usePatchPointClipboard,
   usePatchPointPasteMode,
 } from '@/ui/store/patch-point-clipboard-store';
+import { deriveHandleDirection, handleTipAt, unitDir } from '@/scene/triangle-patch-handle-length';
+
+/** Session-only memory of handle directions, so a handle pulled to 0 can be pulled out again. */
+const lastHandleDirections = new Map<string, Vec3>();
 import type { PatchPointPasteMode } from '@/scene/triangle-patch-point-clipboard';
 import {
   setKindParams,
@@ -49,7 +53,7 @@ import {
   rotatePatchNodeHandlesAroundAnchor,
   translatePatchNodeAnchor,
 } from '@/scene/triangle-patch-node-edit';
-import type { AssetEntity } from '@/scene/entity-types';
+import type { AssetEntity, Vec3 } from '@/scene/entity-types';
 import { MATERIAL_ALUMINUM_BRUSHED_ID } from '@/scene/material-ids';
 import { formatLengthMeters, LENGTH_DECIMALS, parseLengthMetersInput } from '@/units/length';
 import { formatDegrees, parseDegreesInput } from './field-input-helpers';
@@ -215,40 +219,22 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
     });
   };
 
-  const scaleHandleLength = (factor: number) => {
-    if (selectedTargetKey === 'pos') {return;}
+  /** Last known direction of the selected handle (kept while its length is > 0). */
+  const dirKey = `${entity.id}:${selectedPointId}:${selectedExtra ?? selectedTargetKey}`;
+
+  const setHandleLength = (length: number) => {
+    if (selectedTargetKey === 'pos' || selectedTargetKey === 'sharedPink') {return;}
+    const p0 = activeNode.pos;
+    const dir = unitDir(p0, activeVec)
+      ?? lastHandleDirections.get(dirKey)
+      ?? (selectedExtra ? null : deriveHandleDirection(patchParams.points, activeNode.id, selectedTargetKey));
+    if (!dir) {return;}
+    const tip = handleTipAt(p0, dir, Math.max(0, length));
     if (selectedExtra) {
-      const p0 = activeNode.pos;
-      writeExtra({
-        x: p0.x + (activeVec.x - p0.x) * factor,
-        y: p0.y + (activeVec.y - p0.y) * factor,
-        z: p0.z + (activeVec.z - p0.z) * factor,
-      });
+      writeExtra(tip);
       return;
     }
-    if (selectedTargetKey === 'sharedPink') {return;}
-    const nodeCopy = {
-      ...activeNode,
-      pos: { ...activeNode.pos },
-      handleNext: { ...activeNode.handleNext },
-      handlePrev: { ...activeNode.handlePrev },
-      handleCrossIn: { ...activeNode.handleCrossIn },
-      handleCrossOut: { ...activeNode.handleCrossOut },
-    };
-
-    const p0 = nodeCopy.pos;
-    const curH = nodeCopy[selectedTargetKey];
-    const dx = (curH.x - p0.x) * factor;
-    const dy = (curH.y - p0.y) * factor;
-    const dz = (curH.z - p0.z) * factor;
-
-    nodeCopy[selectedTargetKey] = {
-      x: p0.x + dx,
-      y: p0.y + dy,
-      z: p0.z + dz,
-    };
-
-    commitPoint(nodeCopy);
+    commitPoint({ ...activeNode, [selectedTargetKey]: tip });
   };
 
   /** Handle list of a point: a shared point lists all its handles, neutrally numbered. */
@@ -276,6 +262,10 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
   const handleLen = selectedTargetKey !== 'pos'
     ? Math.hypot(activeVec.x - activeNode.pos.x, activeVec.y - activeNode.pos.y, activeVec.z - activeNode.pos.z)
     : 0;
+  if (selectedTargetKey !== 'pos') {
+    const currentDir = unitDir(activeNode.pos, activeVec);
+    if (currentDir) {lastHandleDirections.set(dirKey, currentDir);}
+  }
 
   return (
     <>
@@ -481,11 +471,7 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
                         value={handleLen}
                         format={(val) => formatLengthMeters(val, LENGTH_DECIMALS)}
                         parse={parseLengthMetersInput}
-                        onChange={(val) => {
-                          if (handleLen > 0.0001) {
-                            scaleHandleLength(val / handleLen);
-                          }
-                        }}
+                        onChange={(val) => { setHandleLength(val); }}
                       />
                     ) : null}
                   </div>
