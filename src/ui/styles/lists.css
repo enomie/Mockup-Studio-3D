@@ -169,3 +169,14 @@
 .profile-path-list__detail {
   color: var(--color-text-muted);
 }
+
+.profile-hint {
+  margin: var(--space-4) 0;
+  font-size: var(--font-xs);
+  color: var(--color-text-muted);
+}
+
+.profile-path-list__item .panel-field-input {
+  min-width: 0;
+  font-family: inherit;
+}

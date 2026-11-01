@@ -1,6 +1,6 @@
 # Plan B: Profile – Datenmodell mit benannten Pfaden, Duplizieren, 2D-Editor (v1)
 
-Status: **B1 umgesetzt.** B2/B3 offen. Entscheidungen: Editor anstelle des Viewports, eingebaute Profile schreibgeschützt, Pfadnamen wie in der Tabelle. Teil von `plan-profiles-2d-editor.md` (Schritt B).
+Status: **B1 und B2 umgesetzt.** B3 offen. Entscheidungen: Editor anstelle des Viewports, eingebaute Profile schreibgeschützt, Pfadnamen wie in der Tabelle. Teil von `plan-profiles-2d-editor.md` (Schritt B).
 Baut auf A (`plan-profiles-tab.md`) auf.
 
 ## Ist-Zustand (recherchiert)

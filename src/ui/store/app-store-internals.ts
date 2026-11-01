@@ -1,3 +1,4 @@
+import type { ProfileEntry } from '@/scene/profile-library';
 import type { PatchNode } from '@/scene/patch-nodes';
 import type { PatchEdgeSelection } from '@/engine/triangle-patch-add-point-tool';
 import type { SceneHistoryState } from '@/engine/history/scene-history-controller';
@@ -100,6 +101,8 @@ export interface AppState {
   activeArrangementId: string | null;
   entities: readonly AssetEntity[];
   userBakedAssets: UserBakedAsset[];
+  /** User-made profiles; built-ins come from the profile library. */
+  userProfiles: ProfileEntry[];
   selectedEntityId: string | null;
   patchHandleSelection: PatchHandleSelection | null;
   /** Patch whose viewport add-point mode is running, if any. */
@@ -163,6 +166,7 @@ export let state: AppState = {
   activeArrangementId: BUILTIN_ARRANGEMENT_DEFAULT_ID,
   entities: [],
   userBakedAssets: [],
+  userProfiles: [],
   selectedEntityId: null,
   patchHandleSelection: null,
   patchAddPointEntityId: null,

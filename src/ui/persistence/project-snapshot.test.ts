@@ -50,6 +50,21 @@ describe('project snapshot', () => {
     expect(snapshot.libraries.materials.length).toBe(state.materials.length);
   });
 
+  it('stores user profiles and accepts snapshots saved before profiles existed', () => {
+    const state = getAppState();
+    const profile = {
+      id: 'user-profile-1',
+      name: 'Logo',
+      source: 'user' as const,
+      paths: [{ id: 'p', name: 'Outline', slot: 0, closed: true, nodes: [{ x: 0, y: 0, mode: 'corner' as const }] }],
+    };
+    const snapshot = captureProjectSnapshot({ ...state, userProfiles: [profile] }, scene);
+    expect(snapshot.libraries.profiles).toEqual([profile]);
+
+    const { profiles: _profiles, ...legacyLibraries } = snapshot.libraries;
+    expect(parseProjectSnapshot({ ...snapshot, libraries: legacyLibraries })).not.toBeNull();
+  });
+
   it('rejects other schema versions and broken data', () => {
     const snapshot = captureProjectSnapshot(getAppState(), scene);
     expect(parseProjectSnapshot({ ...snapshot, schemaVersion: PROJECT_SCHEMA_VERSION + 1 })).toBeNull();

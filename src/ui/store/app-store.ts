@@ -66,7 +66,14 @@ export {
   removeMaterial,
 } from './app-store-materials';
 
-export { selectProfile } from './app-store-profiles';
+export {
+  selectProfile,
+  addProfile,
+  duplicateProfile,
+  renameProfile,
+  renameProfilePath,
+  removeProfile,
+} from './app-store-profiles';
 
 export {
   selectColor,

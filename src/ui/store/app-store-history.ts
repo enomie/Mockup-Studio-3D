@@ -13,6 +13,7 @@ const SETTINGS_GROUPS = {
   ],
   ground: ['ground'],
   arrangements: ['arrangements', 'activeArrangementId'],
+  profiles: ['userProfiles'],
   materials: ['materials'],
   colors: ['colors'],
   images: ['images'],

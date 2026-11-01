@@ -68,6 +68,7 @@ function applySnapshotToStore(snapshot: ProjectSnapshot, userImages: ImageAsset[
       libraries.arrangements,
     ),
     userBakedAssets: libraries.userBakedAssets,
+    userProfiles: (libraries.profiles ?? []).filter((entry) => entry.source === 'user'),
     physics: { ...state.physics, gravityScale: scene.gravityScale },
     camera: { ...state.camera, slots: scene.cameraSlots },
   });

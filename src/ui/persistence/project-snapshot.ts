@@ -3,6 +3,7 @@ import type { ArrangementPreset } from '@/scene/arrangement-types';
 import type { ColorPreset } from '@/scene/color-types';
 import type { EnvironmentPreset } from '@/scene/environment-preset-types';
 import type { MaterialPreset } from '@/scene/entity-types';
+import type { ProfileEntry } from '@/scene/profile-library';
 import type { LightingPreset } from '@/scene/lighting-preset-types';
 import type { SceneSessionState } from '@/scene/scene-api';
 import type { UserBakedAsset } from '@/scene/user-baked-asset';
@@ -48,6 +49,8 @@ interface PersistedLibraries {
   lightingPresets: LightingPreset[];
   arrangements: ArrangementPreset[];
   userBakedAssets: UserBakedAsset[];
+  /** Optional: snapshots saved before profiles existed have no entry. */
+  profiles?: ProfileEntry[];
 }
 
 export interface ProjectSnapshot {
@@ -88,6 +91,7 @@ export function captureProjectSnapshot(
       lightingPresets: onlyUser(state.lightingPresets),
       arrangements: onlyUser(state.arrangements),
       userBakedAssets: [...state.userBakedAssets],
+      profiles: [...state.userProfiles],
     },
     scene,
   };
@@ -131,6 +135,7 @@ export function parseProjectSnapshot(raw: unknown): ProjectSnapshot | null {
     'images', 'materials', 'colors', 'environments', 'lightingPresets', 'arrangements', 'userBakedAssets',
   ];
   if (!libraryKeys.every((key) => Array.isArray(libraries[key]))) {return null;}
+  if (libraries.profiles !== undefined && !Array.isArray(libraries.profiles)) {return null;}
   if (!PERSISTED_SETTING_KEYS.every((key) => key in settings)) {return null;}
   if (
     !Array.isArray(scene.entities) ||
