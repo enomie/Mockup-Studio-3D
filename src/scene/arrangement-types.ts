@@ -2,7 +2,7 @@ import type { AssetEntity, AssetKind } from '@/scene/entity-types';
 import type { PatchNode } from '@/scene/patch-nodes';
 import type { MaterialEntitySlot } from '@/scene/material-types';
 
-export type ArrangementSource = 'builtin' | 'user';
+type ArrangementSource = 'builtin' | 'user';
 
 /** One asset of a built-in arrangement, spawned with its kind defaults. */
 export interface ArrangementSpawn {

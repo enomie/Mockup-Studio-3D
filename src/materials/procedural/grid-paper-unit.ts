@@ -34,7 +34,7 @@ export function tileScaleToGridUnit(tileScale: number): GridPaperUnit {
   return best;
 }
 
-export function resolveGridPaperUnit(
+function resolveGridPaperUnit(
   gridUnit: GridPaperUnit | undefined,
   tileScale: number | undefined,
 ): GridPaperUnit {

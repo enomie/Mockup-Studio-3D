@@ -28,7 +28,7 @@ export function fabricClothBorderMaskFromRestPlane(
 }
 
 /** Hard inset border mask: 1 on border strip, 0 on interior (meters from plane edge). */
-export function fabricClothInsetBorderMaskNode(
+function fabricClothInsetBorderMaskNode(
   planeW: number,
   planeH: number,
   borderWidthM: number,

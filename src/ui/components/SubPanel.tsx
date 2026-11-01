@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { SubPanelCollapseRow } from '@/ui/components/SubPanelCollapseRow';
 
 /** `list`: shrinks to its content (clamped); `form`: fixed width for label + field rows. */
-export type SubPanelWidth = 'list' | 'form';
+type SubPanelWidth = 'list' | 'form';
 
 interface SubPanelProps {
   title: string;

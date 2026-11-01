@@ -290,7 +290,7 @@ function buildImagePlaneTextureNodes(
   return { sample, useAlphaChannel };
 }
 
-export type ImagePlaneAlphaMode = 'blend' | 'cutout';
+type ImagePlaneAlphaMode = 'blend' | 'cutout';
 
 function bindImagePlaneTexture(
   material: MeshStandardNodeMaterial | MeshPhysicalNodeMaterial,

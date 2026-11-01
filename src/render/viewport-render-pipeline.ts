@@ -28,7 +28,7 @@ export interface ViewportFrameParams {
 }
 
 /** Renders sky then main into a single MSAA target (sky pixels kept, depth cleared). */
-export function compositeSceneToTarget(
+function compositeSceneToTarget(
   renderer: WebGPURenderer,
   target: RenderTarget,
   params: ViewportFrameParams,

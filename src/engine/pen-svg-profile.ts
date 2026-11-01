@@ -7,9 +7,9 @@ import {
   type LatheSvgPoint2,
 } from './lathe-svg-path-slots';
 
-export type { LatheSvgPoint2 as SvgPoint2 };
+;
 
-export type PenSvgPartId = 'cap' | 'ring' | 'body';
+type PenSvgPartId = 'cap' | 'ring' | 'body';
 
 export interface PenLatheProfiles {
   cap: Vector2[];
@@ -56,7 +56,7 @@ export function globalBoundsFromRawPaths(paths: RawPenPaths): {
   return { minX, maxX, minY, maxY };
 }
 
-export function normalizePenPartPoints(
+function normalizePenPartPoints(
   raw: LatheSvgPoint2[],
   bounds: { maxY: number },
 ): Vector2[] {
@@ -74,7 +74,7 @@ export function normalizePenPartPoints(
   return orientLatheProfileBottomToTop(normalized);
 }
 
-export function scalePenLatheProfiles(
+function scalePenLatheProfiles(
   profiles: PenLatheProfiles,
   sizeScale: number,
 ): PenLatheProfiles {
@@ -100,7 +100,7 @@ export function normalizePenPaths(raw: RawPenPaths): PenLatheProfiles {
   };
 }
 
-export async function fetchSvgText(url: string): Promise<string> {
+async function fetchSvgText(url: string): Promise<string> {
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`Failed to load SVG: ${url} (${response.status})`);
@@ -108,7 +108,7 @@ export async function fetchSvgText(url: string): Promise<string> {
   return response.text();
 }
 
-export async function loadRawPenPaths(profile: PenBodyProfile): Promise<RawPenPaths> {
+async function loadRawPenPaths(profile: PenBodyProfile): Promise<RawPenPaths> {
   const cached = rawPathsCache.get(profile);
   if (cached) {
     return cached;
@@ -117,14 +117,6 @@ export async function loadRawPenPaths(profile: PenBodyProfile): Promise<RawPenPa
   const paths = extractPenPathsFromSvgText(svgText);
   rawPathsCache.set(profile, paths);
   return paths;
-}
-
-export function setRawPenPathsCache(profile: PenBodyProfile, paths: RawPenPaths): void {
-  rawPathsCache.set(profile, paths);
-}
-
-export function clearRawPenPathsCache(): void {
-  rawPathsCache.clear();
 }
 
 export async function loadPenLatheProfiles(

@@ -9,7 +9,7 @@ import {
 } from '@/scene/environment-preset-types';
 
 export const BUILTIN_ENV_DEFAULT_ID = 'builtin-env-default';
-export const BUILTIN_ENV_BLUE_SKY_ID = 'builtin-env-blue-sky';
+const BUILTIN_ENV_BLUE_SKY_ID = 'builtin-env-blue-sky';
 export const BUILTIN_ENV_DARK_STAGE_ID = 'builtin-env-dark-stage';
 
 /** Snapshot aligned with SCENE_DEFAULTS — single source for the Default environment. */

@@ -13,7 +13,7 @@ export type PhysicsRigidTestPhase = 'idle' | 'running';
 export type WorldPhysicsPhase = 'idle' | 'simulating' | 'paused';
 
 /** UI-only feedback after fabric cloth bake — not persisted or synced from engine. */
-export interface FabricClothBakeSummary {
+interface FabricClothBakeSummary {
   assetName: string;
   sourceSegmentsW: number;
   sourceSegmentsH: number;

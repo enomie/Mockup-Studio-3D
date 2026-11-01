@@ -207,7 +207,7 @@ export function syncEntityYForFoot(
     });
   }
 
-export async function rebuildBeverageCan(ctx: AssetRebuildContext, root: Group, entity: AssetEntity): Promise<void> {
+async function rebuildBeverageCan(ctx: AssetRebuildContext, root: Group, entity: AssetEntity): Promise<void> {
     let imageTexture = null;
     let imageWidth: number | undefined;
     let imageHeight: number | undefined;
@@ -243,7 +243,7 @@ export async function rebuildBeverageCan(ctx: AssetRebuildContext, root: Group, 
     });
   }
 
-export async function rebuildTinCan(ctx: AssetRebuildContext, root: Group, entity: AssetEntity): Promise<void> {
+async function rebuildTinCan(ctx: AssetRebuildContext, root: Group, entity: AssetEntity): Promise<void> {
     let imageTexture = null;
     let imageWidth: number | undefined;
     let imageHeight: number | undefined;
@@ -278,7 +278,7 @@ export async function rebuildTinCan(ctx: AssetRebuildContext, root: Group, entit
     });
   }
 
-export async function rebuildWineBottle(ctx: AssetRebuildContext, root: Group, entity: AssetEntity): Promise<void> {
+async function rebuildWineBottle(ctx: AssetRebuildContext, root: Group, entity: AssetEntity): Promise<void> {
     let imageTexture = null;
     let imageWidth: number | undefined;
     let imageHeight: number | undefined;
@@ -314,7 +314,7 @@ export async function rebuildWineBottle(ctx: AssetRebuildContext, root: Group, e
     });
   }
 
-export async function rebuildPen(
+async function rebuildPen(
   ctx: AssetRebuildContext,
   root: Group,
   entity: AssetEntity,
@@ -382,7 +382,7 @@ export async function rebuildFacetedAsset(ctx: AssetRebuildContext, root: Group,
     });
   }
 
-export async function rebuildFabricCloth(
+async function rebuildFabricCloth(
   ctx: AssetRebuildContext,
   root: Group,
   entity: AssetEntity,
@@ -422,7 +422,7 @@ export async function rebuildFabricCloth(
   ctx.fabricClothSimulation?.refreshOne(entity.id);
 }
 
-export async function rebuildFabricClothBaked(
+async function rebuildFabricClothBaked(
   ctx: AssetRebuildContext,
   root: Group,
   entity: AssetEntity,
@@ -464,7 +464,7 @@ export async function rebuildFabricClothBaked(
   });
 }
 
-export async function rebuildBook(
+async function rebuildBook(
   ctx: AssetRebuildContext,
   root: Group,
   entity: AssetEntity,
@@ -524,7 +524,7 @@ export async function rebuildBook(
   });
 }
 
-export async function rebuildPicture(ctx: AssetRebuildContext, root: Group, entity: AssetEntity): Promise<void> {
+async function rebuildPicture(ctx: AssetRebuildContext, root: Group, entity: AssetEntity): Promise<void> {
     let imageTexture = null;
     let imageWidth: number | undefined;
     let imageHeight: number | undefined;
@@ -560,7 +560,7 @@ export async function rebuildPicture(ctx: AssetRebuildContext, root: Group, enti
     });
   }
 
-export async function rebuildWall(ctx: AssetRebuildContext, root: Group, entity: AssetEntity): Promise<void> {
+async function rebuildWall(ctx: AssetRebuildContext, root: Group, entity: AssetEntity): Promise<void> {
     let imageTexture = null;
     let imageWidth: number | undefined;
     let imageHeight: number | undefined;
@@ -596,7 +596,7 @@ export async function rebuildWall(ctx: AssetRebuildContext, root: Group, entity:
     });
   }
 
-export async function rebuildRigidPrimitive(
+async function rebuildRigidPrimitive(
   ctx: AssetRebuildContext,
   root: Group,
   entity: AssetEntity,
@@ -634,7 +634,7 @@ export async function rebuildRigidPrimitive(
   ctx.rigidPrimitivePhysics?.refreshOne(entity.id);
 }
 
-export async function rebuildHandheld(ctx: AssetRebuildContext, root: Group, entity: AssetEntity): Promise<void> {
+async function rebuildHandheld(ctx: AssetRebuildContext, root: Group, entity: AssetEntity): Promise<void> {
     let imageTexture = null;
     let imageWidth: number | undefined;
     let imageHeight: number | undefined;
@@ -674,7 +674,7 @@ export async function rebuildHandheld(ctx: AssetRebuildContext, root: Group, ent
     });
   }
 
-export async function rebuildMonitor(ctx: AssetRebuildContext, root: Group, entity: AssetEntity): Promise<void> {
+async function rebuildMonitor(ctx: AssetRebuildContext, root: Group, entity: AssetEntity): Promise<void> {
     let imageTexture = null;
     let imageWidth: number | undefined;
     let imageHeight: number | undefined;

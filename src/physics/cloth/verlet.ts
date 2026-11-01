@@ -7,9 +7,9 @@ import {
 import type { VerletParams, VerletState } from '@/physics/cloth/types';
 
 /** Simulated time per call (s); world physics ticks at a fixed 60 Hz. */
-export const CLOTH_FRAME_DT = 1 / 60;
+const CLOTH_FRAME_DT = 1 / 60;
 
-export const CLOTH_SUB_STEPS = 6;
+const CLOTH_SUB_STEPS = 6;
 
 const SHEAR_STIFFNESS = 0.85;
 

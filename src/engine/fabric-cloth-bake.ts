@@ -19,7 +19,7 @@ import {
 } from './fabric-cloth-verlet-session';
 import { ensureGeometryTangents } from '@/engine/geometry-tangents';
 
-export function expectedBakedVertexCount(
+function expectedBakedVertexCount(
   payload: Pick<FabricClothBakedMeshPayload, 'segmentsW' | 'segmentsH'>,
 ): number {
   return (payload.segmentsW + 1) * (payload.segmentsH + 1);
@@ -54,7 +54,7 @@ function restPlaneBoundsFromXY(restPlaneXY: ArrayLike<number>): RestPlaneBounds 
 }
 
 /** Footprint in meters from serialized rest-plane coordinates (max − min per axis). */
-export function fabricClothRestPlaneFootprintM(
+function fabricClothRestPlaneFootprintM(
   restPlaneXY: ArrayLike<number>,
 ): Pick<FabricClothBakedMeshPayload, 'planeWidthM' | 'planeHeightM'> {
   const { minX, maxX, minY, maxY } = restPlaneBoundsFromXY(restPlaneXY);

@@ -10,7 +10,7 @@ export function radToDeg(rad: number): number {
 }
 
 /** Camera navigation angles in degrees (UI readout / panel). */
-export const CAMERA_ANGLE_DECIMALS = 1;
+const CAMERA_ANGLE_DECIMALS = 1;
 
 export function formatDegreesDisplay(valueDeg: number, decimals = CAMERA_ANGLE_DECIMALS): string {
   return valueDeg.toFixed(decimals);

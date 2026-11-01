@@ -30,7 +30,7 @@ export const CARDINAL_DIRECTIONS: readonly CardinalDirection[] = [
   { id: 'west', label: 'West', short: 'W', x: -1, z: 0, color: 0x2ecc71 },
 ];
 
-export type QuadrantId = 'alpha' | 'beta' | 'gamma' | 'delta';
+type QuadrantId = 'alpha' | 'beta' | 'gamma' | 'delta';
 
 export interface PlanQuadrant {
   id: QuadrantId;

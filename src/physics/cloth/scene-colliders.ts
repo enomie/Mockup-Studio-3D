@@ -10,7 +10,7 @@ import {
   type RoundBoxHalfExtents,
 } from '@/physics/cloth/sdf-primitives';
 
-export interface RoundedBoxCollider {
+interface RoundedBoxCollider {
   kind: 'roundedBox';
   halfExtents: RoundBoxHalfExtents;
   cornerRadius: number;
@@ -18,7 +18,7 @@ export interface RoundedBoxCollider {
   matrixWorldInverse: Float32Array;
 }
 
-export interface CappedCylinderCollider {
+interface CappedCylinderCollider {
   kind: 'cappedCylinder';
   radius: number;
   halfHeight: number;
@@ -26,7 +26,7 @@ export interface CappedCylinderCollider {
   matrixWorldInverse: Float32Array;
 }
 
-export interface SphereCollider {
+interface SphereCollider {
   kind: 'sphere';
   radius: number;
   centerX: number;

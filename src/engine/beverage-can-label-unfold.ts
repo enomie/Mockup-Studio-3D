@@ -13,7 +13,7 @@ export const BEVERAGE_CAN_LABEL_METAL_ZONES_MM = {
 } as const;
 
 /** Bottom band only — top 2.5 mm is separate `topRing` mesh, not subtracted from unfold height. */
-export const BEVERAGE_CAN_LABEL_BOTTOM_METAL_MM =
+const BEVERAGE_CAN_LABEL_BOTTOM_METAL_MM =
   BEVERAGE_CAN_LABEL_METAL_ZONES_MM.bottomMetalBandMm;
 
 /** Nominal mockup dimensions at sizeScale = 1 (meters). See requirements-assets-beverage-can.md */
@@ -68,7 +68,7 @@ export function computeLabelBandHeightMm(canHeightMm: number): number {
   return canHeightMm - BEVERAGE_CAN_LABEL_BOTTOM_METAL_MM;
 }
 
-export function computeLabelUnfoldMm(bodyDiameterMm: number, labelHeightMm: number): LabelUnfoldMm {
+function computeLabelUnfoldMm(bodyDiameterMm: number, labelHeightMm: number): LabelUnfoldMm {
   const circumferenceMm = Math.PI * bodyDiameterMm;
   return {
     widthMm: circumferenceMm,
@@ -150,7 +150,7 @@ function nominalMmToM(
   };
 }
 
-export const BEVERAGE_CAN_NOMINAL_BY_PROFILE: Record<BeverageCanBodyProfile, BeverageCanNominalM> = {
+const BEVERAGE_CAN_NOMINAL_BY_PROFILE: Record<BeverageCanBodyProfile, BeverageCanNominalM> = {
   standard: nominalMmToM(
     BEVERAGE_CAN_BODY_NOMINAL_MM.standard,
     computeLabelBandHeightMm(BEVERAGE_CAN_BODY_NOMINAL_MM.standard.canHeightMm),
@@ -165,13 +165,6 @@ export function nominalForProfile(profile: BeverageCanBodyProfile): BeverageCanN
   return BEVERAGE_CAN_NOMINAL_BY_PROFILE[profile];
 }
 
-export function computeLabelUnfoldMmFromMeters(
-  bodyDiameterM: number,
-  labelHeightM: number,
-): LabelUnfoldMm {
-  return computeLabelUnfoldMm(bodyDiameterM * MM_PER_M, labelHeightM * MM_PER_M);
-}
-
 export function computeLabelUnfoldAspect(unfold: LabelUnfoldMm): LabelUnfoldAspect {
   const widthOverHeight = unfold.widthMm / unfold.heightMm;
   return {
@@ -181,7 +174,7 @@ export function computeLabelUnfoldAspect(unfold: LabelUnfoldMm): LabelUnfoldAspe
 }
 
 /** Pixel size for flat label artwork at a print/design DPI (mm → inch via 25.4). */
-export function computeLabelUnfoldPixels(unfold: LabelUnfoldMm, dpi: number): LabelUnfoldPixels {
+function computeLabelUnfoldPixels(unfold: LabelUnfoldMm, dpi: number): LabelUnfoldPixels {
   if (dpi <= 0) {
     throw new RangeError('dpi must be positive');
   }
@@ -219,7 +212,7 @@ export function imageMatchesLabelUnfoldAspect(
 }
 
 /** Common design DPIs for documentation / briefs */
-export const LABEL_UNFOLD_REFERENCE_DPIS = [72, 150, 300] as const;
+const LABEL_UNFOLD_REFERENCE_DPIS = [72, 150, 300] as const;
 
 export function labelUnfoldPixelsForReferenceDpis(
   profile: BeverageCanBodyProfile,

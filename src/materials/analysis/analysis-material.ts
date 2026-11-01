@@ -13,7 +13,7 @@ const DEFAULT_WIREFRAME_COLOR: Rgb = { r: 0x38 / 255, g: 0xbd / 255, b: 0xf8 / 2
  * its vertical component drives black/white bands. Kinks and curvature jumps show
  * up as broken or bent stripes. Unlit — `outputNode` bypasses scene lighting.
  */
-export function createZebraMaterial(preset: MaterialPreset): MeshStandardNodeMaterial {
+function createZebraMaterial(preset: MaterialPreset): MeshStandardNodeMaterial {
   const material = new MeshStandardNodeMaterial();
   const scale = float(preset.stripeScale ?? DEFAULT_ZEBRA_STRIPE_SCALE);
   const band = step(float(0), sin(reflectView.y.mul(scale)));
@@ -23,7 +23,7 @@ export function createZebraMaterial(preset: MaterialPreset): MeshStandardNodeMat
 }
 
 /** Unlit triangle-mesh wireframe in a flat color. */
-export function createWireframeMaterial(preset: MaterialPreset, tint?: Rgb): MeshStandardNodeMaterial {
+function createWireframeMaterial(preset: MaterialPreset, tint?: Rgb): MeshStandardNodeMaterial {
   const base = preset.color ?? DEFAULT_WIREFRAME_COLOR;
   const color = tint ? { r: base.r * tint.r, g: base.g * tint.g, b: base.b * tint.b } : base;
   const material = new MeshStandardNodeMaterial({ wireframe: true });

@@ -30,7 +30,7 @@ export interface PatchPoint {
   nodeId?: string;
 }
 
-export type PatchPairMode = 'coupled' | 'free';
+type PatchPairMode = 'coupled' | 'free';
 
 export type PatchJoint = 'smooth' | 'corner';
 
@@ -74,7 +74,7 @@ export interface PatchParams {
   edgeLinks?: PatchEdgeLink[];
 }
 
-export type PatchSurfaceMode = 'classic' | 'smooth-edges';
+type PatchSurfaceMode = 'classic' | 'smooth-edges';
 
 /** Which local axes the patch is mirrored across (x flips X across the YZ plane, and so on). */
 export interface PatchMirror {
@@ -224,7 +224,7 @@ const DEFAULT_HANDLE_LENGTH_SCALE = 0.5;
 const POINT_HANDLE_KEYS = ['handleNext', 'handlePrev', 'handleCrossIn', 'handleCrossOut'] as const;
 
 /** Scales every tangent handle's offset from its anchor by `factor`. */
-export function scalePatchPointHandles(point: PatchPoint, factor: number): PatchPoint {
+function scalePatchPointHandles(point: PatchPoint, factor: number): PatchPoint {
   const next = clonePatchPoint(point);
   for (const key of POINT_HANDLE_KEYS) {
     next[key] = {

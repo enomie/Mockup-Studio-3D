@@ -8,8 +8,6 @@ const HANDLE_KEYS = [
   'handleCrossOut',
 ] as const;
 
-export type PatchHandleKey = (typeof HANDLE_KEYS)[number];
-
 /** Rotate all tangent handles around `node.pos` (anchor stays fixed). */
 export function rotatePatchNodeHandlesAroundAnchor(
   node: PatchPoint,

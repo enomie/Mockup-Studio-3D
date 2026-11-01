@@ -6,7 +6,7 @@ import {
   type LatheSvgPoint2,
 } from './lathe-svg-path-slots';
 
-export type { LatheSvgPoint2 as SvgPoint2 };
+;
 
 const rawPointsCache = new Map<BeverageCanBodyProfile, LatheSvgPoint2[]>();
 
@@ -73,12 +73,12 @@ export function orientLatheProfileBottomToTop(points: Vector2[]): Vector2[] {
   return points;
 }
 
-export function extractPointsFromSvgText(svgText: string, curveSegments = 24): LatheSvgPoint2[] {
+function extractPointsFromSvgText(svgText: string, curveSegments = 24): LatheSvgPoint2[] {
   const slots = extractLathePathPointsBySlot(svgText, curveSegments);
   return slots[0];
 }
 
-export async function fetchSvgText(url: string): Promise<string> {
+async function fetchSvgText(url: string): Promise<string> {
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`Failed to load SVG: ${url} (${response.status})`);
@@ -86,7 +86,7 @@ export async function fetchSvgText(url: string): Promise<string> {
   return response.text();
 }
 
-export async function loadRawSvgProfilePoints(
+async function loadRawSvgProfilePoints(
   profile: BeverageCanBodyProfile,
 ): Promise<LatheSvgPoint2[]> {
   const cached = rawPointsCache.get(profile);
@@ -105,10 +105,6 @@ export function setRawSvgProfilePointsCache(
   points: LatheSvgPoint2[],
 ): void {
   rawPointsCache.set(profile, points);
-}
-
-export function clearRawSvgProfilePointsCache(): void {
-  rawPointsCache.clear();
 }
 
 export async function loadNormalizedLatheProfile(

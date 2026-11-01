@@ -3,7 +3,7 @@ export type ExportAspectPreset = 'viewport' | '16:9' | '4:3' | '1:1' | '4:5' | '
 
 export type ExportOrientation = 'landscape' | 'portrait';
 
-export type ExportSizeAnchor = 'width' | 'height';
+type ExportSizeAnchor = 'width' | 'height';
 
 export interface ExportRatio {
   w: number;
@@ -29,7 +29,7 @@ export interface ExportFrameRect {
   height: number;
 }
 
-export const EXPORT_SIZE_MIN = 16;
+const EXPORT_SIZE_MIN = 16;
 /** Typical WebGPU `maxTextureDimension2D`; the engine clamps to the device limit too. */
 export const EXPORT_SIZE_MAX = 8192;
 
@@ -50,10 +50,6 @@ export function defaultExportSizeSettings(): ExportSizeSettings {
     anchor: 'width',
     frameVisible: true,
   };
-}
-
-export function cloneExportSizeSettings(settings: ExportSizeSettings): ExportSizeSettings {
-  return { ...settings, customRatio: { ...settings.customRatio } };
 }
 
 export function isFixedExportAspect(settings: ExportSizeSettings): boolean {
@@ -94,7 +90,7 @@ function clampSide(value: number, limit: number): number {
 }
 
 /** Recomputes the derived side from the anchor; scales both down if one exceeds `limit`. */
-export function normalizeExportSize(
+function normalizeExportSize(
   settings: ExportSizeSettings,
   limit: number = EXPORT_SIZE_MAX,
 ): ExportSizeSettings {

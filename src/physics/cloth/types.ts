@@ -1,6 +1,6 @@
 import type { SceneColliderSnapshot } from '@/physics/cloth/scene-colliders';
 
-export type ConstraintType = 'structural' | 'shear' | 'bending';
+type ConstraintType = 'structural' | 'shear' | 'bending';
 
 export interface DistanceConstraint {
   i1: number;

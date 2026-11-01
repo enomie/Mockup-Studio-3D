@@ -15,7 +15,7 @@ import {
 } from './handheld-geometry';
 import { ensureGeometryTangents } from '@/engine/geometry-tangents';
 
-export type { CsgCutterPlacement };
+;
 
 export function buildHandheldFrameGeometryCsg(
   stack: HandheldLayerStack,

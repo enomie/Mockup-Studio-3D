@@ -3,7 +3,7 @@ import { bandUToTextureS, labelImageUSpan } from './beverage-can-label-unfold';
 import { penNominalFootprintM, type PenBodyProfile } from '@/scene/asset-pen';
 
 /** Marker body max X / global profile max X (authoring SVG). */
-export const PEN_NOMINAL_BODY_RADIUS_RATIO = 26.09 / 28.35;
+const PEN_NOMINAL_BODY_RADIUS_RATIO = 26.09 / 28.35;
 
 export function maxBodyRadiusM(bodyPoints: Vector2[]): number {
   let maxR = 0;
@@ -35,16 +35,6 @@ export function penBodyWrapCoverPlaneM(
     planeW: 2 * Math.PI * bodyR,
     planeH: Math.max(0, y1 - y0),
   };
-}
-
-export function computePenBodyWrapAspect(
-  bodyPoints: Vector2[],
-): { widthOverHeight: number } {
-  const { planeW, planeH } = penBodyWrapCoverPlaneM(bodyPoints);
-  if (planeH <= 0) {
-    return { widthOverHeight: 1 };
-  }
-  return { widthOverHeight: planeW / planeH };
 }
 
 /** Image height spans circumference (rotated vs can label). */
@@ -85,7 +75,7 @@ export function penWrapTextureSpans(
 }
 
 /** Circumference band U → texture T (image height); flipped vs raw U so artwork is not mirrored. */
-export function penBandUToCircumferenceTextureT(bandU: number, circumferenceSpan: number): number {
+function penBandUToCircumferenceTextureT(bandU: number, circumferenceSpan: number): number {
   return bandUToTextureS(1 - bandU, circumferenceSpan);
 }
 

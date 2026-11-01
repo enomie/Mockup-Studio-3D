@@ -110,7 +110,7 @@ function createBookSpineOuterImageMaterial(
   );
 }
 
-export function createBookSpineBoxMaterials(
+function createBookSpineBoxMaterials(
   resolvePreset: MaterialPresetResolver,
   resolver: MaterialResolver,
   materialId: string,

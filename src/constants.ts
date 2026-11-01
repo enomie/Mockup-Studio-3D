@@ -110,7 +110,6 @@ export const SELECTION_MASK_LAYER = 2;
 
 export const LIGHT_WIREFRAME_IDLE_OPACITY = 0.3;
 export const LIGHT_WIREFRAME_SELECTED_OPACITY = 1;
-export const LIGHT_WIREFRAME_SELECTED_SCALE = 1.35;
 
 /** Emissive softbox discs at Key / Fill rigs (world meters). */
 export const LIGHT_FIXTURE_DISC_KEY_RADIUS = 0.35;

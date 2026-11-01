@@ -1,6 +1,6 @@
 import type { Rgb } from '@/colors/rgb';
 
-export type ColorSource = 'builtin' | 'user';
+type ColorSource = 'builtin' | 'user';
 
 export interface ColorPreset {
   id: string;

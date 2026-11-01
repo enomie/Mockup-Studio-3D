@@ -223,7 +223,7 @@ function slerpUnit(a: Vector3, b: Vector3, s: number, out: Vector3): Vector3 {
  * Correction vector sigma * (D - K) on edge `edge` at parameter t, or null outside
  * corrected segments. Writes the target slope D into `targetOut` when given.
  */
-export function evalEdgeSlopeCorrection(
+function evalEdgeSlopeCorrection(
   prepared: PreparedEdgeCorrection,
   edge: number,
   t: number,
@@ -313,7 +313,7 @@ const _q1 = new Vector3();
  * Exact surface normal on edge `edge` at t (edge tangent x corrected slope), or null when
  * the point is not on a corrected segment.
  */
-export function evalCorrectedBoundaryNormal(
+function evalCorrectedBoundaryNormal(
   prepared: PreparedEdgeCorrection,
   edge: number,
   t: number,

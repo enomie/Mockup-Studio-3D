@@ -2,7 +2,7 @@ import type { PanelSelectOption } from '@/ui/components/PanelSelect';
 
 const DISPLAY_NAME_COLLATOR = { sensitivity: 'base' as const };
 
-export function compareDisplayNames(a: string, b: string): number {
+function compareDisplayNames(a: string, b: string): number {
   return a.localeCompare(b, undefined, DISPLAY_NAME_COLLATOR);
 }
 

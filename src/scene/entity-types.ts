@@ -24,28 +24,28 @@ import type { AssetMaterialSlots } from './material-types';
 export interface Vec3 { x: number; y: number; z: number }
 
 export type { AssetKind } from './asset-kind';
-export type { AssetFaceId, AssetFaceContent, AssetFaces } from './asset-faces';
+export type { AssetFaceId, AssetFaceContent,  } from './asset-faces';
 export type {
   AssetImageSurfaceId,
-  ImageSurfaceFinish,
-  ImageSurfaceSettings,
+  
+  
 } from './image-surface';
 export type { HandheldDeviceParams } from './asset-handheld';
 export type { MonitorDeviceParams } from './asset-monitor';
 export type { PrintDeviceParams } from './asset-print';
-export type { BeverageCanParams } from './asset-beverage-can';
-export type { TinCanParams } from './asset-tin-can';
-export type { WineBottleParams } from './asset-wine-bottle';
-export type { PenParams } from './asset-pen';
-export type { BlockParams } from './asset-block';
-export type { CylinderParams } from './asset-cylinder';
-export type { SphereParams } from './asset-sphere';
-export type { WheelCarParams } from './asset-wheel-car';
+;
+;
+;
+;
+;
+;
+;
+;
 export type { FabricClothParams } from './asset-fabric-cloth';
-export type { BookParams } from './asset-book';
-export type { PatchParams, PatchPoint, PatchHandleTarget, PatchHandleSelection } from './asset-triangle-patch';
-export type { PhysicsBodyMode } from './physics-rigid-body';
-export type { WallParams, WallpaperPattern } from './asset-wall';
+;
+export type {   PatchHandleTarget, PatchHandleSelection } from './asset-triangle-patch';
+;
+export type {  WallpaperPattern } from './asset-wall';
 
 export interface EntityTransform {
   position: Vec3;
@@ -109,10 +109,10 @@ export interface AssetEntity {
 
 export { DEFAULT_SIZE_SCALE };
 
-export type { AssetGeometryPart, AssetGeometryVisibility } from './geometry-visibility';
-export type { AssetMaterialSlots, MaterialEntitySlot, MaterialPreset } from './material-types';
+export type { AssetGeometryPart,  } from './geometry-visibility';
+export type {  MaterialEntitySlot, MaterialPreset } from './material-types';
 
-export interface ImageMeta {
+interface ImageMeta {
   url: string;
   width: number;
   height: number;
@@ -120,8 +120,6 @@ export interface ImageMeta {
 }
 
 export type ImageResolver = (imageId: string) => ImageMeta | null;
-
-export const PLACEHOLDER_ASPECT = 16 / 9;
 
 export function defaultTransform(): EntityTransform {
   return {

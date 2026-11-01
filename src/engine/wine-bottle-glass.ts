@@ -115,9 +115,9 @@ export function offsetLatheProfileForInnerMantle(
   );
 }
 
-export type WineBottleGlassStirnFacing = 'lip' | 'foot';
+type WineBottleGlassStirnFacing = 'lip' | 'foot';
 
-export function buildWineBottleGlassStirnRingGeometry(
+function buildWineBottleGlassStirnRingGeometry(
   y: number,
   rInner: number,
   rOuter: number,

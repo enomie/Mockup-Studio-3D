@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import type { AssetKind } from '@/scene/entity-types';
 
-export type AssetCatalogCategory = 'print' | 'objects' | 'devices' | 'architecture';
+type AssetCatalogCategory = 'print' | 'objects' | 'devices' | 'architecture';
 
 export interface AssetCatalogEntry {
   kind: AssetKind;

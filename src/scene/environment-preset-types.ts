@@ -4,7 +4,7 @@ import type {
   GroundSettings,
 } from './scene-api';
 
-export type EnvironmentSource = 'builtin' | 'user';
+type EnvironmentSource = 'builtin' | 'user';
 
 /** Environment preset content: sky, reflections, fog and ground. Lights live in light rigs. */
 export interface EnvironmentSnapshot {

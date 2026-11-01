@@ -41,7 +41,7 @@ export function createWallSolidBoxGeometry(
   return geometry;
 }
 
-export function createDoorCutterGeometry(thicknessM: number): BufferGeometry {
+function createDoorCutterGeometry(thicknessM: number): BufferGeometry {
   const depth = thicknessM + 2 * HANDHELD_CSG_EPSILON_M;
   return new BoxGeometry(DOOR_WIDTH_M, DOOR_HEIGHT_M, depth);
 }
@@ -78,7 +78,7 @@ function addDoorHoleToShape(shape: Shape, widthM: number): void {
   shape.holes.push(hole);
 }
 
-export function createWallFrontShape(
+function createWallFrontShape(
   widthM: number,
   heightM: number,
   withDoor: boolean,

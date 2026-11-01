@@ -22,7 +22,7 @@ import { ensureGeometryTangents } from '@/engine/geometry-tangents';
 
 const LATHE_SEGMENTS = 80;
 
-export function buildPenLatheGeometry(points: Vector2[]): BufferGeometry {
+function buildPenLatheGeometry(points: Vector2[]): BufferGeometry {
   const geometry = new LatheGeometry(
     points,
     LATHE_SEGMENTS,

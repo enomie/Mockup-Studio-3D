@@ -10,9 +10,9 @@ import {
   type LatheSvgPoint2,
 } from './lathe-svg-path-slots';
 
-export type { LatheSvgPoint2 as SvgPoint2 };
+;
 
-export type WheelCarSvgPartId = 'tire' | 'rimOuter' | 'rimInner';
+type WheelCarSvgPartId = 'tire' | 'rimOuter' | 'rimInner';
 
 export interface WheelCarLatheProfiles {
   tire: Vector2[];
@@ -37,7 +37,7 @@ export function extractWheelCarPathsFromSvgText(
 }
 
 /** SVG mm → Lathe profile (x = radius, y = axial) in meters, uniform scale from outer radius. */
-export function normalizeWheelCarPartPoints(
+function normalizeWheelCarPartPoints(
   raw: LatheSvgPoint2[],
   outerRadiusM: number,
 ): Vector2[] {
@@ -69,11 +69,11 @@ export function normalizeWheelCarPaths(
   };
 }
 
-export function wheelCarSvgUrl(): string {
+function wheelCarSvgUrl(): string {
   return builtinLatheProfileUrl('lathe-x-wheel-car.svg');
 }
 
-export async function fetchSvgText(url: string): Promise<string> {
+async function fetchSvgText(url: string): Promise<string> {
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`Failed to load SVG: ${url} (${response.status})`);
@@ -81,7 +81,7 @@ export async function fetchSvgText(url: string): Promise<string> {
   return response.text();
 }
 
-export async function loadRawWheelCarPaths(): Promise<RawWheelCarPaths> {
+async function loadRawWheelCarPaths(): Promise<RawWheelCarPaths> {
   if (rawPathsCache) {
     return rawPathsCache;
   }

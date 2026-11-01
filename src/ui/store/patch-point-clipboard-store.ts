@@ -14,7 +14,7 @@ let current: PatchPointClipboard | null = null;
 let pasteMode: PatchPointPasteMode = 'all';
 const listeners = new Set<() => void>();
 
-export function getPatchPointClipboard(): PatchPointClipboard | null {
+function getPatchPointClipboard(): PatchPointClipboard | null {
   return current;
 }
 
@@ -66,7 +66,7 @@ export function pastePatchPointFromClipboard(
 }
 
 
-export function getPatchPointPasteMode(): PatchPointPasteMode {
+function getPatchPointPasteMode(): PatchPointPasteMode {
   return pasteMode;
 }
 

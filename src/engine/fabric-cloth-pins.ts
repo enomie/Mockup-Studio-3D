@@ -7,7 +7,7 @@ import {
 } from 'three/webgpu';
 import { vec3Get, vec3Set } from '@/physics/cloth/float-buffer';
 
-export const FABRIC_CLOTH_PIN_MESH_ROLE = 'fabricClothPin';
+const FABRIC_CLOTH_PIN_MESH_ROLE = 'fabricClothPin';
 
 const PIN_RADIUS_M = 0.009;
 
@@ -114,7 +114,7 @@ function pinUserData(object: Object3D): FabricClothPinUserData {
   return object.userData as FabricClothPinUserData;
 }
 
-export function isFabricClothPinObject(object: Object3D): boolean {
+function isFabricClothPinObject(object: Object3D): boolean {
   return pinUserData(object).assetMeshRole === FABRIC_CLOTH_PIN_MESH_ROLE;
 }
 

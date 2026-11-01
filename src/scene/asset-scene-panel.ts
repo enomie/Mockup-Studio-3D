@@ -17,11 +17,11 @@ export function usesPackagingDimensionsPositionFooter(kind: AssetKind): boolean 
 }
 
 /** Dimensions live in kind fields; only Position footer at entity block end. */
-export function usesWheelCarPositionFooter(kind: AssetKind): boolean {
+function usesWheelCarPositionFooter(kind: AssetKind): boolean {
   return isWheelCarAssetKind(kind);
 }
 
-export function usesTrianglePatchPositionFooter(kind: AssetKind): boolean {
+function usesTrianglePatchPositionFooter(kind: AssetKind): boolean {
   return isPatchAssetKind(kind);
 }
 

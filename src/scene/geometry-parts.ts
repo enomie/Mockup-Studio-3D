@@ -1,7 +1,7 @@
 import type { AssetGeometryPart, AssetGeometryVisibility } from './geometry-visibility';
 import type { MaterialEntitySlot } from './material-types';
 
-export type GeometryPartUiMode = 'visibility-and-material' | 'visibility-only';
+type GeometryPartUiMode = 'visibility-and-material' | 'visibility-only';
 
 export interface AssetGeometryPartDescriptor {
   part: AssetGeometryPart;

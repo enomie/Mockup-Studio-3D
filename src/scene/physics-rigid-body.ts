@@ -13,8 +13,8 @@ import { clamp } from '@/units/math';
 export type PhysicsBodyMode = 'fixed' | 'dynamic';
 
 export const DEFAULT_PHYSICS_DENSITY_KG_PER_M3 = 1000;
-export const PHYSICS_DENSITY_MIN_KG_PER_M3 = 50;
-export const PHYSICS_DENSITY_MAX_KG_PER_M3 = 15_000;
+const PHYSICS_DENSITY_MIN_KG_PER_M3 = 50;
+const PHYSICS_DENSITY_MAX_KG_PER_M3 = 15_000;
 
 export function clampPhysicsDensityKgPerM3(value: number): number {
   return clamp(value, PHYSICS_DENSITY_MIN_KG_PER_M3, PHYSICS_DENSITY_MAX_KG_PER_M3);
@@ -43,7 +43,7 @@ export function rigidMassKgFromVolumeM3(
   return volumeM3 * densityKgPerM3;
 }
 
-export function blockMassKgFromParams(
+function blockMassKgFromParams(
   params: BlockParams,
   densityKgPerM3: number,
 ): number {
@@ -55,7 +55,7 @@ export function blockMassKgFromEntity(entity: AssetEntity): number {
   return blockMassKgFromParams(params, resolvePhysicsDensityKgPerM3(entity));
 }
 
-export function cylinderMassKgFromEntity(entity: AssetEntity): number {
+function cylinderMassKgFromEntity(entity: AssetEntity): number {
   const params = entity.cylinderParams ?? defaultCylinderParams();
   return rigidMassKgFromVolumeM3(
     cylinderVolumeM3(params),
@@ -63,7 +63,7 @@ export function cylinderMassKgFromEntity(entity: AssetEntity): number {
   );
 }
 
-export function sphereMassKgFromEntity(entity: AssetEntity): number {
+function sphereMassKgFromEntity(entity: AssetEntity): number {
   const params = entity.sphereParams ?? defaultSphereParams();
   return rigidMassKgFromVolumeM3(
     sphereVolumeM3(params),
@@ -71,7 +71,7 @@ export function sphereMassKgFromEntity(entity: AssetEntity): number {
   );
 }
 
-export function wheelCarMassKgFromEntity(entity: AssetEntity): number {
+function wheelCarMassKgFromEntity(entity: AssetEntity): number {
   const params = entity.wheelCarParams ?? defaultWheelCarParams();
   return rigidMassKgFromVolumeM3(
     wheelCarVolumeM3(params),

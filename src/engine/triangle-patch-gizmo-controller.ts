@@ -36,7 +36,7 @@ import {
   type PatchNodeUse,
 } from '@/scene/patch-nodes';
 
-export const PATCH_GIZMO_HANDLE_ROLE = 'patchGizmoHandle';
+const PATCH_GIZMO_HANDLE_ROLE = 'patchGizmoHandle';
 
 /** Shortest handle length the ring drag allows (entity-local meters). */
 const MIN_HANDLE_LENGTH_M = 0.002;

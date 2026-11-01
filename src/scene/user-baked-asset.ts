@@ -1,11 +1,11 @@
 import type { FabricClothParams } from './asset-fabric-cloth';
 import type { AssetMaterialSlots } from './material-types';
 
-export type UserBakedAssetSource = 'user';
+type UserBakedAssetSource = 'user';
 
-export type UserBakedFromKind = 'fabric-cloth';
+type UserBakedFromKind = 'fabric-cloth';
 
-export type UserBakedPlacementKind = 'fabric-cloth-baked';
+type UserBakedPlacementKind = 'fabric-cloth-baked';
 
 /** Serializable mesh payload for a baked fabric cloth (meters, plane-local before -X rotation). */
 export interface FabricClothBakedMeshPayload {
@@ -19,7 +19,7 @@ export interface FabricClothBakedMeshPayload {
   planeHeightM: number;
 }
 
-export interface FabricClothBakedDefaults {
+interface FabricClothBakedDefaults {
   screenImageId: string | null;
   materials: AssetMaterialSlots;
   fabricClothParams: FabricClothParams;
@@ -33,11 +33,6 @@ export interface UserBakedAsset {
   placementKind: UserBakedPlacementKind;
   defaults: FabricClothBakedDefaults;
   mesh: FabricClothBakedMeshPayload;
-}
-
-export interface BakedClothFootprint {
-  widthM: number;
-  heightM: number;
 }
 
 export interface FabricClothBakedMeshTopology {
@@ -103,18 +98,6 @@ export function cloneFabricClothBakedMeshPayload(
     segmentsH: mesh.segmentsH,
     planeWidthM: mesh.planeWidthM,
     planeHeightM: mesh.planeHeightM,
-  };
-}
-
-export function cloneUserBakedAsset(asset: UserBakedAsset): UserBakedAsset {
-  return {
-    ...asset,
-    defaults: {
-      screenImageId: asset.defaults.screenImageId,
-      materials: { ...asset.defaults.materials },
-      fabricClothParams: { ...asset.defaults.fabricClothParams },
-    },
-    mesh: cloneFabricClothBakedMeshPayload(asset.mesh),
   };
 }
 

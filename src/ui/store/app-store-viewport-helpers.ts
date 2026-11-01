@@ -11,7 +11,7 @@ export function isAnyViewportHelperEnabled(state: ViewportHelpersState): boolean
   );
 }
 
-export function setViewportHelpersAllEnabled(enabled: boolean): void {
+function setViewportHelpersAllEnabled(enabled: boolean): void {
   store.patchViewportHelpers({
     floorGrid: enabled,
     worldOrigin: enabled,
@@ -44,8 +44,4 @@ export function setViewportHelperQuadrantGrid(quadrantGrid: boolean): void {
 
 export function setViewportHelperLightHandles(lightHandles: boolean): void {
   store.patchViewportHelpers({ lightHandles });
-}
-
-export function getViewportHelpersFromState(): ViewportHelpersState {
-  return { ...store.state.viewportHelpers };
 }

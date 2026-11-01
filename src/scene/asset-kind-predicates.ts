@@ -7,15 +7,15 @@ export { isBlockAssetKind } from './asset-block';
 export { isCylinderAssetKind } from './asset-cylinder';
 export { isSphereAssetKind } from './asset-sphere';
 export { isWheelCarAssetKind } from './asset-wheel-car';
-export { isRigidPrimitiveAssetKind } from './rigid-primitive-asset';
+;
 export { isBeverageCanAssetKind } from './asset-beverage-can';
 export { isTinCanAssetKind } from './asset-tin-can';
 export { isWineBottleAssetKind } from './asset-wine-bottle';
 export { isPenAssetKind } from './asset-pen';
 export {
-  isFabricClothAssetKind,
+  
   isFabricClothBakedAssetKind,
   isFabricClothFamilyAssetKind,
 } from './asset-fabric-cloth';
-export { isBookAssetKind, isBookHardcoverKind } from './asset-book';
+export { isBookAssetKind,  } from './asset-book';
 export { isPatchAssetKind } from './asset-triangle-patch';

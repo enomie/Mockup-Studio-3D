@@ -5,9 +5,9 @@ import { meterPositionLocal } from './procedural-position';
 import type { ProceduralMaterialParams } from './procedural-types';
 
 export const DEFAULT_GLASS_SURFACE_NORMAL_SCALE = 0.15;
-export const DEFAULT_GLASS_SURFACE_TILE_SCALE = 10;
+const DEFAULT_GLASS_SURFACE_TILE_SCALE = 10;
 
-export function glassSurfaceParamsFromPreset(preset: MaterialPreset): ProceduralMaterialParams {
+function glassSurfaceParamsFromPreset(preset: MaterialPreset): ProceduralMaterialParams {
   const scale = preset.surfaceNormalScale ?? DEFAULT_GLASS_SURFACE_NORMAL_SCALE;
   return {
     color: { r: 1, g: 1, b: 1 },
@@ -21,7 +21,7 @@ export function glassSurfaceParamsFromPreset(preset: MaterialPreset): Procedural
   };
 }
 
-export function buildGlassSurfaceNormalNode(params: ProceduralMaterialParams) {
+function buildGlassSurfaceNormalNode(params: ProceduralMaterialParams) {
   const seed = float(params.seed);
   const noiseCoord = meterPositionLocal(params.tileScale, params.seed);
 
@@ -45,7 +45,7 @@ export function buildGlassSurfaceNodes(params: ProceduralMaterialParams) {
   };
 }
 
-export function effectiveGlassSurfaceNormalScale(preset: MaterialPreset): number {
+function effectiveGlassSurfaceNormalScale(preset: MaterialPreset): number {
   return preset.surfaceNormalScale ?? DEFAULT_GLASS_SURFACE_NORMAL_SCALE;
 }
 

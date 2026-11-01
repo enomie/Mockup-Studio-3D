@@ -9,7 +9,6 @@ import {
   BUILTIN_ENV_DEFAULT_ID,
   cloneEnvironmentPreset,
   ENVIRONMENT_PRESETS,
-  resolveBuiltinEnvironmentPreset,
 } from '@/data/builtin-environments';
 import {
   BUILTIN_LIGHT_DEFAULT_ID,
@@ -187,11 +186,11 @@ export function emit(): void {
   listeners.forEach((listener) => { listener(); });
 }
 
-export function cloneGround(settings: GroundSettings): GroundSettings {
+function cloneGround(settings: GroundSettings): GroundSettings {
   return normalizeGroundSettings(settings);
 }
 
-export function cloneCameraSlot(slot: CameraSlot): CameraSlot {
+function cloneCameraSlot(slot: CameraSlot): CameraSlot {
   if (!slot) {return null;}
   return {
     ...slot,
@@ -200,7 +199,7 @@ export function cloneCameraSlot(slot: CameraSlot): CameraSlot {
   };
 }
 
-export function cloneCameraSettings(settings: CameraSettings): CameraSettings {
+function cloneCameraSettings(settings: CameraSettings): CameraSettings {
   return {
     projection: settings.projection,
     fov: settings.fov,
@@ -213,7 +212,7 @@ export function cloneCameraSettings(settings: CameraSettings): CameraSettings {
   };
 }
 
-export function getEnvironmentState(): EnvironmentState {
+function getEnvironmentState(): EnvironmentState {
   return {
     skyEnabled: state.skyEnabled,
     skyHorizonColor: state.skyHorizonColor,
@@ -278,7 +277,7 @@ export function syncLightingToScene(): void {
   sceneApi?.applyLighting(state.lighting);
 }
 
-export function syncCameraFromEngine(): void {
+function syncCameraFromEngine(): void {
   if (!sceneApi) {return;}
   state = {
     ...state,
@@ -364,28 +363,6 @@ export function scheduleMaterialInvalidation(materialId: string): void {
 export function refreshCameraState(): void {
   syncCameraFromEngine();
   emit();
-}
-
-export function getEnvironmentPresetById(id: string): EnvironmentPreset | undefined {
-  return (
-    state.environments.find((entry) => entry.id === id) ??
-    resolveBuiltinEnvironmentPreset(id)
-  );
-}
-
-export function nextEnvironmentSaveName(): string {
-  const base = 'My environment';
-  const names = new Set(
-    state.environments
-      .filter((entry) => entry.source === 'user')
-      .map((entry) => entry.name),
-  );
-  if (!names.has(base)) {return base;}
-  let index = 2;
-  while (names.has(`${base} ${index}`)) {
-    index += 1;
-  }
-  return `${base} ${index}`;
 }
 
 export function applyLightingToStateAndScene(

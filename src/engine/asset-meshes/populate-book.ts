@@ -13,7 +13,7 @@ import { MATERIAL_PAPER_ID } from '@/scene/material-ids';
 import type { MaterialResolver } from '@/engine/material-resolver';
 import { resolveMeshMaterial } from './shared';
 
-export interface BookImageMeta {
+interface BookImageMeta {
   width?: number;
   height?: number;
   name?: string;

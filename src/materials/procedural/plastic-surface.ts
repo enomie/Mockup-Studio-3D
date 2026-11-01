@@ -18,7 +18,7 @@ function samplePosition(params: ProceduralMaterialParams) {
   return vec3(uv.x, uv.y, seed);
 }
 
-export function buildPlasticSurfaceNodes(
+function buildPlasticSurfaceNodes(
   params: ProceduralMaterialParams,
   options: PlasticSurfaceOptions,
 ): ProceduralMaterialNodes {

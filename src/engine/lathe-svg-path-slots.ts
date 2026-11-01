@@ -7,20 +7,6 @@ export interface LatheSvgPoint2 {
 
 export type LathePathSlot = 0 | 1 | 2;
 
-export const LATHE_PATH_SLOT_COUNT = 3;
-
-export const LATHE_PATH_SLOT_CLASSES: readonly string[] = [
-  'path_red',
-  'path_green',
-  'path_blue',
-];
-
-export const LATHE_PATH_SLOT_STROKES: readonly string[] = [
-  '#ff0000',
-  '#00ff00',
-  '#0000ff',
-];
-
 const CLASS_TO_SLOT: Record<string, LathePathSlot> = {
   path_red: 0,
   path_green: 1,
@@ -40,7 +26,7 @@ export interface LatheSvgPathLike {
   toShapes: () => { getPoints: (n: number) => { x: number; y: number }[] }[];
 }
 
-export function normalizeLatheStrokeHex(stroke: string | undefined): string | null {
+function normalizeLatheStrokeHex(stroke: string | undefined): string | null {
   if (!stroke) {
     return null;
   }

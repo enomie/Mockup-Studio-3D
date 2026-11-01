@@ -1,7 +1,7 @@
 import type { ImageAsset } from '@/data/image-assets';
 import type { AssetEntity } from '@/scene/entity-types';
 
-export interface EntityImageFieldsProps {
+interface EntityImageFieldsProps {
   entity: AssetEntity;
   images: ImageAsset[];
   screenImageFieldId?: string;

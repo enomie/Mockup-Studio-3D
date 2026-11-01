@@ -1,5 +1,4 @@
 import type { AssetKind } from './asset-kind';
-import { MM_TO_M } from '@/units/length';
 import { clamp } from '@/units/math';
 
 export interface WheelCarParams {
@@ -17,12 +16,11 @@ const DIM_MIN = 0.01;
 const DIM_MAX = 2;
 const OUTER_RADIUS_MIN = 0.05;
 const CORNER_RADIUS_MM_MIN = 0;
-const CORNER_EPSILON_M = 0.0001;
 const MIN_SIDEWALL_M = 0.015;
 const SPOKE_COUNT = 5 as const;
 
 /** SVG [`lathe-x-wheel-car.svg`](../../public/profiles/lathe/lathe-x-wheel-car.svg) reference size (mm). */
-export const WHEEL_CAR_SVG_OUTER_RADIUS_MM = 330.5;
+const WHEEL_CAR_SVG_OUTER_RADIUS_MM = 330.5;
 export const WHEEL_CAR_SVG_TIRE_WIDTH_MM = 255;
 export const WHEEL_CAR_SVG_AXIS_Y_MM = 330.5;
 export const WHEEL_CAR_SVG_AXIAL_CENTER_MM = WHEEL_CAR_SVG_TIRE_WIDTH_MM / 2;
@@ -117,12 +115,4 @@ export function clampWheelCarParams(
     ...merged,
     tireCornerRadiusMm: clamp(merged.tireCornerRadiusMm, CORNER_RADIUS_MM_MIN, maxCornerMm),
   };
-}
-
-/** Fillet at outer tread shoulder (meters). */
-export function effectiveTireCornerRadiusM(params: WheelCarParams): number {
-  const radiusM = params.tireCornerRadiusMm * MM_TO_M;
-  const sidewallM = params.outerRadiusM - params.rimRadiusM;
-  const maxRadius = Math.min(sidewallM, params.tireWidthM * 0.5) - CORNER_EPSILON_M;
-  return Math.max(0, Math.min(radiusM, maxRadius));
 }

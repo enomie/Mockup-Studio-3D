@@ -13,7 +13,7 @@ import { SubPanelSection } from '@/ui/components/SubPanelSection';
 import { setAssetSizeScale } from '@/ui/store/app-store';
 import { formatSizeScale, parseSizeScaleInput } from './field-input-helpers';
 
-export type AssetDimensionsFieldsMode = 'sizeScaleAndFace' | 'faceOnly';
+type AssetDimensionsFieldsMode = 'sizeScaleAndFace' | 'faceOnly';
 
 export interface AssetDimensionsFieldsProps {
   entity: AssetEntity;

@@ -10,7 +10,7 @@ export interface PenParams {
 
 /** Shipped `pen-*.svg` viewBox (1 unit = 1 mm). */
 export const PEN_PROFILE_VIEWBOX_WIDTH_MM = 10;
-export const PEN_PROFILE_VIEWBOX_HEIGHT_MM = 200;
+const PEN_PROFILE_VIEWBOX_HEIGHT_MM = 200;
 
 export interface PenFootprintM {
   widthM: number;
@@ -49,7 +49,7 @@ export function defaultPenParams(profile: PenBodyProfile = 'marker'): PenParams 
   };
 }
 
-export function resolvePenParams(
+function resolvePenParams(
   partial: Partial<PenParams> | undefined,
   profile: PenBodyProfile = 'marker',
 ): PenParams {

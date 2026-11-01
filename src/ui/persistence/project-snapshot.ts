@@ -12,10 +12,10 @@ import type { AppState } from '@/ui/store/app-store-internals';
 export const PROJECT_SCHEMA_VERSION = 1;
 
 /** User image without its (session-only) object URL; the file data is stored separately. */
-export type PersistedImage = Omit<ImageAsset, 'url' | 'objectUrl'>;
+type PersistedImage = Omit<ImageAsset, 'url' | 'objectUrl'>;
 
 /** Store fields restored as they are. */
-export const PERSISTED_SETTING_KEYS = [
+const PERSISTED_SETTING_KEYS = [
   'lighting',
   'skyEnabled',
   'skyHorizonColor',
@@ -38,9 +38,9 @@ export const PERSISTED_SETTING_KEYS = [
   'activeArrangementId',
 ] as const satisfies readonly (keyof AppState)[];
 
-export type PersistedSettings = Pick<AppState, (typeof PERSISTED_SETTING_KEYS)[number]>;
+type PersistedSettings = Pick<AppState, (typeof PERSISTED_SETTING_KEYS)[number]>;
 
-export interface PersistedLibraries {
+interface PersistedLibraries {
   images: PersistedImage[];
   materials: MaterialPreset[];
   colors: ColorPreset[];

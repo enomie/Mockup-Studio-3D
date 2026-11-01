@@ -1,8 +1,5 @@
 import type { MeshStandardNodeMaterial } from 'three/webgpu';
 import type { Rgb } from '@/colors/rgb';
-import type { ProceduralProfileId } from '@/scene/material-types';
-
-export type { ProceduralProfileId };
 
 export type ProceduralSurfaceRole = 'frame' | 'default' | 'ground';
 

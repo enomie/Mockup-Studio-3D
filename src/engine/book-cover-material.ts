@@ -35,7 +35,7 @@ export function createBookSolidSideMaterial(
   ) as MeshStandardNodeMaterial;
 }
 
-export function createBookCoverOuterImageMaterial(
+function createBookCoverOuterImageMaterial(
   resolver: MaterialResolver,
   resolvePreset: MaterialPresetResolver,
   coverMaterialId: string,

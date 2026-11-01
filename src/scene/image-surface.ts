@@ -82,18 +82,7 @@ export function imageSurfaceSupportsPassepartout(assetKind: AssetKind): boolean 
   );
 }
 
-export function imageSurfaceFaceForAsset(
-  assetKind: AssetKind,
-): AssetImageSurfaceId {
-  return assetKind === 'beverage-can' ||
-    assetKind === 'tin-can' ||
-    assetKind === 'wine-bottle' ||
-    assetKind === 'pen'
-    ? 'label'
-    : 'front';
-}
-
-export function defaultPassepartoutColor(assetKind: AssetKind): Rgb {
+function defaultPassepartoutColor(assetKind: AssetKind): Rgb {
   if (
     assetKind === 'smartphone' ||
     assetKind === 'tablet' ||

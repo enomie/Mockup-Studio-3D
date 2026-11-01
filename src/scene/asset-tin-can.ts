@@ -4,10 +4,10 @@ import { clamp } from '@/units/math';
 
 export const TIN_CAN_END_RING_HEIGHT_MM = 2.5;
 export const TIN_CAN_END_RING_THICKNESS_MM = 1.5;
-export const TIN_CAN_LID_INSET_MM = 0.8;
+const TIN_CAN_LID_INSET_MM = 0.8;
 export const TIN_CAN_BEAD_COUNT_MIN = 1;
 export const TIN_CAN_BEAD_COUNT_MAX = 20;
-export const TIN_CAN_BEAD_COUNT_DEFAULT = 11;
+const TIN_CAN_BEAD_COUNT_DEFAULT = 11;
 
 export interface TinCanParams {
   bodyRadiusM: number;
@@ -72,10 +72,6 @@ export function endRingYBounds(
   const half = h * 0.5;
   const centerY = placement === 'bottom' ? 0 : params.bodyHeightM;
   return { y0: centerY - half, y1: centerY + half, centerY };
-}
-
-export function tinCanRingOuterRadiusM(params: TinCanParams): number {
-  return params.bodyRadiusM + params.endRingThicknessM;
 }
 
 export function tinCanLidRadiusM(params: TinCanParams): number {

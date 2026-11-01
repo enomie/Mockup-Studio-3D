@@ -24,7 +24,7 @@ export const IMAGE_RECESS = 0.004;
 /** Air gap between glazing back face and image plane. */
 export const GLAZING_IMAGE_GAP = 0.001;
 
-export const SIDE_FACE_IDS: AssetFaceId[] = ['left', 'right', 'top', 'bottom'];
+const SIDE_FACE_IDS: AssetFaceId[] = ['left', 'right', 'top', 'bottom'];
 
 export function resolveMaterialId(
   faceId: AssetFaceId,

@@ -15,14 +15,14 @@ const _spawnEuler = new Euler();
 const _spawnQuat = new Quaternion();
 
 /** ID prefix for rigid-test bodies — not AssetEntities; never serialize in SceneSnapshot. */
-export const PHYSICS_RIGID_TEST_ID_PREFIX = 'physics-rigid-test';
+const PHYSICS_RIGID_TEST_ID_PREFIX = 'physics-rigid-test';
 
-export const RIGID_TEST_EDGE_M = 0.1;
+const RIGID_TEST_EDGE_M = 0.1;
 export const RIGID_TEST_HALF_M = RIGID_TEST_EDGE_M / 2;
 /** Bottom of cube at this height above ground (y = 0). */
 export const RIGID_TEST_BOTTOM_Y_M = 3;
-export const RIGID_TEST_MASS_KG = 1;
-export const RIGID_TEST_DYNAMIC_FRICTION = RIGID_DYNAMIC_FRICTION;
+const RIGID_TEST_MASS_KG = 1;
+const RIGID_TEST_DYNAMIC_FRICTION = RIGID_DYNAMIC_FRICTION;
 
 interface RigidTestInstance {
   binding: PhysicsBinding;

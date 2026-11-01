@@ -62,7 +62,7 @@ const PROFILE_STAND_DIAMETER_M: Record<BeverageCanBodyProfile, number> = {
  * Top ring **center** radius (mm) at sizeScale = 1 — edit here for Standard vs Sleek.
  * Outer = center + `TIN_CAN_END_RING_THICKNESS_MM` / 2, inner = center − thickness / 2.
  */
-export const BEVERAGE_CAN_DEFAULT_TOP_RING_CENTER_RADIUS_MM: Record<
+const BEVERAGE_CAN_DEFAULT_TOP_RING_CENTER_RADIUS_MM: Record<
   BeverageCanBodyProfile,
   number
 > = {

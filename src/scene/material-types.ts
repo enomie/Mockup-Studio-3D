@@ -21,19 +21,19 @@ export type ProceduralProfileId =
 export type MaterialKind = 'solid-pbr' | 'transmission' | 'textured' | 'analysis';
 
 /** Unlit surface-inspection modes for `kind: 'analysis'` presets. */
-export type AnalysisMode = 'zebra' | 'wireframe';
+type AnalysisMode = 'zebra' | 'wireframe';
 
-export type GlassVariant = 'pane' | 'solid';
+type GlassVariant = 'pane' | 'solid';
 
-export type MaterialSource = 'builtin' | 'user';
+type MaterialSource = 'builtin' | 'user';
 
 /** Minor grid cell size for grid-paper procedural profiles. */
 export type GridPaperUnit = 'mm' | 'cm' | 'dm' | 'm';
 
 /** Rapier cloth drape profile (simulation only) — see requirements-materials.md */
-export type FabricDrapeProfile = 'silk' | 'linen' | 'heavy' | 'stiff';
+type FabricDrapeProfile = 'silk' | 'linen' | 'heavy' | 'stiff';
 
-export interface FabricDrapePreset {
+interface FabricDrapePreset {
   profile: FabricDrapeProfile;
 }
 

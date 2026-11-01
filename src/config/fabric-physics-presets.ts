@@ -111,12 +111,6 @@ function clampTuningValue(
   return Math.min(max, Math.max(min, value));
 }
 
-export function fabricClothPhysicsFromPresetKey(
-  key: FabricPhysicsPresetKey,
-): FabricClothPhysicsParams {
-  return fabricClothPhysicsParamsFromPresetKey(key);
-}
-
 export function fabricClothPhysicsWithCustomScalar(
   base: FabricClothPhysicsParams,
   field: FabricClothPhysicsScalarField,
@@ -127,15 +121,6 @@ export function fabricClothPhysicsWithCustomScalar(
     [field]: clampTuningValue(field, value, base[field]),
     activePreset: 'custom',
   };
-}
-
-export function fabricClothPhysicsPresetDisplayName(
-  activePreset: FabricClothPhysicsParams['activePreset'],
-): string {
-  if (activePreset === 'custom') {
-    return 'Custom';
-  }
-  return FABRIC_PHYSICS_PRESETS[activePreset].name;
 }
 
 export function fabricClothPhysicsParamsFromPresetKey(
@@ -153,7 +138,7 @@ export function fabricClothPhysicsParamsFromPresetKey(
 }
 
 /** One-time default when spawning fabric-cloth from a material preset id. */
-export function fabricPhysicsPresetKeyForMaterialId(
+function fabricPhysicsPresetKeyForMaterialId(
   materialId: string,
 ): FabricPhysicsPresetKey {
   if (materialId === 'material-silk') {

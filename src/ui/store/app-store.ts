@@ -37,11 +37,11 @@ export {
   bakeSelectedToUserAsset,
   canBakeSelectedEntity,
   removeUserBakedAsset,
-  renameUserBakedAsset,
+  
 } from './app-store-user-baked-assets';
 
 export {
-  addAssetFromCatalog,
+  
   setSelectedEntity,
   removeEntity,
   setEntityTransform,
@@ -161,7 +161,7 @@ export {
 
 export {
   isAnyViewportHelperEnabled,
-  setViewportHelpersAllEnabled,
+  
   toggleViewportHelpersAll,
   setViewportHelperFloorGrid,
   setViewportHelperWorldOrigin,
@@ -181,9 +181,9 @@ export {
   setExportFrameVisible,
   setViewportPixelSize,
   exportViewportImage,
-  type ExportAspectPreset,
-  type ExportOrientation,
-  type ExportGroundSurface,
+  
+  
+  
   type ExportImageFormat,
 } from './app-store-export';
 

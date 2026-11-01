@@ -1,10 +1,7 @@
-import { isBlockAssetKind } from '@/scene/asset-block';
-import { isCylinderAssetKind } from '@/scene/asset-cylinder';
-import { isSphereAssetKind } from '@/scene/asset-sphere';
+
 import type { AssetEntity } from '@/scene/entity-types';
 import {
   isRigidPrimitiveAssetKind,
-  type RigidPrimitiveAssetKind,
 } from '@/scene/rigid-primitive-asset';
 import {
   resolvePhysicsBodyMode,
@@ -170,12 +167,4 @@ export class RigidPrimitivePhysicsColliders {
     if (bodyId) {this.physics.removeBody(bodyId);}
     this.dynamicBindings.delete(entityId);
   }
-}
-
-export function isRigidColliderAssetKind(
-  kind: AssetEntity['assetKind'],
-): kind is RigidPrimitiveAssetKind {
-  return (
-    isBlockAssetKind(kind) || isCylinderAssetKind(kind) || isSphereAssetKind(kind)
-  );
 }

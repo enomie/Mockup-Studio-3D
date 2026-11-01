@@ -567,7 +567,7 @@ export class EntityRegistry {
   }
 }
 
-export { cloneTransform } from '@/scene/entity-types';
+;
 
 /**
  * Deep-freezes entities in development builds and tests so accidental in-place

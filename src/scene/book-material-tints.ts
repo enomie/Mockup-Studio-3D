@@ -15,14 +15,3 @@ export function bookPagesTint(slots?: AssetMaterialSlots): Rgb {
 export function bookCoverTint(slots?: AssetMaterialSlots): Rgb {
   return slots?.bookCoverTint ?? DEFAULT_BOOK_COVER_TINT;
 }
-
-export function bookMaterialTint(
-  slots: AssetMaterialSlots | undefined,
-  part: BookMaterialTintPart,
-): Rgb {
-  return part === 'pages' ? bookPagesTint(slots) : bookCoverTint(slots);
-}
-
-export function cloneRgb(tint: Rgb): Rgb {
-  return { r: tint.r, g: tint.g, b: tint.b };
-}

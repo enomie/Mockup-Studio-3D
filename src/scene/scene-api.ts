@@ -33,14 +33,14 @@ import type {
 } from './user-baked-asset';
 
 export type {
-  AssetEntity,
-  AssetFaceContent,
-  AssetFaceId,
-  AssetGeometryPart,
+  
+  
+  
+  
   AssetKind,
-  EntityTransform,
+  
   ImageResolver,
-  MaterialEntitySlot,
+  
 } from './entity-types';
 
 export type AppMode = 'select' | 'translate' | 'rotate' | 'scale' | 'place-texture' | 'export';
@@ -81,13 +81,13 @@ export interface ViewportHelpersState {
 /** Legacy (pre-orbit) key side — only read when migrating saved payloads. */
 export type StudioLightSide = 'left' | 'right';
 
-export interface AmbientLightSettings {
+interface AmbientLightSettings {
   enabled: boolean;
   color: Rgb;
   intensity: number;
 }
 
-export interface KeyLightSettings {
+interface KeyLightSettings {
   enabled: boolean;
   /** Orbit angle around the scene center, 0–360° (0 = +Z / front). */
   azimuthDeg: number;
@@ -101,7 +101,7 @@ export interface KeyLightSettings {
   transformOffset: EntityTransform;
 }
 
-export interface FillLightSettings {
+interface FillLightSettings {
   enabled: boolean;
   /** Orbit angle around the scene center, 0–360° (0 = +Z / front). */
   azimuthDeg: number;
@@ -145,7 +145,7 @@ export interface CameraViewState {
   orthoZoom: number;
 }
 
-export type CameraSlotData = CameraViewState & { name: string };
+type CameraSlotData = CameraViewState & { name: string };
 
 export type CameraSlot = CameraSlotData | null;
 

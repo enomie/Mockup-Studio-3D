@@ -1,11 +1,11 @@
 import type { ColorPreset } from '@/scene/color-types';
 
 export const COLOR_NEARWHITE_ID = 'color-nearwhite';
-export const COLOR_GOLD_ID = 'color-gold';
-export const COLOR_ALUMINUM_ID = 'color-aluminum';
-export const COLOR_ALMOST_BLACK_ID = 'color-almost-black';
-export const COLOR_BLUE_ID = 'color-blue';
-export const COLOR_TURQUOISE_ID = 'color-turquoise';
+const COLOR_GOLD_ID = 'color-gold';
+const COLOR_ALUMINUM_ID = 'color-aluminum';
+const COLOR_ALMOST_BLACK_ID = 'color-almost-black';
+const COLOR_BLUE_ID = 'color-blue';
+const COLOR_TURQUOISE_ID = 'color-turquoise';
 
 export const COLOR_PRESETS: ColorPreset[] = [
   {

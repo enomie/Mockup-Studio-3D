@@ -11,7 +11,7 @@ import {
 } from './dual-range-slider-utils';
 import { SliderValueField } from './SliderValueField';
 
-export interface DualRangeValue {
+interface DualRangeValue {
   low: number;
   high: number;
 }

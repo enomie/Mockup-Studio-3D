@@ -13,7 +13,7 @@ import type { MaterialPresetResolver } from '@/scene/material-types';
 
 const FALLBACK_BORDER_RGB: Rgb = { r: 0.23, g: 0.23, b: 0.23 };
 
-export function fabricClothBorderColorRgb(hex: string): Rgb {
+function fabricClothBorderColorRgb(hex: string): Rgb {
   const parsed = parseHexColor(hex);
   if (parsed) {return parsed;}
   return FALLBACK_BORDER_RGB;

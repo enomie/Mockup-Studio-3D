@@ -24,8 +24,6 @@ export const RIGID_DYNAMIC_RESTITUTION = 0;
 export const PHYSICS_DYNAMIC_LINEAR_DAMPING = 0.4;
 export const PHYSICS_DYNAMIC_ANGULAR_DAMPING = 0.55;
 
-export const FABRIC_PLANE_DYNAMIC_FRICTION = 0.85;
-
 /** Fixed grid cell size for fabric cloth sim mesh (~1.25 cm); not user-tunable. */
 export const FABRIC_CLOTH_SIM_CELL_SIZE_M = 0.0125;
 

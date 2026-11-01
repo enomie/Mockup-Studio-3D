@@ -6,7 +6,7 @@ import {
 
 export const BUILTIN_ARRANGEMENT_CLOTHING_ID = 'builtin-arrangement-clothing';
 export const BUILTIN_ARRANGEMENT_DEVICES_ID = 'builtin-arrangement-devices';
-export const BUILTIN_ARRANGEMENT_BEVERAGES_ID = 'builtin-arrangement-beverages';
+const BUILTIN_ARRANGEMENT_BEVERAGES_ID = 'builtin-arrangement-beverages';
 
 /** Arrangement the app starts with. */
 export const BUILTIN_ARRANGEMENT_DEFAULT_ID = BUILTIN_ARRANGEMENT_CLOTHING_ID;

@@ -9,11 +9,11 @@ import {
 import type { LightingSettings } from '@/scene/scene-api';
 
 export const BUILTIN_LIGHT_DEFAULT_ID = 'builtin-light-default';
-export const BUILTIN_LIGHT_SOFTBOX_ID = 'builtin-light-softbox';
+const BUILTIN_LIGHT_SOFTBOX_ID = 'builtin-light-softbox';
 export const BUILTIN_LIGHT_DRAMATIC_ID = 'builtin-light-dramatic';
 
 /** Single source for Default light rig — mirrors SCENE_DEFAULTS.lighting. */
-export function lightingFromSceneDefaults(): LightingSettings {
+function lightingFromSceneDefaults(): LightingSettings {
   const { lighting } = SCENE_DEFAULTS;
   return cloneLightingSettings({
     showFixtures: lighting.showFixtures,

@@ -17,7 +17,7 @@ export interface HandheldLayerBounds {
   cornerRadius: number;
 }
 
-export interface SideButtonCenter {
+interface SideButtonCenter {
   x: number;
   y: number;
   z: number;

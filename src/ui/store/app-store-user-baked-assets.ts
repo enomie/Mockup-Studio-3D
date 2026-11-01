@@ -64,17 +64,6 @@ export function addAssetFromUserBaked(userBakedAssetId: string): void {
   store.syncEngineStateFromEngine();
 }
 
-export function renameUserBakedAsset(userBakedAssetId: string, name: string): void {
-  const trimmed = name.trim();
-  if (!trimmed) {return;}
-  const index = store.state.userBakedAssets.findIndex((a) => a.id === userBakedAssetId);
-  if (index < 0) {return;}
-  const next = [...store.state.userBakedAssets];
-  next[index] = { ...next[index], name: trimmed };
-  store.setAppState({ ...store.state, userBakedAssets: next });
-  store.emit();
-}
-
 export function removeUserBakedAsset(userBakedAssetId: string): boolean {
   const exists = store.state.userBakedAssets.some((a) => a.id === userBakedAssetId);
   if (!exists) {return false;}

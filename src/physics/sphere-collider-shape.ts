@@ -1,4 +1,4 @@
-import { defaultSphereParams, type SphereParams } from '@/scene/asset-sphere';
+import type { SphereParams } from '@/scene/asset-sphere';
 import { PHYSICS_COLLIDER_MARGIN_M } from './constants';
 
 export interface SphereColliderShape {
@@ -18,10 +18,4 @@ export function sphereColliderShapeFromParams(params: SphereParams): SphereColli
     colliderRadiusM: params.radiusM + marginM,
     centerOffsetY: params.radiusM,
   };
-}
-
-export function sphereColliderShapeFromEntityParams(
-  params: SphereParams | undefined,
-): SphereColliderShape {
-  return sphereColliderShapeFromParams(params ?? defaultSphereParams());
 }

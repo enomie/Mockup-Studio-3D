@@ -29,7 +29,6 @@ export const WINE_BOTTLE_GLASS_TRANSMISSION_MESH_DEPTH_FACTOR = 0.4;
 const HEIGHT_DEFAULT = 0.29;
 const WALL_THICKNESS_DEFAULT = 0.0025;
 const CORK_HEIGHT_M = 0.04;
-const CORK_EDGE_RADIUS_M = 0.0015;
 
 const CORK_RADIUS_M: Record<WineBottleBodyProfile, number> = {
   bordeaux: 0.009,
@@ -83,10 +82,6 @@ export function corkRadiusMForProfile(profile: WineBottleBodyProfile): number {
 
 export function corkHeightM(): number {
   return CORK_HEIGHT_M;
-}
-
-export function corkEdgeRadiusM(): number {
-  return CORK_EDGE_RADIUS_M;
 }
 
 export function defaultWineBottleParams(

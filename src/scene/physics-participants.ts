@@ -40,15 +40,6 @@ export function hasIdleFixedPhysicsCollider(entity: AssetEntity): boolean {
   return isRigidPrimitiveWithFixedCollider(entity);
 }
 
-/** Any asset kind that participates in world physics in some form. */
-export function isWorldPhysicsSceneEntity(entity: AssetEntity): boolean {
-  return (
-    isFabricClothWorldPhysicsEntity(entity) ||
-    isRigidPrimitiveWithFixedCollider(entity) ||
-    isRigidPrimitiveDynamicEntity(entity)
-  );
-}
-
 export function countSpawnsDynamicBodyOnWorldStart(
   entities: readonly AssetEntity[],
 ): number {

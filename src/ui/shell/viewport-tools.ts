@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import type { AppMode } from '@/scene/scene-api';
 
-export type ViewportToolShortcut = 'W' | 'E' | 'R' | 'T';
+type ViewportToolShortcut = 'W' | 'E' | 'R' | 'T';
 
 export interface ViewportToolDefinition {
   id: AppMode;

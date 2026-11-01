@@ -64,7 +64,7 @@ export function sizeTokenToDimensions(
   return { width, height };
 }
 
-export function orientationFromFormat(format: string): ImageOrientation | null {
+function orientationFromFormat(format: string): ImageOrientation | null {
   if (!ORIENTATION_FORMATS.has(format)) {return null;}
   return format as ImageOrientation;
 }

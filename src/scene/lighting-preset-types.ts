@@ -1,6 +1,6 @@
 import type { LightingSettings } from './scene-api';
 
-export type LightingPresetSource = 'builtin' | 'user';
+type LightingPresetSource = 'builtin' | 'user';
 
 export interface LightingPreset {
   id: string;

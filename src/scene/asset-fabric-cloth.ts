@@ -1,17 +1,12 @@
 import {
   createDefaultFabricClothPhysicsParams as defaultPhysics,
-  fabricClothPhysicsParamsFromPresetKey as physicsFromPreset,
   type FabricClothPhysicsParams,
-  type FabricPhysicsPresetKey,
 } from '@/config/fabric-physics-presets';
 import type { AssetKind } from './asset-kind';
 import { MM_TO_M } from '@/units/length';
 import { SHELL_HALF_THICKNESS } from '@/physics/cloth/contact-config';
 
-export type {
-  FabricClothPhysicsParams,
-  FabricPhysicsPresetKey,
-} from '@/config/fabric-physics-presets';
+;
 
 export interface FabricClothVec3 {
   x: number;
@@ -19,7 +14,7 @@ export interface FabricClothVec3 {
   z: number;
 }
 
-export interface FabricClothRestPoseParams {
+interface FabricClothRestPoseParams {
   /** Local offset from entity origin (meters). */
   position: FabricClothVec3;
   /** Extra local Euler rotation (radians, XYZ) applied to the rest sim grid. */
@@ -424,11 +419,4 @@ export function cloneFabricClothParams(params: FabricClothParams): FabricClothPa
       },
     },
   };
-}
-
-export function applyFabricPhysicsPresetToParams(
-  _params: FabricClothPhysicsParams,
-  presetKey: FabricPhysicsPresetKey,
-): FabricClothPhysicsParams {
-  return physicsFromPreset(presetKey);
 }

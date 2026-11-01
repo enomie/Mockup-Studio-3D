@@ -120,7 +120,7 @@ function applyFootPivotY0(group: Group): void {
 }
 
 /** Procedural spokes on the +X face (YZ plane), axle along +X. */
-export function addWheelCarSpokes(
+function addWheelCarSpokes(
   group: Group,
   params: WheelCarParams,
   profiles: WheelCarLatheProfiles,

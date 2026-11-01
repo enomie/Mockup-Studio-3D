@@ -43,7 +43,7 @@ interface RoundedRectContourTarget {
 /**
  * Rounded rectangle centered at origin (XY). Outer shapes: clockwise; holes: counter-clockwise.
  */
-export function appendRoundedRectContour(
+function appendRoundedRectContour(
   target: RoundedRectContourTarget,
   width: number,
   height: number,

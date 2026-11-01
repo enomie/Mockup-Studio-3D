@@ -26,7 +26,7 @@ const METER_3D_PROFILES: ReadonlySet<ProceduralProfileId> = new Set([
   'glass-surface',
 ]);
 
-export function isGridPaperProfile(profile: ProceduralProfileId | undefined): boolean {
+function isGridPaperProfile(profile: ProceduralProfileId | undefined): boolean {
   return profile === 'grid-paper-opaque' || profile === 'grid-paper-lines';
 }
 

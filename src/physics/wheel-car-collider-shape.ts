@@ -1,4 +1,4 @@
-import { defaultWheelCarParams, type WheelCarParams } from '@/scene/asset-wheel-car';
+import type { WheelCarParams } from '@/scene/asset-wheel-car';
 import { PHYSICS_COLLIDER_MARGIN_M } from './constants';
 
 export interface WheelCarColliderShape {
@@ -21,12 +21,4 @@ export function wheelCarColliderShapeFromParams(
     radiusM: params.outerRadiusM + marginM,
     centerOffsetY: params.outerRadiusM,
   };
-}
-
-export function wheelCarColliderShapeFromEntity(
-  entity: { wheelCarParams?: WheelCarParams },
-): WheelCarColliderShape {
-  return wheelCarColliderShapeFromParams(
-    entity.wheelCarParams ?? defaultWheelCarParams(),
-  );
 }

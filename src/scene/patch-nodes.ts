@@ -24,7 +24,7 @@ export interface PatchNodeUse {
   cross: string;
 }
 
-export interface PatchNodePair {
+interface PatchNodePair {
   a: string;
   b: string;
   kind: 'across' | 'line';
@@ -136,7 +136,7 @@ export interface NodeSide {
  * every pair opposite and coupled). `intoA` / `intoB`: the handle of each point that runs
  * into the shared segment.
  */
-export function createEndNode(
+function createEndNode(
   id: string,
   a: NodeSide,
   intoA: 'handleNext' | 'handlePrev',
@@ -233,7 +233,7 @@ function pinkPairOf(node: PatchNode, use: PatchNodeUse): PatchNodePair | undefin
 }
 
 /** The patch point a use sees: the node read into the patch's local space. */
-export function resolveNodePoint(node: PatchNode, use: PatchNodeUse, transform: EntityTransform, base: PatchPoint): PatchPoint {
+function resolveNodePoint(node: PatchNode, use: PatchNodeUse, transform: EntityTransform, base: PatchPoint): PatchPoint {
   const pos = toLocalPoint(node.pos, transform);
   const handle = (slot: string): Vec3 => {
     const o = toLocalOffset(node.handles[slot] ?? { x: 0, y: 0, z: 0 }, transform);

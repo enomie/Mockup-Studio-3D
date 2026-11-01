@@ -35,13 +35,13 @@ const _world = new Vector3();
 const _restPose = new Matrix4();
 const _euler = new Euler();
 
-export interface FabricClothMeshSyncFlags {
+interface FabricClothMeshSyncFlags {
   recomputeNormals?: boolean;
   recomputeBounds?: boolean;
 }
 
 /** Stride for world-physics tick sync (`syncFrameIndex` ≥ 1). */
-export function fabricClothMeshSyncFlagsForSimulationFrame(
+function fabricClothMeshSyncFlagsForSimulationFrame(
   syncFrameIndex: number,
 ): FabricClothMeshSyncFlags {
   return {
@@ -182,7 +182,7 @@ const REST_STEP_SQ = REST_STEP_M * REST_STEP_M;
 /** Resting frames before the cloth sleeps (no stepping until woken). */
 const SLEEP_AFTER_REST_FRAMES = 30;
 
-export function isFabricClothVerletBindingAsleep(binding: FabricClothVerletBinding): boolean {
+function isFabricClothVerletBindingAsleep(binding: FabricClothVerletBinding): boolean {
   return binding.consecutiveRestFrames >= SLEEP_AFTER_REST_FRAMES;
 }
 
@@ -327,15 +327,6 @@ export function stepFabricClothVerletBinding(
   flushPlaneFromWorldCenterline(binding, flags);
 }
 
-export function worldCornerPosition(
-  binding: FabricClothVerletBinding,
-  cornerIndex: number,
-): FabricClothVec3 | null {
-  const vIdx = binding.cornerIndexMap[cornerIndex];
-  const [x, y, z] = vec3Get(binding.pos, vIdx);
-  return { x, y, z };
-}
-
 export function setCornerWorldPosition(
   binding: FabricClothVerletBinding,
   cornerIndex: number,
@@ -356,7 +347,7 @@ export function setCornerWorldPosition(
 const _inverseEntity = new Matrix4();
 const _pinWorld = new Vector3();
 
-export function worldToEntityLocalPin(
+function worldToEntityLocalPin(
   entityRoot: Object3D,
   wx: number,
   wy: number,

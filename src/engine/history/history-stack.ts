@@ -5,7 +5,7 @@ export interface HistoryEntry<T> {
   label: string;
 }
 
-export const DEFAULT_HISTORY_LIMIT = 100;
+const DEFAULT_HISTORY_LIMIT = 100;
 
 /** Linear undo/redo stack of state snapshots. Recording a new step discards the redo side. */
 export class HistoryStack<T> {
