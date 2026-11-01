@@ -5,40 +5,50 @@ export interface LatheSvgPoint2 {
   y: number;
 }
 
-export type LathePathSlot = 0 | 1 | 2;
+/** Up to 10 geometry paths per lathe SVG, identified by stroke color. */
+const LATHE_PATH_SLOT_COUNT = 10;
+
+export type LathePathSlot = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
+
+const SLOT_DEFS: readonly { className: string; stroke: string; aliases: readonly string[] }[] = [
+  { className: 'path_red', stroke: '#ff0000', aliases: ['red'] },
+  { className: 'path_green', stroke: '#00ff00', aliases: ['lime'] },
+  { className: 'path_blue', stroke: '#0000ff', aliases: ['blue'] },
+  { className: 'path_magenta', stroke: '#ff00ff', aliases: ['magenta', 'fuchsia'] },
+  { className: 'path_cyan', stroke: '#00ffff', aliases: ['cyan', 'aqua'] },
+  { className: 'path_yellow', stroke: '#ffff00', aliases: ['yellow'] },
+  // Illustrator writes CSS keywords: orange = #ffa500, purple = #800080 → same slots.
+  { className: 'path_orange', stroke: '#ff8000', aliases: ['orange', '#ffa500'] },
+  { className: 'path_purple', stroke: '#8000ff', aliases: ['purple', '#800080'] },
+  { className: 'path_teal', stroke: '#008080', aliases: ['teal'] },
+  { className: 'path_brown', stroke: '#804000', aliases: ['brown', '#a52a2a'] },
+];
 
 /** Canonical class per slot (shipped SVG convention). */
-export const LATHE_PATH_SLOT_CLASSES: Record<LathePathSlot, string> = {
-  0: 'path_red',
-  1: 'path_green',
-  2: 'path_blue',
-};
+export const LATHE_PATH_SLOT_CLASSES = SLOT_DEFS.map((d) => d.className) as readonly string[];
 
 /** Canonical stroke per slot (shipped SVG convention). */
-export const LATHE_PATH_SLOT_STROKES: Record<LathePathSlot, string> = {
-  0: '#ff0000',
-  1: '#00ff00',
-  2: '#0000ff',
-};
+export const LATHE_PATH_SLOT_STROKES = SLOT_DEFS.map((d) => d.stroke) as readonly string[];
 
 /** CSS color keywords that Illustrator exports for the slot colors. */
-const NAMED_STROKE_HEX: Record<string, string> = {
-  red: '#ff0000',
-  lime: '#00ff00',
-  blue: '#0000ff',
-};
+const NAMED_STROKE_HEX: Record<string, string> = Object.fromEntries(
+  SLOT_DEFS.flatMap((d) =>
+    d.aliases.filter((a) => !a.startsWith('#')).map((a): [string, string] => [a, d.stroke]),
+  ),
+);
 
-const CLASS_TO_SLOT: Record<string, LathePathSlot> = {
-  path_red: 0,
-  path_green: 1,
-  path_blue: 2,
-};
+const CLASS_TO_SLOT: Record<string, LathePathSlot> = Object.fromEntries(
+  SLOT_DEFS.map((d, i) => [d.className, i as LathePathSlot]),
+);
 
-const STROKE_TO_SLOT: Record<string, LathePathSlot> = {
-  '#ff0000': 0,
-  '#00ff00': 1,
-  '#0000ff': 2,
-};
+const STROKE_TO_SLOT: Record<string, LathePathSlot> = Object.fromEntries(
+  SLOT_DEFS.flatMap((d, i): [string, LathePathSlot][] => [
+    [d.stroke, i as LathePathSlot],
+    ...d.aliases
+      .filter((a) => a.startsWith('#'))
+      .map((a): [string, LathePathSlot] => [a, i as LathePathSlot]),
+  ]),
+);
 
 export interface LatheSvgPathLike {
   userData?: { style?: { stroke?: string }; node?: Element };
@@ -168,8 +178,8 @@ export function extractLathePathPointsBySlot(
   const loader = new SVGLoader();
   const data = loader.parse(svgText);
   const classStroke = parseLathePathClassStrokeMap(svgText);
-  const slots: LatheSvgPoint2[][] = [[], [], []];
-  const filled: boolean[] = [false, false, false];
+  const slots: LatheSvgPoint2[][] = Array.from({ length: LATHE_PATH_SLOT_COUNT }, () => []);
+  const filled: boolean[] = new Array<boolean>(LATHE_PATH_SLOT_COUNT).fill(false);
 
   for (const path of data.paths) {
     const slot = lathePathSlotForSvgPath(path, classStroke);

@@ -4,8 +4,10 @@
  * `class="path_red|path_green|path_blue"` and hex stroke inline. Curves are kept (affine transform
  * of path data), so files stay editable.
  *
- * Run: npx tsx scripts/normalize-lathe-svgs.ts            (all files, uses factors below)
- *      npx tsx scripts/normalize-lathe-svgs.ts <file.svg>  (format only, factor 1)
+ * Run: npx tsx scripts/normalize-lathe-svgs.ts                  (all files, uses factors below)
+ *      npx tsx scripts/normalize-lathe-svgs.ts <file.svg>        (format only, factor 1)
+ *      npx tsx scripts/normalize-lathe-svgs.ts <file.svg> --pt   (Illustrator pt → mm)
+ * Single files are also shifted so the top-most geometry sits at y = 0 (x / axis unchanged).
  *
  * Spec: _docs/plans/plan-lathe-svg-units-mm.md
  */
@@ -279,7 +281,7 @@ function normalizeFile(file: string, spec: FactorSpec): void {
     const sy = spec.kind === 'uniform' ? spec.s : spec.sy;
     // Axis (x = 0) stays at x = 0; top-most geometry moves to y = 0.
     affine = { sx, sy, tx: 0, ty: -b.minY * sy };
-    width = spec.kind === 'uniform' ? viewBoxOf(svgText)[2] * sx : b.maxX * sx;
+    width = spec.kind === 'uniform' ? Math.max(viewBoxOf(svgText)[2], b.maxX) * sx : b.maxX * sx;
     height = (b.maxY - b.minY) * sy;
   }
 
@@ -329,7 +331,8 @@ function bottleSpec(file: string, heightMm: number): FactorSpec {
 function main(): void {
   const arg = process.argv[2];
   if (arg !== undefined) {
-    normalizeFile(arg, { kind: 'identity' });
+    const s = process.argv.includes('--pt') ? 25.4 / 72 : 1;
+    normalizeFile(arg, { kind: 'uniform', s });
     return;
   }
   // Nominal sizes the engine stretched to before (see plan); baked once into the files.

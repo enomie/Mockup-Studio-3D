@@ -1,5 +1,7 @@
 # Assets — Bottle Wine
 
+> **Ist (2026-11) — ersetzt parametrische Capsule-/Korken-Angaben unten:** Profil-SVG (1 Unit = 1 mm) enthält **4 Pfade**: `path_red` Glas, `path_green` **Capsule-Foil** (offene Linie über Hals + Mündung, liegt auf dem Glas), `path_blue` **Disc** (offene Linie von der Achse, leicht gewölbt, ganz oben auf der Foil), `path_magenta` **Korken** (offene Kontur Achse → außen → Achse). Größen und Abstände **nur aus dem SVG**; Parameter `capsuleFoilHeightM` / `capsuleDiscHeightM` und Korken-Konstanten entfallen. Foil/Disc einseitige Flächen → `DoubleSide`. `heightM` = Glas-Höhe (gemessen); Gesamthöhe inkl. Disc für Sizing. Plan → [`plan-wine-bottle-svg-capsule.md`](../plans/plan-wine-bottle-svg-capsule.md).
+
 Parametrischer **Weinflaschen**-Baustein (Glas + optional Etikett) — **Label** als Bild aus der **Images-Bibliothek** → [`requirements-images.md`](./requirements-images.md). Katalog, Entity-Modell, Drop/Add → [`requirements-assets.md`](./requirements-assets.md). Bild-Flächen → [`requirements-image-surfaces.md`](./requirements-image-surfaces.md). Material-Slots (Glas, Korken, Kapsel-Folie, Kapsel-Scheibe) → [`requirements-materials.md`](./requirements-materials.md). Schatten → [`requirements-shadows.md`](./requirements-shadows.md). Uniform Scale → [`requirements-gimbals.md`](./requirements-gimbals.md).
 
 **Abgrenzung:** Eigenes Asset neben **Beverage can** → [`requirements-assets-beverage-can.md`](./requirements-assets-beverage-can.md). Kein `print`-Prisma. Marken-Etiketten = User-Bilder.

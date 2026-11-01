@@ -1,9 +1,12 @@
 import { Vector2 } from 'three/webgpu';
 import {
   type WineBottleBodyProfile,
+  wineBottleFootYMm,
   wineBottleSvgUrl,
 } from '@/scene/asset-wine-bottle';
+import { latheSvgMmToMeters, prepareLatheProfile } from './lathe-contour';
 import {
+  extractLathePathPointsBySlot,
   extractLatheSubpathPointsBySlot,
   type LatheSvgPoint2,
 } from './lathe-svg-path-slots';
@@ -11,6 +14,43 @@ import {
 export type WineBottleSvgPoint2 = LatheSvgPoint2;
 
 const rawPointsCache = new Map<WineBottleBodyProfile, WineBottleSvgPoint2[]>();
+const rawPartsCache = new Map<WineBottleBodyProfile, WineBottleRawParts>();
+
+/** Capsule parts from the profile SVG (1 unit = 1 mm, y down); empty when the path is absent. */
+export interface WineBottleRawParts {
+  /** `path_green` — open line over neck and mouth (single-sided surface). */
+  foil: WineBottleSvgPoint2[];
+  /** `path_blue` — open line from the axis outward, slightly domed (single-sided surface). */
+  disc: WineBottleSvgPoint2[];
+  /** `path_magenta` — open contour axis → out → axis (solid). */
+  cork: WineBottleSvgPoint2[];
+}
+
+/** Capsule parts as lathe profiles in meters (x = radius, y up, glass foot at y = 0). */
+export interface WineBottlePartProfiles {
+  foil: Vector2[];
+  disc: Vector2[];
+  cork: Vector2[];
+}
+
+export function extractWineBottlePartsFromSvgText(
+  svgText: string,
+  curveSegments = 24,
+): WineBottleRawParts {
+  const slots = extractLathePathPointsBySlot(svgText, curveSegments);
+  return { foil: slots[1], disc: slots[2], cork: slots[3] };
+}
+
+/** SVG mm → meters, same foot as the glass (no stretch); `sizeScale` uniform. */
+function normalizeWineBottleParts(
+  raw: WineBottleRawParts,
+  footYMm: number,
+  sizeScale = 1,
+): WineBottlePartProfiles {
+  const toLathe = (points: WineBottleSvgPoint2[]): Vector2[] =>
+    points.length < 2 ? [] : prepareLatheProfile(latheSvgMmToMeters(points, footYMm, sizeScale));
+  return { foil: toLathe(raw.foil), disc: toLathe(raw.disc), cork: toLathe(raw.cork) };
+}
 
 /** Tessellate first SVG subpath (closed wall loop in Illustrator, punt hole ≥ ~1 SVG unit). */
 export function extractOpenPathPointsFromSvgText(
@@ -242,6 +282,30 @@ export async function loadWineBottleOpenWallProfile(
   return normalizeOpenWallSvgToLathePoints(raw, heightM);
 }
 
+export async function loadWineBottlePartProfiles(
+  profile: WineBottleBodyProfile,
+  sizeScale = 1,
+): Promise<WineBottlePartProfiles> {
+  let raw = rawPartsCache.get(profile);
+  if (!raw) {
+    const url = wineBottleSvgUrl(profile);
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Failed to load SVG: ${url} (${response.status})`);
+    }
+    raw = extractWineBottlePartsFromSvgText(await response.text());
+    rawPartsCache.set(profile, raw);
+  }
+  return normalizeWineBottleParts(raw, wineBottleFootYMm(profile), sizeScale);
+}
+
+export function setRawWineBottlePartsCache(
+  profile: WineBottleBodyProfile,
+  parts: WineBottleRawParts,
+): void {
+  rawPartsCache.set(profile, parts);
+}
+
 export function setRawWineBottleSvgPointsCache(
   profile: WineBottleBodyProfile,
   points: WineBottleSvgPoint2[],
@@ -251,4 +315,5 @@ export function setRawWineBottleSvgPointsCache(
 
 export function clearRawWineBottleSvgPointsCache(): void {
   rawPointsCache.clear();
+  rawPartsCache.clear();
 }

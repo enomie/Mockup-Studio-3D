@@ -65,27 +65,6 @@ export function WineBottleFields({
         />
       </SubPanelSection>
 
-      <SubPanelSection title="Capsule">
-        <PanelAxisField
-          label="Foil height"
-          unit="m"
-          value={params.capsuleFoilHeightM}
-          format={(value) => formatLengthMeters(value, LENGTH_DECIMALS)}
-          parse={parseLengthMetersInput}
-          onChange={(value) => { setKindParams('wineBottle', entity.id, { capsuleFoilHeightM: value }); }
-          }
-        />
-        <PanelAxisField
-          label="Disc height"
-          unit="m"
-          value={params.capsuleDiscHeightM}
-          format={(value) => formatLengthMeters(value, LENGTH_DECIMALS)}
-          parse={parseLengthMetersInput}
-          onChange={(value) => { setKindParams('wineBottle', entity.id, { capsuleDiscHeightM: value }); }
-          }
-        />
-      </SubPanelSection>
-
       <SubPanelSection title="Label placement">
         <PanelSelect
           label="Wrap"

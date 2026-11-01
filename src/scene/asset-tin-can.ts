@@ -2,8 +2,8 @@ import type { AssetKind } from './asset-kind';
 import { MM_TO_M } from '@/units/length';
 import { clamp } from '@/units/math';
 
-export const TIN_CAN_END_RING_HEIGHT_MM = 2.5;
-export const TIN_CAN_END_RING_THICKNESS_MM = 1.5;
+const TIN_CAN_END_RING_HEIGHT_MM = 2.5;
+const TIN_CAN_END_RING_THICKNESS_MM = 1.5;
 const TIN_CAN_LID_INSET_MM = 0.8;
 export const TIN_CAN_BEAD_COUNT_MIN = 1;
 export const TIN_CAN_BEAD_COUNT_MAX = 20;

@@ -27,6 +27,7 @@ import {
   defaultWineBottleParams,
   isWineBottleAssetKind,
   wineBottleFootprintAspect,
+  wineBottleOverallHeightM,
   wineBottleMaxOuterDiameterM,
 } from './asset-wine-bottle';
 import {
@@ -471,10 +472,7 @@ export function assetFootprintHeight(
     }
     case 'wine-bottle': {
       const params = entity?.wineBottleParams ?? defaultWineBottleParams('bordeaux');
-      return (
-        params.heightM * scale +
-        params.capsuleDiscHeightM * scale
-      );
+      return wineBottleOverallHeightM(params.wineBottleBodyProfile) * scale;
     }
     case 'pen': {
       const profile =

@@ -1,4 +1,8 @@
-import { extractLathePathPointsBySlot, type LatheSvgPoint2 } from './lathe-svg-path-slots';
+import {
+  extractLathePathPointsBySlot,
+  type LathePathSlot,
+  type LatheSvgPoint2,
+} from './lathe-svg-path-slots';
 
 /** Axis-aligned bounds in SVG units (1 unit = 1 mm, y down). */
 export interface LatheBoundsMm {
@@ -8,10 +12,10 @@ export interface LatheBoundsMm {
   maxY: number;
 }
 
-/** Measured sizes of one lathe SVG: union of all slots plus each slot (null when absent). */
+/** Measured sizes of one lathe SVG: union of all slots plus each slot (null when absent; 10 entries). */
 export interface LatheSvgMetricsMm {
   bounds: LatheBoundsMm;
-  slots: [LatheBoundsMm | null, LatheBoundsMm | null, LatheBoundsMm | null];
+  slots: (LatheBoundsMm | null)[];
 }
 
 const round4 = (n: number): number => {
@@ -19,7 +23,7 @@ const round4 = (n: number): number => {
   return r === 0 ? 0 : r;
 };
 
-export function latheBoundsOfPoints(points: LatheSvgPoint2[]): LatheBoundsMm | null {
+function latheBoundsOfPoints(points: LatheSvgPoint2[]): LatheBoundsMm | null {
   if (points.length === 0) {
     return null;
   }
@@ -38,7 +42,7 @@ export function latheBoundsOfPoints(points: LatheSvgPoint2[]): LatheBoundsMm | n
 
 export function measureLatheSvgMm(svgText: string, curveSegments = 64): LatheSvgMetricsMm {
   const slotPoints = extractLathePathPointsBySlot(svgText, curveSegments);
-  const slots = slotPoints.map(latheBoundsOfPoints) as LatheSvgMetricsMm['slots'];
+  const slots = slotPoints.map(latheBoundsOfPoints);
   const bounds = latheBoundsOfPoints(slotPoints.flat());
   if (bounds === null) {
     throw new Error('Lathe SVG has no slot paths');
@@ -46,8 +50,8 @@ export function measureLatheSvgMm(svgText: string, curveSegments = 64): LatheSvg
   return { bounds, slots };
 }
 
-export function latheSlotBounds(metrics: LatheSvgMetricsMm, slot: 0 | 1 | 2): LatheBoundsMm {
-  const b = metrics.slots[slot];
+export function latheSlotBounds(metrics: LatheSvgMetricsMm, slot: LathePathSlot): LatheBoundsMm {
+  const b = metrics.slots[slot] ?? null;
   if (b === null) {
     throw new Error(`Lathe SVG slot ${slot} missing`);
   }

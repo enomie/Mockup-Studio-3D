@@ -64,13 +64,6 @@ async function loadRawBeverageCanPaths(
   return paths;
 }
 
-export function setRawBeverageCanPathsCache(
-  profile: BeverageCanBodyProfile,
-  paths: BeverageCanRawPaths,
-): void {
-  rawPathsCache.set(profile, paths);
-}
-
 export async function loadBeverageCanLatheProfiles(
   profile: BeverageCanBodyProfile,
   sizeScale = 1,

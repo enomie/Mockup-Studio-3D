@@ -1,6 +1,6 @@
 # Plan: Wine Bottle — Capsule, Disc, Korken als SVG-Pfade · bis zu 10 Slots
 
-**Status:** Entwurf — wartet auf Freigabe
+**Status:** Freigegeben 2026-11-01 · umgesetzt (offen: visueller Check, Feinschliff der Pfade durch User)
 **Datum:** 2026-11-01
 **Bezug:** [`plan-lathe-svg-units-mm.md`](./plan-lathe-svg-units-mm.md) (1 Unit = 1 mm, SVG = einzige Größenquelle)
 
@@ -65,7 +65,12 @@ npx tsx scripts/generate-lathe-profile-metrics.ts
 5. **Höhe**: gemessene Gesamthöhe = Glas + Disc (~292 mm statt 290). Label (vom Fuß gemessen) unverändert.
 6. **Tests + Doku**: Teile aus Slots, Foil außerhalb Glas, Disc bis Achse; `requirements-assets-wine-bottle.md`, `requirements-assets-lathe.md` (10 Slots, Workflow). Checks: `npx vitest run`, `npm run lint`, `npm run build`.
 
-## Offene Fragen
+## Entscheidungen (Nachtrag)
 
-- Sparkling: Capsule real meist deutlich länger (Sekt-Folie) — vorerst wie heute (28 mm), User verfeinert?
-- Soll das Glas oben (Mündung) unter der Disc sichtbar bleiben oder darf die Disc es überlappen? (Vorschlag: Disc sitzt auf Glas-Oberkante, Foil-Oberkante schließt an Disc-Rand an.)
+- Reihenfolge von innen nach außen/oben: **Glas → Foil (liegt auf der Flasche, deckt die Mündung) → Disc ganz oben auf der Foil**.
+- Sparkling: vorerst 28 mm wie die anderen; User passt an.
+
+## Umsetzung (Ist)
+
+- Erzeugte Startpfade: Foil 0,4 mm außerhalb des Glases, 28 mm hoch, über die Mündung bis zur Achse (0,4 mm über Glas-Oberkante); Disc-Rand am Foil-Radius, 2 mm hoch, 0,5 mm Wölbung; Korken 40 mm (Radius 9 / 9 / 10 mm), Oberkante = Glas-Oberkante. Gesamthöhe 292,9 mm, Glas 290 mm.
+- Normalisierer: Einzeldatei wird so verschoben, dass der oberste Punkt bei y = 0 liegt; `--pt` für Illustrator-pt-Export.

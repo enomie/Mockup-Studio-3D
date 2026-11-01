@@ -50,7 +50,7 @@ export function closeAndOrientLatheContour(points: Vector2[]): Vector2[] {
 }
 
 /** LatheGeometry expects open profiles traced from bottom (y≈0) toward the top for outward-facing sides. */
-export function orientLatheProfileBottomToTop(points: Vector2[]): Vector2[] {
+function orientLatheProfileBottomToTop(points: Vector2[]): Vector2[] {
   if (points.length < 2) {
     return points;
   }

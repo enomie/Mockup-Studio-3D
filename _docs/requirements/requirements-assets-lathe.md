@@ -28,7 +28,7 @@
 ```
 
 - `viewBox` in mm, **ohne** `width`/`height`, keine `transform`, kein `<style>`/CSS, nur `<path>` (kein `<rect>`).
-- Neu exportierte Dateien (z. B. Illustrator: CSS-Klassen `cls-*`, Farbnamen `red`/`lime`/`blue`, `<rect>`, pt-Einheiten) mit [`scripts/normalize-lathe-svgs.ts`](../../scripts/normalize-lathe-svgs.ts) in dieses Format bringen (Kurven bleiben erhalten). Die Engine liest solche Exporte zwar auch, mitgeliefert wird aber nur das normierte Format.
+- Nach Speichern in Illustrator (CSS-Klassen `cls-*`, Farbnamen, `<rect>`, ggf. pt) die Datei zurück ins Format bringen: `npx tsx scripts/normalize-lathe-svgs.ts <datei.svg>` (bei pt-Export: `--pt`), dann `npx tsx scripts/generate-lathe-profile-metrics.ts`. Kurven bleiben erhalten; oberster Punkt wird auf y = 0 gesetzt. Die Engine liest solche Exporte zwar auch, mitgeliefert wird aber nur das normierte Format.
 - **Gemessene Maße** (sync verfügbar): [`scripts/generate-lathe-profile-metrics.ts`](../../scripts/generate-lathe-profile-metrics.ts) → `src/data/lathe-profile-metrics.generated.ts` (läuft in `predev`/`prebuild`; Test prüft Synchronität). Nach SVG-Änderung neu generieren.
 
 **Offene vs. geschlossene Kontur:**
@@ -85,17 +85,26 @@
 **Title:** SVG path slots — path_red / path_green / path_blue (normativ)  
 **Description:** Geometrie-Pfade in Lathe-SVGs werden **projektweit** über **bis zu drei Slots** identifiziert — **nicht** über beliebige Illustrator-Farben oder asset-spezifische Klassen (`.tire`, `cls-1`, …).
 
-| Slot | CSS-Klasse | Stroke (Pflicht) | Engine |
+| Slot | CSS-Klasse | Stroke (Pflicht) | Illustrator-Farbname (auch gelesen) |
 |---|---|---|---|
-| 1 | `path_red` | `#ff0000` (`#f00`) | [`lathe-svg-path-slots.ts`](../../src/engine/lathe-svg-path-slots.ts) |
-| 2 | `path_green` | `#00ff00` (`#0f0`) | optional |
-| 3 | `path_blue` | `#0000ff` (`#00f`) | optional |
+| 0 | `path_red` | `#ff0000` | `red` |
+| 1 | `path_green` | `#00ff00` | `lime` |
+| 2 | `path_blue` | `#0000ff` | `blue` |
+| 3 | `path_magenta` | `#ff00ff` | `magenta`, `fuchsia` |
+| 4 | `path_cyan` | `#00ffff` | `cyan`, `aqua` |
+| 5 | `path_yellow` | `#ffff00` | `yellow` |
+| 6 | `path_orange` | `#ff8000` | `orange` (`#ffa500`) |
+| 7 | `path_purple` | `#8000ff` | `purple` (`#800080`) |
+| 8 | `path_teal` | `#008080` | `teal` |
+| 9 | `path_brown` | `#804000` | `brown` (`#a52a2a`) |
+
+Bis zu **10 Slots** pro SVG; **Slot = Strichfarbe** (überlebt jeden Illustrator-Export, Klassen/IDs nicht). Code: [`lathe-svg-path-slots.ts`](../../src/engine/lathe-svg-path-slots.ts).
 
 | Regel | Bedeutung |
 |---|---|
 | **Strikt** | Nur Pfade mit Slot-Klasse **oder** normiertem RGB-Stroke zählen. Kein Fallback „erster `<path>` im Dokument“. |
 | **`fill: none`** | Authoring-Standard für Lathe-Konturen. |
-| **Semantik im Code** | Slot → Teil pro Asset (z. B. Pen: red=cap, green=ring, blue=body; Wheel: red=tire; Dose: red=Körper, green=Top-Ring; Flasche: nur red). |
+| **Semantik im Code** | Slot → Teil pro Asset (z. B. Pen: red=cap, green=ring, blue=body; Wheel: red=tire; Dose: red=Körper, green=Top-Ring; Flasche: red=Glas, green=Capsule-Foil, blue=Disc, magenta=Korken). |
 | **Hilfsgrafik** | Keine Slot-Klasse / kein Slot-Stroke (z. B. gestrichelte `.guide`-Linie am Rad). |
 
 **Code:** `extractLathePathPointsBySlot`, `extractLatheSubpathPointsBySlot` (Flasche: erstes Subpath am red-Slot).

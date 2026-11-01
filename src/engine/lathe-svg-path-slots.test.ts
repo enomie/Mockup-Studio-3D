@@ -93,4 +93,19 @@ describe('lathe-svg-path-slots', () => {
       expect(text, file).toMatch(/<path class="path_red" stroke="#ff0000"/);
     }
   });
+
+  it('supports 10 slots by color, incl. Illustrator keywords', () => {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg">
+      <defs><style>.cls-9 { stroke: fuchsia; } .cls-8 { stroke: purple; }</style></defs>
+      <path class="cls-9" d="M0,0h4v4H0"/>
+      <path class="cls-8" d="M0,0h5v5H0"/>
+      <path stroke="#804000" fill="none" d="M0,0h6v6H0"/>
+    </svg>`;
+    const slots = extractLathePathPointsBySlot(svg, 4);
+    expect(slots).toHaveLength(10);
+    expect(slots[3].length).toBeGreaterThan(2);
+    expect(slots[7].length).toBeGreaterThan(2);
+    expect(slots[9].length).toBeGreaterThan(2);
+    expect(slots[0]).toHaveLength(0);
+  });
 });

@@ -1,15 +1,12 @@
 import {
-  CylinderGeometry,
+  DoubleSide,
+  LatheGeometry,
   Mesh,
   type BufferGeometry,
   type Material,
   type Vector2,
 } from 'three/webgpu';
-import { buildOpenMantleGeometry } from './open-mantle-geometry';
 import {
-  CAPSULE_FOIL_STANDOFF_M,
-  corkHeightM,
-  corkRadiusMForProfile,
   resolvedLabelWidthHeight,
   scaledWineBottleParams,
   type WineBottleParams,
@@ -30,18 +27,14 @@ import {
 } from './lathe-asset-common';
 import {
   loadWineBottleOpenWallProfile,
+  loadWineBottlePartProfiles,
   sampleWineBottleRadiusAtY,
 } from './wine-bottle-svg-profile';
 import type { RotationalPrintBand } from './rotational-print-mapping';
 import { ensureGeometryTangents } from '@/engine/geometry-tangents';
-const MANTLE_RADIAL_SEGMENTS = 64;
+const PART_LATHE_SEGMENTS = 64;
 /** Former label offset; still widens the arc slightly so existing label widths stay put. */
 const LABEL_RADIAL_STANDOFF_M = 0.001;
-const CAPSULE_RENDER_STANDOFF_M = 0.001;
-
-function capsuleRadialStandoffM(sizeScale: number): number {
-  return Math.max(CAPSULE_FOIL_STANDOFF_M, CAPSULE_RENDER_STANDOFF_M) * sizeScale;
-}
 
 function applyMeshPolygonOffset(mesh: Mesh): void {
   const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
@@ -74,11 +67,39 @@ export interface WineBottleMeshBuildResult {
   discMesh: Mesh | null;
 }
 
-function buildCorkCylinderGeometry(radiusM: number, heightM: number): BufferGeometry {
-  const geometry = new CylinderGeometry(radiusM, radiusM, heightM, 32);
-  geometry.translate(0, heightM * 0.5, 0);
+/** Lathe of a capsule part from the SVG (foil / disc / cork), no stretch. */
+function buildPartLatheGeometry(profile: Vector2[]): BufferGeometry {
+  const geometry = new LatheGeometry(
+    profile,
+    PART_LATHE_SEGMENTS,
+    LATHE_SEAM_PHI_START,
+    FULL_LATHE_PHI_LENGTH,
+  );
+  geometry.computeVertexNormals();
   ensureGeometryTangents(geometry);
   return geometry;
+}
+
+function buildPartMesh(
+  profile: Vector2[],
+  material: Material,
+  name: string,
+  role: string,
+  renderOrder: number,
+  doubleSided: boolean,
+): Mesh | null {
+  if (profile.length < 2) {
+    return null;
+  }
+  if (doubleSided) {
+    material.side = DoubleSide;
+  }
+  const mesh = new Mesh(buildPartLatheGeometry(profile), material);
+  mesh.name = name;
+  mesh.userData.assetMeshRole = role;
+  mesh.renderOrder = renderOrder;
+  applyMeshPolygonOffset(mesh);
+  return mesh;
 }
 
 function mantlePhiRange(
@@ -160,54 +181,17 @@ export async function buildWineBottleMeshes(
     },
   );
 
-  let corkMesh: Mesh | null = null;
-  if (isGeometryVisible(input.geometryVisibility, 'cork')) {
-    const r = corkRadiusMForProfile(bodyProfile) * input.sizeScale;
-    const h = corkHeightM() * input.sizeScale;
-    const corkGeometry = buildCorkCylinderGeometry(r, h);
-    corkMesh = new Mesh(corkGeometry, input.corkMaterial);
-    corkMesh.name = 'wine-bottle-cork';
-    corkMesh.userData.assetMeshRole = 'cork';
-    corkMesh.position.y = scaled.heightM - h;
-    corkMesh.renderOrder = 4;
-    applyMeshPolygonOffset(corkMesh);
-  }
-
-  let foilMesh: Mesh | null = null;
-  if (isGeometryVisible(input.geometryVisibility, 'capsuleFoil')) {
-    const y1 = scaled.heightM;
-    const y0 = y1 - scaled.capsuleFoilHeightM;
-    const foilStandoff = capsuleRadialStandoffM(input.sizeScale);
-    const foilGeometry = buildOpenMantleGeometry({
-      y0,
-      y1,
-      sampleRadius: (y) => sampleWineBottleRadiusAtY(latheProfile, y) + foilStandoff,
-      phiStart: LATHE_SEAM_PHI_START,
-      phiLength: FULL_LATHE_PHI_LENGTH,
-      radialSegments: MANTLE_RADIAL_SEGMENTS,
-      heightSegments: 24,
-    });
-    foilMesh = new Mesh(foilGeometry, input.foilMaterial);
-    foilMesh.name = 'wine-bottle-capsule-foil';
-    foilMesh.userData.assetMeshRole = 'capsuleFoil';
-    foilMesh.renderOrder = 5;
-    applyMeshPolygonOffset(foilMesh);
-  }
-
-  let discMesh: Mesh | null = null;
-  if (isGeometryVisible(input.geometryVisibility, 'capsuleDisc')) {
-    const standoff = capsuleRadialStandoffM(input.sizeScale);
-    const lipRadius = sampleWineBottleRadiusAtY(latheProfile, scaled.heightM) + standoff;
-    const discH = scaled.capsuleDiscHeightM;
-    const discGeometry = new CylinderGeometry(lipRadius, lipRadius, discH, 48);
-    discGeometry.translate(0, discH * 0.5, 0);
-    discMesh = new Mesh(discGeometry, input.discMaterial);
-    discMesh.name = 'wine-bottle-capsule-disc';
-    discMesh.userData.assetMeshRole = 'capsuleDisc';
-    discMesh.position.y = scaled.heightM;
-    discMesh.renderOrder = 6;
-    applyMeshPolygonOffset(discMesh);
-  }
+  // Capsule parts: sizes and gaps come only from the SVG (path_green / path_blue / path_magenta).
+  const parts = await loadWineBottlePartProfiles(bodyProfile, input.sizeScale);
+  const corkMesh = isGeometryVisible(input.geometryVisibility, 'cork')
+    ? buildPartMesh(parts.cork, input.corkMaterial, 'wine-bottle-cork', 'cork', 4, false)
+    : null;
+  const foilMesh = isGeometryVisible(input.geometryVisibility, 'capsuleFoil')
+    ? buildPartMesh(parts.foil, input.foilMaterial, 'wine-bottle-capsule-foil', 'capsuleFoil', 5, true)
+    : null;
+  const discMesh = isGeometryVisible(input.geometryVisibility, 'capsuleDisc')
+    ? buildPartMesh(parts.disc, input.discMaterial, 'wine-bottle-capsule-disc', 'capsuleDisc', 6, true)
+    : null;
 
   return { bodyMesh, corkMesh, foilMesh, discMesh };
 }
