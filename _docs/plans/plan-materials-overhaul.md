@@ -192,7 +192,7 @@ Farbe, Rauheit, Metalness, Normal scale, Clearcoat, Anisotropie, IOR als TSL-`un
   - Metal brushed: feine Bürststreifen (gestrecktes Rauschen) in Relief, Rauheit und minimal in Farbe; Seed, Tile scale und Normal scale wirken und sind im Panel sichtbar. Bump bewusst sehr schwach (Kanten-Schwarz-Problem).
   - Concrete porous: runde Poren über Worley-Abstand, Radius über langsames Rauschen variiert (Größe/Dichte natürlich verteilt).
   - Glas: Regler bereits in Phase 2 ergänzt. Material-Klasse aus Spec: bereits in Phase 2.
-  - Offen/nicht geprüft: visuelle Abnahme lokal (kein WebGPU im Container); Wood porous hat noch dieselbe Band-Pass-Kontur wie früher Beton porös → ggf. in Phase 5/6 nachziehen.
+  - Offen/nicht geprüft: visuelle Abnahme lokal (kein WebGPU im Container); Wood porous: erledigt (siehe unten).
 - [x] Phase 6 – Live-Updates ohne Neubau:
   - `src/materials/live-material.ts`: jedes aus einem Preset erzeugte Material wird mit der Preset-ID getaggt; Materialien aus `createMaterialFromPreset` (vollständig preset-getrieben) werden als „live“ registriert (Abmeldung bei `dispose` und bei `createUncached`, weil dort Nodes umverdrahtet werden).
   - Prozedurale Shader lesen Farbe, Linienfarbe und Rauheit aus TSL-Uniforms (`procedural-uniforms.ts`); Metalness, Clearcoat, Anisotropie, Sheen, IOR, Tint sind Material-Properties (ebenfalls ohne Neukompilieren).
@@ -200,4 +200,4 @@ Farbe, Rauheit, Metalness, Normal scale, Clearcoat, Anisotropie, IOR als TSL-`un
   - Engine `applyMaterialValues`: schreibt Werte in alle Live-Materialien; Objekte mit beleuchteten Materialien, die nicht live sind (Bildflächen, Overlays, kopierte Materialien), werden weiterhin neu gebaut. Boden wird wie bisher neu angewendet.
   - Analyse-Materialien (Zebra/Wireframe) bleiben beim Neubau-Pfad.
   - Undo/Redo nutzt weiter den Neubau-Pfad.
-
+- [x] Wood porous: Band-Pass-Konturen ersetzt durch gestreckte Worley-Poren (kurze Striche in Faserrichtung, variabler Radius → ungleichmäßige Dichte). Der meter-3d-Pfad (Boden, „processed wood“-Bänder) bleibt unverändert.

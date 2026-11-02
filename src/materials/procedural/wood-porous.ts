@@ -5,6 +5,7 @@ import {
   float,
   mix,
   mx_noise_float,
+  mx_worley_noise_float,
   smoothstep,
   vec2,
   vec3,
@@ -20,27 +21,35 @@ import {
 import { proceduralNoise3 } from './tsl-noise';
 
 /**
- * Noise scale on stretched UV. With tileScale ≈ 6 on frame perimeter UVs (meters),
- * ~34 → ~12 mm center-to-center along grain; spot diameter ~0.6–1.0 mm (narrow smoothstep).
+ * Worley cells per tileScale unit on stretched UV. With tileScale ≈ 6 on frame
+ * perimeter UVs (meters), cells are ~12 mm long along the grain and ~2 mm across.
  */
-const PORE_NOISE_SCALE = 34;
+const PORE_CELL_SCALE = 34;
 const PORE_STRETCH_ALONG_GRAIN = 0.4;
 const PORE_STRETCH_ACROSS_GRAIN = 2.4;
+/** Pore radius in (stretched) cell units and its variation across the surface. */
+const PORE_RADIUS = 0.13;
+const PORE_RADIUS_VARIATION = 0.1;
+const PORE_EDGE = 0.05;
 
 function woodPorousSeedOffset(seed: Node<'float'>) {
   return vec2(seed.mul(19.1), seed.mul(29.3));
 }
 
+/**
+ * Elongated pores: Worley distance in a space squashed along the grain, so each
+ * pore is a short streak in the grain direction. A slowly varying radius lets
+ * pores grow, shrink or vanish, giving uneven density instead of contour bands.
+ */
 function buildWoodPorousSpotMask(sampleUv: Node<'vec2'>, seed: Node<'float'>) {
   const stretched = vec2(
     sampleUv.x.mul(float(PORE_STRETCH_ALONG_GRAIN)),
     sampleUv.y.mul(float(PORE_STRETCH_ACROSS_GRAIN)),
-  );
-  const poreNoise = mx_noise_float(vec3(stretched.mul(float(PORE_NOISE_SCALE)), seed.add(6.4)));
-
-  return smoothstep(float(0.56), float(0.51), poreNoise).mul(
-    smoothstep(float(0.31), float(0.36), poreNoise),
-  );
+  ).mul(float(PORE_CELL_SCALE));
+  const cellDistance = mx_worley_noise_float(vec3(stretched, seed.add(6.4)));
+  const sizeNoise = mx_noise_float(vec3(stretched.mul(0.3), seed.add(2.9)));
+  const radius = float(PORE_RADIUS).add(sizeNoise.mul(PORE_RADIUS_VARIATION));
+  return float(1).sub(smoothstep(radius.sub(PORE_EDGE), radius, cellDistance));
 }
 
 function woodPorousRoughnessNoise(uv: Node<'vec2'>, seed: Node<'float'>) {
