@@ -1,6 +1,6 @@
 # Plan: Materialien – Live-Update & Shader-Überarbeitung
 
-Status: **Entwurf – wartet auf Freigabe**
+Status: **Freigegeben** (inkl. Phase 6). Phase 1 umgesetzt.
 Datum: 2026-11-02
 
 ## Ausgangslage
@@ -20,7 +20,7 @@ Umsetzung in **5 Phasen**, jede einzeln committbar und testbar (`npx vitest run`
 `entityUsesMaterial` (`src/engine/asset-system.ts:942`) prüft eine handgepflegte Liste von 22 Slots. Es fehlen:
 `patchMaterialId`, `capMaterialId`, `ringMaterialId`, `bodyMaterialId`, `tireMaterialId`, `rimMaterialId`, `pathMaterial0Id` … `pathMaterial9Id`.
 Weitere Lücken:
-- Bild-Oberflächen beziehen ihr Material über `surface.finish` / `passepartoutFinish` (`finishToMaterialId`) – nie erkannt.
+- Bild-Oberflächen nutzen implizit das Paper-Material (`MATERIAL_PAPER_ID`, Gloss-Slider) – nie erkannt.
 - Entities ohne `materials` fallen beim Bauen auf `definition.getDefaultMaterials()` zurück, `entityUsesMaterial` liefert aber `false`.
 - Legacy-IDs (`migrateMaterialId`) werden beim Vergleich nicht normalisiert.
 
@@ -134,6 +134,10 @@ Nur Phase-3-Korrekturen + Regler gemäß Spec; Look anschließend visuell abglei
 
 ---
 
+## Phase 6 – Uniforms für flüssige Regler (freigegeben)
+
+Farbe, Rauheit, Metalness, Normal scale, Clearcoat, Anisotropie, IOR als TSL-`uniform` führen. `invalidateMaterial` aktualisiert bei reinen Wertänderungen nur die Uniforms des gecachten/zugeordneten Materials, statt Entities neu zu bauen. Neubau nur bei strukturellen Änderungen (Profil, Kind, Glass-Variante, clearcoat 0↔>0 usw.). Ziel: Regler ruckelfrei, keine Shader-Neukompilierung.
+
 ## Phase 5 – Tests & Abnahme
 
 - Unit-Tests:
@@ -160,8 +164,12 @@ Nur Phase-3-Korrekturen + Regler gemäß Spec; Look anschließend visuell abglei
 - Look-Änderungen bestehender Szenen durch Noise-Bias-Korrektur und lineare Skalierung → Defaults bewusst so wählen, dass der Standard-Look gleich bleibt; Vorher/Nachher-Screenshots.
 - WebGPU-Shader-Kompilierzeit bei Live-Updates (jede Änderung = neues Material) → falls spürbar: später Parameter als `uniform` statt Konstanten führen, damit Farbe/Rauheit ohne Neukompilieren wirken (optionale **Phase 6**).
 
-## Offene Fragen an dich
+## Entscheidungen
 
-1. Phase 6 (Uniforms für flüssige Regler ohne Neubau) gleich mit einplanen?
-2. Silk: eigener Shader mit Sheen wie vorgeschlagen ok?
-3. Bestehender Look soll bei Default-Werten möglichst gleich bleiben – oder darf er sich verbessern/ändern?
+- Phase 6 ist eingeplant.
+- Silk: eigener, besserer Shader (Sheen + Gewebe) freigegeben.
+- Look darf sich verbessern; Defaults orientieren sich am bisherigen Look.
+
+## Fortschritt
+
+- [x] Phase 1 – `src/engine/entity-material-usage.ts` + Test, `MATERIAL_ENTITY_SLOTS` in `material-types.ts`, Cache-Invalidierung mit migrierter ID.

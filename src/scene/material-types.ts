@@ -119,45 +119,49 @@ export interface AssetMaterialSlots {
   slotGloss?: Partial<Record<MaterialEntitySlot, number>>;
 }
 
-export type MaterialEntitySlot =
-  | 'frameMaterialId'
-  | 'backWallMaterialId'
-  | 'backGlassMaterialId'
-  | 'sideButtonMaterialId'
-  | 'standBaseMaterialId'
-  | 'standFootMaterialId'
-  | 'glazingMaterialId'
-  | 'frontMaterialId'
-  | 'backMaterialId'
-  | 'sideMaterialId'
-  | 'wallMaterialId'
-  | 'blockMaterialId'
-  | 'cylinderMaterialId'
-  | 'sphereMaterialId'
-  | 'patchMaterialId'
-  | 'fabricClothMaterialId'
-  | 'bookPagesMaterialId'
-  | 'bookCoverMaterialId'
-  | 'metalMaterialId'
-  | 'glassMaterialId'
-  | 'corkMaterialId'
-  | 'capsuleFoilMaterialId'
-  | 'capsuleDiscMaterialId'
-  | 'capMaterialId'
-  | 'ringMaterialId'
-  | 'bodyMaterialId'
-  | 'tireMaterialId'
-  | 'rimMaterialId'
-  | 'pathMaterial0Id'
-  | 'pathMaterial1Id'
-  | 'pathMaterial2Id'
-  | 'pathMaterial3Id'
-  | 'pathMaterial4Id'
-  | 'pathMaterial5Id'
-  | 'pathMaterial6Id'
-  | 'pathMaterial7Id'
-  | 'pathMaterial8Id'
-  | 'pathMaterial9Id';
+/** Every per-slot material reference on `AssetMaterialSlots` (single source of truth). */
+export const MATERIAL_ENTITY_SLOTS = [
+  'frameMaterialId',
+  'backWallMaterialId',
+  'backGlassMaterialId',
+  'sideButtonMaterialId',
+  'standBaseMaterialId',
+  'standFootMaterialId',
+  'glazingMaterialId',
+  'frontMaterialId',
+  'backMaterialId',
+  'sideMaterialId',
+  'wallMaterialId',
+  'blockMaterialId',
+  'cylinderMaterialId',
+  'sphereMaterialId',
+  'patchMaterialId',
+  'fabricClothMaterialId',
+  'bookPagesMaterialId',
+  'bookCoverMaterialId',
+  'metalMaterialId',
+  'glassMaterialId',
+  'corkMaterialId',
+  'capsuleFoilMaterialId',
+  'capsuleDiscMaterialId',
+  'capMaterialId',
+  'ringMaterialId',
+  'bodyMaterialId',
+  'tireMaterialId',
+  'rimMaterialId',
+  'pathMaterial0Id',
+  'pathMaterial1Id',
+  'pathMaterial2Id',
+  'pathMaterial3Id',
+  'pathMaterial4Id',
+  'pathMaterial5Id',
+  'pathMaterial6Id',
+  'pathMaterial7Id',
+  'pathMaterial8Id',
+  'pathMaterial9Id',
+] as const satisfies readonly (keyof AssetMaterialSlots)[];
+
+export type MaterialEntitySlot = (typeof MATERIAL_ENTITY_SLOTS)[number];
 
 export type MaterialPresetResolver = (materialId: string) => MaterialPreset | null;
 

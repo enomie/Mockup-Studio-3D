@@ -727,10 +727,11 @@ export class MaterialResolver {
 
   invalidate(materialId?: string): void {
     if (materialId) {
-      const cached = this.baseCache.get(materialId);
+      const resolvedId = migrateMaterialId(materialId);
+      const cached = this.baseCache.get(resolvedId);
       if (cached) {
         cached.dispose();
-        this.baseCache.delete(materialId);
+        this.baseCache.delete(resolvedId);
       }
       return;
     }

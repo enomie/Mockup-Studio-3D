@@ -77,6 +77,7 @@ import {
 } from '@/scene/asset-fabric-cloth';
 import { fabricClothPhysicsParamsFromMaterialId } from '@/config/fabric-physics-presets';
 import { cloneAssetMaterials } from '@/scene/material-types';
+import { entityUsesMaterial } from './entity-material-usage';
 import type {
   UserBakedAsset,
   UserBakedAssetResolver,
@@ -951,32 +952,3 @@ export class AssetSystem {
   }
 }
 
-function entityUsesMaterial(entity: AssetEntity, materialId: string): boolean {
-  const slots = entity.materials;
-  if (!slots) {return false;}
-
-  return (
-    slots.frameMaterialId === materialId ||
-    slots.backWallMaterialId === materialId ||
-    slots.backGlassMaterialId === materialId ||
-    slots.sideButtonMaterialId === materialId ||
-    slots.standBaseMaterialId === materialId ||
-    slots.standFootMaterialId === materialId ||
-    slots.glazingMaterialId === materialId ||
-    slots.frontMaterialId === materialId ||
-    slots.backMaterialId === materialId ||
-    slots.sideMaterialId === materialId ||
-    slots.wallMaterialId === materialId ||
-    slots.blockMaterialId === materialId ||
-    slots.cylinderMaterialId === materialId ||
-    slots.sphereMaterialId === materialId ||
-    slots.fabricClothMaterialId === materialId ||
-    slots.bookPagesMaterialId === materialId ||
-    slots.bookCoverMaterialId === materialId ||
-    slots.metalMaterialId === materialId ||
-    slots.glassMaterialId === materialId ||
-    slots.corkMaterialId === materialId ||
-    slots.capsuleFoilMaterialId === materialId ||
-    slots.capsuleDiscMaterialId === materialId
-  );
-}
