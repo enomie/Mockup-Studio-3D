@@ -46,7 +46,7 @@ export function buildMetalBrushedNodes(
       ? triplanarScalar(params.tileScale, offset, (uv) => brushedStreaks(uv, seed))
       : brushedStreaks(buildProceduralSampleUv(params).add(offset), seed);
 
-  const colorNode = vec3(params.color.r, params.color.g, params.color.b).mul(
+  const colorNode = params.uniforms.color.mul(
     float(1).add(streaks.mul(0.02)),
   );
   const normalNode = bumpMap(
@@ -54,7 +54,7 @@ export function buildMetalBrushedNodes(
     float(params.normalScale * BRUSHED_BUMP_PER_NORMAL_SCALE),
   );
   const roughnessNode = clamp(
-    float(params.roughness).add(streaks.mul(0.05)),
+    params.uniforms.roughness.add(streaks.mul(0.05)),
     ROUGHNESS_MIN,
     1,
   );

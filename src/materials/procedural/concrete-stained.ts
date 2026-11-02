@@ -26,12 +26,12 @@ export function buildConcreteStainedNodes(
   const pos = concreteStainedPosition(params);
   const bump = proceduralNoise3(pos.mul(3.2)).abs().pow(float(1.2 + params.normalScale * 0.4));
   const albedoMod = float(1).sub(bump.mul(0.08));
-  const colorNode = vec3(params.color.r, params.color.g, params.color.b).mul(albedoMod);
+  const colorNode = params.uniforms.color.mul(albedoMod);
 
   const bumpStrength = float(params.normalScale * 0.12);
   const normalNode = bumpMap(bump, bumpStrength);
 
-  const roughBase = float(params.roughness);
+  const roughBase = params.uniforms.roughness;
   const roughnessNode = clamp(roughBase.add(bump.mul(0.15)), ROUGHNESS_MIN, 1);
 
   return {

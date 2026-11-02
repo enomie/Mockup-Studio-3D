@@ -47,11 +47,11 @@ export function buildSilkFineNodes(params: ProceduralMaterialParams): Procedural
       ? weaveHeight(buildProceduralSampleUv(params).add(offset), seed)
       : triplanarScalar(params.tileScale, offset, (uv) => weaveHeight(uv, seed));
 
-  const base = vec3(params.color.r, params.color.g, params.color.b);
+  const base = params.uniforms.color;
   const colorNode = base.mul(mix(float(0.94), float(1.04), weave));
   const normalNode = bumpMap(weave, float(params.normalScale * 0.02));
   const roughnessNode = clamp(
-    float(params.roughness).add(weave.sub(0.5).mul(0.06)),
+    params.uniforms.roughness.add(weave.sub(0.5).mul(0.06)),
     ROUGHNESS_MIN,
     1,
   );
@@ -60,6 +60,5 @@ export function buildSilkFineNodes(params: ProceduralMaterialParams): Procedural
     colorNode,
     normalNode,
     roughnessNode,
-    sheen: { color: params.color, amount: params.sheen, roughness: params.sheenRoughness },
   };
 }

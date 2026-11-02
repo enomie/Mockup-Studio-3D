@@ -59,12 +59,12 @@ function buildWoodSoftNodesFromGrain(
   roughnessNoise: Node<'float'>,
 ): ProceduralMaterialNodes {
   const albedoMod = mix(float(0.62), float(1.12), grain);
-  const colorNode = vec3(params.color.r, params.color.g, params.color.b).mul(albedoMod);
+  const colorNode = params.uniforms.color.mul(albedoMod);
 
   const bumpStrength = float(params.normalScale * 0.14);
   const normalNode = bumpMap(grain, bumpStrength);
 
-  const roughBase = float(params.roughness);
+  const roughBase = params.uniforms.roughness;
   const roughnessNode = clamp(
     roughBase
       .sub(grain.mul(0.12))
@@ -125,10 +125,10 @@ function buildWoodSoftMeter3d(params: ProceduralMaterialParams): ProceduralMater
   const pores = proceduralNoise3(scaled.mul(22).add(seed.add(12.5))).mul(0.18);
   const grain = clamp(band.mul(0.82).add(pores).add(WOOD_SOFT_GRAIN_OFFSET), 0, 1);
   const albedoMod = mix(float(0.62), float(1.12), grain);
-  const colorNode = vec3(params.color.r, params.color.g, params.color.b).mul(albedoMod);
+  const colorNode = params.uniforms.color.mul(albedoMod);
   const bumpStrength = float(params.normalScale * 0.14);
   const normalNode = bumpMap(grain, bumpStrength);
-  const roughBase = float(params.roughness);
+  const roughBase = params.uniforms.roughness;
   const roughnessNode = clamp(
     roughBase.sub(grain.mul(0.12)).add(proceduralNoise3(scaled.mul(8).add(seed)).mul(0.04)),
     ROUGHNESS_MIN,

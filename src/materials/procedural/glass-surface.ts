@@ -2,6 +2,7 @@ import { bumpMap, float, mx_noise_float, vec3 } from 'three/tsl';
 import type { MeshPhysicalNodeMaterial } from 'three/webgpu';
 import type { MaterialPreset } from '@/scene/material-types';
 import { meterPositionLocal } from './procedural-position';
+import { createProceduralUniforms } from './procedural-uniforms';
 import type { ProceduralMaterialParams } from './procedural-types';
 
 import {
@@ -26,6 +27,7 @@ function glassSurfaceParamsFromPreset(preset: MaterialPreset): ProceduralMateria
     samplingSpace: 'meter-3d',
     sheen: 0,
     sheenRoughness: 0.5,
+    uniforms: createProceduralUniforms({ color: { r: 1, g: 1, b: 1 }, roughness: preset.roughness ?? 0.02 }),
   };
 }
 
@@ -43,7 +45,7 @@ function buildGlassSurfaceNormalNode(params: ProceduralMaterialParams) {
 
 export function buildGlassSurfaceNodes(params: ProceduralMaterialParams) {
   const normalNode = buildGlassSurfaceNormalNode(params);
-  const roughnessNode = float(params.roughness);
+  const roughnessNode = params.uniforms.roughness;
   const colorNode = vec3(1, 1, 1);
   return {
     colorNode,

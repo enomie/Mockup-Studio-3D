@@ -57,13 +57,13 @@ function buildConcretePorousFromMask(
   roughnessNoise: Node<'float'>,
 ): ProceduralMaterialNodes {
   const albedoMod = float(1).sub(spotMask.mul(0.32));
-  const colorNode = vec3(params.color.r, params.color.g, params.color.b).mul(albedoMod);
+  const colorNode = params.uniforms.color.mul(albedoMod);
 
   const poreDepth = float(1).sub(spotMask);
   const bumpStrength = float(params.normalScale * 0.16);
   const normalNode = bumpMap(poreDepth, bumpStrength);
 
-  const roughBase = float(params.roughness);
+  const roughBase = params.uniforms.roughness;
   const roughnessNode = clamp(
     roughBase.add(spotMask.mul(0.12)).add(
       roughnessNoise.mul(0.02),

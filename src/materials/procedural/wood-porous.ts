@@ -53,13 +53,13 @@ function buildWoodPorousFromSpotMask(
   roughnessNoise: Node<'float'>,
 ): ProceduralMaterialNodes {
   const albedoMod = float(1).sub(spotMask.mul(0.15));
-  const colorNode = vec3(params.color.r, params.color.g, params.color.b).mul(albedoMod);
+  const colorNode = params.uniforms.color.mul(albedoMod);
 
   const poreDepth = float(1).sub(spotMask);
   const bumpStrength = float(params.normalScale * 0.06);
   const normalNode = bumpMap(poreDepth, bumpStrength);
 
-  const roughBase = float(params.roughness);
+  const roughBase = params.uniforms.roughness;
   const roughnessNode = clamp(
     roughBase.add(spotMask.mul(0.1)).add(
       roughnessNoise.mul(0.02),
@@ -118,12 +118,12 @@ function buildWoodPorousMeter3d(params: ProceduralMaterialParams): ProceduralMat
   const k2 = k.mul(proceduralNoise3(scaled.mul(vec3(25, 1, 1))).sub(1).mul(0.2));
   const maskInput = k2.add(float(params.normalScale * 0.1).sub(0.5));
   const mask = float(1).sub(smoothstep(float(-0.3), float(0.3), maskInput));
-  const base = vec3(params.color.r, params.color.g, params.color.b);
+  const base = params.uniforms.color;
   const dark = base.mul(0.78);
   const colorNode = mix(base, dark, mask);
   const bumpStrength = float(params.normalScale * 0.08);
   const normalNode = bumpMap(float(1).sub(mask), bumpStrength);
-  const roughnessNode = clamp(float(params.roughness).add(mask.mul(0.08)), ROUGHNESS_MIN, 1);
+  const roughnessNode = clamp(params.uniforms.roughness.add(mask.mul(0.08)), ROUGHNESS_MIN, 1);
   return { colorNode, normalNode, roughnessNode };
 }
 

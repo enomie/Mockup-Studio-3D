@@ -1,4 +1,5 @@
 import { cloneMaterialPreset } from '@/data/material-presets';
+import { isNameOnlyPresetChange, isStructuralPresetChange } from '@/materials/live-material';
 import type { MaterialPreset } from '@/scene/entity-types';
 import type { MaterialKind } from '@/scene/material-types';
 import * as store from './app-store-internals';
@@ -57,7 +58,13 @@ export function updateMaterial(
   materials[index] = next;
   store.setAppState({ ...store.state, materials });
   store.emit();
-  store.scheduleMaterialInvalidation(materialId);
+
+  if (isNameOnlyPresetChange(current, next)) {return;}
+  if (isStructuralPresetChange(current, next)) {
+    store.scheduleMaterialInvalidation(materialId);
+  } else {
+    store.applyMaterialValues(materialId);
+  }
 }
 
 

@@ -29,7 +29,7 @@ function buildPlasticSurfaceNodes(
   const pos = samplePosition(params);
   const micro = proceduralNoise3(pos.mul(8)).mul(options.microStrength);
 
-  const colorNode = vec3(params.color.r, params.color.g, params.color.b).mul(
+  const colorNode = params.uniforms.color.mul(
     float(1).add(micro.mul(0.04)),
   );
 
@@ -37,7 +37,7 @@ function buildPlasticSurfaceNodes(
   const height = micro.add(0.5);
   const normalNode = bumpMap(height, bumpStrength);
 
-  const roughBase = float(params.roughness);
+  const roughBase = params.uniforms.roughness;
   const roughnessNode = clamp(
     roughBase.add(micro.mul(options.roughnessVariation)),
     ROUGHNESS_MIN,

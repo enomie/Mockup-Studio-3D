@@ -9,13 +9,11 @@ import {
   mix,
   normalLocal,
   smoothstep,
-  vec3,
 } from 'three/tsl';
 import { buildProceduralSampleUv } from './procedural-sample-uv';
 import { GRID_MAJOR_EVERY_MINOR_CELLS } from './grid-paper-unit';
 import { triplanarMeterUvPairs } from './procedural-triplanar-meters';
 import type { ProceduralMaterialNodes, ProceduralMaterialParams } from './procedural-types';
-import type { Rgb } from '@/colors/rgb';
 
 /** Line widths in minor-cell units at mm (`tileScale` 1000); scaled by `tileScale/1000` for constant mm in world. */
 const MINOR_LINE_INNER_CELL = 0.018;
@@ -102,22 +100,14 @@ function buildGridLineMaskForParams(params: ProceduralMaterialParams) {
   return buildGridLineMask(buildProceduralSampleUv(params), tileScale);
 }
 
-function rgbVec3(rgb: Rgb) {
-  return vec3(rgb.r, rgb.g, rgb.b);
-}
-
-function defaultLineColor(params: ProceduralMaterialParams): Rgb {
-  return params.lineColor ?? { r: 0.72, g: 0.78, b: 0.88 };
-}
-
 export function buildGridPaperOpaqueNodes(
   params: ProceduralMaterialParams,
 ): ProceduralMaterialNodes {
   const lineMask = buildGridLineMaskForParams(params);
-  const paper = rgbVec3(params.color);
-  const lines = rgbVec3(defaultLineColor(params));
+  const paper = params.uniforms.color;
+  const lines = params.uniforms.lineColor;
   const colorNode = mix(paper, lines, lineMask);
-  const roughnessNode = float(params.roughness);
+  const roughnessNode = params.uniforms.roughness;
 
   return {
     colorNode,
@@ -129,8 +119,8 @@ export function buildGridPaperLinesNodes(
   params: ProceduralMaterialParams,
 ): ProceduralMaterialNodes {
   const lineMask = buildGridLineMaskForParams(params);
-  const lines = rgbVec3(params.color);
-  const roughnessNode = float(params.roughness);
+  const lines = params.uniforms.color;
+  const roughnessNode = params.uniforms.roughness;
 
   return {
     colorNode: lines,

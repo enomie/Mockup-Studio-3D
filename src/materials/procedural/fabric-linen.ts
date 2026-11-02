@@ -45,12 +45,12 @@ export function buildFabricLinenNodes(
 
   const k = proceduralNoise3(pos).add(1).div(2);
   const albedoMod = float(1).add(k.sub(0.5).mul(0.12));
-  const colorNode = vec3(params.color.r, params.color.g, params.color.b).mul(albedoMod);
+  const colorNode = params.uniforms.color.mul(albedoMod);
 
   const bumpStrength = float(params.normalScale * 0.04);
   const normalNode = bumpMap(k, bumpStrength);
 
-  const roughBase = float(params.roughness);
+  const roughBase = params.uniforms.roughness;
   const roughnessNode = clamp(roughBase.add(k.sub(0.5).mul(0.06)), ROUGHNESS_MIN, 1);
 
   return {

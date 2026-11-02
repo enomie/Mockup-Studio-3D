@@ -27,6 +27,11 @@ import {
 } from './image-surface-alpha';
 import type { ImageSurfaceSettings } from '@/scene/image-surface';
 import { applyPaperGloss } from '@/scene/paper-gloss';
+import {
+  registerLiveMaterial,
+  tagPresetMaterial,
+  unregisterLiveMaterial,
+} from '@/materials/live-material';
 import { multiplyRgb, type Rgb } from '@/colors/rgb';
 import { createAnalysisMaterial } from '@/materials/analysis/analysis-material';
 import { createTexturedMaterial } from '@/materials/procedural';
@@ -79,31 +84,32 @@ function rgbToColor(rgb: Rgb): Color {
   return new Color(rgb.r, rgb.g, rgb.b);
 }
 
+function applySolidPbrValues(
+  material: MeshStandardNodeMaterial | MeshPhysicalNodeMaterial,
+  preset: MaterialPreset,
+  tint?: Rgb,
+): void {
+  const baseColor = preset.color ?? { r: 0.8, g: 0.8, b: 0.8 };
+  const color = tint ? multiplyRgb(baseColor, tint) : baseColor;
+  material.color.setRGB(color.r, color.g, color.b);
+  material.roughness = preset.roughness ?? 0.5;
+  material.metalness = preset.metalness ?? 0;
+  if (material instanceof MeshPhysicalNodeMaterial) {
+    material.clearcoat = preset.clearcoat ?? 0;
+    material.clearcoatRoughness = preset.clearcoatRoughness ?? 0.1;
+  }
+}
+
 export function createSolidPbrMaterial(
   preset: MaterialPreset,
   tint?: Rgb,
 ): MeshStandardNodeMaterial | MeshPhysicalNodeMaterial {
-  const baseColor = preset.color ?? { r: 0.8, g: 0.8, b: 0.8 };
-  const color = tint ? multiplyRgb(baseColor, tint) : baseColor;
-  const roughness = preset.roughness ?? 0.5;
-  const metalness = preset.metalness ?? 0;
-
-  if ((preset.clearcoat ?? 0) > 0) {
-    const material = new MeshPhysicalNodeMaterial({
-      color: rgbToColor(color),
-      roughness,
-      metalness,
-      clearcoat: preset.clearcoat,
-      clearcoatRoughness: preset.clearcoatRoughness ?? 0.1,
-    });
-    return material;
-  }
-
-  return new MeshStandardNodeMaterial({
-    color: rgbToColor(color),
-    roughness,
-    metalness,
-  });
+  const material =
+    (preset.clearcoat ?? 0) > 0 ? new MeshPhysicalNodeMaterial() : new MeshStandardNodeMaterial();
+  const applyValues = (next: MaterialPreset): void => { applySolidPbrValues(material, next, tint); };
+  applyValues(preset);
+  tagPresetMaterial(material, preset.id, applyValues);
+  return material;
 }
 
 export function isClearTransmissionPreset(preset: MaterialPreset): boolean {
@@ -139,6 +145,11 @@ function createDisplayGlazingMaterial(
     depthWrite: true,
   });
   applyGlassSurfaceToPhysicalMaterial(material, preset);
+  tagPresetMaterial(material, preset.id, (next) => {
+    const tint = options.tint ?? next.tint ?? { r: 1, g: 1, b: 1 };
+    material.color.setRGB(tint.r, tint.g, tint.b);
+    material.ior = next.ior ?? 1.52;
+  });
   return material;
 }
 
@@ -183,6 +194,12 @@ export function createTransmissionMaterial(
   }
 
   applyGlassSurfaceToPhysicalMaterial(material, preset);
+  tagPresetMaterial(material, preset.id, (next) => {
+    const tint = options.tint ?? next.tint ?? { r: 1, g: 1, b: 1 };
+    material.color.setRGB(tint.r, tint.g, tint.b);
+    material.roughness = next.roughness ?? 0.02;
+    material.ior = next.ior ?? 1.52;
+  });
   return material;
 }
 
@@ -196,7 +213,7 @@ export function createGroundSurfaceMaterial(
   return createMaterialFromPreset(preset, { surfaceRole: 'ground' });
 }
 
-export function createMaterialFromPreset(
+function buildMaterialFromPreset(
   basePreset: MaterialPreset,
   options: MaterialResolveOptions = {},
 ): MeshStandardNodeMaterial | MeshPhysicalNodeMaterial {
@@ -227,6 +244,22 @@ export function createMaterialFromPreset(
     });
   }
   return createSolidPbrMaterial(preset, options.tint);
+}
+
+/**
+ * Material fully driven by the preset. Registered for live value updates
+ * (analysis materials excluded: their few values are structural).
+ */
+export function createMaterialFromPreset(
+  basePreset: MaterialPreset,
+  options: MaterialResolveOptions = {},
+): MeshStandardNodeMaterial | MeshPhysicalNodeMaterial {
+  const material = buildMaterialFromPreset(basePreset, options);
+  if (basePreset.kind !== 'analysis') {
+    const gloss = options.gloss;
+    registerLiveMaterial(material, (preset) => applyPaperGloss(preset, gloss));
+  }
+  return material;
 }
 
 function coverUvNode(
@@ -262,6 +295,7 @@ function solidColorPbrMaterial(
   });
   material.colorNode = rgbColorNode(color);
   material.roughnessNode = float(preset.roughness ?? 0.5);
+  tagPresetMaterial(material, preset.id);
   return material;
 }
 
@@ -501,6 +535,12 @@ const FABRIC_PLACEHOLDER_SURFACE: ImageSurfaceSettings = {
   passepartoutGloss: 0,
 };
 
+/** Tags a preset-derived material that is not live (rebuild needed on edits). */
+function tagged<T extends MeshStandardNodeMaterial>(preset: MaterialPreset, material: T): T {
+  tagPresetMaterial(material, preset.id);
+  return material;
+}
+
 function createStructureBaseMaterial(
   preset: MaterialPreset,
   surfaceRole: ProceduralSurfaceRole = 'default',
@@ -510,20 +550,20 @@ function createStructureBaseMaterial(
   }
 
   if ((preset.clearcoat ?? 0) > 0) {
-    return new MeshPhysicalNodeMaterial({
+    return tagged(preset, new MeshPhysicalNodeMaterial({
       color: new Color(1, 1, 1),
       roughness: preset.roughness ?? 0.5,
       metalness: preset.metalness ?? 0,
       clearcoat: preset.clearcoat,
       clearcoatRoughness: preset.clearcoatRoughness ?? 0.1,
-    });
+    }));
   }
 
-  return new MeshStandardNodeMaterial({
+  return tagged(preset, new MeshStandardNodeMaterial({
     color: new Color(1, 1, 1),
     roughness: preset.roughness ?? 0.5,
     metalness: preset.metalness ?? 0,
-  });
+  }));
 }
 
 /** Image albedo × material preset structure (no preset product color). */
@@ -778,7 +818,11 @@ export class MaterialResolver {
     options: MaterialResolveOptions = {},
   ): MeshStandardNodeMaterial | MeshPhysicalNodeMaterial | null {
     const preset = this.resolvePreset(migrateMaterialId(materialId));
-    return preset ? createMaterialFromPreset(preset, options) : null;
+    if (!preset) {return null;}
+    const material = createMaterialFromPreset(preset, options);
+    // Callers rewire nodes, so value-only updates can't be trusted here.
+    unregisterLiveMaterial(material);
+    return material;
   }
 
   /**

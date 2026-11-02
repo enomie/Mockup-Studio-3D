@@ -434,6 +434,12 @@ export class MockupEngine implements SceneApi {
     }
   }
 
+  applyMaterialValues(materialId: string): void {
+    this.assets.applyMaterialValues(materialId);
+    this.environment.refreshGroundMaterialIfMatches(materialId);
+    this.emit();
+  }
+
   invalidateMaterial(materialId: string): void {
     this.assets.invalidateMaterial(materialId);
     this.environment.refreshGroundMaterialIfMatches(materialId);

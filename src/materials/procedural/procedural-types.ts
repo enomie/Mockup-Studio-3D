@@ -1,5 +1,6 @@
 import type { MeshStandardNodeMaterial } from 'three/webgpu';
 import type { Rgb } from '@/colors/rgb';
+import type { ProceduralUniforms } from './procedural-uniforms';
 
 export type ProceduralSurfaceRole = 'frame' | 'default' | 'ground';
 
@@ -21,6 +22,8 @@ export interface ProceduralMaterialParams {
   /** When true, grain runs along UV.u (horizontal frame bars); false = UV.v (vertical bars). */
   grainAlongU: boolean;
   samplingSpace: ProceduralSamplingSpace;
+  /** Render-time values (color, line color, roughness); see procedural-uniforms.ts. */
+  uniforms: ProceduralUniforms;
   /** Sheen intensity (fabric profiles); 0 disables. */
   sheen: number;
   sheenRoughness: number;
@@ -33,8 +36,6 @@ export interface ProceduralMaterialNodes {
   opacityNode?: NonNullable<MeshStandardNodeMaterial['opacityNode']>;
   transparent?: boolean;
   depthWrite?: boolean;
-  /** Physical-material sheen lobe (fabrics). */
-  sheen?: { color: Rgb; amount: number; roughness: number };
 }
 
 export {

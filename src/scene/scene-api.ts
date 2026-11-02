@@ -183,6 +183,8 @@ export interface SceneApi {
   setImageResolver(resolver: ImageResolver | null): void;
   setMaterialPresetResolver(resolver: MaterialPresetResolver | null): void;
   invalidateMaterial(materialId: string): void;
+  /** Value-only preset edit: update live materials in place, rebuild only what can't. */
+  applyMaterialValues(materialId: string): void;
   setMode(mode: AppMode): void;
   applyLighting(state: LightingSettings): void;
   setLighting(partial: DeepPartial<LightingSettings>): void;

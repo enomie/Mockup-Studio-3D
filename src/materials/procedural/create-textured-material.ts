@@ -1,13 +1,14 @@
 import {
-  Color,
   MeshPhysicalNodeMaterial,
   MeshStandardNodeMaterial,
 } from 'three/webgpu';
-import { float } from 'three/tsl';
-import type { MaterialPreset } from '@/scene/material-types';
-import type { Rgb } from '@/colors/rgb';
+import { TINT_NEUTRAL, type MaterialPreset } from '@/scene/material-types';
+import { multiplyRgb, type Rgb } from '@/colors/rgb';
+import { tagPresetMaterial } from '../live-material';
+import { updateProceduralUniforms } from './procedural-uniforms';
 import {
   proceduralParamsFromPreset,
+  proceduralUniformValuesFromPreset,
   type ProceduralResolveOptions,
 } from './procedural-params';
 import { normalizeProceduralProfile } from './procedural-profile';
@@ -43,7 +44,6 @@ export function createTexturedMaterial(
     material.normalNode = nodes.normalNode;
   }
   material.roughnessNode = nodes.roughnessNode;
-  material.metalnessNode = float(preset.metalness ?? 0);
 
   if (nodes.opacityNode) {
     material.transparent = nodes.transparent ?? true;
@@ -53,22 +53,38 @@ export function createTexturedMaterial(
     }
   }
 
-  if (material instanceof MeshPhysicalNodeMaterial) {
-    applyPhysicalAnisotropy(material, preset);
-    if (nodes.sheen && nodes.sheen.amount > 0) {
-      const { color, amount, roughness } = nodes.sheen;
-      material.sheen = amount;
-      material.sheenColor = new Color(color.r, color.g, color.b);
-      material.sheenRoughness = roughness;
-    }
-    if (clearcoat > 0) {
-      material.clearcoat = clearcoat;
-      material.clearcoatRoughness =
-        preset.clearcoatRoughness ?? spec.clearcoat?.roughness.default ?? 0.12;
-    }
-  }
+  const applyValues = (next: MaterialPreset): void => {
+    updateProceduralUniforms(params.uniforms, proceduralUniformValuesFromPreset(next, tint));
+    applyTexturedMaterialValues(material, next, tint);
+  };
+  applyValues(preset);
+  tagPresetMaterial(material, preset.id, applyValues);
 
   return material;
+}
+
+/** Material-level values (no shader change); also used for live updates. */
+function applyTexturedMaterialValues(
+  material: MeshStandardNodeMaterial | MeshPhysicalNodeMaterial,
+  preset: MaterialPreset,
+  tint: Rgb | undefined,
+): void {
+  material.metalness = preset.metalness ?? 0;
+  if (!(material instanceof MeshPhysicalNodeMaterial) || !preset.proceduralProfile) {return;}
+
+  const spec = proceduralProfileSpec(normalizeProceduralProfile(preset.proceduralProfile));
+  applyPhysicalAnisotropy(material, preset);
+
+  const clearcoat = preset.clearcoat ?? spec.clearcoat?.amount.default ?? 0;
+  material.clearcoat = clearcoat;
+  material.clearcoatRoughness =
+    preset.clearcoatRoughness ?? spec.clearcoat?.roughness.default ?? 0.12;
+
+  const sheen = preset.sheen ?? spec.sheen?.amount.default ?? 0;
+  material.sheen = sheen;
+  material.sheenRoughness = preset.sheenRoughness ?? spec.sheen?.roughness.default ?? 0.5;
+  const sheenColor = multiplyRgb(preset.color ?? { r: 0.8, g: 0.8, b: 0.8 }, tint ?? TINT_NEUTRAL);
+  material.sheenColor.setRGB(sheenColor.r, sheenColor.g, sheenColor.b);
 }
 
 function applyPhysicalAnisotropy(

@@ -399,6 +399,11 @@ export function scheduleMaterialInvalidation(materialId: string): void {
   }, MATERIAL_UPDATE_DEBOUNCE_MS);
 }
 
+/** Value-only material edit: update live materials immediately (no debounce, no rebuild). */
+export function applyMaterialValues(materialId: string): void {
+  sceneApi?.applyMaterialValues(materialId);
+}
+
 export function refreshCameraState(): void {
   syncCameraFromEngine();
   emit();

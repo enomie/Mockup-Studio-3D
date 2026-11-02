@@ -12,6 +12,10 @@ import {
   type ProceduralSurfaceRole,
 } from './procedural-types';
 import { normalizeProceduralProfile } from './procedural-profile';
+import {
+  createProceduralUniforms,
+  type ProceduralUniformValues,
+} from './procedural-uniforms';
 import { resolveProfileSamplingSpace } from './procedural-sampling-profiles';
 import {
   isGridPaperProfileId,
@@ -35,13 +39,29 @@ export function resolveProceduralSamplingSpace(
   return resolveProfileSamplingSpace(profile, surfaceRole);
 }
 
+/** Render-time values of a procedural preset (color × tint, line color, roughness). */
+export function proceduralUniformValuesFromPreset(
+  preset: MaterialPreset,
+  tint?: Rgb,
+): ProceduralUniformValues {
+  const baseColor = preset.color ?? { r: 0.8, g: 0.8, b: 0.8 };
+  const profile = preset.proceduralProfile
+    ? normalizeProceduralProfile(preset.proceduralProfile)
+    : undefined;
+  return {
+    color: multiplyRgb(baseColor, tint ?? TINT_NEUTRAL),
+    lineColor: preset.lineColor ? { ...preset.lineColor } : undefined,
+    roughness:
+      preset.roughness ?? (profile ? proceduralProfileSpec(profile).roughness.default : 0.5),
+  };
+}
+
 export function proceduralParamsFromPreset(
   preset: MaterialPreset,
   tint?: Rgb,
   options: ProceduralResolveOptions = {},
 ): ProceduralMaterialParams {
-  const baseColor = preset.color ?? { r: 0.8, g: 0.8, b: 0.8 };
-  const effectiveTint = tint ?? TINT_NEUTRAL;
+  const values = proceduralUniformValuesFromPreset(preset, tint);
   const surfaceRole = options.surfaceRole ?? 'default';
   const profile = preset.proceduralProfile
     ? normalizeProceduralProfile(preset.proceduralProfile)
@@ -51,16 +71,16 @@ export function proceduralParamsFromPreset(
     : (preset.tileScale ?? defaultTileScaleForProfile(profile));
 
   return {
-    color: multiplyRgb(baseColor, effectiveTint),
-    lineColor: preset.lineColor ? { ...preset.lineColor } : undefined,
-    roughness:
-      preset.roughness ?? (profile ? proceduralProfileSpec(profile).roughness.default : 0.5),
+    color: values.color,
+    lineColor: values.lineColor,
+    roughness: values.roughness,
     metalness: preset.metalness ?? 0,
     normalScale: preset.normalScale ?? DEFAULT_NORMAL_SCALE,
     tileScale,
     seed: preset.seed ?? 0,
     grainAlongU: options.grainAlongU ?? true,
     samplingSpace: resolveProceduralSamplingSpace(preset.proceduralProfile, surfaceRole),
+    uniforms: createProceduralUniforms(values),
     sheen: preset.sheen ?? (profile ? proceduralProfileSpec(profile).sheen?.amount.default : undefined) ?? 0,
     sheenRoughness:
       preset.sheenRoughness ??

@@ -29,13 +29,13 @@ export function buildMetalPolishedNodes(
 
   const micro = mx_noise_float(noiseCoord.mul(48)).mul(0.06);
 
-  const colorNode = vec3(params.color.r, params.color.g, params.color.b);
+  const colorNode = params.uniforms.color;
 
   const bumpStrength = float(params.normalScale * 0.03);
   const height = micro.add(0.5);
   const normalNode = bumpMap(height, bumpStrength);
 
-  const roughBase = float(params.roughness);
+  const roughBase = params.uniforms.roughness;
   const roughnessNode = clamp(
     roughBase.add(mx_noise_float(noiseCoord.mul(32).add(vec3(seed.add(3), 0, 0))).mul(0.015)),
     ROUGHNESS_MIN,

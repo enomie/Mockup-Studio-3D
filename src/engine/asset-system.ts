@@ -1,5 +1,12 @@
 import { isExtrusionAssetKind } from '@/scene/asset-extrusion';
-import { Group, type Material, type Scene } from 'three/webgpu';
+import {
+  Group,
+  Mesh,
+  MeshStandardNodeMaterial,
+  type Material,
+  type Object3D,
+  type Scene,
+} from 'three/webgpu';
 import {
   isRotationalPrintAssetKind,
   resolveRotationalPrintSettings,
@@ -78,6 +85,8 @@ import {
 import { fabricClothPhysicsParamsFromMaterialId } from '@/config/fabric-physics-presets';
 import { cloneAssetMaterials } from '@/scene/material-types';
 import { entityUsesMaterial } from './entity-material-usage';
+import { applyLivePreset, isLiveMaterial } from '@/materials/live-material';
+import { migrateMaterialId } from '@/scene/material-ids';
 import type {
   UserBakedAsset,
   UserBakedAssetResolver,
@@ -834,6 +843,24 @@ export class AssetSystem {
     await rebuildEntity(this.rebuildCtx, entityId);
   }
 
+  /**
+   * Value-only edit: writes the preset into live materials; entities that also
+   * hold non-live materials (image overlays, rewired nodes) are rebuilt.
+   */
+  applyMaterialValues(materialId: string): void {
+    const preset = this.materialResolver.resolvePreset(migrateMaterialId(materialId));
+    if (!preset) {return;}
+    applyLivePreset(preset);
+
+    for (const entity of this.registry.getEntities()) {
+      if (!entityUsesMaterial(entity, materialId)) {continue;}
+      const root = this.registry.getRuntime(entity.id)?.object;
+      if (!root || !objectIsFullyLive(root)) {
+        void rebuildEntity(this.rebuildCtx, entity.id);
+      }
+    }
+  }
+
   invalidateMaterial(materialId: string): void {
     this.materialResolver.invalidate(materialId);
 
@@ -952,3 +979,23 @@ export class AssetSystem {
   }
 }
 
+/**
+ * True when every lit surface material under `root` is a live preset material.
+ * Unlit helpers (lines, basic materials) are ignored; lit materials without a
+ * live registration (image planes, copied or rewired materials) need a rebuild.
+ */
+function objectIsFullyLive(root: Object3D): boolean {
+  let live = true;
+  root.traverse((child) => {
+    if (!live || !(child instanceof Mesh)) {return;}
+    const materials = (Array.isArray(child.material) ? child.material : [child.material]) as Material[];
+    if (
+      materials.some(
+        (material) => material instanceof MeshStandardNodeMaterial && !isLiveMaterial(material),
+      )
+    ) {
+      live = false;
+    }
+  });
+  return live;
+}

@@ -1,6 +1,6 @@
 # Plan: Materialien – Live-Update & Shader-Überarbeitung
 
-Status: **Freigegeben** (inkl. Phase 6). Phase 1–4 umgesetzt.
+Status: **Freigegeben** (inkl. Phase 6). Phase 1–4 und 6 umgesetzt.
 Datum: 2026-11-02
 
 ## Ausgangslage
@@ -193,4 +193,11 @@ Farbe, Rauheit, Metalness, Normal scale, Clearcoat, Anisotropie, IOR als TSL-`un
   - Concrete porous: runde Poren über Worley-Abstand, Radius über langsames Rauschen variiert (Größe/Dichte natürlich verteilt).
   - Glas: Regler bereits in Phase 2 ergänzt. Material-Klasse aus Spec: bereits in Phase 2.
   - Offen/nicht geprüft: visuelle Abnahme lokal (kein WebGPU im Container); Wood porous hat noch dieselbe Band-Pass-Kontur wie früher Beton porös → ggf. in Phase 5/6 nachziehen.
+- [x] Phase 6 – Live-Updates ohne Neubau:
+  - `src/materials/live-material.ts`: jedes aus einem Preset erzeugte Material wird mit der Preset-ID getaggt; Materialien aus `createMaterialFromPreset` (vollständig preset-getrieben) werden als „live“ registriert (Abmeldung bei `dispose` und bei `createUncached`, weil dort Nodes umverdrahtet werden).
+  - Prozedurale Shader lesen Farbe, Linienfarbe und Rauheit aus TSL-Uniforms (`procedural-uniforms.ts`); Metalness, Clearcoat, Anisotropie, Sheen, IOR, Tint sind Material-Properties (ebenfalls ohne Neukompilieren).
+  - `isStructuralPresetChange`: Profil/Kind/Glasvariante, Normal scale, Tile scale, Seed, Grid unit, Surface normal, Feature an↔aus (Clearcoat/Anisotropie/Sheen), Wechsel Standard↔Physical, klares↔mattes Glas → Neubau wie bisher (entprellt). Alles andere → sofort live. Nur Name geändert → nichts.
+  - Engine `applyMaterialValues`: schreibt Werte in alle Live-Materialien; Objekte mit beleuchteten Materialien, die nicht live sind (Bildflächen, Overlays, kopierte Materialien), werden weiterhin neu gebaut. Boden wird wie bisher neu angewendet.
+  - Analyse-Materialien (Zebra/Wireframe) bleiben beim Neubau-Pfad.
+  - Undo/Redo nutzt weiter den Neubau-Pfad.
 

@@ -70,12 +70,12 @@ export function buildPaperGrainNodes(
   const grain = buildPaperGrainScalar(params);
 
   const albedoMod = float(1).add(grain.sub(0.5).mul(0.08));
-  const colorNode = vec3(params.color.r, params.color.g, params.color.b).mul(albedoMod);
+  const colorNode = params.uniforms.color.mul(albedoMod);
 
   const bumpStrength = float(params.normalScale * 0.025);
   const normalNode = bumpMap(grain, bumpStrength);
 
-  const roughBase = float(params.roughness);
+  const roughBase = params.uniforms.roughness;
   const roughnessNode = clamp(roughBase.add(grain.sub(0.5).mul(0.03)), ROUGHNESS_MIN, 1);
 
   return {
