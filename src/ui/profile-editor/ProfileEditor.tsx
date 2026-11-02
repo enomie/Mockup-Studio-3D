@@ -43,6 +43,7 @@ import {
   breakProfileAtNode,
   breakProfileAtSegment,
   joinProfileEndpoints,
+  setProfileSnap,
   startProfilePen,
   appendProfilePenNode,
   closeProfilePen,
@@ -51,6 +52,7 @@ import {
 } from '@/ui/store/app-store';
 import { useAppStore } from '@/ui/store/use-app-store';
 import { mmToM } from '@/units/length';
+import { snapPoint, type SnapResult } from '@/scene/profile-snap';
 import {
   fitView,
   gridStepMm,
@@ -76,6 +78,8 @@ const CLICK_SLOP_PX = 3;
 const DOUBLE_CLICK_MS = 350;
 /** Pen: a drag shorter than this (px) keeps the new point a corner. */
 const PEN_DRAG_MIN_PX = 4;
+/** Snap radius for points and axes, in screen px (independent of zoom). */
+const SNAP_RADIUS_PX = 10;
 /** Free area next to the floating side panels when fitting the view. */
 const FIT_PADDING = { left: 420, right: 380, top: 80, bottom: 80 };
 
@@ -138,6 +142,22 @@ function visibleHandles(path: ProfilePath, index: number): VisibleHandle[] {
     const point = handlePoint(node, candidate.side);
     return point ? [{ pathId: path.id, index: candidate.index, side: candidate.side, node, point }] : [];
   });
+}
+
+/** Ring on a snapped point; short guide lines on snapped axes. */
+function SnapIndicator({ view, hint, width, height }: { view: EditorView; hint: SnapResult; width: number; height: number }) {
+  if (hint.target) {
+    const p = toScreen(view, hint.target);
+    return <circle cx={p.x} cy={p.y} r={SNAP_RADIUS_PX} className="profile-editor__snap-ring" />;
+  }
+  const p = toScreen(view, hint.point);
+  const origin = toScreen(view, { x: 0, y: 0 });
+  return (
+    <g className="profile-editor__snap-axis">
+      {hint.kindX === 'axis' ? <line x1={origin.x} x2={origin.x} y1={Math.max(0, p.y - 40)} y2={Math.min(height, p.y + 40)} /> : null}
+      {hint.kindY === 'axis' ? <line y1={origin.y} y2={origin.y} x1={Math.max(0, p.x - 40)} x2={Math.min(width, p.x + 40)} /> : null}
+    </g>
+  );
 }
 
 function Grid({ view, width, height }: { view: EditorView; width: number; height: number }) {
@@ -227,6 +247,7 @@ export function ProfileEditor() {
   const activeTool = useAppStore((s) => s.profileEditorTool);
   const penPathId = useAppStore((s) => s.profilePenPathId);
   const [penHover, setPenHover] = useState<ProfileVec2 | null>(null);
+  const [snapHint, setSnapHint] = useState<SnapResult | null>(null);
   const visiblePaths = profile ? profile.paths.filter((path) => !hiddenPathIds.includes(path.id)) : [];
 
   // Keys: the editor owns the keyboard while open (no scene delete or viewport shortcuts).
@@ -258,6 +279,10 @@ export function ProfileEditor() {
         }
       } else if (event.key === 'v' || event.key === 'V') {
         setProfileEditorTool('select');
+      } else if ((event.key === 'g' || event.key === 'G') && !event.altKey) {
+        setProfileSnap('grid', !getAppState().profileSnapGrid);
+      } else if ((event.key === 'n' || event.key === 'N') && !event.altKey) {
+        setProfileSnap('points', !getAppState().profileSnapPoints);
       } else if (event.key === 'p' || event.key === 'P') {
         setProfileEditorTool('pen');
       } else if (event.key === 'c' || event.key === 'C') {
@@ -314,6 +339,34 @@ export function ProfileEditor() {
   const findPath = (pathId: string | undefined) =>
     profile.paths.find((path) => path.id === pathId);
 
+  /**
+   * Snaps a position (mm) to points/axes and the grid unless Alt is held. `exclude` is the
+   * point being moved (it must not snap to itself). Shows the snap target while dragging.
+   */
+  const snap = (
+    at: ProfileVec2,
+    altKey: boolean,
+    exclude?: { pathId: string; index: number },
+  ): ProfileVec2 => {
+    const state = getAppState();
+    if (!view || altKey || (!state.profileSnapGrid && !state.profileSnapPoints)) {
+      setSnapHint(null);
+      return at;
+    }
+    const targets = visiblePaths.flatMap((path) =>
+      path.nodes.filter((_node, i) => !(exclude?.pathId === path.id && exclude.index === i)),
+    );
+    const result = snapPoint(at, {
+      grid: state.profileSnapGrid,
+      points: state.profileSnapPoints,
+      gridStepMm: gridStepMm(view.scale),
+      radiusMm: SNAP_RADIUS_PX / view.scale,
+      targets,
+    });
+    setSnapHint(result);
+    return result.point;
+  };
+
   const onPointerDown = (event: ReactPointerEvent<SVGSVGElement>) => {
     if (!view) {return;}
     const data = readData(event.target);
@@ -344,7 +397,7 @@ export function ProfileEditor() {
           startProfilePen(profileId, mm, { pathId: path.id, index });
           return;
         }
-        if (startProfilePen(profileId, mm)) {
+        if (startProfilePen(profileId, snap(mm, event.altKey))) {
           const started = getAppState().profilePenPathId;
           if (started) {dragRef.current = { kind: 'pen-handle', pathId: started, index: 0 };}
         }
@@ -355,7 +408,7 @@ export function ProfileEditor() {
         closeProfilePen(profileId);
         return;
       }
-      const added = appendProfilePenNode(profileId, mm);
+      const added = appendProfilePenNode(profileId, snap(mm, event.altKey));
       if (added !== null) {dragRef.current = { kind: 'pen-handle', pathId: penPathId, index: added };}
       return;
     }
@@ -420,7 +473,10 @@ export function ProfileEditor() {
 
   const onPointerMove = (event: ReactPointerEvent<SVGSVGElement>) => {
     const drag = dragRef.current;
-    if (activeTool === 'pen') {setPenHover(pointerMm(event));}
+    if (activeTool === 'pen' && !drag) {
+      const hover = pointerMm(event);
+      setPenHover(hover ? snap(hover, event.altKey) : null);
+    }
     if (!drag) {return;}
     if (drag.kind === 'pan') {
       const dx = event.clientX - drag.startX;
@@ -436,16 +492,20 @@ export function ProfileEditor() {
       editProfilePath(profileId, drag.pathId, (path) => {
         const node = path.nodes.at(drag.index);
         if (!node) {return path;}
-        const out = { x: mm.x - node.x, y: mm.y - node.y };
+        const tip = snap(mm, event.altKey, { pathId: drag.pathId, index: drag.index });
+        const out = { x: tip.x - node.x, y: tip.y - node.y };
         return Math.hypot(out.x, out.y) < minMm ? path : setPenHandles(path, drag.index, out, event.shiftKey);
       });
       return;
     }
     if (drag.kind === 'node') {
+      const target = snap(
+        { x: mm.x + drag.grabOffset.x, y: mm.y + drag.grabOffset.y },
+        event.altKey,
+        { pathId: drag.pathId, index: drag.index },
+      );
       editProfilePath(profileId, drag.pathId, (path) =>
-        drag.index < path.nodes.length
-          ? moveNode(path, drag.index, mm.x + drag.grabOffset.x, mm.y + drag.grabOffset.y)
-          : path,
+        drag.index < path.nodes.length ? moveNode(path, drag.index, target.x, target.y) : path,
       );
       return;
     }
@@ -453,13 +513,15 @@ export function ProfileEditor() {
     editProfilePath(profileId, drag.pathId, (path) => {
       const node = path.nodes.at(drag.index);
       if (!node) {return path;}
-      return setHandle(path, drag.index, drag.side, { x: mm.x - node.x, y: mm.y - node.y }, shift);
+      const tip = snap(mm, event.altKey, { pathId: drag.pathId, index: drag.index });
+      return setHandle(path, drag.index, drag.side, { x: tip.x - node.x, y: tip.y - node.y }, shift);
     });
   };
 
   const onPointerUp = (event: ReactPointerEvent<SVGSVGElement>) => {
     const drag = dragRef.current;
     dragRef.current = null;
+    if (activeTool !== 'pen') {setSnapHint(null);}
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
@@ -522,6 +584,8 @@ export function ProfileEditor() {
                 );
               })}
             </g>
+
+            {snapHint ? <SnapIndicator view={view} hint={snapHint} height={size.height} width={size.width} /> : null}
 
             {penPreview ? (
               <line
@@ -604,6 +668,7 @@ export function ProfileEditor() {
         Drag points and handles · Shift: break handles · Click a path: add point · Del: delete point ·
         Double-click: corner/smooth · C: scissors · Shift-click end + J: join · V: select ·
         P: pen (click = corner, drag = curve, click first point = close, Enter = finish) ·
+        G / N: snap to grid / points · Alt: no snapping ·
         Wheel: zoom · Space or middle mouse: pan · Esc: close
       </p>
     </div>

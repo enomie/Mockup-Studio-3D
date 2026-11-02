@@ -113,6 +113,9 @@ export interface AppState {
   profileEditorTool: ProfileEditorTool;
   /** Path the Pen tool is currently drawing (points are appended at its end). */
   profilePenPathId: string | null;
+  /** 2D editor snapping (saved with the project). */
+  profileSnapGrid: boolean;
+  profileSnapPoints: boolean;
   environments: EnvironmentPreset[];
   activeEnvironmentId: string;
   lightingPresets: LightingPreset[];
@@ -186,6 +189,8 @@ export let state: AppState = {
   profileJoinTarget: null,
   profileEditorTool: 'select',
   profilePenPathId: null,
+  profileSnapGrid: true,
+  profileSnapPoints: true,
   environments: ENVIRONMENT_PRESETS.map(cloneEnvironmentPreset),
   activeEnvironmentId: BUILTIN_ENV_DEFAULT_ID,
   lightingPresets: LIGHTING_PRESETS.map(cloneLightingPreset),

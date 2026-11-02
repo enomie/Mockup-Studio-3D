@@ -39,7 +39,14 @@ const PERSISTED_SETTING_KEYS = [
   'activeArrangementId',
 ] as const satisfies readonly (keyof AppState)[];
 
-type PersistedSettings = Pick<AppState, (typeof PERSISTED_SETTING_KEYS)[number]>;
+/** Store fields restored when present; older snapshots without them keep the defaults. */
+const OPTIONAL_SETTING_KEYS = [
+  'profileSnapGrid',
+  'profileSnapPoints',
+] as const satisfies readonly (keyof AppState)[];
+
+type PersistedSettings = Pick<AppState, (typeof PERSISTED_SETTING_KEYS)[number]> &
+  Partial<Pick<AppState, (typeof OPTIONAL_SETTING_KEYS)[number]>>;
 
 interface PersistedLibraries {
   images: PersistedImage[];
@@ -76,7 +83,7 @@ export function captureProjectSnapshot(
   savedAt = new Date().toISOString(),
 ): ProjectSnapshot {
   const settings = {} as Record<string, unknown>;
-  for (const key of PERSISTED_SETTING_KEYS) {settings[key] = state[key];}
+  for (const key of [...PERSISTED_SETTING_KEYS, ...OPTIONAL_SETTING_KEYS]) {settings[key] = state[key];}
 
   return {
     schemaVersion: PROJECT_SCHEMA_VERSION,

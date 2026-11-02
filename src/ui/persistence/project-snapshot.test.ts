@@ -89,3 +89,12 @@ describe('library merge', () => {
       .toEqual(['A new', 'B', 'U']);
   });
 });
+
+describe('optional editor settings', () => {
+  it('saves snapping and still accepts snapshots saved before it existed', () => {
+    const snapshot = captureProjectSnapshot({ ...getAppState(), profileSnapGrid: false }, scene);
+    expect(snapshot.settings.profileSnapGrid).toBe(false);
+    const { profileSnapGrid: _grid, profileSnapPoints: _points, ...legacy } = snapshot.settings;
+    expect(parseProjectSnapshot({ ...snapshot, settings: legacy })).not.toBeNull();
+  });
+});

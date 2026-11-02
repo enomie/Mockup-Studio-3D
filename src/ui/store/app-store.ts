@@ -90,6 +90,7 @@ export {
   appendProfilePenNode,
   closeProfilePen,
   finishProfilePen,
+  setProfileSnap,
   showProfilesPanel,
   editProfileFromAsset,
 } from './app-store-profiles';

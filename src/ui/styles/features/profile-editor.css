@@ -192,3 +192,16 @@
 .profile-editor__canvas--pen .profile-editor__segment-hit {
   cursor: crosshair;
 }
+
+.profile-editor__snap-ring {
+  fill: none;
+  stroke: var(--color-accent);
+  stroke-width: 2;
+  pointer-events: none;
+}
+
+.profile-editor__snap-axis line {
+  stroke: var(--color-accent);
+  stroke-width: 2;
+  pointer-events: none;
+}

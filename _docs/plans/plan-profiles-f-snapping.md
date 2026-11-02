@@ -1,6 +1,6 @@
 # Plan F: Fangen (Snapping) im 2D-Profil-Editor
 
-Status: **Entwurf – wartet auf Freigabe.** Stand der Profile: `_docs/requirements/requirements-profiles.md`.
+Status: **Umgesetzt.** Entscheidungen: Kürzel G / N / Alt, Achsen gehören zu Points. Ergänzung: Die Schalter sind optionale Projekteinstellungen, damit ältere Projektstände weiter laden. Stand: `_docs/requirements/requirements-profiles.md`.
 
 ## Ziel
 Beim Zeichnen und Verschieben rasten Punkte auf das **Raster** und auf **vorhandene Punkte** ein.

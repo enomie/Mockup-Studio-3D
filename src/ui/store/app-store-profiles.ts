@@ -311,3 +311,11 @@ export function finishProfilePen(): void {
   });
   store.emit();
 }
+
+export function setProfileSnap(kind: 'grid' | 'points', on: boolean): void {
+  store.setAppState({
+    ...store.state,
+    ...(kind === 'grid' ? { profileSnapGrid: on } : { profileSnapPoints: on }),
+  });
+  store.emit();
+}

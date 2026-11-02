@@ -12,6 +12,7 @@ import { getProfile, type ProfileEntry } from '@/scene/profile-library';
 import type { ProfilePath } from '@/scene/profile-model';
 import { Icon } from '@/ui/components/Icon';
 import { PanelSelect } from '@/ui/components/PanelSelect';
+import { PanelToggleGroup } from '@/ui/components/PanelToggleGroup';
 import { SubPanel } from '@/ui/components/SubPanel';
 import { SubPanelSection } from '@/ui/components/SubPanelSection';
 import {
@@ -22,6 +23,7 @@ import {
   renameProfilePath,
   selectProfilePath,
   setProfileEditorTool,
+  setProfileSnap,
   toggleProfilePathHidden,
 } from '@/ui/store/app-store';
 import type { ProfileEditorTool } from '@/ui/store/app-store-internals';
@@ -68,6 +70,27 @@ function ToolsSection() {
           </button>
         ))}
       </div>
+    </SubPanelSection>
+  );
+}
+
+const SNAP_OPTIONS = [
+  { key: 'grid', label: 'Grid', title: 'Snap to the visible grid (G)' },
+  { key: 'points', label: 'Points', title: 'Snap to points and the axes x = 0 / y = 0 (N)' },
+] as const;
+
+function SnappingSection() {
+  const grid = useAppStore((s) => s.profileSnapGrid);
+  const points = useAppStore((s) => s.profileSnapPoints);
+  return (
+    <SubPanelSection title="Snapping">
+      <PanelToggleGroup
+        label="Snap to"
+        options={SNAP_OPTIONS}
+        active={{ grid, points }}
+        onToggle={(key, on) => { setProfileSnap(key, on); }}
+      />
+      <p className="profile-hint">Hold Alt while dragging to place freely.</p>
     </SubPanelSection>
   );
 }
@@ -199,6 +222,7 @@ export function ProfileInspector() {
       }
     >
       <ToolsSection />
+      <SnappingSection />
       <PathsSection profile={profile} />
       <ProfilePointSection profile={profile} />
     </SubPanel>
