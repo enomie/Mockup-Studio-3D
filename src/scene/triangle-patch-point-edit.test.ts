@@ -29,7 +29,7 @@ describe('insertPatchPoint', () => {
   it('places the new point on the edge, in loop order, with the next number', () => {
     const { params, pointId } = insertPatchPoint(defaultTrianglePatchParams(), 2, 0.5);
     expect(pointId).toBe('pt-4');
-    expect(params.points.map((point) => point.name)).toEqual(['Point 1', 'Point 2', 'Point 3', 'Point 4']);
+    expect(params.points.map((point) => point.name)).toEqual(['P1', 'P2', 'P3', 'P4']);
     expect(params.edgeParams[pointId]).toBeCloseTo(0.5);
     const point = params.points[3];
     expect(evalEdge(params, 2, 0.5).distanceTo(new Vector3(point.pos.x, point.pos.y, point.pos.z))).toBeLessThan(1e-9);
@@ -37,10 +37,10 @@ describe('insertPatchPoint', () => {
 
   it('numbers from ids, so renamed points never cause duplicates', () => {
     const base = defaultTrianglePatchParams();
-    base.points[0] = { ...base.points[0], name: 'Point 9' };
+    base.points[0] = { ...base.points[0], name: 'P9' };
     const { pointId, params } = insertPatchPoint(base, 0, 0.5);
     expect(pointId).toBe('pt-4');
-    expect(params.points[1].name).toBe('Point 4');
+    expect(params.points[1].name).toBe('P4');
   });
 
   it('barely moves the surface interior', () => {

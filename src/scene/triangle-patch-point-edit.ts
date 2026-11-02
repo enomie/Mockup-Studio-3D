@@ -61,7 +61,7 @@ export function insertPatchPoint(
   const number = nextPatchPointNumber(params.points);
   const inserted: PatchPoint = {
     id: `pt-${number}`,
-    name: `Point ${number}`,
+    name: `P${number}`,
     pos: split,
     handleNext: p123,
     handlePrev: p012,

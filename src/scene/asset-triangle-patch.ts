@@ -255,7 +255,7 @@ function authoredCornerPoints(): PatchPoint[] {
   return [
     {
       id: 'pt-1',
-      name: 'Point 1',
+      name: 'P1',
       pos: { x: 0.0, y: 0.22, z: 0.5 },
       handleNext: { x: 0.0, y: 0.34, z: 0.05 },
       handlePrev: { x: 0.35, y: 0.3, z: 0.3 },
@@ -264,7 +264,7 @@ function authoredCornerPoints(): PatchPoint[] {
     },
     {
       id: 'pt-2',
-      name: 'Point 2',
+      name: 'P2',
       pos: { x: 0.0, y: 0.48, z: -0.5 },
       handleNext: { x: 0.32, y: 0.42, z: -0.25 },
       handlePrev: { x: 0.0, y: 0.38, z: -0.05 },
@@ -273,7 +273,7 @@ function authoredCornerPoints(): PatchPoint[] {
     },
     {
       id: 'pt-3',
-      name: 'Point 3',
+      name: 'P3',
       pos: { x: 0.6, y: 0.28, z: 0.0 },
       handleNext: { x: 0.28, y: 0.24, z: 0.25 },
       handlePrev: { x: 0.25, y: 0.34, z: -0.25 },
@@ -304,7 +304,7 @@ export function defaultQuadPatchParams(): PatchParams {
     const [px, pz] = corners[(index + 3) % 4];
     return {
       id: `pt-${index + 1}`,
-      name: `Point ${index + 1}`,
+      name: `P${index + 1}`,
       pos: { x, y, z },
       handleNext: { x: x + (nx - x) * third, y, z: z + (nz - z) * third },
       handlePrev: { x: x + (px - x) * third, y, z: z + (pz - z) * third },

@@ -570,12 +570,12 @@ export function nodeOffsetFromLocalTip(node: PatchNode, localTip: Vec3, transfor
   return { x: w.x - node.pos.x, y: w.y - node.pos.y, z: w.z - node.pos.z };
 }
 
-/** Next free "Shared N" name (one name per shared point, unique in the scene). */
+/** Next free "SN" name (one name per shared point, unique in the scene). */
 export function nextSharedNodeName(nodes: readonly PatchNode[], taken: readonly string[] = []): string {
   const used = new Set([...nodes.map((n) => n.name), ...taken]);
   let i = 1;
-  while (used.has(`Shared ${i}`)) {i++;}
-  return `Shared ${i}`;
+  while (used.has(`S${i}`)) {i++;}
+  return `S${i}`;
 }
 
 /**

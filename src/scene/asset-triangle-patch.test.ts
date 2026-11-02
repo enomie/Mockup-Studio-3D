@@ -13,16 +13,16 @@ import {
 /** Default patch with one extra point between corner 2 and corner 3 (edge 1). */
 function patchWithEdgePoint(): PatchParams {
   const params = defaultTrianglePatchParams();
-  const extra = { ...clonePatchPoint(params.points[1]), id: 'pt-4', name: 'Point 4' };
+  const extra = { ...clonePatchPoint(params.points[1]), id: 'pt-4', name: 'P4' };
   params.points.splice(2, 0, extra);
   params.edgeParams[extra.id] = 0.5;
   return params;
 }
 
 describe('triangle patch params', () => {
-  it('names the default points Point 1–3 and uses all of them as corners', () => {
+  it('names the default points P1–P3 and uses all of them as corners', () => {
     const params = defaultTrianglePatchParams();
-    expect(params.points.map((point) => point.name)).toEqual(['Point 1', 'Point 2', 'Point 3']);
+    expect(params.points.map((point) => point.name)).toEqual(['P1', 'P2', 'P3']);
     expect(params.cornerIds).toEqual(params.points.map((point) => point.id));
     expect(params.edgeParams).toEqual({});
   });
@@ -45,7 +45,7 @@ describe('triangle patch params', () => {
     const params = defaultTrianglePatchParams();
     const renamed = { ...clonePatchPoint(params.points[1]), name: 'Nose' };
     const points = replacePatchPoint(params.points, renamed);
-    expect(points.map((point) => point.name)).toEqual(['Point 1', 'Nose', 'Point 3']);
+    expect(points.map((point) => point.name)).toEqual(['P1', 'Nose', 'P3']);
     expect(points[0]).toBe(params.points[0]);
   });
 });

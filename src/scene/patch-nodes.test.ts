@@ -207,9 +207,9 @@ describe('shared nodes', () => {
 
     it('names shared points uniquely', () => {
       const { nodes } = joined();
-      const named = nodes.map((n, i) => ({ ...n, name: `Shared ${String(i + 1)}` }));
-      expect(nextSharedNodeName(named)).toBe('Shared 3');
-      expect(nextSharedNodeName([], ['Shared 1'])).toBe('Shared 2');
+      const named = nodes.map((n, i) => ({ ...n, name: `S${String(i + 1)}` }));
+      expect(nextSharedNodeName(named)).toBe('S3');
+      expect(nextSharedNodeName([], ['S1'])).toBe('S2');
     });
   });
 });
