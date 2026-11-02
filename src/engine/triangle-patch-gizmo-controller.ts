@@ -389,6 +389,10 @@ export class TrianglePatchGizmoController {
     });
   }
 
+  isLengthDragging(): boolean {
+    return this.lengthDrag !== null;
+  }
+
   endLengthDrag(): void {
     this.lengthDrag = null;
   }

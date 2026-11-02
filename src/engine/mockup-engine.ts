@@ -122,7 +122,8 @@ import {
   type PatchEdgeSelection,
   type ViewportPointer,
 } from './triangle-patch-add-point-tool';
-import { locatePatchEdgeSegment, type PatchParams } from '@/scene/asset-triangle-patch';
+import { isPatchAssetKind, locatePatchEdgeSegment, type PatchParams } from '@/scene/asset-triangle-patch';
+import { recenterPatch } from '@/scene/triangle-patch-recenter';
 import { SelectionController } from './selection-controller';
 import { SelectionHighlight } from './selection-highlight';
 import { ViewportInputController } from './viewport-input-controller';
@@ -188,6 +189,7 @@ export class MockupEngine implements SceneApi {
     this.environment.setViewportInvalidation(this.viewportInvalidation);
 
     this.patchGizmo.setPatchChangeListener((entityId) => {
+      if (!this.gizmo.isDragging() && !this.patchGizmo.isLengthDragging()) {this.recenterPatchPivot(entityId);}
       void this.assets.rebuildEntity(entityId);
       if (this.patchAddPoint.getEntityId() === entityId) {this.patchAddPoint.syncEdgeLines();}
       this.patchAddPoint.syncSelectedLine();
@@ -210,6 +212,7 @@ export class MockupEngine implements SceneApi {
       emit: () => { this.emit(); },
       syncFixedRigidPose: (entityId) => { this.syncRigidPrimitivePoseFromRuntimeIfFixed(entityId); },
       applyAssetMutation: (mutation, options) => { this.applyAssetMutation(mutation, options); },
+      onPatchPointDragEnd: (entityId) => { this.recenterPatchPivotAndRebuild(entityId); },
     });
 
     scene.add(gizmo.getHelper());
@@ -380,7 +383,11 @@ export class MockupEngine implements SceneApi {
     selection.setPatchLengthDragHandlers({
       begin: (ray) => engine.patchGizmo.beginLengthDrag(ray),
       update: (ray) => { engine.patchGizmo.updateLengthDrag(ray); },
-      end: () => { engine.patchGizmo.endLengthDrag(); },
+      end: () => {
+        const entityId = engine.patchGizmo.getActiveEntityId();
+        engine.patchGizmo.endLengthDrag();
+        if (entityId) {engine.recenterPatchPivotAndRebuild(entityId);}
+      },
     });
     selection.setPatchAddPointHandlers({
       isActive: () => engine.patchAddPoint.isActive(),
@@ -662,6 +669,7 @@ export class MockupEngine implements SceneApi {
         default:
           await this.assets.setKindParams(family, entityId, partial);
           if (family === 'patch') {
+            if (this.recenterPatchPivot(entityId)) {await this.assets.rebuildEntity(entityId);}
             this.patchGizmo.syncHelpersFromEntity();
           }
       }
@@ -1229,6 +1237,30 @@ export class MockupEngine implements SceneApi {
     if (!runtime || !isRigidPrimitiveAssetKind(runtime.entity.assetKind)) {return;}
     if (resolvePhysicsBodyMode(runtime.entity) !== 'fixed') {return;}
     this.rigidPrimitivePhysics.syncPoseFromRuntime(entityId);
+  }
+
+  /**
+   * Keeps the patch pivot (and so the main gizmo) at the center of its points; the patch
+   * stays where it is in the scene. Returns true when the pivot moved.
+   */
+  private recenterPatchPivot(entityId: string): boolean {
+    const entity = this.registry.getRuntime(entityId)?.entity;
+    if (!entity?.patchParams || !isPatchAssetKind(entity.assetKind)) {return false;}
+    const result = recenterPatch(entity.patchParams, entity.transform);
+    if (!result) {return false;}
+    this.registry.updateTransform(entityId, { position: result.position });
+    this.registry.setKindParams('patch', entityId, { points: result.params.points });
+    this.patchGizmo.syncHelpersFromEntity();
+    this.gizmoInteraction.refresh();
+    return true;
+  }
+
+  /** Recenter after a finished point drag (gizmo or length ring). */
+  recenterPatchPivotAndRebuild(entityId: string): void {
+    if (!this.recenterPatchPivot(entityId)) {return;}
+    void this.assets.rebuildEntity(entityId);
+    this.invalidateViewport();
+    this.emit();
   }
 
   private applyAssetMutation(

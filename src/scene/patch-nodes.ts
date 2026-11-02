@@ -481,7 +481,12 @@ export function reconcilePatchNodes(
       const before = previous.get(use.entityId);
       const point = pointOf(use);
       if (!entity || !point || before === entity) {continue;}
-      if (before && !sameTransform(before.transform, entity.transform)) {
+      const beforePoint = before?.patchParams?.points.find((p) => p.id === use.pointId);
+      // A moved patch takes its nodes along. A pivot recenter changes the transform too, but
+      // compensates the local point, so it is handled as a (possibly no-op) point edit.
+      const movedRigidly = before && !sameTransform(before.transform, entity.transform)
+        && (!beforePoint || !pointDiffers(beforePoint, point));
+      if (movedRigidly) {
         node = moveNodeWithPatch(node, before.transform, entity.transform);
       } else if (pointDiffers(point, resolveNodePoint(node, use, entity.transform, point))) {
         node = applyPointEditToNode(node, use, entity.transform, point);

@@ -4,6 +4,8 @@ import { isFabricClothAssetKind } from '@/scene/asset-fabric-cloth';
 import { bakesUniformScaleIntoParams } from '@/scene/rigid-primitive-asset';
 import { isWallAssetKind } from '@/scene/asset-wall';
 import { clampSizeScale } from '@/scene/asset-sizing';
+import { isPatchAssetKind } from '@/scene/asset-triangle-patch';
+import { scalePatchPoints } from '@/scene/triangle-patch-recenter';
 import type { AssetSystem } from './asset-system';
 import type { CameraController } from './camera-controller';
 import type { EntityRegistry } from './entity-registry';
@@ -37,6 +39,8 @@ export interface GizmoInteractionDeps {
     mutation: () => void | Promise<void>,
     options?: { refreshGizmo?: boolean },
   ) => void;
+  /** A drag of a patch point or handle ended; the patch pivot follows its points. */
+  onPatchPointDragEnd: (entityId: string) => void;
 }
 
 /**
@@ -223,6 +227,12 @@ export class GizmoInteractionController {
     cameras.setOrbitEnabled(!dragging);
     viewportInvalidation.setContinuous(dragging || cameras.isInteracting());
 
+    const patchEntityId = this.deps.patchGizmo.getActiveTarget()?.entityId;
+    if (!dragging && patchEntityId && this.deps.getMode() !== 'scale') {
+      this.deps.onPatchPointDragEnd(patchEntityId);
+      return;
+    }
+
     if (this.deps.getMode() !== 'scale') {return;}
 
     const selected = registry.getSelectedRuntime();
@@ -241,7 +251,15 @@ export class GizmoInteractionController {
       (selected.object.scale.x + selected.object.scale.y + selected.object.scale.z) / 3;
     selected.object.scale.set(1, 1, 1);
     const entityId = selected.entity.id;
-    if (bakesUniformScaleIntoParams(selected.entity.assetKind)) {
+    const patchParams = selected.entity.patchParams;
+    if (patchParams && isPatchAssetKind(selected.entity.assetKind)) {
+      // Patches bake the scale into their points (around the pivot, which sits at the center).
+      const points = scalePatchPoints(patchParams, clampSizeScale(uniform));
+      this.deps.applyAssetMutation(
+        () => assets.setKindParams('patch', entityId, { points }),
+        { refreshGizmo: true },
+      );
+    } else if (bakesUniformScaleIntoParams(selected.entity.assetKind)) {
       this.deps.applyAssetMutation(
         () => assets.applyRigidPrimitiveUniformScale(entityId, uniform),
         { refreshGizmo: true },

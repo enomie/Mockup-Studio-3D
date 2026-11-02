@@ -30,3 +30,13 @@ der Mitte des Patches, Drehen und Skalieren (bestehendes `sizeScale`, gebacken) 
 - Patch bei (2,0,1), um Y gedreht; Punkt verschieben → nach Recenter sind Weltpositionen aller Punkte unverändert,
   `transform.position` = BBox-Mitte, Rotation unverändert.
 - Shared Node bleibt identisch.
+
+## Entscheidung (umgesetzt)
+- Immer zentrieren, kein Schalter. Drehen und Skalieren um die Patch-Mitte.
+- `src/scene/triangle-patch-recenter.ts`: `recenterPatch` (BBox-Mitte der Anker in lokalen Achsen, gespiegelte Achsen
+  bleiben 0, weil die Spiegelebenen durch den Pivot laufen) und `scalePatchPoints`.
+- Engine: Zentrieren nach Inspector-/Store-Edits (`setKindParams('patch')`), nach Gizmo-Commits außerhalb eines Drags,
+  am Drag-Ende (Gizmo und Längenring).
+- `reconcilePatchNodes`: eine Transform-Änderung gilt nur dann als starres Verschieben (Shared Nodes wandern mit),
+  wenn sich der lokale Punkt nicht geändert hat. Beim Zentrieren bleiben Shared Nodes damit stehen.
+- Skalieren mit dem Gizmo wird bei Patches in die Punkte gebacken (vorher wirkte `sizeScale` bei Patches nicht).
