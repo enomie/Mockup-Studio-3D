@@ -103,7 +103,7 @@
 .profile-editor__grid-badge {
   position: absolute;
   bottom: var(--space-4);
-  left: var(--space-4);
+  left: 50%;
   margin: 0;
   padding: var(--space-1) var(--space-2);
   border: 1px solid var(--color-border);
@@ -111,6 +111,7 @@
   background: var(--color-bg);
   font-size: var(--font-xs);
   color: var(--color-text-muted);
+  transform: translateX(-50%);
   pointer-events: none;
 }
 
