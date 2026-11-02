@@ -53,6 +53,10 @@ export function proceduralUniformValuesFromPreset(
     lineColor: preset.lineColor ? { ...preset.lineColor } : undefined,
     roughness:
       preset.roughness ?? (profile ? proceduralProfileSpec(profile).roughness.default : 0.5),
+    anisotropy:
+      preset.anisotropy ??
+      (profile ? proceduralProfileSpec(profile).anisotropy?.amount.default : undefined) ??
+      0,
   };
 }
 

@@ -173,12 +173,25 @@ const PROFILE_SPECS: Record<ProceduralProfileId, ProfileOverrides> = {
   },
   'fabric-linen': {
     label: 'Fabric Linen',
-    roughness: normalized(0.88),
+    roughness: normalized(0.9),
     physical: false,
-    clearcoat: TEXTURED_CLEARCOAT,
     normalScale: NORMAL_SCALE,
+    // Threads per meter = 50 × tileScale; 6 → coarse jute, ~15 → fine linen.
     tileScale: tileRange(DEFAULT_TILE_SCALE_SURFACE),
     seed: true,
+  },
+  'carbon-weave': {
+    label: 'Carbon',
+    roughness: normalized(0.35),
+    physical: true,
+    // Non-metallic fibre: no metalness control.
+    metalness: undefined,
+    clearcoat: { amount: normalized(1), roughness: normalized(0.05) },
+    normalScale: NORMAL_SCALE,
+    // Bundles per meter = 55 × tileScale; 6 → ~3 mm (3K twill).
+    tileScale: tileRange(DEFAULT_TILE_SCALE_SURFACE),
+    seed: true,
+    anisotropy: { ...ANISOTROPY, amount: normalized(0.5) },
   },
   'silk-fine': {
     label: 'Fabric Silk',

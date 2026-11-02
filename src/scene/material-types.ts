@@ -7,6 +7,7 @@ export type ProceduralProfileId =
   | 'paper-grain'
   | 'fabric-linen'
   | 'silk-fine'
+  | 'carbon-weave'
   | 'concrete-stained'
   | 'concrete-porous'
   | 'metal-polished'

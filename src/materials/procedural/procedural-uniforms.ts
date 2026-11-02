@@ -21,12 +21,14 @@ export interface ProceduralUniforms {
   color: ReturnType<typeof colorUniform>;
   lineColor: ReturnType<typeof colorUniform>;
   roughness: ReturnType<typeof floatUniform>;
+  anisotropy: ReturnType<typeof floatUniform>;
 }
 
 export interface ProceduralUniformValues {
   color: Rgb;
   lineColor?: Rgb;
   roughness: number;
+  anisotropy: number;
 }
 
 export function createProceduralUniforms(values: ProceduralUniformValues): ProceduralUniforms {
@@ -35,6 +37,7 @@ export function createProceduralUniforms(values: ProceduralUniformValues): Proce
     color: colorUniform(values.color),
     lineColor: colorUniform(lineColor),
     roughness: floatUniform(values.roughness),
+    anisotropy: floatUniform(values.anisotropy),
   };
 }
 
@@ -46,4 +49,5 @@ export function updateProceduralUniforms(
   uniforms.color.value.setRGB(values.color.r, values.color.g, values.color.b);
   uniforms.lineColor.value.setRGB(lineColor.r, lineColor.g, lineColor.b);
   uniforms.roughness.value = values.roughness;
+  uniforms.anisotropy.value = values.anisotropy;
 }

@@ -27,7 +27,7 @@ function glassSurfaceParamsFromPreset(preset: MaterialPreset): ProceduralMateria
     samplingSpace: 'meter-3d',
     sheen: 0,
     sheenRoughness: 0.5,
-    uniforms: createProceduralUniforms({ color: { r: 1, g: 1, b: 1 }, roughness: preset.roughness ?? 0.02 }),
+    uniforms: createProceduralUniforms({ color: { r: 1, g: 1, b: 1 }, roughness: preset.roughness ?? 0.02, anisotropy: 0 }),
   };
 }
 

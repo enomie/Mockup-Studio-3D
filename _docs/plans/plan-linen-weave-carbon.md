@@ -1,6 +1,6 @@
 # Plan: Leinen mit Bindungsmuster + neues Material Carbon
 
-Status: **Entwurf – wartet auf Freigabe**
+Status: **Umgesetzt** – Leinen grob wie Jute freigegeben. Visuelle Abnahme lokal offen.
 Datum: 2026-11-02
 
 ## 1. Leinen (`fabric-linen`) – echtes Leinwand-/Jutemuster
@@ -50,5 +50,7 @@ Klassisches Sichtcarbon: 2×2-Köperbindung (Twill), Faserbündel mit seidigem, 
 - Live-Update (Phase 6) funktioniert automatisch für Farbe/Rauheit/Clearcoat.
 - Tests, Lint, Build vor Push. Visuelle Abnahme lokal (kein WebGPU im Container).
 
-## Offene Frage
-- Leinen: eher **grob/Jute** (Kartoffelsack, dicke Fäden, sichtbare Lücken) als Standard – feineres Leinen dann über Tile scale. Ok so?
+## Umsetzung – Notizen
+- Leinen: 50 Fäden pro Tile-Einheit → Tile scale 6 ≈ 3,3 mm Fadenabstand (Jute), ~15 ≈ feines Leinen. Builtin „Fabric Linen“ jutebeige.
+- Carbon: Anisotropie-Richtung per `anisotropyNode` pro Bündel (funktioniert in der aktuellen three.js-Version); Stärke als Uniform → live regelbar. Builtin „Carbon“ (`material-carbon`).
+- Clearcoat-Regler bei Leinen entfernt (für Stoff sinnlos).

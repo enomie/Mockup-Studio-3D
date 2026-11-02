@@ -12,7 +12,7 @@ const PROFILES: ProceduralProfileId[] = [
   'wood-soft', 'wood-porous', 'paper-grain', 'fabric-linen', 'silk-fine',
   'concrete-stained', 'concrete-porous', 'metal-polished', 'metal-brushed',
   'glass-surface', 'grid-paper-opaque', 'grid-paper-lines', 'coated-gloss',
-  'plastic-matte', 'plastic-smooth',
+  'plastic-matte', 'plastic-smooth', 'carbon-weave',
 ];
 
 function ranges(spec: MaterialSpec): RangeSpec[] {
@@ -104,3 +104,14 @@ describe('roughness spec', () => {
     expect(proceduralProfileSpec('concrete-stained').roughness.default).toBe(0.92);
   });
 });
+
+describe('carbon spec', () => {
+  it('is a non-metallic clear-coated physical material with anisotropy', () => {
+    const spec = proceduralProfileSpec('carbon-weave');
+    expect(spec.physical).toBe(true);
+    expect(spec.metalness).toBeUndefined();
+    expect(spec.clearcoat?.amount.default).toBe(1);
+    expect(spec.anisotropy?.amount.default).toBe(0.5);
+  });
+});
+

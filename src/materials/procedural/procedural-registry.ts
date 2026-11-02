@@ -1,6 +1,7 @@
 import type { ProceduralProfileId } from '@/scene/material-types';
 import { buildConcretePorousNodes } from './concrete-porous';
 import { buildConcreteStainedNodes } from './concrete-stained';
+import { buildCarbonWeaveNodes } from './carbon-weave';
 import { buildFabricLinenNodes } from './fabric-linen';
 import { buildMetalBrushedNodes } from './metal-brushed';
 import { buildMetalPolishedNodes } from './metal-polished';
@@ -63,6 +64,8 @@ export function getProceduralMaterialNodes(
       return buildConcretePorousNodes(params);
     case 'fabric-linen':
       return buildFabricLinenNodes(params);
+    case 'carbon-weave':
+      return buildCarbonWeaveNodes(params);
     case 'silk-fine':
       return buildSilkFineNodes(params);
     case 'coated-gloss':

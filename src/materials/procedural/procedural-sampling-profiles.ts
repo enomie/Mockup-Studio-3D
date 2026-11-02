@@ -7,6 +7,7 @@ const FRAME_UV_PROFILES: ReadonlySet<ProceduralProfileId> = new Set([
   'wood-porous',
   'metal-polished',
   'metal-brushed',
+  'carbon-weave',
 ]);
 
 const WOOD_PROFILES: ReadonlySet<ProceduralProfileId> = new Set(['wood-soft', 'wood-porous']);
@@ -18,6 +19,7 @@ const METER_3D_PROFILES: ReadonlySet<ProceduralProfileId> = new Set([
   'metal-brushed',
   'fabric-linen',
   'silk-fine',
+  'carbon-weave',
   'concrete-stained',
   'paper-grain',
   'coated-gloss',

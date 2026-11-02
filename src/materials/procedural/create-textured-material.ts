@@ -44,6 +44,9 @@ export function createTexturedMaterial(
     material.normalNode = nodes.normalNode;
   }
   material.roughnessNode = nodes.roughnessNode;
+  if (nodes.anisotropyNode && material instanceof MeshPhysicalNodeMaterial) {
+    material.anisotropyNode = nodes.anisotropyNode;
+  }
 
   if (nodes.opacityNode) {
     material.transparent = nodes.transparent ?? true;

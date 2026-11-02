@@ -143,6 +143,20 @@ describe('createMaterialFromPreset — textured built-ins', () => {
     }
   });
 
+  it('material-carbon is clear-coated physical with bundle anisotropy', () => {
+    const material = createMaterialFromPreset(
+      presetById('material-carbon'),
+    ) as MeshPhysicalNodeMaterial;
+    expect(material).toBeInstanceOf(MeshPhysicalNodeMaterial);
+    expect(material.clearcoat).toBeCloseTo(1, 5);
+    expect(material.anisotropyNode).not.toBeNull();
+  });
+
+  it('builds the linen weave', () => {
+    const material = createMaterialFromPreset(presetById('material-fabric'));
+    expect(material.normalNode).not.toBeNull();
+  });
+
   it('material-silk is a non-metallic fabric with sheen', () => {
     const silk = presetById('material-silk');
     expect(silk.proceduralProfile).toBe('silk-fine');

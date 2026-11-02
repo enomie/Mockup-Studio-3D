@@ -1,4 +1,4 @@
-import type { MeshStandardNodeMaterial } from 'three/webgpu';
+import type { MeshPhysicalNodeMaterial, MeshStandardNodeMaterial } from 'three/webgpu';
 import type { Rgb } from '@/colors/rgb';
 import type { ProceduralUniforms } from './procedural-uniforms';
 
@@ -33,6 +33,8 @@ export interface ProceduralMaterialNodes {
   colorNode: NonNullable<MeshStandardNodeMaterial['colorNode']>;
   normalNode?: NonNullable<MeshStandardNodeMaterial['normalNode']>;
   roughnessNode: NonNullable<MeshStandardNodeMaterial['roughnessNode']>;
+  /** Tangent-space anisotropy (direction × strength); physical materials only. */
+  anisotropyNode?: NonNullable<MeshPhysicalNodeMaterial['anisotropyNode']>;
   opacityNode?: NonNullable<MeshStandardNodeMaterial['opacityNode']>;
   transparent?: boolean;
   depthWrite?: boolean;
