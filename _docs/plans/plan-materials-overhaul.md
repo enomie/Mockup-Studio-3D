@@ -1,6 +1,6 @@
 # Plan: Materialien – Live-Update & Shader-Überarbeitung
 
-Status: **Freigegeben** (inkl. Phase 6). Phase 1–3 umgesetzt.
+Status: **Freigegeben** (inkl. Phase 6). Phase 1–4 umgesetzt.
 Datum: 2026-11-02
 
 ## Ausgangslage
@@ -187,4 +187,10 @@ Farbe, Rauheit, Metalness, Normal scale, Clearcoat, Anisotropie, IOR als TSL-`un
   - Triplanar: Helfer `triplanarScalar`; Roughness-Rauschen pro Ebene ausgewertet und gemischt (wood-soft, wood-porous, concrete-porous).
   - Grid paper: `fwidth`-Antialiasing, Ausblenden zur mittleren Linienabdeckung, wenn Zellen pixelgroß werden.
   - Nicht visuell geprüft (Container hat kein WebGPU) → lokal prüfen.
+- [x] Phase 4 – Profile:
+  - Silk: eigener Shader `silk-fine.ts` (Leinwandbindung als Mikrorelief mit Fade gegen Moiré, leichte Fadenunregelmäßigkeit, Sheen-Lobe). Neue Preset-Felder `sheen`, `sheenRoughness` + Panel-Sektion „Sheen“. Builtin „Fabric Silk“ nutzt jetzt `silk-fine`, metalness 0 (vorher gebürstetes Metall mit metalness 1).
+  - Metal brushed: feine Bürststreifen (gestrecktes Rauschen) in Relief, Rauheit und minimal in Farbe; Seed, Tile scale und Normal scale wirken und sind im Panel sichtbar. Bump bewusst sehr schwach (Kanten-Schwarz-Problem).
+  - Concrete porous: runde Poren über Worley-Abstand, Radius über langsames Rauschen variiert (Größe/Dichte natürlich verteilt).
+  - Glas: Regler bereits in Phase 2 ergänzt. Material-Klasse aus Spec: bereits in Phase 2.
+  - Offen/nicht geprüft: visuelle Abnahme lokal (kein WebGPU im Container); Wood porous hat noch dieselbe Band-Pass-Kontur wie früher Beton porös → ggf. in Phase 5/6 nachziehen.
 

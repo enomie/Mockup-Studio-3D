@@ -61,5 +61,10 @@ export function proceduralParamsFromPreset(
     seed: preset.seed ?? 0,
     grainAlongU: options.grainAlongU ?? true,
     samplingSpace: resolveProceduralSamplingSpace(preset.proceduralProfile, surfaceRole),
+    sheen: preset.sheen ?? (profile ? proceduralProfileSpec(profile).sheen?.amount.default : undefined) ?? 0,
+    sheenRoughness:
+      preset.sheenRoughness ??
+      (profile ? proceduralProfileSpec(profile).sheen?.roughness.default : undefined) ??
+      0.5,
   };
 }

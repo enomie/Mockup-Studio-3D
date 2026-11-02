@@ -4,6 +4,7 @@ import {
   clamp,
   float,
   mx_noise_float,
+  mx_worley_noise_float,
   smoothstep,
   vec2,
   vec3,
@@ -17,8 +18,7 @@ import {
 } from './procedural-types';
 
 /**
- * Isotropic bubble spots (same band-pass as v1). Slightly lower scale → sparser, larger voids.
- * At tileScale ≈ 6, ~14 → ~5–10 mm between spot centers.
+ * Worley cells per tileScale unit. At tileScale ≈ 6, ~14 → ~12 mm cell size.
  */
 const BUBBLE_NOISE_SCALE = 14;
 
@@ -26,13 +26,25 @@ function concretePorousSeedOffset(seed: Node<'float'>) {
   return vec2(seed.mul(13.7), seed.mul(23.1));
 }
 
-/** Discrete roundish spots — no warp, no extra grain layers. */
-function buildConcreteBubbleMask(sampleUv: Node<'vec2'>, seed: Node<'float'>) {
-  const poreNoise = mx_noise_float(vec3(sampleUv.mul(float(BUBBLE_NOISE_SCALE)), seed.add(4.2)));
+/** Pore radius in Worley cell units, and how much it varies across the surface. */
+const PORE_RADIUS = 0.16;
+const PORE_RADIUS_VARIATION = 0.12;
+const PORE_EDGE = 0.04;
 
-  return smoothstep(float(0.6), float(0.55), poreNoise).mul(
-    smoothstep(float(0.32), float(0.37), poreNoise),
+/**
+ * Round pores: distance to the nearest Worley feature point, thresholded by a
+ * slowly varying radius. Where the radius drops to zero there are no pores, so
+ * size and density vary naturally.
+ */
+function buildConcreteBubbleMask(sampleUv: Node<'vec2'>, seed: Node<'float'>) {
+  const cellDistance = mx_worley_noise_float(
+    vec3(sampleUv.mul(float(BUBBLE_NOISE_SCALE)), seed.add(4.2)),
   );
+  const sizeNoise = mx_noise_float(
+    vec3(sampleUv.mul(float(BUBBLE_NOISE_SCALE * 0.35)), seed.add(9.7)),
+  );
+  const radius = float(PORE_RADIUS).add(sizeNoise.mul(PORE_RADIUS_VARIATION));
+  return float(1).sub(smoothstep(radius.sub(PORE_EDGE), radius, cellDistance));
 }
 
 function concretePorousRoughnessNoise(uv: Node<'vec2'>, seed: Node<'float'>) {

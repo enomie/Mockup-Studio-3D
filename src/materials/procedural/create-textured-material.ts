@@ -1,4 +1,5 @@
 import {
+  Color,
   MeshPhysicalNodeMaterial,
   MeshStandardNodeMaterial,
 } from 'three/webgpu';
@@ -54,6 +55,12 @@ export function createTexturedMaterial(
 
   if (material instanceof MeshPhysicalNodeMaterial) {
     applyPhysicalAnisotropy(material, preset);
+    if (nodes.sheen && nodes.sheen.amount > 0) {
+      const { color, amount, roughness } = nodes.sheen;
+      material.sheen = amount;
+      material.sheenColor = new Color(color.r, color.g, color.b);
+      material.sheenRoughness = roughness;
+    }
     if (clearcoat > 0) {
       material.clearcoat = clearcoat;
       material.clearcoatRoughness =

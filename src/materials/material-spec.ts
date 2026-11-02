@@ -53,6 +53,7 @@ export interface MaterialSpec {
   gridUnit?: boolean;
   seed?: boolean;
   anisotropy?: AnisotropySpec;
+  sheen?: { amount: RangeSpec; roughness: RangeSpec };
   glass?: GlassSpec;
 }
 
@@ -107,7 +108,7 @@ const ANISOTROPY: AnisotropySpec = {
 
 type ProfileOverrides = Omit<
   MaterialSpec,
-  'colorField' | 'colorLabel' | 'defaultColor' | 'roughness' | 'metalness'
+  'colorField' | 'colorLabel' | 'defaultColor' | 'roughness'
 > & { roughness?: RangeSpec };
 
 const PROFILE_SPECS: Record<ProceduralProfileId, ProfileOverrides> = {
@@ -179,13 +180,17 @@ const PROFILE_SPECS: Record<ProceduralProfileId, ProfileOverrides> = {
     tileScale: tileRange(DEFAULT_TILE_SCALE_SURFACE),
     seed: true,
   },
-  // Shares the brushed-metal builder until its own shader lands (plan phase 4):
-  // only anisotropy has a visible effect.
   'silk-fine': {
     label: 'Fabric Silk',
+    roughness: normalized(0.45),
     physical: true,
-    clearcoat: TEXTURED_CLEARCOAT,
+    // Non-metallic fabric: no metalness control.
+    metalness: undefined,
+    normalScale: NORMAL_SCALE,
+    tileScale: tileRange(20),
+    seed: true,
     anisotropy: ANISOTROPY,
+    sheen: { amount: normalized(1), roughness: normalized(0.35) },
   },
   'metal-polished': {
     label: 'Metal polished',
@@ -201,6 +206,9 @@ const PROFILE_SPECS: Record<ProceduralProfileId, ProfileOverrides> = {
     roughness: normalized(0.3),
     physical: true,
     clearcoat: TEXTURED_CLEARCOAT,
+    normalScale: { min: 0, max: 1, step: 0.01, decimals: 2, default: 0.3 },
+    tileScale: { min: 4, max: 60, step: 1, decimals: 0, default: 28 },
+    seed: true,
     anisotropy: ANISOTROPY,
   },
   'coated-gloss': {

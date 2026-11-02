@@ -9,7 +9,6 @@ import {
   MATERIAL_GRID_PAPER_ID,
   MATERIAL_CHROME_ID,
   MATERIAL_PAPER_ID,
-  MATERIAL_GOLD_BRUSHED_ID,
   MATERIAL_GOLD_ID,
   MATERIAL_ALUMINUM_BRUSHED_ID,
   MATERIAL_PLASTIC_MATTE_ID,
@@ -144,15 +143,14 @@ describe('createMaterialFromPreset — textured built-ins', () => {
     }
   });
 
-  it('material-silk shares brushed structure with gold brushed', () => {
+  it('material-silk is a non-metallic fabric with sheen', () => {
     const silk = presetById('material-silk');
-    const goldBrushed = presetById(MATERIAL_GOLD_BRUSHED_ID);
-    expect(silk.proceduralProfile).toBe('metal-brushed');
-    expect(silk.metalness).toBe(goldBrushed.metalness);
-    expect(silk.tileScale).toBe(goldBrushed.tileScale);
-    expect(silk.anisotropy).toBe(goldBrushed.anisotropy);
-    expect(silk.roughness).toBe(goldBrushed.roughness);
-    expect(silk.normalScale).toBe(goldBrushed.normalScale);
+    expect(silk.proceduralProfile).toBe('silk-fine');
+    expect(silk.metalness).toBe(0);
+    const material = createMaterialFromPreset(silk) as MeshPhysicalNodeMaterial;
+    expect(material).toBeInstanceOf(MeshPhysicalNodeMaterial);
+    expect(material.sheen).toBeCloseTo(1, 5);
+    expect(material.sheenRoughness).toBeCloseTo(0.35, 5);
   });
 
   it('applies glossy clearcoat on Paper at gloss 1', () => {

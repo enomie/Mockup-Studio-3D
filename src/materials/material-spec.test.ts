@@ -25,6 +25,8 @@ function ranges(spec: MaterialSpec): RangeSpec[] {
     spec.tileScale,
     spec.anisotropy?.amount,
     spec.anisotropy?.rotation,
+    spec.sheen?.amount,
+    spec.sheen?.roughness,
     spec.glass?.ior,
     spec.glass?.surfaceNormalScale,
     spec.glass?.surfaceTileScale,
@@ -55,14 +57,19 @@ describe('material spec', () => {
     expect(proceduralProfileSpec('wood-soft').clearcoat?.amount.default).toBe(0.08);
   });
 
-  it('hides controls the brushed shader ignores', () => {
-    for (const profile of ['metal-brushed', 'silk-fine'] as const) {
-      const spec = proceduralProfileSpec(profile);
-      expect(spec.normalScale).toBeUndefined();
-      expect(spec.seed).toBeUndefined();
-      expect(spec.tileScale).toBeUndefined();
-      expect(spec.anisotropy).toBeDefined();
-    }
+  it('brushed metal exposes relief, tile scale and seed', () => {
+    const spec = proceduralProfileSpec('metal-brushed');
+    expect(spec.normalScale).toBeDefined();
+    expect(spec.tileScale?.default).toBe(28);
+    expect(spec.seed).toBe(true);
+    expect(spec.anisotropy).toBeDefined();
+  });
+
+  it('silk is a non-metallic fabric with sheen', () => {
+    const spec = proceduralProfileSpec('silk-fine');
+    expect(spec.metalness).toBeUndefined();
+    expect(spec.sheen?.amount.default).toBe(1);
+    expect(spec.physical).toBe(true);
   });
 
   it('grid paper uses a unit select and no seed', () => {

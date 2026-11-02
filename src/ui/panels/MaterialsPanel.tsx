@@ -74,6 +74,8 @@ type NumericField =
   | 'tileScale'
   | 'anisotropy'
   | 'anisotropyRotation'
+  | 'sheen'
+  | 'sheenRoughness'
   | 'ior'
   | 'surfaceNormalScale';
 
@@ -303,6 +305,18 @@ function MaterialEditor({ preset }: MaterialEditorProps) {
             field="anisotropyRotation"
             label="Rotation"
             range={spec.anisotropy.rotation}
+          />
+        </SubPanelSection>
+      ) : null}
+
+      {spec.sheen ? (
+        <SubPanelSection title="Sheen">
+          <SpecSlider preset={preset} field="sheen" label="Sheen" range={spec.sheen.amount} />
+          <SpecSlider
+            preset={preset}
+            field="sheenRoughness"
+            label="Sheen roughness"
+            range={spec.sheen.roughness}
           />
         </SubPanelSection>
       ) : null}

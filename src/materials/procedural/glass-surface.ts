@@ -24,6 +24,8 @@ function glassSurfaceParamsFromPreset(preset: MaterialPreset): ProceduralMateria
     seed: preset.seed ?? 0,
     grainAlongU: true,
     samplingSpace: 'meter-3d',
+    sheen: 0,
+    sheenRoughness: 0.5,
   };
 }
 

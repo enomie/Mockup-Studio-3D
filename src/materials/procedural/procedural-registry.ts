@@ -12,6 +12,7 @@ import {
   buildPlasticSmoothNodes,
 } from './plastic-surface';
 import { buildGlassSurfaceNodes } from './glass-surface';
+import { buildSilkFineNodes } from './silk-fine';
 import { normalizeProceduralProfile } from './procedural-profile';
 import type { ProceduralMaterialNodes, ProceduralMaterialParams } from './procedural-types';
 import { buildWoodPorousNodes } from './wood-porous';
@@ -63,7 +64,7 @@ export function getProceduralMaterialNodes(
     case 'fabric-linen':
       return buildFabricLinenNodes(params);
     case 'silk-fine':
-      return buildMetalBrushedNodes(params);
+      return buildSilkFineNodes(params);
     case 'coated-gloss':
       return buildCoatedGlossNodes(params);
     case 'plastic-matte':

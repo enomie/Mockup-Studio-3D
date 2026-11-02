@@ -57,6 +57,9 @@ export interface MaterialPreset {
   seed?: number;
   anisotropy?: number;
   anisotropyRotation?: number;
+  /** Fabric sheen intensity (0 = off) and its roughness. */
+  sheen?: number;
+  sheenRoughness?: number;
   glassVariant?: GlassVariant;
   ior?: number;
   tint?: Rgb;

@@ -21,6 +21,9 @@ export interface ProceduralMaterialParams {
   /** When true, grain runs along UV.u (horizontal frame bars); false = UV.v (vertical bars). */
   grainAlongU: boolean;
   samplingSpace: ProceduralSamplingSpace;
+  /** Sheen intensity (fabric profiles); 0 disables. */
+  sheen: number;
+  sheenRoughness: number;
 }
 
 export interface ProceduralMaterialNodes {
@@ -30,6 +33,8 @@ export interface ProceduralMaterialNodes {
   opacityNode?: NonNullable<MeshStandardNodeMaterial['opacityNode']>;
   transparent?: boolean;
   depthWrite?: boolean;
+  /** Physical-material sheen lobe (fabrics). */
+  sheen?: { color: Rgb; amount: number; roughness: number };
 }
 
 export {
