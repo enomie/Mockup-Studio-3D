@@ -1,6 +1,6 @@
 # Plan: Materialien – Live-Update & Shader-Überarbeitung
 
-Status: **Freigegeben** (inkl. Phase 6). Phase 1–4 und 6 umgesetzt.
+Status: **Abgeschlossen** – alle Phasen umgesetzt, lokal vom User getestet (2026-11-02).
 Datum: 2026-11-02
 
 ## Ausgangslage
@@ -201,3 +201,5 @@ Farbe, Rauheit, Metalness, Normal scale, Clearcoat, Anisotropie, IOR als TSL-`un
   - Analyse-Materialien (Zebra/Wireframe) bleiben beim Neubau-Pfad.
   - Undo/Redo nutzt weiter den Neubau-Pfad.
 - [x] Wood porous: Band-Pass-Konturen ersetzt durch gestreckte Worley-Poren (kurze Striche in Faserrichtung, variabler Radius → ungleichmäßige Dichte). Der meter-3d-Pfad (Boden, „processed wood“-Bänder) bleibt unverändert.
+- [x] Phase 5 – Abnahme: lokaler Test durch User ok, alles funktioniert.
+
