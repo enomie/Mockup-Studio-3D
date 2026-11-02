@@ -18,7 +18,7 @@ describe('profile library', () => {
   it.each(BUILTIN_PROFILES)('$id points to a shipped SVG with metrics', (entry) => {
     expect(existsSync(resolve('public/profiles', entry.dir, entry.file))).toBe(true);
     expect(profileMetrics(entry)).toBeDefined();
-    expect(profileSizeLabel(entry)).toMatch(/^\d+ × \d+ mm$/);
+    expect(profileSizeLabel(entry)).toMatch(/^\d+\.\d{4} × \d+\.\d{4} m$/);
   });
 
   it('resolves files and entries by id', () => {

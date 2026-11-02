@@ -36,6 +36,7 @@ import {
   selectProfileNode,
 } from '@/ui/store/app-store';
 import { useAppStore } from '@/ui/store/use-app-store';
+import { mmToM } from '@/units/length';
 import {
   fitView,
   gridStepMm,
@@ -44,6 +45,11 @@ import {
   zoomAt,
   type EditorView,
 } from './profile-editor-view';
+
+/** Grid step for the hint, in meters without trailing zeros (e.g. 10 mm → "0.01"). */
+export function formatGridStepMeters(stepMm: number): string {
+  return String(Number(mmToM(stepMm).toFixed(4)));
+}
 
 /** Screen radius (px) of node and handle hit areas; large on purpose. */
 const HIT_RADIUS_PX = 12;
@@ -452,6 +458,7 @@ export function ProfileEditor() {
         </button>
       </div>
       <p className="profile-editor__hint">
+        {view ? `Grid ${formatGridStepMeters(gridStepMm(view.scale))} m · ` : null}
         Drag points and handles · Shift: break handles · Click a path: add point · Del: delete point ·
         Double-click: corner/smooth · Wheel: zoom · Space or middle mouse: pan · Esc: close
       </p>

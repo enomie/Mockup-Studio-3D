@@ -12,13 +12,11 @@ import { GeometryPartsSection } from '@/ui/panels/GeometryPartsSection';
 import { ProfilePickerSection } from '@/ui/panels/ProfilePickerSection';
 import { setKindParams } from '@/ui/store/app-store';
 import { useAppStore } from '@/ui/store/use-app-store';
+import { formatLengthMeters, parseLengthMetersInput } from '@/units/length';
 
-const formatMm = (meters: number): string => String(Math.round(meters * 10000) / 10);
-
-function parseDepthMm(raw: string): number | null {
-  const mm = Number(raw.trim().replace(',', '.'));
-  if (raw.trim() === '' || !Number.isFinite(mm)) {return null;}
-  const meters = mm / 1000;
+function parseDepthMeters(raw: string): number | null {
+  const meters = parseLengthMetersInput(raw);
+  if (meters === null) {return null;}
   return meters >= EXTRUSION_DEPTH_MIN_M && meters <= EXTRUSION_DEPTH_MAX_M ? meters : null;
 }
 
@@ -46,10 +44,10 @@ export function ExtrusionFields({ entity }: { entity: AssetEntity }) {
       <SubPanelSection title="Extrusion">
         <PanelAxisField
           label="Depth"
-          unit="mm"
+          unit="m"
           value={params.depthM}
-          format={formatMm}
-          parse={parseDepthMm}
+          format={(meters) => formatLengthMeters(meters)}
+          parse={parseDepthMeters}
           onChange={(depthM) => { setKindParams('extrusion', entity.id, { depthM }); }}
         />
       </SubPanelSection>

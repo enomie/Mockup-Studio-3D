@@ -9,7 +9,11 @@ Stand: A, B (B1 Datenmodell, B2 Verwalten, B3 Editor), C (Weinflasche), C2 (Stif
 ---
 
 ## 1. Überblick
-- Ein **Profil** ist eine neutrale Sammlung **benannter 2D-Pfade** in mm.
+- Ein **Profil** ist eine neutrale Sammlung **benannter 2D-Pfade**.
+- **Einheiten:** Gespeichert wird in **mm** (Datenmodell und SVGs: 1 Einheit = 1 mm). Die
+  Oberfläche zeigt und nimmt alle Längen in **Metern** mit 4 Nachkommastellen und „m“ rechts vom
+  Feld, wie im Rest der App (`formatMmAsMeters` / `parseMmFromMetersInput` bzw.
+  `formatLengthMeters` / `parseLengthMetersInput` aus `src/units/length.ts`). Winkel sind in °.
 - Ein Profil hat **keinen Typ** wie Lathe oder Extrusion. Ob gedreht oder extrudiert wird, und um
   welche Achse, entscheidet das **Asset**, das das Profil benutzt.
 - **Offen oder geschlossen** ist eine Eigenschaft des einzelnen Pfads. Auch offene Pfade lassen
@@ -61,7 +65,7 @@ Stand: A, B (B1 Datenmodell, B2 Verwalten, B3 Editor), C (Weinflasche), C2 (Stif
 ## 4. Reiter „Profiles“ (`src/ui/panels/ProfilesPanel.tsx`)
 - Er steht im linken Hauptpanel nach „Assets“, mit dem Icon `Spline`.
 - **Liste:** Eingebaute Profile stehen zuerst, dann die eigenen, jeweils nach Name sortiert. Jede
-  Kachel zeigt eine Vorschau, den Namen und darunter „Built-in · Asset · B × H mm“. Die Breite ist
+  Kachel zeigt eine Vorschau, den Namen und darunter „Built-in · Asset · B × H m“ (z. B. „0.0382 × 0.2929 m“). Die Breite ist
   die des halben Profils.
 - **Eingebautes Profil gewählt:** Info (Größe, Asset, Datei) und die Pfade mit Name, Offen/Geschlossen
   und Punktanzahl. Dazu der Hinweis „read-only“ und **Duplicate**.
@@ -141,7 +145,7 @@ verwenden. Gemeinsam:
   (Standard Plastic Matte). Die Details zeigen unter Geometries nur die Slots, die das Profil hat,
   beschriftet mit den Pfadnamen.
 - **Details:** Profil-Auswahl (dieselbe Komponente wie bei der Flasche, `ProfilePickerSection`),
-  **Depth** in mm, **Geometries**.
+  **Depth** in m, **Geometries**.
 - **Neubau** nach Profiländerungen wie bei der Flasche. „In scene“ und die Nachfrage beim
   Löschen gelten auch für Extrusionen.
 - **Keine Physik:** Die Extrusion ist kein Rigid-Body und hat keinen Kollider.
@@ -166,14 +170,14 @@ Die Seitenpanels bleiben sichtbar. **Done** oder **Esc** schließt ihn wieder.
 | Schließen | **Esc** oder **Done** | – |
 | Rückgängig | Strg/Cmd + Z, eine Ziehbewegung ist ein Schritt | ja |
 
-- **Darstellung:** Raster in mm (fein alle 10 mm, kräftiger alle 50 mm). Der Ursprung (0/0) ist
+- **Darstellung:** Das Raster passt sich dem Zoom an (Schritte 0,1 / 0,5 / 1 / 5 / 10 / 50 / 100 … mm, jede fünfte Linie kräftiger). Der Hinweis unten nennt die Rasterweite in m, z. B. „Grid 0.01 m“. Der Ursprung (0/0) ist
   markiert, die x = 0-Linie ist die Drehachse der Lathe-Profile. Pfade erscheinen in ihrer
   Slot-Farbe, der aktive Pfad kräftiger.
 - **Punktform:** Ecken sind Quadrate, glatte Punkte Kreise. Der ausgewählte Punkt ist gefüllt.
 - **Handles sind groß:** Punkte und Handles haben eine Trefferfläche von etwa 12 px Radius, egal wie
   weit gezoomt ist. Es gibt keine Minipunkte. Handles erscheinen am ausgewählten Punkt.
 - **Zahlenfelder im Profiles-Panel**, solange der Editor offen ist:
-  - für den ausgewählten Punkt: X, Y, Radius (mm), Modus Ecke/Glatt, Länge und Winkel jedes Handles
+  - für den ausgewählten Punkt: X, Y, Radius (m), Modus Ecke/Glatt, Länge (m) und Winkel (°) jedes Handles
   - für den Pfad: Closed an/aus
 - Während der Editor offen ist, wirken Entf, Esc und die Viewport-Kürzel nicht auf die 3D-Szene.
 

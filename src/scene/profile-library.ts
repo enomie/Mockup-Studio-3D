@@ -1,3 +1,4 @@
+import { formatMmAsMeters } from '@/units/length';
 import { builtinProfileUrl, type BuiltinProfileDir } from '@/constants/builtin-profile-paths';
 import { BUILTIN_PROFILE_PATHS } from '@/data/builtin-profiles.generated';
 import { LATHE_PROFILE_METRICS_MM } from '@/data/lathe-profile-metrics.generated';
@@ -86,14 +87,12 @@ export function profileMetrics(entry: ProfileEntry): LatheSvgMetricsMm | undefin
   return metrics ?? undefined;
 }
 
-const formatMm = (value: number): string => String(Math.round(value));
-
-/** Bounding size as "W × H mm" (width of the half profile, not the revolved diameter). */
+/** Bounding size as "W × H m" (width of the half profile, not the revolved diameter). */
 export function profileSizeLabel(entry: ProfileEntry): string | null {
   const metrics = profileMetrics(entry);
   if (!metrics) {
     return null;
   }
   const { minX, maxX, minY, maxY } = metrics.bounds;
-  return `${formatMm(maxX - minX)} × ${formatMm(maxY - minY)} mm`;
+  return `${formatMmAsMeters(maxX - minX)} × ${formatMmAsMeters(maxY - minY)} m`;
 }

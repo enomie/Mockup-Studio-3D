@@ -28,3 +28,20 @@ describe('profile editor view', () => {
     expect(gridStepMm(10)).toBe(1);
   });
 });
+
+describe('profile units in the UI', () => {
+  it('shows profile sizes and grid steps in meters', async () => {
+    const { formatGridStepMeters } = await import('./ProfileEditor');
+    const { profileSizeLabel, BUILTIN_PROFILES } = await import('@/scene/profile-library');
+    expect(formatGridStepMeters(10)).toBe('0.01');
+    expect(formatGridStepMeters(0.5)).toBe('0.0005');
+    const bordeaux = BUILTIN_PROFILES.find((entry) => entry.id === 'bottle-bordeaux');
+    expect(bordeaux && profileSizeLabel(bordeaux)).toMatch(/^0\.\d{4} × 0\.\d{4} m$/);
+  });
+
+  it('stores millimetres when a length is typed in meters', async () => {
+    const { formatMmAsMeters, parseMmFromMetersInput } = await import('@/units/length');
+    expect(formatMmAsMeters(38.2)).toBe('0.0382');
+    expect(parseMmFromMetersInput('0.0125')).toBeCloseTo(12.5, 6);
+  });
+});

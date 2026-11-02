@@ -14,19 +14,22 @@ import { PanelToggleGroup } from '@/ui/components/PanelToggleGroup';
 import { SubPanelSection } from '@/ui/components/SubPanelSection';
 import { editProfilePath } from '@/ui/store/app-store';
 import { useAppStore } from '@/ui/store/use-app-store';
+import { formatMmAsMeters, parseMmFromMetersInput } from '@/units/length';
 
-const formatMm = (value: number): string => String(Math.round(value * 100) / 100);
+/** Profiles are stored in mm; the UI shows and takes meters like the rest of the app. */
+const formatMeters = (mm: number): string => formatMmAsMeters(mm);
 const formatDeg = (value: number): string => String(Math.round(value * 10) / 10);
+
+function parseNonNegativeMeters(raw: string): number | null {
+  const mm = parseMmFromMetersInput(raw);
+  return mm !== null && mm >= 0 ? mm : null;
+}
 
 function parseNumber(raw: string): number | null {
   const value = Number(raw.trim().replace(',', '.'));
   return raw.trim() !== '' && Number.isFinite(value) ? value : null;
 }
 
-function parseNonNegative(raw: string): number | null {
-  const value = parseNumber(raw);
-  return value !== null && value >= 0 ? value : null;
-}
 
 const MODE_OPTIONS = [
   { key: 'corner', label: 'Corner' },
@@ -52,8 +55,8 @@ function HandleFields({ profileId, path, index, node, side }: NodeFieldsProps & 
   };
   return (
     <>
-      <PanelAxisField label={`${label} length`} unit="mm" value={length}
-        format={formatMm} parse={parseNonNegative} onChange={(value) => { apply(value, angleDeg); }} />
+      <PanelAxisField label={`${label} length`} unit="m" value={length}
+        format={formatMeters} parse={parseNonNegativeMeters} onChange={(value) => { apply(value, angleDeg); }} />
       <PanelAxisField label={`${label} angle`} unit="°" value={angleDeg}
         format={formatDeg} parse={parseNumber} onChange={(value) => { apply(length, value); }} />
     </>
@@ -69,9 +72,9 @@ function NodeFields(props: NodeFieldsProps) {
   return (
     <SubPanelSection title={`Point ${index + 1} · ${path.name}`}>
       <div className="panel-stack">
-        <PanelAxisField label="X" unit="mm" value={node.x} format={formatMm} parse={parseNumber}
+        <PanelAxisField label="X" unit="m" value={node.x} format={formatMeters} parse={parseMmFromMetersInput}
           onChange={(x) => { edit((current) => moveNode(current, index, x, node.y)); }} />
-        <PanelAxisField label="Y" unit="mm" value={node.y} format={formatMm} parse={parseNumber}
+        <PanelAxisField label="Y" unit="m" value={node.y} format={formatMeters} parse={parseMmFromMetersInput}
           onChange={(y) => { edit((current) => moveNode(current, index, node.x, y)); }} />
         <PanelToggleGroup
           label="Type"
@@ -82,8 +85,8 @@ function NodeFields(props: NodeFieldsProps) {
           }}
         />
         {canRound ? (
-          <PanelAxisField label="Radius" unit="mm" value={node.radius ?? 0} format={formatMm}
-            parse={parseNonNegative}
+          <PanelAxisField label="Radius" unit="m" value={node.radius ?? 0} format={formatMeters}
+            parse={parseNonNegativeMeters}
             onChange={(radius) => {
               edit((current) => {
                 const nodes = [...current.nodes];
