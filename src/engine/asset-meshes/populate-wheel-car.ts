@@ -27,7 +27,7 @@ export async function addWheelCar(
   const rimMaterialId = materials.rimMaterialId ?? MATERIAL_CHROME_ID;
   const tireMaterial = resolveMeshMaterial(resolver, tireMaterialId);
   const rimMaterial = resolveMeshMaterial(resolver, rimMaterialId);
-  const profiles = await loadWheelCarLatheProfiles(sizeScale);
+  const profiles = await loadWheelCarLatheProfiles(sizeScale, wheelCarParams.profileId);
   addWheelCarMeshesFromSvg(
     group,
     profiles,

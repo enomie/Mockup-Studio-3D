@@ -1,7 +1,10 @@
 import type { Vector2 } from 'three/webgpu';
 import type { BeverageCanBodyProfile } from './beverage-can-label-unfold';
-import { beverageCanSvgUrl } from '@/scene/asset-beverage-can';
-import { beverageCanProfileMm } from '@/scene/beverage-can-profile-metrics';
+import {
+  beverageCanProfileMm,
+  resolveBeverageCanProfile,
+} from '@/scene/beverage-can-profile-metrics';
+import { loadProfileSvgText, profileCacheKey } from '@/scene/profile-registry';
 import { latheSvgMmToMeters, prepareLatheProfile } from './lathe-contour';
 import {
   extractLathePathPointsBySlot,
@@ -20,7 +23,8 @@ export interface BeverageCanLatheProfiles {
   ring: Vector2[];
 }
 
-const rawPathsCache = new Map<BeverageCanBodyProfile, BeverageCanRawPaths>();
+/** Keyed by `profileCacheKey` of the resolved profile. */
+const rawPathsCache = new Map<string, BeverageCanRawPaths>();
 
 export function extractBeverageCanPathsFromSvgText(
   svgText: string,
@@ -42,25 +46,17 @@ export function normalizeBeverageCanPaths(
   };
 }
 
-async function fetchSvgText(url: string): Promise<string> {
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Failed to load SVG: ${url} (${response.status})`);
-  }
-  return response.text();
-}
-
 async function loadRawBeverageCanPaths(
   profile: BeverageCanBodyProfile,
 ): Promise<BeverageCanRawPaths> {
-  const cached = rawPathsCache.get(profile);
+  const { entry } = resolveBeverageCanProfile(profile);
+  const key = profileCacheKey(entry);
+  const cached = rawPathsCache.get(key);
   if (cached) {
     return cached;
   }
-  const paths = extractBeverageCanPathsFromSvgText(
-    await fetchSvgText(beverageCanSvgUrl(profile)),
-  );
-  rawPathsCache.set(profile, paths);
+  const paths = extractBeverageCanPathsFromSvgText(await loadProfileSvgText(entry));
+  rawPathsCache.set(key, paths);
   return paths;
 }
 

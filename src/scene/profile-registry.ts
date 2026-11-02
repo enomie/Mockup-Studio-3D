@@ -18,11 +18,15 @@ let userProfiles: readonly ProfileEntry[] = [];
 const versions = new Map<string, number>();
 const listeners = new Set<ProfilesListener>();
 
-/** Older scenes stored short wine bottle profile names. */
+/** Older scenes stored short profile names per asset. */
 const LEGACY_PROFILE_IDS: Readonly<Record<string, string>> = {
   bordeaux: 'bottle-bordeaux',
   alsace: 'bottle-alsace',
   sparkling: 'bottle-sparkling',
+  standard: 'can-330-classic',
+  sleek: 'can-330-sleek',
+  marker: 'pen-marker',
+  fountain: 'pen-fountain',
 };
 
 export function canonicalProfileId(id: string): string {
@@ -80,4 +84,36 @@ export async function loadProfileSvgText(entry: ProfileEntry, noCache = false): 
     throw new Error(`Failed to load SVG: ${url} (${response.status})`);
   }
   return response.text();
+}
+
+export interface ResolvedAssetProfile {
+  entry: ProfileEntry;
+  /** True when the requested profile is gone or lacks a required path (fallback used). */
+  missing: boolean;
+}
+
+/**
+ * Profile an asset uses: the requested one if it has all `requiredSlots`,
+ * otherwise the built-in `fallbackId`.
+ */
+export function resolveAssetProfile(
+  id: string,
+  requiredSlots: readonly number[],
+  fallbackId: string,
+): ResolvedAssetProfile {
+  const entry = findProfile(id);
+  const slots = entry ? registeredProfileMetrics(entry)?.slots : undefined;
+  if (entry && slots && requiredSlots.every((slot) => slots[slot])) {
+    return { entry, missing: false };
+  }
+  const fallback = findProfile(fallbackId);
+  if (!fallback) {
+    throw new Error(`Built-in profile ${fallbackId} missing`);
+  }
+  return { entry: fallback, missing: true };
+}
+
+/** Cache key for geometry built from a profile: id plus edit version. */
+export function profileCacheKey(entry: ProfileEntry): string {
+  return `${entry.id}@${profileVersion(entry.id)}`;
 }

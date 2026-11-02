@@ -4,7 +4,7 @@
 oder am Editor im selben Commit nachgezogen. Die Pläne in `_docs/plans/plan-profiles-*.md` sind nur
 der Verlauf.
 
-Stand: A, B (B1 Datenmodell, B2 Verwalten, B3 Editor), C (Profile in der Weinflasche) und D (Object Extrusion) umgesetzt.
+Stand: A, B (B1 Datenmodell, B2 Verwalten, B3 Editor), C (Weinflasche), C2 (Stift, Dose, Rad) und D (Object Extrusion) umgesetzt.
 
 ---
 
@@ -74,8 +74,35 @@ Stand: A, B (B1 Datenmodell, B2 Verwalten, B3 Editor), C (Profile in der Weinfla
 - **In scene:** Die Info zeigt, wie viele Assets der Szene das Profil benutzen. **Remove** fragt
   nach, wenn es benutzt wird. Diese Assets fallen dann auf Bordeaux zurück.
 
-## 4a. Profile in Assets (C): Weinflasche
-- **Nur die Weinflasche** benutzt bisher Profile. Dose, Stift und Rad folgen nach demselben Muster.
+## 4a. Profile in Assets (C, C2)
+Alle profilbasierten Assets (Weinflasche, Stift, Dose, Rad, Object Extrusion) können **jedes Profil**
+verwenden. Gemeinsam:
+- Die Auswahl in den Details ist `ProfilePickerSection`: Vorschau, alle Profile, „Edit profile“
+  bzw. „Duplicate & edit“.
+- `resolveAssetProfile(id, Pflicht-Slots, Fallback)` in `profile-registry.ts` liefert das Profil.
+  Fehlt es oder fehlt ein Pflicht-Pfad, wird der Fallback verwendet, mit Hinweis in den Details.
+- `entityProfileId` (`profile-usage.ts`) kennt alle diese Assets, für den Neubau nach Änderungen,
+  für „In scene“ und für die Nachfrage beim Löschen.
+- Alte Kurznamen bleiben gültig (`canonicalProfileId`): `bordeaux` / `alsace` / `sparkling`,
+  `standard` / `sleek` (Dose), `marker` / `fountain` (Stift).
+
+| Asset | Parameter | Slots (Pflicht **fett**) | Fallback |
+|---|---|---|---|
+| Wine bottle | `wineBottleParams.wineBottleBodyProfile` | **0 Glass**, 1 Capsule foil, 2 Capsule disc, 3 Cork | Bordeaux bottle |
+| Pen | `penParams.penBodyProfile` | 0 Cap, 1 Ring, **2 Body** | Marker pen |
+| Beverage can | `beverageCanParams.canBodyProfile` | **0 Body**, 1 Top ring (ohne Ring reicht das Etikett bis zum Body-Oberrand) | Can 330 ml classic |
+| Wheel car | `wheelCarParams.profileId` (fehlt bei alten Rädern → `wheel-car`) | **0 Tire**, 1 Rim outer, 2 Rim inner, 6 Spoke | Car wheel |
+| Object Extrusion | `extrusionParams.profileId` | alle Pfade (siehe 4b) | Rounded rectangle |
+
+- **Dose:** Hals, Bodenwölbung und Standring sind Handwerte. `can-330-sleek` behält seine Werte,
+  alle anderen Profile (auch Kopien) nutzen die Werte von classic. Etikett und Maße werden aus dem
+  Profil berechnet.
+- **Rad:** Achse (tiefster Punkt), Mitte und Radius werden aus dem gewählten Profil berechnet. Die
+  Material-Labels Tire/Rim kommen aus den Pfadnamen von Slot 0/1. Der Physik-Kollider nutzt die
+  Maße des Profils.
+- **Stift / Dose / Rad:** Die Labels unter Geometries bzw. Materials kommen aus den Pfadnamen.
+
+### Weinflasche im Detail
 - **Parameter:** `wineBottleParams.wineBottleBodyProfile` enthält die **Profil-ID** (z. B.
   `bottle-bordeaux`, `user-profile-…`). Der Feldname blieb aus Kompatibilitätsgründen.
   Alte Werte `bordeaux` / `alsace` / `sparkling` werden über `canonicalProfileId` weiter verstanden
@@ -180,6 +207,5 @@ Die Seitenpanels bleiben sichtbar. **Done** oder **Esc** schließt ihn wieder.
   löschen
 - Fangen (Snapping), Constraints, Bemaßungen
 - SVG-Import und -Export für Nutzer
-- Eigene Profile in Dose, Stift und Rad
 - Extrusion: Löcher, Fasen, Sweep entlang eines Pfads, Physik-Kollider, Bilder auf der Extrusion
 - Live-3D-Vorschau **während** des Ziehens (Neubau erst nach dem Loslassen)

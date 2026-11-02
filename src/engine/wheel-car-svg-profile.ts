@@ -1,10 +1,11 @@
 import { Vector2 } from 'three/webgpu';
-import { builtinLatheProfileUrl } from '@/constants/builtin-profile-paths';
 import {
-  WHEEL_CAR_SVG_AXIS_Y_MM,
-  WHEEL_CAR_SVG_FILE,
-  WHEEL_CAR_SVG_AXIAL_CENTER_MM,
+  DEFAULT_WHEEL_CAR_PROFILE_ID,
+  resolveWheelCarProfile,
+  wheelCarProfileFrameMm,
+  type WheelCarProfileFrameMm,
 } from '@/scene/asset-wheel-car';
+import { loadProfileSvgText, profileCacheKey } from '@/scene/profile-registry';
 import { MM_TO_M } from '@/units/length';
 import { closeAndOrientLatheContour } from './lathe-contour';
 import {
@@ -25,7 +26,8 @@ export interface WheelCarLatheProfiles {
 
 type RawWheelCarPaths = Record<WheelCarSvgPartId, LatheSvgPoint2[]>;
 
-let rawPathsCache: RawWheelCarPaths | null = null;
+/** Keyed by `profileCacheKey` of the resolved profile. */
+const rawPathsCache = new Map<string, RawWheelCarPaths>();
 
 export function extractWheelCarPathsFromSvgText(
   svgText: string,
@@ -41,72 +43,76 @@ export function extractWheelCarPathsFromSvgText(
 }
 
 /** SVG mm (x = axial, y down to the axis) → meters (x = radius, y = axial), × `sizeScale`. */
-function wheelSvgMmToMeters(raw: LatheSvgPoint2[], sizeScale: number): Vector2[] {
+function wheelSvgMmToMeters(
+  raw: LatheSvgPoint2[],
+  sizeScale: number,
+  frame: WheelCarProfileFrameMm,
+): Vector2[] {
   const k = MM_TO_M * sizeScale;
   return raw.map(
     (p) =>
       new Vector2(
-        Math.max(0, WHEEL_CAR_SVG_AXIS_Y_MM - p.y) * k,
-        (p.x - WHEEL_CAR_SVG_AXIAL_CENTER_MM) * k,
+        Math.max(0, frame.axisYMm - p.y) * k,
+        (p.x - frame.axialCenterMm) * k,
       ),
   );
 }
 
 /** Every wheel part is a closed outline: closed + wound CCW so lathe faces point outward. */
-function normalizeWheelCarPartPoints(raw: LatheSvgPoint2[], sizeScale: number): Vector2[] {
+function normalizeWheelCarPartPoints(
+  raw: LatheSvgPoint2[],
+  sizeScale: number,
+  frame: WheelCarProfileFrameMm,
+): Vector2[] {
   if (raw.length < 3 || sizeScale <= 0) {
     return [];
   }
-  return closeAndOrientLatheContour(wheelSvgMmToMeters(raw, sizeScale));
+  return closeAndOrientLatheContour(wheelSvgMmToMeters(raw, sizeScale, frame));
 }
 
 export function normalizeWheelCarPaths(
   raw: RawWheelCarPaths,
   sizeScale = 1,
+  frame: WheelCarProfileFrameMm = wheelCarProfileFrameMm(),
 ): WheelCarLatheProfiles {
   return {
-    tire: normalizeWheelCarPartPoints(raw.tire, sizeScale),
-    rimOuter: normalizeWheelCarPartPoints(raw.rimOuter, sizeScale),
-    rimInner: normalizeWheelCarPartPoints(raw.rimInner, sizeScale),
-    spoke: normalizeWheelCarPartPoints(raw.spoke, sizeScale),
+    tire: normalizeWheelCarPartPoints(raw.tire, sizeScale, frame),
+    rimOuter: normalizeWheelCarPartPoints(raw.rimOuter, sizeScale, frame),
+    rimInner: normalizeWheelCarPartPoints(raw.rimInner, sizeScale, frame),
+    spoke: normalizeWheelCarPartPoints(raw.spoke, sizeScale, frame),
   };
 }
 
-function wheelCarSvgUrl(): string {
-  return builtinLatheProfileUrl(WHEEL_CAR_SVG_FILE);
-}
-
-async function fetchSvgText(url: string): Promise<string> {
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Failed to load SVG: ${url} (${response.status})`);
+async function loadRawWheelCarPaths(profileId: string): Promise<RawWheelCarPaths> {
+  const { entry } = resolveWheelCarProfile(profileId);
+  const key = profileCacheKey(entry);
+  const cached = rawPathsCache.get(key);
+  if (cached) {
+    return cached;
   }
-  return response.text();
-}
-
-async function loadRawWheelCarPaths(): Promise<RawWheelCarPaths> {
-  if (rawPathsCache) {
-    return rawPathsCache;
-  }
-  const svgText = await fetchSvgText(wheelCarSvgUrl());
-  const paths = extractWheelCarPathsFromSvgText(svgText);
-  rawPathsCache = paths;
+  const paths = extractWheelCarPathsFromSvgText(await loadProfileSvgText(entry));
+  rawPathsCache.set(key, paths);
   return paths;
 }
 
-export function setRawWheelCarPathsCache(paths: RawWheelCarPaths): void {
-  rawPathsCache = paths;
+/** Test hook: preload the raw paths of a profile (default: the built-in wheel). */
+export function setRawWheelCarPathsCache(
+  paths: RawWheelCarPaths,
+  profileId: string = DEFAULT_WHEEL_CAR_PROFILE_ID,
+): void {
+  rawPathsCache.set(profileCacheKey(resolveWheelCarProfile(profileId).entry), paths);
 }
 
 export function clearRawWheelCarPathsCache(): void {
-  rawPathsCache = null;
+  rawPathsCache.clear();
 }
 
 export async function loadWheelCarLatheProfiles(
   sizeScale = 1,
+  profileId: string = DEFAULT_WHEEL_CAR_PROFILE_ID,
 ): Promise<WheelCarLatheProfiles> {
-  const raw = await loadRawWheelCarPaths();
-  return normalizeWheelCarPaths(raw, sizeScale);
+  const raw = await loadRawWheelCarPaths(profileId);
+  return normalizeWheelCarPaths(raw, sizeScale, wheelCarProfileFrameMm(profileId));
 }
 
 export function maxRadiusFromLatheProfile(points: Vector2[]): number {

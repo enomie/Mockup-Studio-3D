@@ -1,4 +1,3 @@
-import { builtinLatheProfileUrl } from '@/constants/builtin-profile-paths';
 import type { AssetKind } from './asset-kind';
 import {
   BEVERAGE_CAN_LABEL_METAL_ZONES_MM,
@@ -6,9 +5,10 @@ import {
   type BeverageCanBodyProfile,
 } from '@/engine/beverage-can-label-unfold';
 import {
-  BEVERAGE_CAN_SVG_FILE,
   beverageCanProfileMm,
+  DEFAULT_BEVERAGE_CAN_PROFILE_ID,
 } from '@/scene/beverage-can-profile-metrics';
+import { canonicalProfileId } from '@/scene/profile-registry';
 import { MM_TO_M } from '@/units/length';
 import { clamp } from '@/units/math';
 
@@ -32,17 +32,24 @@ export interface BeverageCanParams {
 
 const LABEL_HEIGHT_MIN = 0.02;
 
-const PROFILE_NECK_LENGTH_M: Record<BeverageCanBodyProfile, number> = {
+/** Hand-tuned details per built-in can; user profiles use the classic values. */
+type CanTuning = 'standard' | 'sleek';
+
+function canTuning(profile: BeverageCanBodyProfile): CanTuning {
+  return canonicalProfileId(profile) === 'can-330-sleek' ? 'sleek' : 'standard';
+}
+
+const PROFILE_NECK_LENGTH_M: Record<CanTuning, number> = {
   standard: 0.01834,
   sleek: 0.0105,
 };
 
-const PROFILE_BOTTOM_DOME_M: Record<BeverageCanBodyProfile, number> = {
+const PROFILE_BOTTOM_DOME_M: Record<CanTuning, number> = {
   standard: 0.0035,
   sleek: 0.004,
 };
 
-const PROFILE_STAND_DIAMETER_M: Record<BeverageCanBodyProfile, number> = {
+const PROFILE_STAND_DIAMETER_M: Record<CanTuning, number> = {
   standard: 0.04732,
   sleek: 0.04724,
 };
@@ -56,22 +63,19 @@ export function beverageCanLabelTopM(params: BeverageCanParams): number {
   return (mm.labelTopFromFootMm / mm.heightMm) * params.heightM;
 }
 
-export function beverageCanSvgUrl(profile: BeverageCanBodyProfile): string {
-  return builtinLatheProfileUrl(BEVERAGE_CAN_SVG_FILE[profile]);
-}
-
 export function defaultBeverageCanParams(
-  profile: BeverageCanBodyProfile = 'standard',
+  profile: BeverageCanBodyProfile = DEFAULT_BEVERAGE_CAN_PROFILE_ID,
 ): BeverageCanParams {
   const nominal = nominalForProfile(profile);
+  const tuning = canTuning(profile);
 
   return {
-    canBodyProfile: profile,
+    canBodyProfile: canonicalProfileId(profile),
     heightM: nominal.heightM,
-    neckLengthM: PROFILE_NECK_LENGTH_M[profile],
-    bottomDomeInsetM: PROFILE_BOTTOM_DOME_M[profile],
+    neckLengthM: PROFILE_NECK_LENGTH_M[tuning],
+    bottomDomeInsetM: PROFILE_BOTTOM_DOME_M[tuning],
     diameterM: nominal.diameterM,
-    bottomStandDiameterM: PROFILE_STAND_DIAMETER_M[profile],
+    bottomStandDiameterM: PROFILE_STAND_DIAMETER_M[tuning],
     labelHeightM: nominal.labelHeightM,
     labelBottomOffsetM: BEVERAGE_CAN_LABEL_METAL_ZONES_MM.bottomMetalBandMm * MM_TO_M,
     bottomMetalBandM: BEVERAGE_CAN_LABEL_METAL_ZONES_MM.bottomMetalBandMm * MM_TO_M,
@@ -112,9 +116,9 @@ export function clampBeverageCanParams(
   partial: Partial<BeverageCanParams>,
   base: BeverageCanParams,
 ): BeverageCanParams {
-  const profile = partial.canBodyProfile ?? base.canBodyProfile;
+  const profile = canonicalProfileId(partial.canBodyProfile ?? base.canBodyProfile);
   const profileDefaults =
-    partial.canBodyProfile !== undefined && partial.canBodyProfile !== base.canBodyProfile
+    partial.canBodyProfile !== undefined && profile !== canonicalProfileId(base.canBodyProfile)
       ? defaultBeverageCanParams(profile)
       : null;
 

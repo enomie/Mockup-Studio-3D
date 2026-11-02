@@ -8,14 +8,17 @@ export interface WheelCarColliderShape {
   centerOffsetY: number;
 }
 
-export function wheelCarVolumeM3(sizeScale: number): number {
-  const params = wheelCarDimensionsM(sizeScale);
+export function wheelCarVolumeM3(sizeScale: number, profileId?: string): number {
+  const params = wheelCarDimensionsM(sizeScale, profileId);
   return Math.PI * params.outerRadiusM * params.outerRadiusM * params.tireWidthM;
 }
 
-/** Collider from the SVG-measured wheel size × `sizeScale`. */
-export function wheelCarColliderShapeFromSizeScale(sizeScale: number): WheelCarColliderShape {
-  const params = wheelCarDimensionsM(sizeScale);
+/** Collider from the profile-measured wheel size × `sizeScale`. */
+export function wheelCarColliderShapeFromSizeScale(
+  sizeScale: number,
+  profileId?: string,
+): WheelCarColliderShape {
+  const params = wheelCarDimensionsM(sizeScale, profileId);
   const marginM = PHYSICS_COLLIDER_MARGIN_M;
   return {
     halfHeightM: params.tireWidthM * 0.5 + marginM,

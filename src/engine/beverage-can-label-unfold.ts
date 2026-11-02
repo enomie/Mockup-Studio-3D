@@ -5,7 +5,8 @@
  */
 import { beverageCanProfileMm } from '@/scene/beverage-can-profile-metrics';
 
-export type BeverageCanBodyProfile = 'standard' | 'sleek';
+/** Profile id of the can body (any profile); legacy 'standard' / 'sleek' still resolve. */
+export type BeverageCanBodyProfile = string;
 
 /** Shared metal zones (both 330 ml profiles) — mm */
 export const BEVERAGE_CAN_LABEL_METAL_ZONES_MM = {
@@ -56,12 +57,6 @@ function bodyNominalMm(profile: BeverageCanBodyProfile): BeverageCanBodyNominalM
   return { canHeightMm: mm.bodyHeightMm, bodyDiameterMm: mm.bodyDiameterMm };
 }
 
-/** Closed-can body height + BOD (mm), measured from the profile SVG. */
-const BEVERAGE_CAN_BODY_NOMINAL_MM: Record<BeverageCanBodyProfile, BeverageCanBodyNominalMm> = {
-  standard: bodyNominalMm('standard'),
-  sleek: bodyNominalMm('sleek'),
-};
-
 export function computeLabelBandHeightMm(canHeightMm: number): number {
   return canHeightMm - BEVERAGE_CAN_LABEL_BOTTOM_METAL_MM;
 }
@@ -77,7 +72,7 @@ function computeLabelUnfoldMm(bodyDiameterMm: number, labelHeightMm: number): La
 }
 
 export function computeLabelUnfoldForProfile(profile: BeverageCanBodyProfile): LabelUnfoldMm {
-  const body = BEVERAGE_CAN_BODY_NOMINAL_MM[profile];
+  const body = bodyNominalMm(profile);
   const labelHeightMm = computeLabelBandHeightMm(body.canHeightMm);
   return computeLabelUnfoldMm(body.bodyDiameterMm, labelHeightMm);
 }
@@ -91,7 +86,7 @@ export function computeLabelPrintableBandHeightMm(profile: BeverageCanBodyProfil
 }
 
 export function computeLabelPrintableBandMm(profile: BeverageCanBodyProfile): LabelUnfoldMm {
-  const body = BEVERAGE_CAN_BODY_NOMINAL_MM[profile];
+  const body = bodyNominalMm(profile);
   const heightMm = computeLabelPrintableBandHeightMm(profile);
   return computeLabelUnfoldMm(body.bodyDiameterMm, heightMm);
 }
@@ -148,21 +143,10 @@ function nominalMmToM(
   };
 }
 
-const BEVERAGE_CAN_NOMINAL_BY_PROFILE: Record<BeverageCanBodyProfile, BeverageCanNominalM> = {
-  standard: nominalMmToM(
-    'standard',
-    BEVERAGE_CAN_BODY_NOMINAL_MM.standard,
-    computeLabelBandHeightMm(BEVERAGE_CAN_BODY_NOMINAL_MM.standard.canHeightMm),
-  ),
-  sleek: nominalMmToM(
-    'sleek',
-    BEVERAGE_CAN_BODY_NOMINAL_MM.sleek,
-    computeLabelBandHeightMm(BEVERAGE_CAN_BODY_NOMINAL_MM.sleek.canHeightMm),
-  ),
-};
-
+/** Nominal size from the profile (computed on demand: user profiles can change). */
 export function nominalForProfile(profile: BeverageCanBodyProfile): BeverageCanNominalM {
-  return BEVERAGE_CAN_NOMINAL_BY_PROFILE[profile];
+  const body = bodyNominalMm(profile);
+  return nominalMmToM(profile, body, computeLabelBandHeightMm(body.canHeightMm));
 }
 
 export function computeLabelUnfoldAspect(unfold: LabelUnfoldMm): LabelUnfoldAspect {

@@ -396,7 +396,10 @@ export function computeFaceSize(
   }
 
   if (isWheelCarAssetKind(assetKind)) {
-    const d = wheelCarDimensionsM(clampSizeScale(sizeScale)).outerRadiusM * 2;
+    const d = wheelCarDimensionsM(
+      clampSizeScale(sizeScale),
+      entity?.wheelCarParams?.profileId,
+    ).outerRadiusM * 2;
     return { width: d, height: d };
   }
 
@@ -471,7 +474,7 @@ export function assetFootprintHeight(
     case 'sphere':
       return (entity?.sphereParams?.radiusM ?? defaultSphereParams().radiusM) * 2;
     case 'wheel-car':
-      return wheelCarDimensionsM(scale).outerRadiusM * 2;
+      return wheelCarDimensionsM(scale, entity?.wheelCarParams?.profileId).outerRadiusM * 2;
     case 'extrusion':
       return extrusionSizeM(entity?.extrusionParams ?? defaultExtrusionParams()).heightM * scale;
     case 'beverage-can': {

@@ -1,20 +1,27 @@
-import { builtinProfileFile } from '@/scene/builtin-profile-files';
-import { builtinLatheProfileUrl } from '@/constants/builtin-profile-paths';
 import type { AssetKind } from './asset-kind';
 import { MM_TO_M } from '@/units/length';
-import { LATHE_PROFILE_METRICS_MM } from '@/data/lathe-profile-metrics.generated';
+import {
+  canonicalProfileId,
+  registeredProfileMetrics,
+  resolveAssetProfile,
+  type ResolvedAssetProfile,
+} from './profile-registry';
 
-export type PenBodyProfile = 'marker' | 'fountain';
+/** Profile id of the pen (any profile); legacy 'marker' / 'fountain' still resolve. */
+export type PenBodyProfile = string;
+
+export const DEFAULT_PEN_PROFILE_ID = 'pen-marker';
+/** Pen parts by profile slot: 0 cap, 1 ring, 2 body (required). */
+const PEN_BODY_SLOT = 2;
+
+/** The profile a pen uses; falls back to Marker when it is missing or has no body path. */
+export function resolvePenProfile(profile: PenBodyProfile): ResolvedAssetProfile {
+  return resolveAssetProfile(profile, [PEN_BODY_SLOT], DEFAULT_PEN_PROFILE_ID);
+}
 
 export interface PenParams {
   penBodyProfile: PenBodyProfile;
 }
-
-/** Shipped profile SVG per pen profile (public/profiles/lathe, 1 unit = 1 mm). */
-const PEN_SVG_FILE: Record<PenBodyProfile, string> = {
-  marker: builtinProfileFile('pen-marker'),
-  fountain: builtinProfileFile('pen-fountain'),
-};
 
 export interface PenFootprintM {
   widthM: number;
@@ -23,7 +30,9 @@ export interface PenFootprintM {
 
 /** Measured from the profile SVG: `widthM` = max radius, `heightM` = overall length. */
 export function penNominalFootprintM(profile: PenBodyProfile): PenFootprintM {
-  const { bounds } = LATHE_PROFILE_METRICS_MM[PEN_SVG_FILE[profile]];
+  const metrics = registeredProfileMetrics(resolvePenProfile(profile).entry);
+  if (!metrics) {throw new Error('Pen profile has no metrics');}
+  const { bounds } = metrics;
   return {
     widthM: bounds.maxX * MM_TO_M,
     heightM: (bounds.maxY - bounds.minY) * MM_TO_M,
@@ -38,22 +47,18 @@ export function penFootprintAspect(profile: PenBodyProfile): number {
   return widthM / heightM;
 }
 
-export function penSvgUrl(profile: PenBodyProfile): string {
-  return builtinLatheProfileUrl(PEN_SVG_FILE[profile]);
-}
-
-export function defaultPenParams(profile: PenBodyProfile = 'marker'): PenParams {
+export function defaultPenParams(profile: PenBodyProfile = DEFAULT_PEN_PROFILE_ID): PenParams {
   return {
-    penBodyProfile: profile,
+    penBodyProfile: canonicalProfileId(profile),
   };
 }
 
 function resolvePenParams(
   partial: Partial<PenParams> | undefined,
-  profile: PenBodyProfile = 'marker',
+  profile: PenBodyProfile = DEFAULT_PEN_PROFILE_ID,
 ): PenParams {
   return {
-    penBodyProfile: partial?.penBodyProfile ?? profile,
+    penBodyProfile: canonicalProfileId(partial?.penBodyProfile ?? profile),
   };
 }
 

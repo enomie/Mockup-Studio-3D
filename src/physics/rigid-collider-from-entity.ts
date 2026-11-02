@@ -39,7 +39,10 @@ export function rigidColliderShapeFromEntity(
     case 'wheel-car':
       return {
         kind: 'wheelCar',
-        shape: wheelCarColliderShapeFromSizeScale(entity.sizeScale),
+        shape: wheelCarColliderShapeFromSizeScale(
+          entity.sizeScale,
+          entity.wheelCarParams?.profileId,
+        ),
       };
   }
 }

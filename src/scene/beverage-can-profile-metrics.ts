@@ -1,15 +1,22 @@
-import { builtinProfileFile } from '@/scene/builtin-profile-files';
-import { LATHE_PROFILE_METRICS_MM } from '@/data/lathe-profile-metrics.generated';
 import type { BeverageCanBodyProfile } from '@/engine/beverage-can-label-unfold';
-import { latheSlotBounds } from '@/engine/lathe-svg-metrics';
+import type { LatheBoundsMm } from '@/engine/lathe-svg-metrics';
+import {
+  registeredProfileMetrics,
+  resolveAssetProfile,
+  type ResolvedAssetProfile,
+} from '@/scene/profile-registry';
 
-/** Shipped profile SVG per body profile (public/profiles/lathe, 1 unit = 1 mm). */
-export const BEVERAGE_CAN_SVG_FILE: Record<BeverageCanBodyProfile, string> = {
-  standard: builtinProfileFile('can-330-classic'),
-  sleek: builtinProfileFile('can-330-sleek'),
-};
+export const DEFAULT_BEVERAGE_CAN_PROFILE_ID = 'can-330-classic';
+/** Can parts by profile slot: 0 body (required), 1 top ring (optional). */
+const CAN_BODY_SLOT = 0;
+const CAN_RING_SLOT = 1;
 
-/** Sizes measured from the profile SVG (mm, at sizeScale = 1). */
+/** The profile a can uses; falls back to the classic can when missing or without a body path. */
+export function resolveBeverageCanProfile(profile: BeverageCanBodyProfile): ResolvedAssetProfile {
+  return resolveAssetProfile(profile, [CAN_BODY_SLOT], DEFAULT_BEVERAGE_CAN_PROFILE_ID);
+}
+
+/** Sizes measured from the profile (mm, at sizeScale = 1). */
 export interface BeverageCanProfileMm {
   /** Overall height incl. top ring (foot → ring top). */
   heightMm: number;
@@ -17,22 +24,23 @@ export interface BeverageCanProfileMm {
   bodyHeightMm: number;
   /** Body outside diameter (2 × max radius of `path_red`). */
   bodyDiameterMm: number;
-  /** Label band top = top ring underside, measured from the foot. */
+  /** Label band top = top ring underside (or body top without ring), measured from the foot. */
   labelTopFromFootMm: number;
   /** SVG y of the foot (lowest point) — maps to lathe y = 0. */
   footYMm: number;
 }
 
 export function beverageCanProfileMm(profile: BeverageCanBodyProfile): BeverageCanProfileMm {
-  const metrics = LATHE_PROFILE_METRICS_MM[BEVERAGE_CAN_SVG_FILE[profile]];
-  const body = latheSlotBounds(metrics, 0);
-  const ring = latheSlotBounds(metrics, 1);
+  const metrics = registeredProfileMetrics(resolveBeverageCanProfile(profile).entry);
+  const body: LatheBoundsMm | null | undefined = metrics?.slots[CAN_BODY_SLOT];
+  if (!metrics || !body) {throw new Error('Beverage can profile has no body path');}
+  const ring = metrics.slots[CAN_RING_SLOT] ?? null;
   const footYMm = metrics.bounds.maxY;
   return {
     heightMm: footYMm - metrics.bounds.minY,
     bodyHeightMm: body.maxY - body.minY,
     bodyDiameterMm: body.maxX * 2,
-    labelTopFromFootMm: footYMm - ring.maxY,
+    labelTopFromFootMm: footYMm - (ring ? ring.maxY : body.minY),
     footYMm,
   };
 }

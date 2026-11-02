@@ -1,7 +1,7 @@
 import {
   LatheGeometry,
   Mesh,
-  type BufferGeometry,
+  BufferGeometry,
   type Material,
   type Vector2,
 } from 'three/webgpu';
@@ -18,6 +18,7 @@ import {
   loadBeverageCanLatheProfiles,
   sampleProfileRadiusAtY,
 } from './beverage-can-svg-profile';
+import { nominalForProfile } from './beverage-can-label-unfold';
 import { applyRotationalPrintUv, PRINT_UV_ATTRIBUTE } from './rotational-print-mapping';
 import {
   applyLatheGeometryFootToY0,
@@ -133,7 +134,10 @@ export function buildTopRingGeometry(ringProfile: Vector2[]): BufferGeometry {
 export async function buildBeverageCanMeshes(
   input: BeverageCanMeshBuildInput,
 ): Promise<BeverageCanMeshBuildResult> {
-  const scaled = scaledBeverageCanParams(input.params, input.sizeScale);
+  // Size always from the current profile: a user profile may have been edited since.
+  const nominal = nominalForProfile(input.params.canBodyProfile);
+  const params = { ...input.params, heightM: nominal.heightM, diameterM: nominal.diameterM };
+  const scaled = scaledBeverageCanParams(params, input.sizeScale);
   const profile = scaled.canBodyProfile;
 
   const profiles = await loadBeverageCanLatheProfiles(profile, input.sizeScale);
@@ -141,12 +145,11 @@ export async function buildBeverageCanMeshes(
   if (profiles.body.length < 2) {
     throw new Error(`Beverage can SVG profile empty: ${profile}`);
   }
-  if (profiles.ring.length < 3) {
-    throw new Error(`Beverage can SVG top ring (path_green) missing: ${profile}`);
-  }
+  // The top ring is optional for user profiles; without it the mesh stays empty.
+  const hasRing = profiles.ring.length >= 3;
 
   const bodyGeometry = buildCanHullLatheGeometry(profiles.body, { params: scaled });
-  const ringGeometry = buildTopRingGeometry(profiles.ring);
+  const ringGeometry = hasRing ? buildTopRingGeometry(profiles.ring) : new BufferGeometry();
 
   const bodyVisible = isGeometryVisible(input.geometryVisibility, 'body');
   const topRingVisible = isGeometryVisible(input.geometryVisibility, 'topRing');
@@ -159,7 +162,7 @@ export async function buildBeverageCanMeshes(
   const topRingMesh = new Mesh(ringGeometry, input.topRingMetalMaterial);
   topRingMesh.name = 'beverage-can-top-ring';
   topRingMesh.userData.assetMeshRole = 'topRing';
-  topRingMesh.visible = topRingVisible;
+  topRingMesh.visible = topRingVisible && hasRing;
 
   return { bodyMesh, topRingMesh };
 }

@@ -1,8 +1,5 @@
 import { getGeometryPartsForKind } from '@/scene/asset-kind-registry';
-import {
-  defaultPenParams,
-  type PenBodyProfile,
-} from '@/scene/asset-pen';
+import { defaultPenParams, resolvePenProfile } from '@/scene/asset-pen';
 import {
   MATERIAL_ALUMINUM_BRUSHED_ID,
   MATERIAL_PLASTIC_MATTE_ID,
@@ -14,7 +11,7 @@ import { GeometryPartsSection } from '@/ui/panels/GeometryPartsSection';
 import { setKindParams, setAssetScreenImage } from '@/ui/store/app-store';
 import { useAppStore } from '@/ui/store/use-app-store';
 import { MaterialSelect } from '@/ui/panels/MaterialSelect';
-import { PanelSelect } from '@/ui/components/PanelSelect';
+import { ProfilePickerSection } from '@/ui/panels/ProfilePickerSection';
 import type { PictureFieldsProps } from './entity-fields-types';
 
 export function PenFields({
@@ -25,9 +22,14 @@ export function PenFields({
   const materials = useAppStore((s) => s.materials);
   const slots = entity.materials;
   const params = {
-    ...defaultPenParams('marker'),
+    ...defaultPenParams(),
     ...entity.penParams,
   };
+  // Re-render on profile edits; the registry is kept in sync by the store.
+  useAppStore((s) => s.userProfiles);
+  const profile = resolvePenProfile(params.penBodyProfile).entry;
+  const pathName = (slot: number, fallback: string) =>
+    profile.paths.find((path) => path.slot === slot)?.name ?? fallback;
 
   return (
     <>
@@ -48,43 +50,37 @@ export function PenFields({
           entity={entity}
           materials={materials}
           parts={getGeometryPartsForKind(entity.assetKind)}
+          profilePathName={(slot) => profile.paths.find((path) => path.slot === slot)?.name}
         />
       </SubPanelSection>
 
-      <SubPanelSection title="Body profile">
-        <PanelSelect
-          label="Profile"
-          value={params.penBodyProfile}
-          options={[
-            { value: 'marker', label: 'Marker' },
-            { value: 'fountain', label: 'Fountain pen' },
-          ]}
-          onChange={(value) => { setKindParams('pen', entity.id, {
-              penBodyProfile: value as PenBodyProfile,
-            }); }
-          }
-        />
-      </SubPanelSection>
+      <ProfilePickerSection
+        title="Body profile"
+        profileId={params.penBodyProfile}
+        resolve={resolvePenProfile}
+        missingHint="Profile missing or without a body path – using Marker."
+        onChange={(penBodyProfile) => { setKindParams('pen', entity.id, { penBodyProfile }); }}
+      />
 
       <SubPanelSection title="Materials">
         <MaterialSelect
           entityId={entity.id}
           slot="capMaterialId"
-          label="Cap"
+          label={pathName(0, 'Cap')}
           value={slots?.capMaterialId ?? MATERIAL_PLASTIC_MATTE_ID}
           materials={materials}
         />
         <MaterialSelect
           entityId={entity.id}
           slot="ringMaterialId"
-          label="Ring"
+          label={pathName(1, 'Ring')}
           value={slots?.ringMaterialId ?? MATERIAL_ALUMINUM_BRUSHED_ID}
           materials={materials}
         />
         <MaterialSelect
           entityId={entity.id}
           slot="bodyMaterialId"
-          label="Body"
+          label={pathName(2, 'Body')}
           value={slots?.bodyMaterialId ?? MATERIAL_PLASTIC_SMOOTH_ID}
           materials={materials}
         />

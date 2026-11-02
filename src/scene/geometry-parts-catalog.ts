@@ -45,8 +45,8 @@ export const GEOMETRY_PARTS_MONITOR: readonly AssetGeometryPartDescriptor[] = [
 ];
 
 export const GEOMETRY_PARTS_BEVERAGE_CAN: readonly AssetGeometryPartDescriptor[] = [
-  visibilityOnlyPart('body', 'Body (metal)'),
-  visibilityOnlyPart('topRing', 'Top ring'),
+  { ...visibilityOnlyPart('body', 'Body (metal)'), profileSlot: 0 },
+  { ...visibilityOnlyPart('topRing', 'Top ring'), profileSlot: 1 },
   visibilityOnlyPart('label', 'Label (print)'),
 ];
 
@@ -56,9 +56,9 @@ export const GEOMETRY_PARTS_TIN_CAN: readonly AssetGeometryPartDescriptor[] = [
 ];
 
 export const GEOMETRY_PARTS_PEN: readonly AssetGeometryPartDescriptor[] = [
-  partWithMaterial('cap', 'Cap', 'capMaterialId'),
-  partWithMaterial('ring', 'Ring', 'ringMaterialId'),
-  partWithMaterial('penBody', 'Body', 'bodyMaterialId'),
+  { ...partWithMaterial('cap', 'Cap', 'capMaterialId'), profileSlot: 0 },
+  { ...partWithMaterial('ring', 'Ring', 'ringMaterialId'), profileSlot: 1 },
+  { ...partWithMaterial('penBody', 'Body', 'bodyMaterialId'), profileSlot: 2 },
 ];
 
 /** Labels fall back to these names; with a profile they come from its path names (slot). */

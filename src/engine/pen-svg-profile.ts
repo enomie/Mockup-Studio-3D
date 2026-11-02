@@ -1,5 +1,6 @@
 import { Vector2 } from 'three/webgpu';
-import { penSvgUrl, type PenBodyProfile } from '@/scene/asset-pen';
+import { resolvePenProfile, type PenBodyProfile } from '@/scene/asset-pen';
+import { loadProfileSvgText, profileCacheKey } from '@/scene/profile-registry';
 import { latheSvgMmToMeters, prepareLatheProfile } from './lathe-contour';
 import {
   extractLathePathPointsBySlot,
@@ -18,7 +19,8 @@ export interface PenLatheProfiles {
 
 type RawPenPaths = Record<PenSvgPartId, LatheSvgPoint2[]>;
 
-const rawPathsCache = new Map<PenBodyProfile, RawPenPaths>();
+/** Keyed by `profileCacheKey` of the resolved profile. */
+const rawPathsCache = new Map<string, RawPenPaths>();
 
 export function extractPenPathsFromSvgText(
   svgText: string,
@@ -91,22 +93,15 @@ export function normalizePenPaths(raw: RawPenPaths): PenLatheProfiles {
   };
 }
 
-async function fetchSvgText(url: string): Promise<string> {
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Failed to load SVG: ${url} (${response.status})`);
-  }
-  return response.text();
-}
-
 async function loadRawPenPaths(profile: PenBodyProfile): Promise<RawPenPaths> {
-  const cached = rawPathsCache.get(profile);
+  const { entry } = resolvePenProfile(profile);
+  const key = profileCacheKey(entry);
+  const cached = rawPathsCache.get(key);
   if (cached) {
     return cached;
   }
-  const svgText = await fetchSvgText(penSvgUrl(profile));
-  const paths = extractPenPathsFromSvgText(svgText);
-  rawPathsCache.set(profile, paths);
+  const paths = extractPenPathsFromSvgText(await loadProfileSvgText(entry));
+  rawPathsCache.set(key, paths);
   return paths;
 }
 

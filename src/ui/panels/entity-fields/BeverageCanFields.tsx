@@ -1,8 +1,6 @@
 import { getGeometryPartsForKind } from '@/scene/asset-kind-registry';
-import {
-  defaultBeverageCanParams,
-  type BeverageCanBodyProfile,
-} from '@/scene/asset-beverage-can';
+import { defaultBeverageCanParams } from '@/scene/asset-beverage-can';
+import { resolveBeverageCanProfile } from '@/scene/beverage-can-profile-metrics';
 import { MATERIAL_ALUMINUM_BRUSHED_ID } from '@/scene/material-ids';
 import { SubPanelSection } from '@/ui/components/SubPanelSection';
 import { ImageSurfaceFields } from '@/ui/panels/ImageSurfaceFields';
@@ -10,7 +8,7 @@ import { GeometryPartsSection } from '@/ui/panels/GeometryPartsSection';
 import { setKindParams, setAssetScreenImage } from '@/ui/store/app-store';
 import { useAppStore } from '@/ui/store/use-app-store';
 import { MaterialSelect } from '@/ui/panels/MaterialSelect';
-import { PanelSelect } from '@/ui/components/PanelSelect';
+import { ProfilePickerSection } from '@/ui/panels/ProfilePickerSection';
 import type { PictureFieldsProps } from './entity-fields-types';
 
 export function BeverageCanFields({
@@ -21,9 +19,12 @@ export function BeverageCanFields({
   const materials = useAppStore((s) => s.materials);
   const slots = entity.materials;
   const params = {
-    ...defaultBeverageCanParams('standard'),
+    ...defaultBeverageCanParams(),
     ...entity.beverageCanParams,
   };
+  // Re-render on profile edits; the registry is kept in sync by the store.
+  useAppStore((s) => s.userProfiles);
+  const profile = resolveBeverageCanProfile(params.canBodyProfile).entry;
   return (
     <>
       <SubPanelSection title="Label / Image">
@@ -43,23 +44,17 @@ export function BeverageCanFields({
           entity={entity}
           materials={materials}
           parts={getGeometryPartsForKind(entity.assetKind)}
+          profilePathName={(slot) => profile.paths.find((path) => path.slot === slot)?.name}
         />
       </SubPanelSection>
 
-      <SubPanelSection title="Body profile">
-        <PanelSelect
-          label="Profile"
-          value={params.canBodyProfile}
-          options={[
-            { value: 'standard', label: 'Standard (330 ml)' },
-            { value: 'sleek', label: 'Sleek (330 ml)' },
-          ]}
-          onChange={(value) => { setKindParams('beverageCan', entity.id, {
-              canBodyProfile: value as BeverageCanBodyProfile,
-            }); }
-          }
-        />
-      </SubPanelSection>
+      <ProfilePickerSection
+        title="Body profile"
+        profileId={params.canBodyProfile}
+        resolve={resolveBeverageCanProfile}
+        missingHint="Profile missing or without a body path – using Can 330 ml classic."
+        onChange={(canBodyProfile) => { setKindParams('beverageCan', entity.id, { canBodyProfile }); }}
+      />
 
       <SubPanelSection title="Materials">
         <MaterialSelect

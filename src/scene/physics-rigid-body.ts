@@ -72,7 +72,7 @@ function sphereMassKgFromEntity(entity: AssetEntity): number {
 
 function wheelCarMassKgFromEntity(entity: AssetEntity): number {
   return rigidMassKgFromVolumeM3(
-    wheelCarVolumeM3(entity.sizeScale),
+    wheelCarVolumeM3(entity.sizeScale, entity.wheelCarParams?.profileId),
     resolvePhysicsDensityKgPerM3(entity),
   );
 }
