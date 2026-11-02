@@ -401,7 +401,7 @@ Tint auf Entity-Slots (`faceTints`) multipliziert weiterhin Preset-Farbe — wie
 
 **Category:** Materials  
 **Title:** Metall-Built-ins — Chrome, poliert, gebürstet  
-**Description:** **`material-silver`** entfernt → **`material-chrome`** (Load-Migration). Polierte Metalle: **Gold**, **Chrome** — `textured` + `metal-polished`, Roughness **0.05–0.10**, metalness **1.0**, Preset-**`clearcoat`** ~0.35, subtile Mikro-Normal (TSL). Gebürstet: **Gold Brushed** (`material-gold-brushed`), **Aluminum Brushed** (`material-aluminium-brushed`, UI US) — `metal-brushed` + Anisotropie **~0.35** (Rotation aus Tangent-U am Rahmen). Materials-Listen/Dropdowns alphabetisch nach Name (s. Look & Feel). IBL Pflicht für photorealistischen Glanz.
+**Description:** **`material-silver`** entfernt → **`material-chrome`** (Load-Migration). Polierte Metalle: **Gold**, **Chrome** — `textured` + `metal-polished`, Roughness **0.05–0.10**, metalness **1.0**, Preset-**`clearcoat`** ~0.35, subtile Mikro-Normal (TSL). Gebürstet: **Brushed Gold** (`material-gold-brushed`), **Brushed Aluminum** (`material-aluminium-brushed`, UI US) — `metal-brushed` + Anisotropie **~0.35** (Rotation aus Tangent-U am Rahmen). Materials-Listen/Dropdowns alphabetisch nach Name (s. Look & Feel). IBL Pflicht für photorealistischen Glanz.
 
 ---
 
@@ -417,8 +417,8 @@ Tint auf Entity-Slots (`faceTints`) multipliziert weiterhin Preset-Farbe — wie
 | `material-glossy-print` | Print Glossy | textured | `coated-gloss` | — |
 | `material-gold` | Gold | textured | `metal-polished` | — |
 | `material-chrome` | Chrome | textured | `metal-polished` | — |
-| `material-gold-brushed` | Gold Brushed | textured | `metal-brushed` | ~0.25 |
-| `material-aluminium-brushed` | Aluminum Brushed | textured | `metal-brushed` | ~0.25 |
+| `material-gold-brushed` | Brushed Gold | textured | `metal-brushed` | ~0.25 |
+| `material-aluminium-brushed` | Brushed Aluminum | textured | `metal-brushed` | ~0.25 |
 | `material-plastic-matte` | Plastic Matte | textured | `plastic-matte` | — |
 | `material-plastic-smooth` | Plastic Smooth | textured | `plastic-smooth` | — |
 | `material-fabric` | Fabric Linen | textured | `fabric-linen` | — |
@@ -482,7 +482,7 @@ fabricDrape?: {
 
 - **Wood Soft / Wood Porous** (`wood-soft`, `wood-porous`): Grain entlang `UV.u` am Perimeter.
 - **Gold / Chrome** (`metal-polished`): Mikro-Normal + IBL-Glanz; kein fester `anisotropyRotation`.
-- **Gold Brushed / Aluminum Brushed** (`metal-brushed`): `anisotropyNode` entlang Tangent-U (= Grain-Richtung); **kein** H/V-`grainAlongU`-Split, **keine** zweite Material-Instanz pro Rahmen.
+- **Brushed Gold / Brushed Aluminum** (`metal-brushed`): `anisotropyNode` entlang Tangent-U (= Grain-Richtung); **kein** H/V-`grainAlongU`-Split, **keine** zweite Material-Instanz pro Rahmen.
 
 `tileScale` / `seed` aus Preset steuern Feinstruktur-Dichte. Alle vier Rahmenseiten: gleiche Bürstungsrichtung relativ zur Kante (rechtwinklig zur sichtbaren Kantenlänge).
 
@@ -518,7 +518,7 @@ Opake Materialien **blockieren** Licht im Sinne von Shadow Mapping. Glazing bloc
 
 **Category:** Materials  
 **Title:** Plastic Built-ins — Matte & Smooth  
-**Description:** Zwei Built-in **`textured`**-Presets (`plastic-matte`, `plastic-smooth`), Default-Farbe **{ r: 0.13, g: 0.13, b: 0.14 }**. Plastic Smooth: Preset-**`clearcoat`** ~0.35. Nach Aluminum Brushed in der Liste. Solids: **`meter-3d`**. Nicht im Print-Surface-Dropdown. Handheld-Defaults unverändert (Aluminum Brushed).
+**Description:** Zwei Built-in **`textured`**-Presets (`plastic-matte`, `plastic-smooth`), Default-Farbe **{ r: 0.13, g: 0.13, b: 0.14 }**. Plastic Smooth: Preset-**`clearcoat`** ~0.35. Nach Brushed Aluminum in der Liste. Solids: **`meter-3d`**. Nicht im Print-Surface-Dropdown. Handheld-Defaults unverändert (Brushed Aluminum).
 
 ---
 

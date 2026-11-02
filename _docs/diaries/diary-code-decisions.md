@@ -124,7 +124,7 @@ Kurze Historie: **wie** wir uns entschieden haben (Warum, Alternativen). Require
 
 ### 2026-10-29 — Fabric cloth — Platzhalter ohne Bild = Preset-Pipeline
 - **Entscheidung:** `createImageOnPresetMaterial` bei `tex === null` → `createStructureBaseMaterial(preset)` + `DoubleSide`, nicht `createPassepartoutPbrMaterial`.
-- **Grund:** Requirements: `fabricClothMaterialId` gilt **auch ohne** `screenImageId`; Passepartout-Matt ignorierte Aluminum Brushed / Silk / Linen-Struktur.
+- **Grund:** Requirements: `fabricClothMaterialId` gilt **auch ohne** `screenImageId`; Passepartout-Matt ignorierte Brushed Aluminum / Silk / Linen-Struktur.
 - **Verworfen:** Graues Matt als einziger No-Image-Look.
 
 ### 2026-10-29 — metal-brushed — MikkTSpace-Tangents auf Render-Geometrie
@@ -203,7 +203,7 @@ Kurze Historie: **wie** wir uns entschieden haben (Warum, Alternativen). Require
 - **Verworfen:** „Bake“ = automatisches Freeze-Viewport-Subdivide ohne Bibliotheks-Eintrag (Missverständnis Agent 2026-10-14).
 
 ### 2026-10-14 — Fabric Silk — Built-in = `metal-brushed` (Preset-Parität)
-- **Entscheidung:** `material-silk` → **`proceduralProfile: metal-brushed`** + dieselben strukturellen PBR-Felder wie Gold Brushed (metalness 1, tileScale 28, anisotropy 0.25, roughness 0.32); Generator nur `buildMetalBrushedNodes`. Profil-Id **`silk-fine`** bleibt Legacy-Alias (Registry + Re-Export).
+- **Entscheidung:** `material-silk` → **`proceduralProfile: metal-brushed`** + dieselben strukturellen PBR-Felder wie Brushed Gold (metalness 1, tileScale 28, anisotropy 0.25, roughness 0.32); Generator nur `buildMetalBrushedNodes`. Profil-Id **`silk-fine`** bleibt Legacy-Alias (Registry + Re-Export).
 - **Grund:** Nur TSL-Duplikat reichte nicht — unterschiedliche Preset-Werte ließen Silk nicht wie Brushed aussehen.
 - **Verworfen:** Paralleles `silk-fine`-Shaderfile mit eigenen Konstanten; `silk-speckle`.
 
@@ -1281,7 +1281,7 @@ Kurze Historie: **wie** wir uns entschieden haben (Warum, Alternativen). Require
 - **Verworfen:** Nur Anisotropie ohne Bump; breitere smoothstep-Bänder.
 
 ### 2026-10-08 — metal-brushed — Streifenabstand ~0,3 mm
-- **Entscheidung:** `BRUSHED_STREAKS_PER_TILE_UNIT` **120** (war 36). `tileScale` Gold/Aluminum Brushed **28** — ~**0,3 mm** Periode am Rahmen.
+- **Entscheidung:** `BRUSHED_STREAKS_PER_TILE_UNIT` **120** (war 36). `tileScale` Gold/Brushed Aluminum **28** — ~**0,3 mm** Periode am Rahmen.
 - **Grund:** Ziel echtes gebürstetes Aluminium, nicht mm-breite Bänder.
 - **Verworfen:** Multiplikator 12 + tileScale 14 (~6 mm Periode).
 
@@ -1326,9 +1326,9 @@ Kurze Historie: **wie** wir uns entschieden haben (Warum, Alternativen). Require
 - **Verworfen:** 4× BoxGeometry; Plane-Faces; `grainAlongU` H/V-Split am Rahmen.
 
 ### 2026-10-08 — Metall-Presets — Chrome, poliert, gebürstet
-- **Entscheidung:** Silver entfernt → **Chrome** (`material-chrome`, Migration von `material-silver`). Gold + Chrome: `textured` + `metal-polished` (glänzend). Neu: **Gold Brushed**, **Aluminum Brushed** (`material-aluminium-brushed`) mit `metal-brushed` + Anisotropie **~0.35**. `MeshPhysicalNodeMaterial` für Metalle.
+- **Entscheidung:** Silver entfernt → **Chrome** (`material-chrome`, Migration von `material-silver`). Gold + Chrome: `textured` + `metal-polished` (glänzend). Neu: **Brushed Gold**, **Brushed Aluminum** (`material-aluminium-brushed`) mit `metal-brushed` + Anisotropie **~0.35**. `MeshPhysicalNodeMaterial` für Metalle.
 - **Grund:** Rahmen-Metalle photorealistisch (IBL + Mikro-Struktur / Streifenglanz); klare Namensführung statt Silver.
-- **Verworfen:** Silver behalten; **Silver Brushed** (Plan v2) → **Aluminum Brushed** umgesetzt; ID `material-silver` mit Chrome-Label.
+- **Verworfen:** Silver behalten; **Silver Brushed** (Plan v2) → **Brushed Aluminum** umgesetzt; ID `material-silver` mit Chrome-Label.
 
 ### 2026-10-08 — Picture framed — Default 50 × 60 cm Hochformat
 - **Entscheidung:** Referenzbreite **0,5 m**; ohne Screen-Bild Placeholder-Aspect **50/60** (Hochformat wie Echtmaß).

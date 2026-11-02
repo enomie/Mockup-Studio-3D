@@ -214,7 +214,7 @@ Stabile Katalog-ID über `kind`. Mehrfach-Instanzen unbegrenzt. Default-Szene: *
 
 | Teil (`geometryVisibility`) | UI-Label | Checkbox (Default) | Material |
 |---|---|---|---|
-| **`capsuleFoil`** | Capsule foil | **an** | **`capsuleFoilMaterialId`** — Default **`material-gold-brushed`** (Gold Brushed) |
+| **`capsuleFoil`** | Capsule foil | **an** | **`capsuleFoilMaterialId`** — Default **`material-gold-brushed`** (Brushed Gold) |
 
 **Right Sub — Geometries:** Checkbox + Material-Dropdown + **Höhe** (`capsuleFoilHeightM`, mm in UI). API: `setGeometryVisible(entityId, 'capsuleFoil', visible)`.
 

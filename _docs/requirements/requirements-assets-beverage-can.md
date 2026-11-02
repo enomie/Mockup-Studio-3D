@@ -311,10 +311,10 @@ Gerundete Pixelmaße können vom exakten Ratio um **±1 px** abweichen — für 
 
 | Slot | Default | Bedeutung |
 |---|---|---|
-| `metalMaterialId` | **Aluminum Brushed** (`material-aluminium-brushed`) | Lathe-Gruppe `body`, Endring, Label-Gruppe wenn kein Bild / Label ausgeblendet |
+| `metalMaterialId` | **Brushed Aluminum** (`material-aluminium-brushed`) | Lathe-Gruppe `body`, Endring, Label-Gruppe wenn kein Bild / Label ausgeblendet |
 | *(Label)* | Bild-PBR via `imageSurfaces` / Finish | Lathe-Gruppe `label` auf dem Mantel-Band; kein separates `labelMaterialId` in v1 — Finish Matt/Glossy wie Handheld |
 
-Dropdown: alle Material-Presets erlaubt; Metall-Slots typisch **Chrome**, **Aluminum Brushed**, **Plastic Smooth** (für lackierte Dosen später).
+Dropdown: alle Material-Presets erlaubt; Metall-Slots typisch **Chrome**, **Brushed Aluminum**, **Plastic Smooth** (für lackierte Dosen später).
 
 ---
 

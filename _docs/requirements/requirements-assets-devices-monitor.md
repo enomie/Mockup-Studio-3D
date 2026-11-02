@@ -75,7 +75,7 @@ Geometrie-Rebuild bei: `screenImageId`, `sizeScale`, Display-`params`, Stand-`pa
 
 **Category:** Assets — Monitor  
 **Title:** Stand — Standfläche & Standfuß (mm)  
-**Description:** Zwei zusätzliche Meshes unter dem Display (Material Default: Aluminum Brushed).
+**Description:** Zwei zusätzliche Meshes unter dem Display (Material Default: Brushed Aluminum).
 
 | Teil | Maß (bei scale 1) | Position / Hinweis |
 |---|---|---|

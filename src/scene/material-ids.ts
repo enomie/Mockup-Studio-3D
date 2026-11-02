@@ -5,7 +5,7 @@ export const MATERIAL_GOLD_ID = 'material-gold';
 export const MATERIAL_GLOSSY_PRINT_ID = 'material-glossy-print';
 export const MATERIAL_CHROME_ID = 'material-chrome';
 export const MATERIAL_GOLD_BRUSHED_ID = 'material-gold-brushed';
-/** ID spelling british; UI name: Aluminum Brushed */
+/** ID spelling british; UI name: Brushed Aluminum */
 export const MATERIAL_ALUMINUM_BRUSHED_ID = 'material-aluminium-brushed';
 export const MATERIAL_PLASTIC_MATTE_ID = 'material-plastic-matte';
 export const MATERIAL_PLASTIC_SMOOTH_ID = 'material-plastic-smooth';

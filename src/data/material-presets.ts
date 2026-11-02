@@ -115,7 +115,7 @@ export const MATERIAL_PRESETS: MaterialPreset[] = [
   },
   {
     id: MATERIAL_GOLD_BRUSHED_ID,
-    name: 'Gold Brushed',
+    name: 'Brushed Gold',
     source: 'builtin',
     kind: 'textured',
     proceduralProfile: 'metal-brushed',
@@ -129,7 +129,7 @@ export const MATERIAL_PRESETS: MaterialPreset[] = [
   },
   {
     id: MATERIAL_ALUMINUM_BRUSHED_ID,
-    name: 'Aluminum Brushed',
+    name: 'Brushed Aluminum',
     source: 'builtin',
     kind: 'textured',
     proceduralProfile: 'metal-brushed',

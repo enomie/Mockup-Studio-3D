@@ -33,7 +33,7 @@ describe('createFabricClothMaterial', () => {
     material.dispose();
   });
 
-  it('applies fabricClothMaterialId preset when no image (Aluminum Brushed)', () => {
+  it('applies fabricClothMaterialId preset when no image (Brushed Aluminum)', () => {
     const brushed = presetById(MATERIAL_ALUMINUM_BRUSHED_ID);
     const material = createFabricClothMaterial(
       resolvePreset,

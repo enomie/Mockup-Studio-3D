@@ -88,7 +88,7 @@ Verknüpfte Feature-Docs: [`requirements-scenes.md`](./requirements-scenes.md), 
 
 **Category:** Architecture  
 **Title:** Materials-Bibliothek ↔ Entities (Oberflächen)  
-**Description:** **Materials** (Left Main) = zentrale Preset-Liste — [`requirements-materials.md`](./requirements-materials.md). Entities referenzieren **`materialId`** pro Slot (z. B. Picture `frameMaterialId`, Print `sideMaterialId`). Kein hardcoded `FRAME_COLOR` in Engine. User-Presets + Built-ins (Print Matt/Glossy, Gold, Chrome, Gold Brushed, Aluminum Brushed, Wood, …). Store → `MaterialResolver` → Node-Material-Cache. Gleiches Bibliothek-Muster wie Images: **pflegen links**, **zuweisen rechts** (Dropdown).
+**Description:** **Materials** (Left Main) = zentrale Preset-Liste — [`requirements-materials.md`](./requirements-materials.md). Entities referenzieren **`materialId`** pro Slot (z. B. Picture `frameMaterialId`, Print `sideMaterialId`). Kein hardcoded `FRAME_COLOR` in Engine. User-Presets + Built-ins (Print Matt/Glossy, Gold, Chrome, Brushed Gold, Brushed Aluminum, Wood, …). Store → `MaterialResolver` → Node-Material-Cache. Gleiches Bibliothek-Muster wie Images: **pflegen links**, **zuweisen rechts** (Dropdown).
 
 ---
 
