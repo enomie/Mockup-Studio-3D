@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
+  addSquarePath,
   closestTOnSegment,
+  nextFreeSlot,
+  removePath,
+  setPathSlot,
   deleteNode,
   handleFromPolar,
   handlePolar,
@@ -114,5 +118,29 @@ describe('profile edit', () => {
 
     path.nodes[1] = { ...path.nodes[1], radius: 50 };
     expect(filletCorner(path, 1)?.entry.x).toBeCloseTo(5); // limited to half the segment
+  });
+});
+
+describe('profile paths', () => {
+  const two = (): ProfilePath[] => [
+    { ...square(), id: 'a', slot: 0 },
+    { ...curve(), id: 'b', slot: 3 },
+  ];
+
+  it('finds free slots and adds square paths until all ten are used', () => {
+    expect(nextFreeSlot(two())).toBe(1);
+    let paths: ProfilePath[] | null = two();
+    for (let i = 0; i < 8; i++) {paths = paths ? addSquarePath(paths) : null;}
+    expect(paths?.map((path) => path.slot).sort((x, y) => x - y)).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    expect(paths && addSquarePath(paths)).toBeNull();
+    expect(new Set(paths?.map((path) => path.id)).size).toBe(10);
+  });
+
+  it('swaps slots and removes paths', () => {
+    const swapped = setPathSlot(two(), 'b', 0);
+    expect(swapped.find((path) => path.id === 'b')?.slot).toBe(0);
+    expect(swapped.find((path) => path.id === 'a')?.slot).toBe(3);
+    expect(setPathSlot(two(), 'b', 5).find((path) => path.id === 'b')?.slot).toBe(5);
+    expect(removePath(two(), 'a').map((path) => path.id)).toEqual(['b']);
   });
 });

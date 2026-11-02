@@ -176,9 +176,20 @@ Die Seitenpanels bleiben sichtbar. **Done** oder **Esc** schließt ihn wieder.
 - **Punktform:** Ecken sind Quadrate, glatte Punkte Kreise. Der ausgewählte Punkt ist gefüllt.
 - **Handles sind groß:** Punkte und Handles haben eine Trefferfläche von etwa 12 px Radius, egal wie
   weit gezoomt ist. Es gibt keine Minipunkte. Handles erscheinen am ausgewählten Punkt.
-- **Zahlenfelder im Profiles-Panel**, solange der Editor offen ist:
-  - für den ausgewählten Punkt: X, Y, Radius (m), Modus Ecke/Glatt, Länge (m) und Winkel (°) jedes Handles
-  - für den Pfad: Closed an/aus
+- **Rechts: 2D-Inspector „Profile editor“** (`ProfileInspector.tsx`). Solange der Editor offen ist,
+  ersetzt er die rechten 3D-Panels, und die rechte Icon-Leiste ist ausgeblendet. Nach Done/Esc
+  ist alles wieder wie vorher.
+  - **Tools:** Select (V). Pen (P) und Scissors (C) sind sichtbar, aber noch deaktiviert (E3/E4).
+  - **Paths:** alle Pfade nach Slot sortiert, mit Farbe, Name (umbenennbar), Auge (nur im Editor
+    ausblenden, wird nicht gespeichert) und Löschen. Ein Klick auf die Farbe wählt den Pfad aus.
+    Der aktive Pfad zeigt **Slot** (1–10, ein belegter Slot wird getauscht), die Rolle des Slots für
+    die eingebauten Assets (z. B. „Wine bottle: Glass · Pen: Cap …“), **Closed** und die
+    Punktanzahl. **Add path** legt ein Quadrat von 20 × 20 mm im nächsten freien Slot an.
+    Höchstens 10 Pfade.
+  - **Point:** X, Y, Radius (m), Typ Ecke/Glatt, Länge (m) und Winkel (°) jedes Handles.
+- **Links** zeigt das Profiles-Panel während des Editierens nur Name, Info und die Aktionen. Die
+  Pfadliste steht rechts.
+- **Entf** löscht den ausgewählten Punkt. Ist nur ein Pfad ausgewählt, löscht Entf den ganzen Pfad.
 - Während der Editor offen ist, wirken Entf, Esc und die Viewport-Kürzel nicht auf die 3D-Szene.
 
 ## 6. Dateien
@@ -186,12 +197,12 @@ Die Seitenpanels bleiben sichtbar. **Done** oder **Esc** schließt ihn wieder.
 | Bereich | Datei |
 |---|---|
 | Datenmodell, SVG-Ausgabe, Rundungen | `src/scene/profile-model.ts` |
-| Bearbeitungsfunktionen (Punkt einfügen, löschen, Handles) | `src/scene/profile-edit.ts` |
+| Bearbeitungsfunktionen (Punkt einfügen/löschen, Handles, Pfad hinzufügen/löschen, Slot tauschen) | `src/scene/profile-edit.ts` |
 | Bibliothek (eingebaut und eigene, Vorschau, Maße) | `src/scene/profile-library.ts` |
 | Katalog der eingebauten Profile und Pfadnamen | `src/scene/builtin-profile-files.ts`, `src/scene/builtin-profile-path-names.ts` |
 | SVG-Import | `src/engine/profile-svg-import.ts` |
 | Generator und generierte Daten | `scripts/generate-builtin-profiles.ts`, `src/data/builtin-profiles.generated.ts` |
-| Store | `src/ui/store/app-store-profiles.ts` (`userProfiles`, `selectedProfileId`, `editingProfileId`, `profileNodeSelection`) |
+| Store | `src/ui/store/app-store-profiles.ts` (`userProfiles`, `selectedProfileId`, `editingProfileId`, `profileNodeSelection` (Punkt-Index kann null sein = nur Pfad), `hiddenProfilePathIds`, `profileEditorTool`) |
 | Speichern | `src/ui/persistence/project-snapshot.ts`, `project-persistence.ts` |
 | Panel | `src/ui/panels/ProfilesPanel.tsx` |
 | Register für Szene und Engine (eigene Profile, Versionen, alte IDs) | `src/scene/profile-registry.ts` |
@@ -204,7 +215,7 @@ Die Seitenpanels bleiben sichtbar. **Done** oder **Esc** schließt ihn wieder.
 | Extrusion: Parameter, Profil, Maße | `src/scene/asset-extrusion.ts` |
 | Extrusion: Geometrie und Neubau | `src/engine/extrusion-geometry.ts`, `rebuildExtrusion` in `src/engine/asset-system-rebuild.ts` |
 | Extrusion: Details | `src/ui/panels/entity-fields/ExtrusionFields.tsx` |
-| Editor (Zeichenfläche, Ansicht, Zahlenfelder) | `src/ui/profile-editor/ProfileEditor.tsx`, `profile-editor-view.ts`, `ProfileNodeFields.tsx`, Styles in `src/ui/styles/features/profile-editor.css` |
+| Editor (Zeichenfläche, Ansicht, Zahlenfelder) | `src/ui/profile-editor/ProfileEditor.tsx`, `profile-editor-view.ts`, `ProfileInspector.tsx` (rechts), `ProfileNodeFields.tsx` (Point-Bereich), Styles in `src/ui/styles/features/profile-editor.css` |
 
 ## 7. Bewusst noch nicht drin
 - Einen Pfad an einem Punkt aufbrechen, neue Pfade zeichnen (Stift-Werkzeug), Pfade hinzufügen oder

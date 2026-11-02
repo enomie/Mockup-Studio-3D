@@ -14,6 +14,7 @@ import {
   deleteNode,
   insertNode,
   moveNode,
+  removePath,
   segmentControlPoints,
   segmentCount,
   setHandle,
@@ -32,7 +33,10 @@ import { Icon } from '@/ui/components/Icon';
 import {
   closeProfileEditor,
   editProfilePath,
+  editProfilePaths,
   getAppState,
+  selectProfilePath,
+  setProfileEditorTool,
   selectProfileNode,
 } from '@/ui/store/app-store';
 import { useAppStore } from '@/ui/store/use-app-store';
@@ -183,9 +187,12 @@ export function ProfileEditor() {
   const selectedPath = profile && selection
     ? profile.paths.find((path) => path.id === selection.pathId)
     : undefined;
-  const selectedIndex = selectedPath && selection && selection.index < selectedPath.nodes.length
-    ? selection.index
-    : null;
+  const selectedIndex =
+    selectedPath && selection?.index != null && selection.index < selectedPath.nodes.length
+      ? selection.index
+      : null;
+  const hiddenPathIds = useAppStore((s) => s.hiddenProfilePathIds);
+  const visiblePaths = profile ? profile.paths.filter((path) => !hiddenPathIds.includes(path.id)) : [];
 
   // Keys: the editor owns the keyboard while open (no scene delete or viewport shortcuts).
   useEffect(() => {
@@ -200,10 +207,17 @@ export function ProfileEditor() {
       } else if (event.key === 'Delete' || event.key === 'Backspace') {
         event.preventDefault();
         const current = getAppState().profileNodeSelection;
-        if (current) {
-          editProfilePath(editingProfileId, current.pathId, (path) => deleteNode(path, current.index));
+        if (current?.index != null) {
+          const index = current.index;
+          editProfilePath(editingProfileId, current.pathId, (path) => deleteNode(path, index));
+          selectProfilePath(current.pathId);
+        } else if (current) {
+          // Only a path is selected: Delete removes the whole path.
+          editProfilePaths(editingProfileId, (paths) => removePath(paths, current.pathId));
           selectProfileNode(null);
         }
+      } else if (event.key === 'v' || event.key === 'V') {
+        setProfileEditorTool('select');
       } else if (event.key === ' ') {
         event.preventDefault();
         spaceRef.current = true;
@@ -366,7 +380,7 @@ export function ProfileEditor() {
           <>
             <Grid view={view} width={size.width} height={size.height} />
             <g transform={transform}>
-              {profile.paths.map((path) => {
+              {visiblePaths.map((path) => {
                 const active = path.id === selectedPath?.id;
                 return (
                   <g key={path.id}>
@@ -417,7 +431,7 @@ export function ProfileEditor() {
                 })
               : null}
 
-            {profile.paths.map((path) =>
+            {visiblePaths.map((path) =>
               path.nodes.map((node, index) => {
                 const point = toScreen(view, node);
                 const selected = path.id === selectedPath?.id && index === selectedIndex;

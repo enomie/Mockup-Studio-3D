@@ -2,8 +2,11 @@ import type { ProfileEntry } from '@/scene/profile-library';
 
 export interface ProfileNodeSelection {
   pathId: string;
-  index: number;
+  /** Selected point, or null when only the path is selected. */
+  index: number | null;
 }
+
+export type ProfileEditorTool = 'select' | 'pen' | 'scissors';
 import type { PatchNode } from '@/scene/patch-nodes';
 import type { PatchEdgeSelection } from '@/engine/triangle-patch-add-point-tool';
 import type { SceneHistoryState } from '@/engine/history/scene-history-controller';
@@ -103,6 +106,9 @@ export interface AppState {
   leftPanelRequest: { id: string; seq: number } | null;
   /** Selected node in the 2D editor. */
   profileNodeSelection: ProfileNodeSelection | null;
+  /** Paths hidden in the 2D editor only (not saved, not used by assets). */
+  hiddenProfilePathIds: string[];
+  profileEditorTool: ProfileEditorTool;
   environments: EnvironmentPreset[];
   activeEnvironmentId: string;
   lightingPresets: LightingPreset[];
@@ -172,6 +178,8 @@ export let state: AppState = {
   editingProfileId: null,
   leftPanelRequest: null,
   profileNodeSelection: null,
+  hiddenProfilePathIds: [],
+  profileEditorTool: 'select',
   environments: ENVIRONMENT_PRESETS.map(cloneEnvironmentPreset),
   activeEnvironmentId: BUILTIN_ENV_DEFAULT_ID,
   lightingPresets: LIGHTING_PRESETS.map(cloneLightingPreset),

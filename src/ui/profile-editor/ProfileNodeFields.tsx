@@ -9,7 +9,6 @@ import {
 import type { ProfileEntry } from '@/scene/profile-library';
 import type { ProfileNode, ProfilePath } from '@/scene/profile-model';
 import { PanelAxisField } from '@/ui/components/PanelAxisField/PanelAxisField';
-import { PanelCheckbox } from '@/ui/components/PanelCheckbox';
 import { PanelToggleGroup } from '@/ui/components/PanelToggleGroup';
 import { SubPanelSection } from '@/ui/components/SubPanelSection';
 import { editProfilePath } from '@/ui/store/app-store';
@@ -103,32 +102,19 @@ function NodeFields(props: NodeFieldsProps) {
   );
 }
 
-/** Numeric fields for the 2D editor: selected point and its path. */
-export function ProfileNodeFields({ profile }: { profile: ProfileEntry }) {
+/** Numeric fields for the selected point of the 2D editor (right inspector). */
+export function ProfilePointSection({ profile }: { profile: ProfileEntry }) {
   const selection = useAppStore((s) => s.profileNodeSelection);
   const path = selection ? profile.paths.find((entry) => entry.id === selection.pathId) : undefined;
-  const node = path && selection ? path.nodes.at(selection.index) : undefined;
+  const index = selection?.index ?? null;
+  const node = path && index !== null ? path.nodes.at(index) : undefined;
 
-  if (!path || !node || !selection) {
+  if (!path || !node || index === null) {
     return (
       <SubPanelSection title="Point">
         <p className="profile-hint">Select a point in the editor to edit its values.</p>
       </SubPanelSection>
     );
   }
-  return (
-    <>
-      <NodeFields profileId={profile.id} path={path} index={selection.index} node={node} />
-      <SubPanelSection title={`Path · ${path.name}`}>
-        <PanelCheckbox
-          label="Closed"
-          checked={path.closed}
-          disabled={path.nodes.length < 3}
-          onChange={(closed) => {
-            editProfilePath(profile.id, path.id, (current) => ({ ...current, closed }));
-          }}
-        />
-      </SubPanelSection>
-    </>
-  );
+  return <NodeFields profileId={profile.id} path={path} index={index} node={node} />;
 }

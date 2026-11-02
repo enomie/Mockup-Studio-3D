@@ -1,7 +1,7 @@
 import { getProfile, type ProfileEntry } from '@/scene/profile-library';
 import type { ProfilePath } from '@/scene/profile-model';
 import * as store from './app-store-internals';
-import type { ProfileNodeSelection } from './app-store-internals';
+import type { ProfileEditorTool, ProfileNodeSelection } from './app-store-internals';
 
 const USER_PROFILE_ID_PREFIX = 'user-profile-';
 
@@ -24,6 +24,8 @@ export function openProfileEditor(id: string): void {
     selectedProfileId: id,
     editingProfileId: id,
     profileNodeSelection: null,
+    hiddenProfilePathIds: [],
+    profileEditorTool: 'select',
   });
   store.emit();
 }
@@ -164,4 +166,36 @@ export function showProfilesPanel(): void {
 export function editProfileFromAsset(profileId: string): void {
   openProfileEditor(profileId);
   showProfilesPanel();
+}
+
+/** Applies a pure edit to all paths of a user profile (add, remove, reorder slots). */
+export function editProfilePaths(
+  id: string,
+  edit: (paths: ProfilePath[]) => ProfilePath[] | null,
+): void {
+  updateUserProfile(id, (profile) => {
+    const paths = edit(profile.paths);
+    return paths ? { ...profile, paths } : profile;
+  });
+}
+
+/** Makes a path active without selecting a point. */
+export function selectProfilePath(pathId: string | null): void {
+  selectProfileNode(pathId ? { pathId, index: null } : null);
+}
+
+export function toggleProfilePathHidden(pathId: string): void {
+  const hidden = store.state.hiddenProfilePathIds;
+  store.setAppState({
+    ...store.state,
+    hiddenProfilePathIds: hidden.includes(pathId)
+      ? hidden.filter((id) => id !== pathId)
+      : [...hidden, pathId],
+  });
+  store.emit();
+}
+
+export function setProfileEditorTool(tool: ProfileEditorTool): void {
+  store.setAppState({ ...store.state, profileEditorTool: tool });
+  store.emit();
 }

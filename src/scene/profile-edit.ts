@@ -207,3 +207,77 @@ export function insertNode(
   nodes.splice(insertAt, 0, newNode);
   return { path: { ...path, nodes }, index: insertAt };
 }
+
+/** Profiles hold up to ten paths, one per colour slot. */
+export const PROFILE_SLOT_COUNT = 10;
+
+export function nextFreeSlot(paths: readonly ProfilePath[]): number | null {
+  const used = new Set(paths.map((path) => path.slot));
+  for (let slot = 0; slot < PROFILE_SLOT_COUNT; slot++) {
+    if (!used.has(slot)) {return slot;}
+  }
+  return null;
+}
+
+function uniquePathId(paths: readonly ProfilePath[]): string {
+  let n = paths.length + 1;
+  while (paths.some((path) => path.id === `path-${n}`)) {n += 1;}
+  return `path-${n}`;
+}
+
+function uniquePathName(paths: readonly ProfilePath[], base: string): string {
+  const names = new Set(paths.map((path) => path.name));
+  if (!names.has(base)) {return base;}
+  let n = 2;
+  while (names.has(`${base} ${n}`)) {n += 1;}
+  return `${base} ${n}`;
+}
+
+/**
+ * Adds a closed 20 × 20 mm square path in the next free slot, placed right of the
+ * existing paths. Returns null when all slots are used.
+ */
+export function addSquarePath(paths: readonly ProfilePath[]): ProfilePath[] | null {
+  const slot = nextFreeSlot(paths);
+  if (slot === null) {return null;}
+  const maxX = paths.reduce(
+    (max, path) => path.nodes.reduce((m, node) => Math.max(m, node.x), max),
+    0,
+  );
+  const x = paths.length > 0 ? maxX + 10 : 0;
+  const size = 20;
+  const path: ProfilePath = {
+    id: uniquePathId(paths),
+    name: uniquePathName(paths, `Path ${paths.length + 1}`),
+    slot,
+    closed: true,
+    nodes: [
+      { x, y: 0, mode: 'corner' },
+      { x: x + size, y: 0, mode: 'corner' },
+      { x: x + size, y: size, mode: 'corner' },
+      { x, y: size, mode: 'corner' },
+    ],
+  };
+  return [...paths, path];
+}
+
+export function removePath(paths: readonly ProfilePath[], pathId: string): ProfilePath[] {
+  return paths.filter((path) => path.id !== pathId);
+}
+
+/** Moves a path to `slot`; a path already in that slot takes the old slot (swap). */
+export function setPathSlot(
+  paths: readonly ProfilePath[],
+  pathId: string,
+  slot: number,
+): ProfilePath[] {
+  const moving = paths.find((path) => path.id === pathId);
+  if (!moving || moving.slot === slot || slot < 0 || slot >= PROFILE_SLOT_COUNT) {
+    return [...paths];
+  }
+  return paths.map((path) => {
+    if (path.id === pathId) {return { ...path, slot };}
+    if (path.slot === slot) {return { ...path, slot: moving.slot };}
+    return path;
+  });
+}

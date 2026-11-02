@@ -2,6 +2,9 @@ import { useCallback, useState } from 'react';
 import { useAppStore } from '@/ui/store/use-app-store';
 import { ViewportFrame } from '@/ui/components/ViewportFrame';
 import { ProfileEditor } from '@/ui/profile-editor/ProfileEditor';
+import { ProfileInspector } from '@/ui/profile-editor/ProfileInspector';
+import { ShellSubPanelProvider } from '@/ui/components/shell-sub-panel-context';
+import { closeProfileEditor } from '@/ui/store/app-store';
 import { useCameraViewShortcuts } from '@/ui/hooks/useCameraViewShortcuts';
 import { useViewportToolShortcuts } from '@/ui/hooks/useViewportToolShortcuts';
 import { usePatchPointClipboardShortcuts } from '@/ui/hooks/usePatchPointClipboardShortcuts';
@@ -35,6 +38,7 @@ export function AppShell() {
   }, []);
 
   // Another panel asked to show a left tab (e.g. "Edit profile" in the bottle details).
+  const profileEditorOpen = useAppStore((s) => s.editingProfileId !== null);
   const leftPanelRequest = useAppStore((s) => s.leftPanelRequest);
   const [handledLeftRequest, setHandledLeftRequest] = useState(leftPanelRequest);
   if (leftPanelRequest !== handledLeftRequest) {
@@ -91,6 +95,15 @@ export function AppShell() {
         </div>
 
         <div className="app-shell__overlay app-shell__overlay--right">
+          {profileEditorOpen ? (
+            // 2D mode: the 3D tabs make no sense; the right side becomes the 2D inspector.
+            <div className="app-shell__sub-slot">
+              <ShellSubPanelProvider side="right" onToggleShellCollapse={closeProfileEditor}>
+                <ProfileInspector />
+              </ShellSubPanelProvider>
+            </div>
+          ) : (
+          <>
           <div className="app-shell__sub-slot">
             {!rightSubCollapsed ? <RightDetailPanel selectedId={rightSelected} /> : null}
           </div>
@@ -116,6 +129,8 @@ export function AppShell() {
               });
             }}
           />
+          </>
+          )}
         </div>
       </div>
 

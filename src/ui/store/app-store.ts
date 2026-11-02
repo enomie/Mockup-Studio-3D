@@ -78,6 +78,10 @@ export {
   closeProfileEditor,
   selectProfileNode,
   editProfilePath,
+  editProfilePaths,
+  selectProfilePath,
+  toggleProfilePathHidden,
+  setProfileEditorTool,
   showProfilesPanel,
   editProfileFromAsset,
 } from './app-store-profiles';

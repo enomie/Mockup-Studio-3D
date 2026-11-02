@@ -10,7 +10,6 @@ import {
 import type { ProfilePath } from '@/scene/profile-model';
 import { countProfileUsage } from '@/scene/profile-usage';
 import { Icon } from '@/ui/components/Icon';
-import { ProfileNodeFields } from '@/ui/profile-editor/ProfileNodeFields';
 import { PanelTextField } from '@/ui/components/PanelTextField';
 import { SubPanel } from '@/ui/components/SubPanel';
 import { SubPanelSection } from '@/ui/components/SubPanelSection';
@@ -168,9 +167,9 @@ function ProfileDetail({ entry }: { entry: ProfileEntry }) {
         onChange={(name) => { renameProfile(entry.id, name); }}
       />
       <ProfileInfo entry={entry} />
-      <EditablePaths entry={entry} />
+      {/* While the editor is open, paths are managed in the right inspector. */}
+      {editing ? null : <EditablePaths entry={entry} />}
       <ProfileActions entry={entry} editing={editing} />
-      {editing ? <ProfileNodeFields profile={entry} /> : null}
     </SubPanelSection>
   );
 }
