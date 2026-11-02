@@ -11,11 +11,12 @@ import {
 } from 'three/tsl';
 import { meterPositionLocal } from './procedural-position';
 import { buildProceduralSampleUv } from './procedural-sample-uv';
+import { triplanarScalar } from './procedural-triplanar-meters';
 import {
-  triplanarMeterUvPairs,
-  triplanarMeterWeights,
-} from './procedural-triplanar-meters';
-import type { ProceduralMaterialNodes, ProceduralMaterialParams } from './procedural-types';
+  ROUGHNESS_MIN,
+  type ProceduralMaterialNodes,
+  type ProceduralMaterialParams,
+} from './procedural-types';
 import { proceduralNoise3 } from './tsl-noise';
 
 /**
@@ -42,11 +43,14 @@ function buildWoodPorousSpotMask(sampleUv: Node<'vec2'>, seed: Node<'float'>) {
   );
 }
 
+function woodPorousRoughnessNoise(uv: Node<'vec2'>, seed: Node<'float'>) {
+  return mx_noise_float(vec3(uv.mul(12), seed.add(1.7)));
+}
+
 function buildWoodPorousFromSpotMask(
   spotMask: Node<'float'>,
   params: ProceduralMaterialParams,
-  sampleUvForRoughness: Node<'vec2'>,
-  seed: Node<'float'>,
+  roughnessNoise: Node<'float'>,
 ): ProceduralMaterialNodes {
   const albedoMod = float(1).sub(spotMask.mul(0.15));
   const colorNode = vec3(params.color.r, params.color.g, params.color.b).mul(albedoMod);
@@ -58,9 +62,9 @@ function buildWoodPorousFromSpotMask(
   const roughBase = float(params.roughness);
   const roughnessNode = clamp(
     roughBase.add(spotMask.mul(0.1)).add(
-      mx_noise_float(vec3(sampleUvForRoughness.mul(12), seed.add(1.7))).mul(0.02),
+      roughnessNoise.mul(0.02),
     ),
-    0.04,
+    ROUGHNESS_MIN,
     1,
   );
 
@@ -74,16 +78,11 @@ function buildWoodPorousFromSpotMask(
 function buildWoodPorousTriplanar(params: ProceduralMaterialParams): ProceduralMaterialNodes {
   const seed = float(params.seed);
   const offset = woodPorousSeedOffset(seed);
-  const { wx, wy, wz } = triplanarMeterWeights();
-  const uvs = triplanarMeterUvPairs(params.tileScale);
-
-  const spotMask = buildWoodPorousSpotMask(uvs.xy.add(offset), seed)
-    .mul(wz)
-    .add(buildWoodPorousSpotMask(uvs.xz.add(offset), seed).mul(wy))
-    .add(buildWoodPorousSpotMask(uvs.yz.add(offset), seed).mul(wx));
-
-  const avgUv = uvs.xy.mul(wz).add(uvs.xz.mul(wy)).add(uvs.yz.mul(wx));
-  return buildWoodPorousFromSpotMask(spotMask, params, avgUv, seed);
+  const spotMask = triplanarScalar(params.tileScale, offset, (uv) => buildWoodPorousSpotMask(uv, seed));
+  const roughnessNoise = triplanarScalar(params.tileScale, offset, (uv) =>
+    woodPorousRoughnessNoise(uv, seed),
+  );
+  return buildWoodPorousFromSpotMask(spotMask, params, roughnessNoise);
 }
 
 /** Porous wood — small elongated dark spots only, no growth rings. */
@@ -101,15 +100,19 @@ export function buildWoodPorousNodes(
   const seed = float(params.seed);
   const sampleUv = buildProceduralSampleUv(params).add(woodPorousSeedOffset(seed));
   const spotMask = buildWoodPorousSpotMask(sampleUv, seed);
-  return buildWoodPorousFromSpotMask(spotMask, params, sampleUv, seed);
+  return buildWoodPorousFromSpotMask(spotMask, params, woodPorousRoughnessNoise(sampleUv, seed));
 }
+
+const WOOD_POROUS_METER3D_STRETCH = 4;
 
 /** Processed-wood style bands — ground / legacy meter-3d (tsl-textures processed-wood.js). */
 function buildWoodPorousMeter3d(params: ProceduralMaterialParams): ProceduralMaterialNodes {
   const seed = float(params.seed);
   const pos = meterPositionLocal(params.tileScale, params.seed);
-  const xscale = float(params.tileScale).div(2).add(1);
-  const scaled = pos.mul(xscale.exp()).add(seed);
+  // Fixed band stretch; pattern density is linear in tileScale via meterPositionLocal.
+  // Equals the former tileScale/2 + 1 (and its exp()) at tileScale 6.
+  const xscale = float(WOOD_POROUS_METER3D_STRETCH);
+  const scaled = pos.mul(Math.exp(WOOD_POROUS_METER3D_STRETCH)).add(seed);
   const len = float(9).reciprocal();
   const k = proceduralNoise3(scaled.mul(vec3(xscale, len, len)));
   const k2 = k.mul(proceduralNoise3(scaled.mul(vec3(25, 1, 1))).sub(1).mul(0.2));
@@ -120,7 +123,7 @@ function buildWoodPorousMeter3d(params: ProceduralMaterialParams): ProceduralMat
   const colorNode = mix(base, dark, mask);
   const bumpStrength = float(params.normalScale * 0.08);
   const normalNode = bumpMap(float(1).sub(mask), bumpStrength);
-  const roughnessNode = clamp(float(params.roughness).add(mask.mul(0.08)), 0.35, 0.65);
+  const roughnessNode = clamp(float(params.roughness).add(mask.mul(0.08)), ROUGHNESS_MIN, 1);
   return { colorNode, normalNode, roughnessNode };
 }
 

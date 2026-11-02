@@ -1,10 +1,14 @@
 /**
  * Crumpled fabric look — adapted from tsl-textures crumpled-fabric.js (MIT, Pavel Boytchev).
  */
-import { bumpMap, clamp, exp, float, vec3 } from 'three/tsl';
+import { bumpMap, clamp, float, vec3 } from 'three/tsl';
 import { meterPositionLocal } from './procedural-position';
 import { buildProceduralSampleUv } from './procedural-sample-uv';
-import type { ProceduralMaterialNodes, ProceduralMaterialParams } from './procedural-types';
+import {
+  ROUGHNESS_MIN,
+  type ProceduralMaterialNodes,
+  type ProceduralMaterialParams,
+} from './procedural-types';
 import { proceduralNoise3 } from './tsl-noise';
 
 function fabricPosition(params: ProceduralMaterialParams) {
@@ -16,11 +20,14 @@ function fabricPosition(params: ProceduralMaterialParams) {
   return vec3(uv.x, uv.y, seed);
 }
 
+/** Fixed pattern density factor; equals the former exp(tileScale/3 - 0.5) at tileScale 6. */
+const LINEN_PATTERN_SCALE = Math.exp(1.5);
+
 export function buildFabricLinenNodes(
   params: ProceduralMaterialParams,
 ): ProceduralMaterialNodes {
   const pinch = float(params.normalScale * 0.08);
-  let pos = fabricPosition(params).mul(exp(float(params.tileScale).div(3).sub(0.5)));
+  let pos = fabricPosition(params).mul(float(LINEN_PATTERN_SCALE));
 
   const warpA = vec3(
     proceduralNoise3(pos),
@@ -44,7 +51,7 @@ export function buildFabricLinenNodes(
   const normalNode = bumpMap(k, bumpStrength);
 
   const roughBase = float(params.roughness);
-  const roughnessNode = clamp(roughBase.add(k.sub(0.5).mul(0.06)), 0.75, 0.98);
+  const roughnessNode = clamp(roughBase.add(k.sub(0.5).mul(0.06)), ROUGHNESS_MIN, 1);
 
   return {
     colorNode,

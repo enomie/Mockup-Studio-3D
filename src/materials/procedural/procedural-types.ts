@@ -38,3 +38,5 @@ export {
   DEFAULT_TILE_SCALE_WOOD,
 } from '../material-spec';
 export const DEFAULT_NORMAL_SCALE = 1;
+/** Lower roughness bound for procedural variation (avoids GGX singularities); the slider value is otherwise used as is. */
+export const ROUGHNESS_MIN = 0.02;

@@ -1,6 +1,6 @@
 # Plan: Materialien – Live-Update & Shader-Überarbeitung
 
-Status: **Freigegeben** (inkl. Phase 6). Phase 1–2 umgesetzt.
+Status: **Freigegeben** (inkl. Phase 6). Phase 1–3 umgesetzt.
 Datum: 2026-11-02
 
 ## Ausgangslage
@@ -180,3 +180,11 @@ Farbe, Rauheit, Metalness, Normal scale, Clearcoat, Anisotropie, IOR als TSL-`un
   - Silk / Metal brushed: wirkungslose Regler (Normal, Tile, Seed) ausgeblendet – Silk bekommt in Phase 4 eigene Regler.
   - Grid paper: Seed ausgeblendet (wird nicht verwendet).
   - Tile-Default im Panel bei Metall jetzt 4 (wie Engine), vorher fälschlich 6.
+- [x] Phase 3 – Shader-Mathematik:
+  - Noise-Bias entfernt (`.sub(0.5)` auf Rohrauschen in metal-polished, plastic, paper, wood-soft, glass). Holz: Grain-Offset kompensiert, damit die mittlere Helligkeit gleich bleibt.
+  - Feste Roughness-Clamps ersetzt durch `ROUGHNESS_MIN` (0.02) – 1. **Abweichung vom Plan:** Regler bleiben 0–1 (keine engeren Bereiche, keine Migration nötig); stattdessen profilspezifische Roughness-Defaults in der Spec. Alle Builtin-Werte lagen innerhalb der alten Grenzen → Builtins unverändert.
+  - Leinen und Holz (meter-3d, soft + porous): exponentielle Tile-Skalierung durch Konstante ersetzt (Wert = alter Wert bei tileScale 6) → Musterdichte jetzt linear zu tileScale.
+  - Triplanar: Helfer `triplanarScalar`; Roughness-Rauschen pro Ebene ausgewertet und gemischt (wood-soft, wood-porous, concrete-porous).
+  - Grid paper: `fwidth`-Antialiasing, Ausblenden zur mittleren Linienabdeckung, wenn Zellen pixelgroß werden.
+  - Nicht visuell geprüft (Container hat kein WebGPU) → lokal prüfen.
+

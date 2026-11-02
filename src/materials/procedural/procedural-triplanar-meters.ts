@@ -1,3 +1,4 @@
+import type { Node } from 'three/webgpu';
 import { abs, float, normalLocal, positionLocal, vec2 } from 'three/tsl';
 
 const NORMAL_EPSILON = 1e-5;
@@ -24,4 +25,22 @@ export function triplanarMeterUvPairs(tileScale: number) {
     xz: vec2(pos.x, pos.z).mul(scale),
     yz: vec2(pos.y, pos.z).mul(scale),
   };
+}
+
+/**
+ * Triplanar scalar: evaluates `sample` on each meter-scaled plane (plus `offset`)
+ * and blends the results by normal weights. Blending results, not coordinates,
+ * avoids smeared patterns on slanted faces.
+ */
+export function triplanarScalar(
+  tileScale: number,
+  offset: Node<'vec2'>,
+  sample: (uv: Node<'vec2'>) => Node<'float'>,
+): Node<'float'> {
+  const { wx, wy, wz } = triplanarMeterWeights();
+  const uvs = triplanarMeterUvPairs(tileScale);
+  return sample(uvs.xy.add(offset))
+    .mul(wz)
+    .add(sample(uvs.xz.add(offset)).mul(wy))
+    .add(sample(uvs.yz.add(offset)).mul(wx));
 }

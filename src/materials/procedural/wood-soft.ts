@@ -12,12 +12,16 @@ import {
 } from 'three/tsl';
 import { meterPositionLocal } from './procedural-position';
 import { buildProceduralSampleUv } from './procedural-sample-uv';
+import { triplanarScalar } from './procedural-triplanar-meters';
 import {
-  triplanarMeterUvPairs,
-  triplanarMeterWeights,
-} from './procedural-triplanar-meters';
-import type { ProceduralMaterialNodes, ProceduralMaterialParams } from './procedural-types';
+  ROUGHNESS_MIN,
+  type ProceduralMaterialNodes,
+  type ProceduralMaterialParams,
+} from './procedural-types';
 import { proceduralNoise3 } from './tsl-noise';
+
+/** Grain offset; keeps the former mean brightness now that pore noise is zero-centered. */
+const WOOD_SOFT_GRAIN_OFFSET = -0.01;
 
 function woodSoftSeedOffset(seed: Node<'float'>) {
   return vec2(seed.mul(17.3), seed.mul(31.7));
@@ -40,17 +44,19 @@ function buildWoodSoftGrainScalar(sampleUv: Node<'vec2'>, seed: Node<'float'>) {
   );
 
   const pores = mx_noise_float(vec3(sampleUv.mul(22), seed.add(12.5)))
-    .sub(0.5)
     .mul(0.18);
 
-  return clamp(band.mul(0.82).add(pores).add(0.08), 0, 1);
+  return clamp(band.mul(0.82).add(pores).add(WOOD_SOFT_GRAIN_OFFSET), 0, 1);
+}
+
+function woodSoftRoughnessNoise(uv: Node<'vec2'>, seed: Node<'float'>) {
+  return mx_noise_float(vec3(uv.mul(8), seed));
 }
 
 function buildWoodSoftNodesFromGrain(
   grain: Node<'float'>,
   params: ProceduralMaterialParams,
-  sampleUvForRoughness: Node<'vec2'>,
-  seed: Node<'float'>,
+  roughnessNoise: Node<'float'>,
 ): ProceduralMaterialNodes {
   const albedoMod = mix(float(0.62), float(1.12), grain);
   const colorNode = vec3(params.color.r, params.color.g, params.color.b).mul(albedoMod);
@@ -62,9 +68,9 @@ function buildWoodSoftNodesFromGrain(
   const roughnessNode = clamp(
     roughBase
       .sub(grain.mul(0.12))
-      .add(mx_noise_float(vec3(sampleUvForRoughness.mul(8), seed)).mul(0.04)),
-    0.28,
-    0.72,
+      .add(roughnessNoise.mul(0.04)),
+    ROUGHNESS_MIN,
+    1,
   );
 
   return {
@@ -77,16 +83,11 @@ function buildWoodSoftNodesFromGrain(
 function buildWoodSoftTriplanar(params: ProceduralMaterialParams): ProceduralMaterialNodes {
   const seed = float(params.seed);
   const offset = woodSoftSeedOffset(seed);
-  const { wx, wy, wz } = triplanarMeterWeights();
-  const uvs = triplanarMeterUvPairs(params.tileScale);
-
-  const grain = buildWoodSoftGrainScalar(uvs.xy.add(offset), seed)
-    .mul(wz)
-    .add(buildWoodSoftGrainScalar(uvs.xz.add(offset), seed).mul(wy))
-    .add(buildWoodSoftGrainScalar(uvs.yz.add(offset), seed).mul(wx));
-
-  const avgUv = uvs.xy.mul(wz).add(uvs.xz.mul(wy)).add(uvs.yz.mul(wx));
-  return buildWoodSoftNodesFromGrain(grain, params, avgUv, seed);
+  const grain = triplanarScalar(params.tileScale, offset, (uv) => buildWoodSoftGrainScalar(uv, seed));
+  const roughnessNoise = triplanarScalar(params.tileScale, offset, (uv) =>
+    woodSoftRoughnessNoise(uv, seed),
+  );
+  return buildWoodSoftNodesFromGrain(grain, params, roughnessNoise);
 }
 
 /** Softwood grain — subtle rings and pores (spruce-like). */
@@ -104,22 +105,25 @@ export function buildWoodSoftNodes(
   const seed = float(params.seed);
   const sampleUv = buildProceduralSampleUv(params).add(woodSoftSeedOffset(seed));
   const grain = buildWoodSoftGrainScalar(sampleUv, seed);
-  return buildWoodSoftNodesFromGrain(grain, params, sampleUv, seed);
+  return buildWoodSoftNodesFromGrain(grain, params, woodSoftRoughnessNoise(sampleUv, seed));
 }
+
+const WOOD_SOFT_METER3D_DETAIL = Math.exp(1) * 0.22;
 
 /** Wood rings in object-local meters — ground / legacy meter-3d (tsl-textures wood.js). */
 function buildWoodSoftMeter3d(params: ProceduralMaterialParams): ProceduralMaterialNodes {
   const seed = float(params.seed);
   const pos = meterPositionLocal(params.tileScale, params.seed);
-  const detail = float(params.tileScale).div(3).sub(1).exp().mul(0.22);
+  // Linear in tileScale (via meterPositionLocal); equals the former exp(tileScale/3 - 1) * 0.22 at tileScale 6.
+  const detail = float(WOOD_SOFT_METER3D_DETAIL);
   const scaled = vec3(pos.x.mul(detail), pos.y.mul(detail.mul(4)), pos.z.mul(detail));
   const ringWarp = proceduralNoise3(scaled.mul(2.5).add(seed)).mul(0.28);
   const rings = fract(pos.x.mul(detail.mul(5.5)).add(ringWarp));
   const band = smoothstep(float(0.12), float(0.38), rings).mul(
     smoothstep(float(0.88), float(0.52), rings),
   );
-  const pores = proceduralNoise3(scaled.mul(22).add(seed.add(12.5))).sub(0.5).mul(0.18);
-  const grain = clamp(band.mul(0.82).add(pores).add(0.08), 0, 1);
+  const pores = proceduralNoise3(scaled.mul(22).add(seed.add(12.5))).mul(0.18);
+  const grain = clamp(band.mul(0.82).add(pores).add(WOOD_SOFT_GRAIN_OFFSET), 0, 1);
   const albedoMod = mix(float(0.62), float(1.12), grain);
   const colorNode = vec3(params.color.r, params.color.g, params.color.b).mul(albedoMod);
   const bumpStrength = float(params.normalScale * 0.14);
@@ -127,8 +131,8 @@ function buildWoodSoftMeter3d(params: ProceduralMaterialParams): ProceduralMater
   const roughBase = float(params.roughness);
   const roughnessNode = clamp(
     roughBase.sub(grain.mul(0.12)).add(proceduralNoise3(scaled.mul(8).add(seed)).mul(0.04)),
-    0.28,
-    0.72,
+    ROUGHNESS_MIN,
+    1,
   );
   return { colorNode, normalNode, roughnessNode };
 }

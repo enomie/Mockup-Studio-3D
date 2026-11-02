@@ -113,6 +113,7 @@ type ProfileOverrides = Omit<
 const PROFILE_SPECS: Record<ProceduralProfileId, ProfileOverrides> = {
   'wood-soft': {
     label: 'Wood soft',
+    roughness: normalized(0.45),
     physical: true,
     clearcoat: WOOD_CLEARCOAT,
     normalScale: NORMAL_SCALE,
@@ -121,6 +122,7 @@ const PROFILE_SPECS: Record<ProceduralProfileId, ProfileOverrides> = {
   },
   'wood-porous': {
     label: 'Wood porous',
+    roughness: normalized(0.48),
     physical: true,
     clearcoat: WOOD_CLEARCOAT,
     normalScale: NORMAL_SCALE,
@@ -129,6 +131,7 @@ const PROFILE_SPECS: Record<ProceduralProfileId, ProfileOverrides> = {
   },
   'paper-grain': {
     label: 'Paper grain',
+    roughness: normalized(0.9),
     physical: false,
     clearcoat: TEXTURED_CLEARCOAT,
     normalScale: NORMAL_SCALE,
@@ -151,6 +154,7 @@ const PROFILE_SPECS: Record<ProceduralProfileId, ProfileOverrides> = {
   },
   'concrete-stained': {
     label: 'Concrete stained',
+    roughness: normalized(0.92),
     physical: false,
     clearcoat: TEXTURED_CLEARCOAT,
     normalScale: NORMAL_SCALE,
@@ -159,6 +163,7 @@ const PROFILE_SPECS: Record<ProceduralProfileId, ProfileOverrides> = {
   },
   'concrete-porous': {
     label: 'Concrete porous',
+    roughness: normalized(0.88),
     physical: false,
     clearcoat: TEXTURED_CLEARCOAT,
     normalScale: NORMAL_SCALE,
@@ -167,6 +172,7 @@ const PROFILE_SPECS: Record<ProceduralProfileId, ProfileOverrides> = {
   },
   'fabric-linen': {
     label: 'Fabric Linen',
+    roughness: normalized(0.88),
     physical: false,
     clearcoat: TEXTURED_CLEARCOAT,
     normalScale: NORMAL_SCALE,
@@ -183,6 +189,7 @@ const PROFILE_SPECS: Record<ProceduralProfileId, ProfileOverrides> = {
   },
   'metal-polished': {
     label: 'Metal polished',
+    roughness: normalized(0.08),
     physical: true,
     clearcoat: TEXTURED_CLEARCOAT,
     normalScale: NORMAL_SCALE,
@@ -191,12 +198,14 @@ const PROFILE_SPECS: Record<ProceduralProfileId, ProfileOverrides> = {
   },
   'metal-brushed': {
     label: 'Metal brushed',
+    roughness: normalized(0.3),
     physical: true,
     clearcoat: TEXTURED_CLEARCOAT,
     anisotropy: ANISOTROPY,
   },
   'coated-gloss': {
     label: 'Coated gloss',
+    roughness: normalized(0.12),
     physical: true,
     clearcoat: TEXTURED_CLEARCOAT,
     normalScale: NORMAL_SCALE,
@@ -205,6 +214,7 @@ const PROFILE_SPECS: Record<ProceduralProfileId, ProfileOverrides> = {
   },
   'plastic-matte': {
     label: 'Plastic matte',
+    roughness: normalized(0.72),
     physical: false,
     clearcoat: TEXTURED_CLEARCOAT,
     normalScale: NORMAL_SCALE,
@@ -213,6 +223,7 @@ const PROFILE_SPECS: Record<ProceduralProfileId, ProfileOverrides> = {
   },
   'plastic-smooth': {
     label: 'Plastic smooth',
+    roughness: normalized(0.18),
     physical: true,
     clearcoat: TEXTURED_CLEARCOAT,
     normalScale: NORMAL_SCALE,

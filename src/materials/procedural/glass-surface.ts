@@ -32,7 +32,6 @@ function buildGlassSurfaceNormalNode(params: ProceduralMaterialParams) {
   const noiseCoord = meterPositionLocal(params.tileScale, params.seed);
 
   const micro = mx_noise_float(noiseCoord.mul(64).add(vec3(seed.mul(5.3), 0, seed.mul(11.7))))
-    .sub(0.5)
     .mul(0.04);
 
   const bumpStrength = float(params.normalScale * 0.02);

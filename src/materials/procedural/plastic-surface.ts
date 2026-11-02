@@ -1,7 +1,11 @@
 import { bumpMap, clamp, float, vec3 } from 'three/tsl';
 import { meterPositionLocal } from './procedural-position';
 import { buildProceduralSampleUv } from './procedural-sample-uv';
-import type { ProceduralMaterialNodes, ProceduralMaterialParams } from './procedural-types';
+import {
+  ROUGHNESS_MIN,
+  type ProceduralMaterialNodes,
+  type ProceduralMaterialParams,
+} from './procedural-types';
 import { proceduralNoise3 } from './tsl-noise';
 
 interface PlasticSurfaceOptions {
@@ -23,7 +27,7 @@ function buildPlasticSurfaceNodes(
   options: PlasticSurfaceOptions,
 ): ProceduralMaterialNodes {
   const pos = samplePosition(params);
-  const micro = proceduralNoise3(pos.mul(8)).sub(0.5).mul(options.microStrength);
+  const micro = proceduralNoise3(pos.mul(8)).mul(options.microStrength);
 
   const colorNode = vec3(params.color.r, params.color.g, params.color.b).mul(
     float(1).add(micro.mul(0.04)),
@@ -36,8 +40,8 @@ function buildPlasticSurfaceNodes(
   const roughBase = float(params.roughness);
   const roughnessNode = clamp(
     roughBase.add(micro.mul(options.roughnessVariation)),
-    0.05,
-    0.95,
+    ROUGHNESS_MIN,
+    1,
   );
 
   return {

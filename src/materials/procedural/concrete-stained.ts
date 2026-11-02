@@ -4,7 +4,11 @@
 import { bumpMap, clamp, float, vec3 } from 'three/tsl';
 import { meterPositionLocal } from './procedural-position';
 import { buildProceduralSampleUv } from './procedural-sample-uv';
-import type { ProceduralMaterialNodes, ProceduralMaterialParams } from './procedural-types';
+import {
+  ROUGHNESS_MIN,
+  type ProceduralMaterialNodes,
+  type ProceduralMaterialParams,
+} from './procedural-types';
 import { proceduralNoise3 } from './tsl-noise';
 
 function concreteStainedPosition(params: ProceduralMaterialParams) {
@@ -28,7 +32,7 @@ export function buildConcreteStainedNodes(
   const normalNode = bumpMap(bump, bumpStrength);
 
   const roughBase = float(params.roughness);
-  const roughnessNode = clamp(roughBase.add(bump.mul(0.15)), 0.85, 1);
+  const roughnessNode = clamp(roughBase.add(bump.mul(0.15)), ROUGHNESS_MIN, 1);
 
   return {
     colorNode,

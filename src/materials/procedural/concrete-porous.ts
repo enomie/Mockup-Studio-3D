@@ -9,11 +9,12 @@ import {
   vec3,
 } from 'three/tsl';
 import { buildProceduralSampleUv } from './procedural-sample-uv';
+import { triplanarScalar } from './procedural-triplanar-meters';
 import {
-  triplanarMeterUvPairs,
-  triplanarMeterWeights,
-} from './procedural-triplanar-meters';
-import type { ProceduralMaterialNodes, ProceduralMaterialParams } from './procedural-types';
+  ROUGHNESS_MIN,
+  type ProceduralMaterialNodes,
+  type ProceduralMaterialParams,
+} from './procedural-types';
 
 /**
  * Isotropic bubble spots (same band-pass as v1). Slightly lower scale → sparser, larger voids.
@@ -34,11 +35,14 @@ function buildConcreteBubbleMask(sampleUv: Node<'vec2'>, seed: Node<'float'>) {
   );
 }
 
+function concretePorousRoughnessNoise(uv: Node<'vec2'>, seed: Node<'float'>) {
+  return mx_noise_float(vec3(uv.mul(12), seed.add(1.7)));
+}
+
 function buildConcretePorousFromMask(
   spotMask: Node<'float'>,
   params: ProceduralMaterialParams,
-  sampleUvForRoughness: Node<'vec2'>,
-  seed: Node<'float'>,
+  roughnessNoise: Node<'float'>,
 ): ProceduralMaterialNodes {
   const albedoMod = float(1).sub(spotMask.mul(0.32));
   const colorNode = vec3(params.color.r, params.color.g, params.color.b).mul(albedoMod);
@@ -50,9 +54,9 @@ function buildConcretePorousFromMask(
   const roughBase = float(params.roughness);
   const roughnessNode = clamp(
     roughBase.add(spotMask.mul(0.12)).add(
-      mx_noise_float(vec3(sampleUvForRoughness.mul(12), seed.add(1.7))).mul(0.02),
+      roughnessNoise.mul(0.02),
     ),
-    0.04,
+    ROUGHNESS_MIN,
     1,
   );
 
@@ -66,16 +70,11 @@ function buildConcretePorousFromMask(
 function buildConcretePorousTriplanar(params: ProceduralMaterialParams): ProceduralMaterialNodes {
   const seed = float(params.seed);
   const offset = concretePorousSeedOffset(seed);
-  const { wx, wy, wz } = triplanarMeterWeights();
-  const uvs = triplanarMeterUvPairs(params.tileScale);
-
-  const spotMask = buildConcreteBubbleMask(uvs.xy.add(offset), seed)
-    .mul(wz)
-    .add(buildConcreteBubbleMask(uvs.xz.add(offset), seed).mul(wy))
-    .add(buildConcreteBubbleMask(uvs.yz.add(offset), seed).mul(wx));
-
-  const avgUv = uvs.xy.mul(wz).add(uvs.xz.mul(wy)).add(uvs.yz.mul(wx));
-  return buildConcretePorousFromMask(spotMask, params, avgUv, seed);
+  const spotMask = triplanarScalar(params.tileScale, offset, (uv) => buildConcreteBubbleMask(uv, seed));
+  const roughnessNoise = triplanarScalar(params.tileScale, offset, (uv) =>
+    concretePorousRoughnessNoise(uv, seed),
+  );
+  return buildConcretePorousFromMask(spotMask, params, roughnessNoise);
 }
 
 /** Porous concrete — round bubble cavities recessed into the surface. */
@@ -89,6 +88,6 @@ export function buildConcretePorousNodes(
   const seed = float(params.seed);
   const sampleUv = buildProceduralSampleUv(params).add(concretePorousSeedOffset(seed));
   const spotMask = buildConcreteBubbleMask(sampleUv, seed);
-  return buildConcretePorousFromMask(spotMask, params, sampleUv, seed);
+  return buildConcretePorousFromMask(spotMask, params, concretePorousRoughnessNoise(sampleUv, seed));
 }
 

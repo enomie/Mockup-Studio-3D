@@ -3,6 +3,7 @@ import {
   abs,
   float,
   fract,
+  fwidth,
   max,
   min,
   mix,
@@ -37,23 +38,44 @@ function distanceToLineInCells(coord: Node<'float'>) {
   return min(fract(coord), float(1).sub(fract(coord)));
 }
 
+/** Below this many pixels per cell the lines fade to their average coverage (no moiré). */
+const AA_FADE_START_CELLS_PER_PIXEL = 0.2;
+const AA_FADE_END_CELLS_PER_PIXEL = 0.45;
+
+/**
+ * Anti-aliased line mask along one axis. `fwidth` widens the edge by one pixel
+ * footprint; when a cell gets close to pixel size the mask fades to the line's
+ * average coverage instead of aliasing.
+ */
+function axisLineMask(coord: Node<'float'>, inner: Node<'float'>, outer: Node<'float'>) {
+  const pixel = fwidth(coord);
+  const dist = distanceToLineInCells(coord);
+  const sharp = float(1).sub(smoothstep(inner, outer.add(pixel), dist));
+  const coverage = inner.add(outer);
+  const fade = smoothstep(
+    float(AA_FADE_START_CELLS_PER_PIXEL),
+    float(AA_FADE_END_CELLS_PER_PIXEL),
+    pixel,
+  );
+  return mix(sharp, coverage, fade);
+}
+
 function buildGridLineMask(
   sampleUv: ReturnType<typeof buildProceduralSampleUv>,
   tileScale: number,
 ) {
   const { minorInner, minorOuter, majorInner, majorOuter } = cellUnitLineThresholds(tileScale);
 
-  const minorDistX = distanceToLineInCells(sampleUv.x);
-  const minorDistY = distanceToLineInCells(sampleUv.y);
-  const minorDist = min(minorDistX, minorDistY);
-  const minorMask = float(1).sub(smoothstep(minorInner, minorOuter, minorDist));
+  const minorMask = max(
+    axisLineMask(sampleUv.x, minorInner, minorOuter),
+    axisLineMask(sampleUv.y, minorInner, minorOuter),
+  );
 
-  const majorDivisor = float(GRID_MAJOR_EVERY_MINOR_CELLS);
-  const majorCoord = sampleUv.div(majorDivisor);
-  const majorDistX = distanceToLineInCells(majorCoord.x);
-  const majorDistY = distanceToLineInCells(majorCoord.y);
-  const majorDist = min(majorDistX, majorDistY);
-  const majorMask = float(1).sub(smoothstep(majorInner, majorOuter, majorDist));
+  const majorCoord = sampleUv.div(float(GRID_MAJOR_EVERY_MINOR_CELLS));
+  const majorMask = max(
+    axisLineMask(majorCoord.x, majorInner, majorOuter),
+    axisLineMask(majorCoord.y, majorInner, majorOuter),
+  );
 
   return max(minorMask, majorMask);
 }

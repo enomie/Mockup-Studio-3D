@@ -8,7 +8,11 @@ import {
 } from 'three/tsl';
 import { meterPositionLocal } from './procedural-position';
 import { buildProceduralSampleUv } from './procedural-sample-uv';
-import type { ProceduralMaterialNodes, ProceduralMaterialParams } from './procedural-types';
+import {
+  ROUGHNESS_MIN,
+  type ProceduralMaterialNodes,
+  type ProceduralMaterialParams,
+} from './procedural-types';
 
 export function buildMetalPolishedNodes(
   params: ProceduralMaterialParams,
@@ -23,9 +27,7 @@ export function buildMetalPolishedNodes(
           return vec3(sampleUv.x, sampleUv.y, seed);
         })();
 
-  const micro = mx_noise_float(noiseCoord.mul(48))
-    .sub(0.5)
-    .mul(0.06);
+  const micro = mx_noise_float(noiseCoord.mul(48)).mul(0.06);
 
   const colorNode = vec3(params.color.r, params.color.g, params.color.b);
 
@@ -36,8 +38,8 @@ export function buildMetalPolishedNodes(
   const roughBase = float(params.roughness);
   const roughnessNode = clamp(
     roughBase.add(mx_noise_float(noiseCoord.mul(32).add(vec3(seed.add(3), 0, 0))).mul(0.015)),
-    0.02,
-    0.2,
+    ROUGHNESS_MIN,
+    1,
   );
 
   return {

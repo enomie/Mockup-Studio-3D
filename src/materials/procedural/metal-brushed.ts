@@ -4,7 +4,11 @@ import {
   triplanarMeterUvPairs,
   triplanarMeterWeights,
 } from './procedural-triplanar-meters';
-import type { ProceduralMaterialNodes, ProceduralMaterialParams } from './procedural-types';
+import {
+  ROUGHNESS_MIN,
+  type ProceduralMaterialNodes,
+  type ProceduralMaterialParams,
+} from './procedural-types';
 
 /** Streak bands per tileScale unit on perimeter UV (meters). ~120 × tileScale 28 ≈ 0.3 mm spacing. */
 const BRUSHED_STREAKS_PER_TILE_UNIT = 120;
@@ -37,8 +41,8 @@ export function buildMetalBrushedNodes(
   const roughBase = float(params.roughness);
   const roughnessNode = clamp(
     roughBase.add(sin(phase).mul(0.006)),
-    0.12,
-    0.5,
+    ROUGHNESS_MIN,
+    1,
   );
 
   return {

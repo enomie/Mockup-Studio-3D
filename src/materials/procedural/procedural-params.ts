@@ -4,7 +4,7 @@ import {
   type MaterialPreset,
   type ProceduralProfileId,
 } from '@/scene/material-types';
-import { defaultTileScaleForProfile } from '../material-spec';
+import { defaultTileScaleForProfile, proceduralProfileSpec } from '../material-spec';
 import {
   DEFAULT_NORMAL_SCALE,
   type ProceduralMaterialParams,
@@ -53,7 +53,8 @@ export function proceduralParamsFromPreset(
   return {
     color: multiplyRgb(baseColor, effectiveTint),
     lineColor: preset.lineColor ? { ...preset.lineColor } : undefined,
-    roughness: preset.roughness ?? 0.5,
+    roughness:
+      preset.roughness ?? (profile ? proceduralProfileSpec(profile).roughness.default : 0.5),
     metalness: preset.metalness ?? 0,
     normalScale: preset.normalScale ?? DEFAULT_NORMAL_SCALE,
     tileScale,

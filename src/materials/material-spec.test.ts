@@ -82,3 +82,18 @@ describe('material spec', () => {
     expect(solid.clearcoat).toBeDefined();
   });
 });
+
+describe('roughness spec', () => {
+  it('uses the full 0–1 range for every profile (no hidden shader clamps)', () => {
+    for (const profile of PROFILES) {
+      const { roughness } = proceduralProfileSpec(profile);
+      expect(roughness.min).toBe(0);
+      expect(roughness.max).toBe(1);
+    }
+  });
+
+  it('has profile-specific roughness defaults', () => {
+    expect(proceduralProfileSpec('metal-polished').roughness.default).toBe(0.08);
+    expect(proceduralProfileSpec('concrete-stained').roughness.default).toBe(0.92);
+  });
+});
