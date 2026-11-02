@@ -29,6 +29,7 @@ import {
 import type { ProfileEditorTool } from '@/ui/store/app-store-internals';
 import { useAppStore } from '@/ui/store/use-app-store';
 import { ProfilePointSection } from './ProfileNodeFields';
+import { PROFILE_EDITOR_SHORTCUTS } from './profile-editor-shortcuts';
 import { sampleProfilePathMm } from '@/engine/extrusion-geometry';
 import { classifyExtrusionPaths, type ExtrusionPathRole } from '@/scene/profile-holes';
 
@@ -242,6 +243,26 @@ function PathsSection({ profile }: { profile: ProfileEntry }) {
   );
 }
 
+function InfoSection() {
+  return (
+    <SubPanelSection title="Info">
+      {PROFILE_EDITOR_SHORTCUTS.map((group) => (
+        <div key={group.title} className="shortcut-group">
+          <h4 className="shortcut-group__title">{group.title}</h4>
+          <dl className="info-list shortcut-list">
+            {group.shortcuts.map(({ keys, action }) => (
+              <div key={`${keys}-${action}`} className="shortcut-list__row">
+                <dt><kbd className="kbd">{keys}</kbd></dt>
+                <dd>{action}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      ))}
+    </SubPanelSection>
+  );
+}
+
 function getLastAddedPath(profileId: string): string | null {
   return getProfile(profileId, getAppState().userProfiles)?.paths.at(-1)?.id ?? null;
 }
@@ -266,6 +287,7 @@ export function ProfileInspector() {
       <SnappingSection />
       <PathsSection profile={profile} />
       <ProfilePointSection profile={profile} />
+      <InfoSection />
     </SubPanel>
   );
 }

@@ -100,17 +100,43 @@
   font-weight: 600;
 }
 
-.profile-editor__hint {
+.profile-editor__grid-badge {
   position: absolute;
   bottom: var(--space-4);
-  left: 50%;
-  max-width: 60%;
+  left: var(--space-4);
   margin: 0;
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
   font-size: var(--font-xs);
   color: var(--color-text-muted);
-  text-align: center;
-  transform: translateX(-50%);
   pointer-events: none;
+}
+
+/* Shortcut list in the Info section. */
+.shortcut-group + .shortcut-group {
+  margin-top: var(--space-4);
+}
+
+.shortcut-group__title {
+  margin: 0 0 var(--space-2);
+  font-size: var(--font-xs);
+  font-weight: 600;
+}
+
+.shortcut-list__row {
+  display: contents;
+}
+
+.kbd {
+  display: inline-block;
+  padding: 0 var(--space-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: var(--font-xs);
+  white-space: nowrap;
 }
 
 /* Right inspector of the 2D editor */

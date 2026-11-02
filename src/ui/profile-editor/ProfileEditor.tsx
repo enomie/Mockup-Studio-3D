@@ -674,14 +674,9 @@ export function ProfileEditor() {
           Done
         </button>
       </div>
-      <p className="profile-editor__hint">
-        {view ? `Grid ${formatGridStepMeters(gridStepMm(view.scale))} m · ` : null}
-        Drag points and handles · Shift: break handles · Click a path: add point · Del: delete point ·
-        Double-click: corner/smooth · C: scissors · Shift-click end + J: join · V: select ·
-        P: pen (click = corner, drag = curve, click first point = close, Enter = finish) ·
-        G / N: snap to grid / points · Alt: no snapping ·
-        Wheel: zoom · Space or middle mouse: pan · Esc: close
-      </p>
+      {view ? (
+        <p className="profile-editor__grid-badge">{`Grid ${formatGridStepMeters(gridStepMm(view.scale))} m`}</p>
+      ) : null}
     </div>
   );
 }

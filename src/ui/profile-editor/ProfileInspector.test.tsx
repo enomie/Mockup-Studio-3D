@@ -20,7 +20,7 @@ describe('ProfileInspector', () => {
         <ProfileInspector />
       </ShellSubPanelProvider>,
     );
-    for (const text of ['Tools', 'Select', 'Pen', 'Scissors', 'Paths', 'Glass', 'Cork', 'Add path', 'Point']) {
+    for (const text of ['Tools', 'Select', 'Pen', 'Scissors', 'Paths', 'Glass', 'Cork', 'Add path', 'Point', 'Info', 'Snap to grid', 'Close editor']) {
       expect(html).toContain(text);
     }
   });
