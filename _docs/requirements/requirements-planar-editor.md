@@ -1,5 +1,15 @@
 # Planar Editor
 
+> **Umgesetzt (2026-11) als Reiter Profiles + 2D-Profil-Editor („Profile editor“).** Der aktuelle Stand steht in
+> [`requirements-profiles.md`](./requirements-profiles.md); diese Datei bleibt als ursprüngliche Spezifikation.
+> **Abweichungen von der Spezifikation unten:**
+> - Eingebaute Profile werden **nicht** im Editor angesehen (auch nicht read-only), sondern über **Duplicate** bearbeitet. Name der Kopie: „‹Name› copy“.
+> - **Kein** `profileKind` (lathe/extrude): Profile sind neutral, das Asset entscheidet. Offen/geschlossen ist eine Eigenschaft des einzelnen Pfads.
+> - **P** ist das **Pen**-Werkzeug (neue Pfade zeichnen). Punkte einfügen geht mit dem Select-Werkzeug per Klick auf ein Segment (de Casteljau, formtreu). Dazu **Scissors (C)**, **Join (Shift-Klick + J)** und **Snapping (G/N, Alt)**.
+> - Ausstieg über **Done** in der Leiste über der Zeichenfläche bzw. im Inspector rechts, oder **Esc**.
+> - Speichern: sofort im Store, Autosave des Projekts (500 ms) wie überall; eine Ziehbewegung bzw. ein Pen-Punkt = ein Undo-Schritt.
+> - Die Assets (Flasche, Stift, Dose, Rad, Object Extrusion) werden nach dem Loslassen neu gebaut.
+
 2D-Editor zum Zeichnen und Bearbeiten von **Profil-Pfaden** (Bézier-Knoten, Pfadpunkt-Werkzeug) für spätere **Lathe (Revolve)** und **Extrude**. UI-Name: **Planar Editor**. Nicht verwechseln mit dem 3D-Dreieckspatch-Studio (eigenes Asset/Thema, gleiche Pfad-Mathematik langfristig).
 
 Querschnitt Ownership → [`requirements-builtin-and-user-content.md`](./requirements-builtin-and-user-content.md). Undo, Redo, Browser-Neustart → [`requirements-history.md`](./requirements-history.md).

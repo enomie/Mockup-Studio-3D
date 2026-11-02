@@ -1,10 +1,15 @@
 # Profiles & 2D-Profil-Editor
 
 **Lebendes Dokument:** Es beschreibt den aktuellen Stand und wird bei jeder Änderung an Profilen
-oder am Editor im selben Commit nachgezogen. Die Pläne in `_docs/plans/plan-profiles-*.md` sind nur
-der Verlauf.
+oder am Editor im selben Commit nachgezogen. Das „Warum“ steht im Tagebuch
+[`diary-code-decisions.md`](../diaries/diary-code-decisions.md) (Eintrag 2026-11-02); die umgesetzten
+Pläne sind gelöscht (Git-Historie). Ursprüngliche Spezifikation:
+[`requirements-planar-editor.md`](./requirements-planar-editor.md).
 
-Stand: A, B (B1 Datenmodell, B2 Verwalten, B3 Editor), C (Weinflasche), C2 (Stift, Dose, Rad) und D (Object Extrusion) umgesetzt.
+Stand 2026-11-02 — umgesetzt:
+- **A** Reiter Profiles · **B** Datenmodell mit benannten Pfaden, Duplicate/Edit/Remove, 2D-Editor
+- **C / C2** Profile in Weinflasche, Stift, Dose und Rad · **D** Object Extrusion
+- **E** Meter in der UI, 2D-Inspector rechts, Scissors und Join, Pen · **F** Snapping · **G** Löcher in der Extrusion
 
 ---
 

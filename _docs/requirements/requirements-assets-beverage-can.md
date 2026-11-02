@@ -1,5 +1,7 @@
 # Assets — Beverage can (330 ml)
 
+> **Update 2026-11 (Profiles):** Die Dose kann **jedes Profil** verwenden. `canBodyProfile` enthält die **Profil-ID** (`can-330-classic`, `can-330-sleek`, `user-profile-…`); `standard` / `sleek` werden weiter verstanden. Pflicht-Pfad Slot 0 (Body), Top ring (Slot 1) optional; Rückfall auf classic. Etikett und Maße werden aus dem Profil berechnet; Hals/Boden/Standring: `sleek` eigene Werte, alle anderen die von classic. → [`requirements-profiles.md`](./requirements-profiles.md) (4a).
+
 Parametrischer **Getränkedosen**-Baustein (klassische **330-ml-Aluminiumdose**, z. B. Cola-Mockup) — **Etikett / Sleeve** als Bild aus der **Images-Bibliothek** → [`requirements-images.md`](./requirements-images.md). Katalog, Entity-Modell, Drop/Add, Szene-Panel-Grundlagen → [`requirements-assets.md`](./requirements-assets.md). Bild-Flächen (Matt/Glossy, Emissive) → [`requirements-image-surfaces.md`](./requirements-image-surfaces.md). Material-Slots → [`requirements-materials.md`](./requirements-materials.md). Schatten → [`requirements-shadows.md`](./requirements-shadows.md). Uniform Scale → [`requirements-gimbals.md`](./requirements-gimbals.md).
 
 **Abgrenzung:** Kein `print`-Prisma, keine Flasche. **Block**, **Picture framed** → eigene Docs. Marken-Logos sind User-Bilder — kein Coca-Cola-Branding im Built-in. **Nicht** dasselbe wie **Slim Can** (Ø 53 mm, meist 150–250 ml) — s. Profil-Tabelle unten.

@@ -26,7 +26,8 @@ Zentrale Projektbeschreibung. Detail-Requirements in den verlinkten Kategorie-Da
 | [`requirements-arrangements-and-persistence.md`](./requirements-arrangements-and-persistence.md) | **Arrangements** (Left): Asset-Zusammenstellungen, Built-ins + User; Auto-Save/Reload (IndexedDB); Settings → Reset all — v1 live |
 | [`requirements-scenes.md`](./requirements-scenes.md) | Scene-Presets: Built-ins, User-Save, Load |
 | [`requirements-images.md`](./requirements-images.md) | Images-Bibliothek, Upload, Starter, min. 10 |
-| [`requirements-planar-editor.md`](./requirements-planar-editor.md) | **Profiles** (Left): Built-in/User, Duplicate; **Planar Editor** im Viewport; Lathe/Extrude-Pfade |
+| [`requirements-profiles.md`](./requirements-profiles.md) | **Profiles** (Left), 2D-Profil-Editor im Viewport, Profile in Lathe-Assets, **Object Extrusion** — lebendes Dokument, aktueller Stand |
+| [`requirements-planar-editor.md`](./requirements-planar-editor.md) | Ursprüngliche Spezifikation des Editors (umgesetzt, Abweichungen dort vermerkt) |
 | [`requirements-history.md`](./requirements-history.md) | Undo/Redo (kontextuell); Workspace-Persistenz (Konzept; umgesetzt → arrangements-and-persistence) |
 | [`requirements-image-surfaces.md`](./requirements-image-surfaces.md) | Bild-Flächen: Finish, Emissive, Passepartout (Zwei-Mesh-Engine) |
 | [`requirements-colors.md`](./requirements-colors.md) | Colors-Bibliothek, benannte RGB-Swatches, ColorPicker-Integration |

@@ -1,5 +1,7 @@
 # Assets — Lathe profile (SVG, Millimeter)
 
+> **Update 2026-11 (Profiles):** Die Lathe-SVGs sind jetzt auch als **editierbare Profile** in der App verfügbar (Reiter **Profiles**, 2D-Editor, benannte Pfade, Slots). Eingebaute Profile werden per Skript aus diesen SVGs erzeugt; die SVGs bleiben die Quelle. Alle Lathe-Assets (Flasche, Dose, Stift, Rad) wählen ihr Profil aus allen Profilen. → [`requirements-profiles.md`](./requirements-profiles.md).
+
 **Querschnitt** für alle Bausteine, deren **Körpergeometrie** aus einem **2D-Profil** per **`LatheGeometry`** (Drehung um **Y**) entsteht. Profile liegen unter [`public/profiles/lathe/`](../../public/profiles/lathe/) — Dateinamen **`lathe-y-*.svg`** (Drehachse **Y**, Default), **`lathe-x-*.svg`** (z. B. Rad), **`lathe-z-*.svg`** (reserviert) — Katalog → [`requirements-images.md`](./requirements-images.md) (*profiles/lathe/*). Einzel-Assets → jeweilige `requirements-assets-*.md`.
 
 **Nicht Lathe-SVG:** z. B. **`tin-can`** (parametrischer Zylinder + Beads) — gleiche **Uniform-Scale**-Regeln für Szene-Skalierung, aber **keine** Pfad-mm-Datei → [`requirements-assets-tin-can.md`](./requirements-assets-tin-can.md).

@@ -1,5 +1,7 @@
 # Assets — Wheel Car (Reifen + Felge)
 
+> **Update 2026-11 (Profiles):** Das Rad kann **jedes Profil** verwenden: `wheelCarParams.profileId` (Standard `wheel-car`, fehlt bei alten Rädern). Achse, Mitte, Radius und Physik-Kollider kommen aus dem gewählten Profil; Pflicht-Pfad Slot 0 (Tire), Rückfall auf Car wheel. Material-Labels Tire/Rim = Pfadnamen Slot 0/1. → [`requirements-profiles.md`](./requirements-profiles.md) (4a).
+
 Parametrischer **Autorad**-Baustein für Stilleben und Fahrzeug-Mockups — **Gummi/Reifen** (matte Kunststoff-Optik) + **Felge** (Chrom, mehrteilige Subassembly). **Kein Bild**, keine `screenImageId`. Katalog, Entity, Placement → [`requirements-assets.md`](./requirements-assets.md). Material-Slots → [`requirements-materials.md`](./requirements-materials.md). Schatten → [`requirements-shadows.md`](./requirements-shadows.md). Rigid **Fixed / Dynamic** → [`requirements-physics.md`](./requirements-physics.md).
 
 **Abgrenzung:** Kein komplettes Fahrzeug, keine Bremsanlage v1, kein Reifen-Label/Decal, keine Profilrillen (Tread-Pattern). **Cylinder** (voller Zylinder, Achse Y) → [`requirements-assets-cylinder.md`](./requirements-assets-cylinder.md). **Tin can** / **Beverage can** = Getränkedosen — nicht dieses Asset.

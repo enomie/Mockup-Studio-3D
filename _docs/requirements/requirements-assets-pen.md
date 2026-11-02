@@ -1,5 +1,7 @@
 # Assets — Pen (Marker & Fountain pen)
 
+> **Update 2026-11 (Profiles):** Der Stift kann **jedes Profil** verwenden. `penBodyProfile` enthält die **Profil-ID** (`pen-marker`, `pen-fountain`, `user-profile-…`); `marker` / `fountain` werden weiter verstanden. Pflicht-Pfad Slot 2 (Body), sonst Rückfall auf Marker. Labels (Cap/Ring/Body) = Pfadnamen. → [`requirements-profiles.md`](./requirements-profiles.md) (4a).
+
 Parametrischer **Stift**-Baustein — **Cap**, **Ring** und **Schaft (body)** aus **SVG-Profil → Lathe**; **Schaft-Bild** (Branding, Muster) aus der **Images-Bibliothek** → [`requirements-images.md`](./requirements-images.md). Katalog, Entity-Modell, Drop/Add → [`requirements-assets.md`](./requirements-assets.md). Bild-Flächen → [`requirements-image-surfaces.md`](./requirements-image-surfaces.md). Material-Slots → [`requirements-materials.md`](./requirements-materials.md). Schatten → [`requirements-shadows.md`](./requirements-shadows.md). Uniform Scale → [`requirements-gimbals.md`](./requirements-gimbals.md).
 
 **Abgrenzung:** Keine Getränkedose (zylindrisches Label-Band) → [`requirements-assets-beverage-can.md`](./requirements-assets-beverage-can.md). Kein `print`-Prisma, keine Flasche. **Block**, **Picture framed** → eigene Docs. Marken-Druck = User-Bilder.

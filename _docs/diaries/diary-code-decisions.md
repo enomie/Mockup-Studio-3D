@@ -6,6 +6,24 @@ Kurze Historie: **wie** wir uns entschieden haben (Warum, Alternativen). Require
 
 ## Einträge
 
+### 2026-11-02 — Profiles, 2D-Profil-Editor und Object Extrusion (Schritte A–G)
+Aktueller Stand → [`requirements-profiles.md`](../requirements/requirements-profiles.md). Die Pläne `plan-profiles-*.md` und `plan-wine-bottle-label-order.md` sind umgesetzt und gelöscht (Git-Historie).
+- **Ziel:** „AutoCAD für Kinder und Werbeagenturen“: Profile als eigene, editierbare Dokumente; ein 2D-Editor zwischen Illustrator und Fusion 360; Profile in allen Lathe-Assets und im neuen Asset Object Extrusion.
+- **Profil = neutrale Sammlung benannter Pfade.** Erst geplant: Typ lathe/extrude am Profil. **Verworfen**, weil auch offene Pfade extrudiert werden können (Hülle). Offen/geschlossen gehört zum Pfad, Drehen oder Extrudieren zum Asset.
+- **Eigene Datenstruktur statt SVG** (Punkte mit relativen Bézier-Handles, Modus Ecke/Glatt, Eckradius). Die eingebauten SVGs bleiben die Quelle und werden per Skript umgewandelt (`builtin-profiles.generated.ts`). Für die Assets wird wieder ein SVG erzeugt (`profileToSvg`), damit die bestehende SVG-Pipeline unverändert bleibt. Tests: Rückweg < 0,05 mm Abweichung.
+- **Slots als Brücke:** Assets lesen Pfade über den Farb-Slot (Flasche: 0 Glas, 3 Kork …). Deshalb ist der Slot pro Pfad wählbar (Tausch bei Belegung), höchstens 10 Pfade.
+- **Profil-Register für Szene und Engine** (`profile-registry.ts`): Der UI-Store schiebt die eigenen Profile hinein; Versionen pro Profil für Geometrie-Caches. `resolveAssetProfile(id, Pflicht-Slots, Fallback)` für alle Assets.
+- **Alte Parameter behalten:** `wineBottleBodyProfile`, `penBodyProfile`, `canBodyProfile` enthalten jetzt Profil-IDs; alte Kurznamen werden über `canonicalProfileId` übersetzt statt migriert. Grund: kein Schema-Sprung, alte Szenen/Arrangements bleiben gültig.
+- **Neubau erst nach dem Loslassen** (150 ms Ruhe, `profile-rebuild-scheduler.ts`), nicht pro Mauspixel — flüssig bei großen Szenen.
+- **Editor anstelle des Viewports** (Engine läuft weiter), rechts 2D-Inspector statt der 3D-Panels; eingebaute Profile nur über Duplicate änderbar.
+- **Meter in der UI, mm intern:** wie im Rest der App m mit 4 Nachkommastellen; Profile bleiben in mm (SVG = 1 mm), keine Migration.
+- **Pen:** jeder Punkt ein Undo-Schritt (statt des ganzen Pfads), damit Undo beim Zeichnen den letzten Punkt entfernt.
+- **Join bei übereinanderliegenden Enden:** Shift-Klick nimmt das Ende, das nicht ausgewählt ist (sonst nach Scissors nicht wieder verbindbar).
+- **Snapping-Schalter als optionale Projekteinstellungen** (`OPTIONAL_SETTING_KEYS`): Pflicht-Schlüssel hätten ältere Speicherstände verworfen.
+- **Löcher automatisch (Gerade-Ungerade)** mit „Cut hole“ pro Pfad; Lochwand-Material standardmäßig vom Körper, änderbar. `ExtrudeGeometry` legt alle Seitenwände in eine Gruppe → nach dem Bauen nach Kontur aufgeteilt.
+- **Object Extrusion ohne Physik-Kollider:** Rigid-System hätte Umbau gebraucht.
+- **Dose:** Handwerte (Hals, Boden, Standring) nur für `can-330-sleek` eigen, sonst classic; Top ring optional.
+
 ### 2026-11-01 — Fix: Arrangements verloren gemeinsame Patch-Punkte
 - **Entscheidung:** User-Arrangements speichern zusätzlich `patchNodes`. Beim Laden schreibt `remapArrangementIds` alle IDs neu: Entities, Nodes, `node.uses`, `PatchPoint.nodeId` und `edgeLinks.partnerEntityId`. Die letzte Verknüpfung war ebenfalls kaputt, sie ist beim Fix aufgefallen. Das Feld ist optional, daher kein `schemaVersion`-Sprung.
 - **Grund:** Vorher zeigten geladene Punkte auf Nodes, die es nicht gab, und verbundene Kanten waren getrennt.
