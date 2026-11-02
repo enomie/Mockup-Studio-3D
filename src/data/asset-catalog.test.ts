@@ -24,6 +24,7 @@ const BUILTIN_CATALOG_KINDS: Record<Exclude<AssetKind, 'fabric-cloth-baked'>, tr
   'book-hardcover': true,
   'triangle-patch': true,
   'quad-patch': true,
+  extrusion: true,
 };
 
 describe('asset catalog', () => {

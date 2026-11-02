@@ -426,6 +426,14 @@ function defaultPenMaterials(): AssetMaterialSlots {
   };
 }
 
+function defaultExtrusionMaterials(): AssetMaterialSlots {
+  const slots: AssetMaterialSlots = {};
+  for (let slot = 0; slot < 10; slot++) {
+    slots[`pathMaterial${slot}Id` as 'pathMaterial0Id'] = MATERIAL_PLASTIC_MATTE_ID;
+  }
+  return slots;
+}
+
 function defaultWheelCarMaterials(): AssetMaterialSlots {
   return {
     tireMaterialId: MATERIAL_PLASTIC_MATTE_ID,
@@ -457,6 +465,7 @@ export function defaultMaterialsForKind(assetKind: AssetKind): AssetMaterialSlot
   if (assetKind === 'cylinder') {return defaultCylinderMaterials();}
   if (assetKind === 'sphere') {return defaultSphereMaterials();}
   if (assetKind === 'wheel-car') {return defaultWheelCarMaterials();}
+  if (assetKind === 'extrusion') {return defaultExtrusionMaterials();}
   if (assetKind === 'fabric-cloth') {return defaultFabricClothMaterials();}
   if (assetKind === 'book-softcover' || assetKind === 'book-hardcover') {
     return defaultBookMaterials();

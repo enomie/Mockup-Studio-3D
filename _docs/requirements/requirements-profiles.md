@@ -4,7 +4,7 @@
 oder am Editor im selben Commit nachgezogen. Die Pläne in `_docs/plans/plan-profiles-*.md` sind nur
 der Verlauf.
 
-Stand: A, B (B1 Datenmodell, B2 Verwalten, B3 Editor) und C (Profile in der Weinflasche) umgesetzt. D ist offen.
+Stand: A, B (B1 Datenmodell, B2 Verwalten, B3 Editor), C (Profile in der Weinflasche) und D (Object Extrusion) umgesetzt.
 
 ---
 
@@ -46,6 +46,7 @@ Stand: A, B (B1 Datenmodell, B2 Verwalten, B3 Editor) und C (Profile in der Wein
 | Can 330 ml classic / sleek | `lathe-y-can-330ml-*.svg` | Beverage can | 0 Body, 1 Top ring |
 | Marker / Fountain pen | `lathe-y-pen-*.svg` | Pen | 0 Cap, 1 Ring, 2 Body |
 | Car wheel | `lathe-x-wheel-car.svg` | Wheel car | 0 Tire, 1 Rim outer, 2 Rim inner, 6 Spoke |
+| Rounded rectangle (100 × 60 mm, Radius 10) | `public/profiles/extrude/extrude-rounded-rect.svg` | Object Extrusion | 0 Body |
 
 - **Die SVGs bleiben die Quelle.** `scripts/generate-builtin-profiles.ts` wandelt sie in
   `src/data/builtin-profiles.generated.ts` um. Das läuft automatisch bei `npm run dev` und
@@ -97,6 +98,27 @@ Stand: A, B (B1 Datenmodell, B2 Verwalten, B3 Editor) und C (Profile in der Wein
   neu, wenn 150 ms lang nichts mehr geändert wurde. Undo, Laden und Löschen lösen das ebenso aus.
   Die Höhe der Flasche kommt beim Bauen immer frisch aus dem Profil.
 
+## 4b. Object Extrusion (D)
+- **Asset** `extrusion`, in der Assets-Liste als **Object Extrusion** (Kategorie Objects, Icon
+  `Spline`). Parameter `extrusionParams`: `profileId` (jedes Profil) und `depthM` (Standard 20 mm,
+  0,5 mm … 2 m). Standardprofil ist **Rounded rectangle**. Fehlt das Profil, wird es verwendet,
+  mit Hinweis in den Details.
+- **Geometrie** (`src/engine/extrusion-geometry.ts`):
+  - Jeder Pfad wird ein eigenes Mesh.
+  - Geschlossene Pfade → Körper mit Deckeln (`ExtrudeGeometry`, ohne Fase).
+  - Offene Pfade → doppelseitige Hülle ohne Volumen.
+  - Rundungen (`radius`) wirken mit.
+  - x ist zentriert, der tiefste Punkt steht auf y = 0, die Tiefe ist zentriert auf z.
+  - `sizeScale` skaliert alles, auch die Tiefe.
+- **Teile und Materialien:** 10 feste Slots `path0` … `path9` / `pathMaterial0Id` … `pathMaterial9Id`
+  (Standard Plastic Matte). Die Details zeigen unter Geometries nur die Slots, die das Profil hat,
+  beschriftet mit den Pfadnamen.
+- **Details:** Profil-Auswahl (dieselbe Komponente wie bei der Flasche, `ProfilePickerSection`),
+  **Depth** in mm, **Geometries**.
+- **Neubau** nach Profiländerungen wie bei der Flasche. „In scene“ und die Nachfrage beim
+  Löschen gelten auch für Extrusionen.
+- **Keine Physik:** Die Extrusion ist kein Rigid-Body und hat keinen Kollider.
+
 ## 5. 2D-Editor (B3)
 Mit **Edit** an einem eigenen Profil öffnet sich der Editor **anstelle des 3D-Viewports** in der Mitte.
 Die Seitenpanels bleiben sichtbar. **Done** oder **Esc** schließt ihn wieder.
@@ -146,7 +168,11 @@ Die Seitenpanels bleiben sichtbar. **Done** oder **Esc** schließt ihn wieder.
 | Weinflasche: Profil auflösen, Maße | `src/scene/asset-wine-bottle.ts` |
 | Weinflasche: Geometrie aus Profil | `src/engine/wine-bottle-svg-profile.ts`, `wine-bottle-geometry.ts` |
 | Neubau bei Profiländerung | `src/engine/profile-rebuild-scheduler.ts` |
+| Profil-Auswahl in Asset-Details (gemeinsam) | `src/ui/panels/ProfilePickerSection.tsx` |
 | Body profile in den Flaschen-Details | `src/ui/panels/entity-fields/WineBottleFields.tsx` |
+| Extrusion: Parameter, Profil, Maße | `src/scene/asset-extrusion.ts` |
+| Extrusion: Geometrie und Neubau | `src/engine/extrusion-geometry.ts`, `rebuildExtrusion` in `src/engine/asset-system-rebuild.ts` |
+| Extrusion: Details | `src/ui/panels/entity-fields/ExtrusionFields.tsx` |
 | Editor (Zeichenfläche, Ansicht, Zahlenfelder) | `src/ui/profile-editor/ProfileEditor.tsx`, `profile-editor-view.ts`, `ProfileNodeFields.tsx`, Styles in `src/ui/styles/features/profile-editor.css` |
 
 ## 7. Bewusst noch nicht drin
@@ -154,5 +180,6 @@ Die Seitenpanels bleiben sichtbar. **Done** oder **Esc** schließt ihn wieder.
   löschen
 - Fangen (Snapping), Constraints, Bemaßungen
 - SVG-Import und -Export für Nutzer
-- Eigene Profile in Dose, Stift und Rad, Extrusion-Asset (D)
+- Eigene Profile in Dose, Stift und Rad
+- Extrusion: Löcher, Fasen, Sweep entlang eines Pfads, Physik-Kollider, Bilder auf der Extrusion
 - Live-3D-Vorschau **während** des Ziehens (Neubau erst nach dem Loslassen)

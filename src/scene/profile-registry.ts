@@ -1,5 +1,4 @@
-import { builtinLatheProfileUrl } from '@/constants/builtin-profile-paths';
-import { LATHE_PROFILE_METRICS_MM } from '@/data/lathe-profile-metrics.generated';
+import { builtinProfileUrl } from '@/constants/builtin-profile-paths';
 import type { LatheSvgMetricsMm } from '@/engine/lathe-svg-metrics';
 import {
   BUILTIN_PROFILES,
@@ -67,7 +66,7 @@ export function subscribeProfiles(listener: ProfilesListener): () => void {
 }
 
 export function registeredProfileMetrics(entry: ProfileEntry): LatheSvgMetricsMm | undefined {
-  return entry.file ? LATHE_PROFILE_METRICS_MM[entry.file] : profileMetrics(entry);
+  return profileMetrics(entry);
 }
 
 /** SVG text of a profile: the shipped file for built-ins, generated for user profiles. */
@@ -75,7 +74,7 @@ export async function loadProfileSvgText(entry: ProfileEntry, noCache = false): 
   if (!entry.file) {
     return profileToSvg(entry);
   }
-  const url = builtinLatheProfileUrl(entry.file);
+  const url = builtinProfileUrl(entry.dir ?? 'lathe', entry.file);
   const response = await fetch(url, noCache ? { cache: 'no-store' } : undefined);
   if (!response.ok) {
     throw new Error(`Failed to load SVG: ${url} (${response.status})`);

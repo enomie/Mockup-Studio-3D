@@ -104,6 +104,17 @@ export interface AssetMaterialSlots {
   tireMaterialId?: string;
   rimMaterialId?: string;
   faceTints?: Partial<Record<AssetFaceId, Rgb>>;
+  /** Extrusion: material per profile path slot. */
+  pathMaterial0Id?: string;
+  pathMaterial1Id?: string;
+  pathMaterial2Id?: string;
+  pathMaterial3Id?: string;
+  pathMaterial4Id?: string;
+  pathMaterial5Id?: string;
+  pathMaterial6Id?: string;
+  pathMaterial7Id?: string;
+  pathMaterial8Id?: string;
+  pathMaterial9Id?: string;
 }
 
 export type MaterialEntitySlot =
@@ -134,7 +145,17 @@ export type MaterialEntitySlot =
   | 'ringMaterialId'
   | 'bodyMaterialId'
   | 'tireMaterialId'
-  | 'rimMaterialId';
+  | 'rimMaterialId'
+  | 'pathMaterial0Id'
+  | 'pathMaterial1Id'
+  | 'pathMaterial2Id'
+  | 'pathMaterial3Id'
+  | 'pathMaterial4Id'
+  | 'pathMaterial5Id'
+  | 'pathMaterial6Id'
+  | 'pathMaterial7Id'
+  | 'pathMaterial8Id'
+  | 'pathMaterial9Id';
 
 export type MaterialPresetResolver = (materialId: string) => MaterialPreset | null;
 

@@ -1,3 +1,8 @@
+import {
+  defaultExtrusionParams,
+  extrusionSizeM,
+  isExtrusionAssetKind,
+} from './asset-extrusion';
 import type { ImageAsset } from '@/data/image-assets';
 import {
   bezelWidthM,
@@ -132,6 +137,8 @@ export function referenceFaceWidth(assetKind: AssetKind): number {
     case 'triangle-patch':
     case 'quad-patch':
       return 1.0;
+    case 'extrusion':
+      return extrusionSizeM(defaultExtrusionParams()).widthM;
   }
 }
 
@@ -393,6 +400,12 @@ export function computeFaceSize(
     return { width: d, height: d };
   }
 
+  if (isExtrusionAssetKind(assetKind)) {
+    const size = extrusionSizeM(entity?.extrusionParams ?? defaultExtrusionParams());
+    const scale = clampSizeScale(sizeScale);
+    return { width: size.widthM * scale, height: size.heightM * scale };
+  }
+
   if (isFabricClothBakedAssetKind(assetKind) && entity?.bakedClothFootprint) {
     const scale = clampSizeScale(sizeScale);
     return {
@@ -459,6 +472,8 @@ export function assetFootprintHeight(
       return (entity?.sphereParams?.radiusM ?? defaultSphereParams().radiusM) * 2;
     case 'wheel-car':
       return wheelCarDimensionsM(scale).outerRadiusM * 2;
+    case 'extrusion':
+      return extrusionSizeM(entity?.extrusionParams ?? defaultExtrusionParams()).heightM * scale;
     case 'beverage-can': {
       const params = entity?.beverageCanParams ?? defaultBeverageCanParams('standard');
       return params.heightM * scale;

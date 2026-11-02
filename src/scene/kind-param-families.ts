@@ -14,6 +14,7 @@ import { isTinCanAssetKind, type TinCanParams } from './asset-tin-can';
 import { isPatchAssetKind, type PatchParams } from './asset-triangle-patch';
 import { isWallAssetKind, type WallParams } from './asset-wall';
 import { isWheelCarAssetKind, type WheelCarParams } from './asset-wheel-car';
+import { isExtrusionAssetKind, type ExtrusionParams } from './asset-extrusion';
 import { isWineBottleAssetKind, type WineBottleParams } from './asset-wine-bottle';
 
 /** Param type for each family of asset kinds that shares one params shape. */
@@ -26,6 +27,7 @@ export interface KindParamsByFamily {
   cylinder: CylinderParams;
   sphere: SphereParams;
   wheelCar: WheelCarParams;
+  extrusion: ExtrusionParams;
   fabricCloth: FabricClothParams;
   book: BookParams;
   beverageCan: BeverageCanParams;
@@ -50,6 +52,7 @@ const KIND_PARAM_FAMILY_GUARDS: Record<KindParamFamily, (kind: AssetKind) => boo
   cylinder: isCylinderAssetKind,
   sphere: isSphereAssetKind,
   wheelCar: isWheelCarAssetKind,
+  extrusion: isExtrusionAssetKind,
   fabricCloth: isFabricClothFamilyAssetKind,
   book: isBookAssetKind,
   beverageCan: isBeverageCanAssetKind,

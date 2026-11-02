@@ -12,7 +12,18 @@ import type {
 } from '@/scene/asset-faces';
 import type { AssetEntity, ImageResolver } from '@/scene/entity-types';
 import { getAssetKindDefinition } from '@/scene/asset-kind-registry';
-import { migrateGeometryVisibility } from '@/scene/geometry-visibility';
+import {
+  isGeometryVisible,
+  migrateGeometryVisibility,
+  type AssetGeometryPart,
+} from '@/scene/geometry-visibility';
+import { defaultExtrusionParams, resolveExtrusionProfile } from '@/scene/asset-extrusion';
+import { registeredProfileMetrics } from '@/scene/profile-registry';
+import { MATERIAL_PLASTIC_MATTE_ID } from '@/scene/material-ids';
+import { applyAssetShadowFlags } from '@/render/shadow-setup';
+import { buildExtrusionMeshes } from './extrusion-geometry';
+import { disposeAssetGroup } from './asset-meshes/dispose-asset-group';
+import { resolveMeshMaterial } from './asset-meshes/shared';
 import { defaultPrintParams } from '@/scene/asset-print';
 import { defaultBeverageCanParams } from '@/scene/asset-beverage-can';
 import { defaultTinCanParams } from '@/scene/asset-tin-can';
@@ -158,6 +169,7 @@ const REBUILDERS: Record<AssetKind, EntityRebuilder> = {
   cylinder: rebuildRigidPrimitive,
   sphere: rebuildRigidPrimitive,
   'wheel-car': rebuildRigidPrimitive,
+  extrusion: rebuildExtrusion,
   'beverage-can': rebuildBeverageCan,
   'tin-can': rebuildTinCan,
   'wine-bottle': rebuildWineBottle,
@@ -277,6 +289,40 @@ async function rebuildTinCan(ctx: AssetRebuildContext, root: Group, entity: Asse
       assetKind: 'tin-can',
     });
   }
+
+function rebuildExtrusion(ctx: AssetRebuildContext, root: Group, entity: AssetEntity): Promise<void> {
+  const definition = getAssetKindDefinition(entity.assetKind);
+  const materials = entity.materials ?? definition.getDefaultMaterials();
+  const visibility = migrateGeometryVisibility(
+    entity.assetKind,
+    entity.geometryVisibility ?? definition.getGeometryVisibilityDefaults(),
+    materials,
+  );
+  const params = entity.extrusionParams ?? defaultExtrusionParams();
+  const { entry } = resolveExtrusionProfile(params.profileId);
+  const metrics = registeredProfileMetrics(entry);
+  disposeAssetGroup(root);
+  if (!metrics) {return Promise.resolve();}
+  const paths = entry.paths
+    .filter((path) => isGeometryVisible(visibility, `path${path.slot}` as AssetGeometryPart))
+    .map((path) => ({
+      path,
+      material: resolveMeshMaterial(
+        ctx.materialResolver,
+        materials[`pathMaterial${path.slot}Id` as 'pathMaterial0Id'] ?? MATERIAL_PLASTIC_MATTE_ID,
+      ),
+    }));
+  for (const mesh of buildExtrusionMeshes({
+    paths,
+    bounds: metrics.bounds,
+    depthM: params.depthM,
+    sizeScale: entity.sizeScale,
+  })) {
+    root.add(mesh);
+  }
+  applyAssetShadowFlags(root);
+  return Promise.resolve();
+}
 
 async function rebuildWineBottle(ctx: AssetRebuildContext, root: Group, entity: AssetEntity): Promise<void> {
     let imageTexture = null;

@@ -71,3 +71,16 @@ export const GEOMETRY_PARTS_WINE_BOTTLE: readonly AssetGeometryPartDescriptor[] 
 ];
 
 export const GEOMETRY_PARTS_NONE: readonly AssetGeometryPartDescriptor[] = [];
+
+/** Object Extrusion: one part per profile path slot; the UI shows only slots the profile has. */
+export const GEOMETRY_PARTS_EXTRUSION: readonly AssetGeometryPartDescriptor[] = Array.from(
+  { length: 10 },
+  (_unused, slot) => ({
+    ...partWithMaterial(
+      `path${slot}` as AssetGeometryPartDescriptor['part'],
+      `Path ${slot + 1}`,
+      `pathMaterial${slot}Id` as NonNullable<AssetGeometryPartDescriptor['materialSlot']>,
+    ),
+    profileSlot: slot,
+  }),
+);

@@ -10,13 +10,13 @@ import {
 } from './profile-library';
 
 describe('profile library', () => {
-  it('lists all eight built-in profiles with unique ids', () => {
-    expect(BUILTIN_PROFILES).toHaveLength(8);
-    expect(new Set(BUILTIN_PROFILES.map((entry) => entry.id)).size).toBe(8);
+  it('lists all nine built-in profiles with unique ids', () => {
+    expect(BUILTIN_PROFILES).toHaveLength(9);
+    expect(new Set(BUILTIN_PROFILES.map((entry) => entry.id)).size).toBe(9);
   });
 
   it.each(BUILTIN_PROFILES)('$id points to a shipped SVG with metrics', (entry) => {
-    expect(existsSync(resolve('public/profiles/lathe', entry.file))).toBe(true);
+    expect(existsSync(resolve('public/profiles', entry.dir, entry.file))).toBe(true);
     expect(profileMetrics(entry)).toBeDefined();
     expect(profileSizeLabel(entry)).toMatch(/^\d+ × \d+ mm$/);
   });

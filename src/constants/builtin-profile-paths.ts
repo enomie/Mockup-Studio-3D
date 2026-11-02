@@ -1,6 +1,10 @@
 /** Runtime URLs for built-in SVG profiles under `public/profiles/`. */
-const BUILTIN_PROFILE_LATHE_URL_PREFIX = '/profiles/lathe';
+export type BuiltinProfileDir = 'lathe' | 'extrude';
+
+export function builtinProfileUrl(dir: BuiltinProfileDir, filename: string): string {
+  return `/profiles/${dir}/${filename}`;
+}
 
 export function builtinLatheProfileUrl(filename: string): string {
-  return `${BUILTIN_PROFILE_LATHE_URL_PREFIX}/${filename}`;
+  return builtinProfileUrl('lathe', filename);
 }

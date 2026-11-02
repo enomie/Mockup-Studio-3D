@@ -1,3 +1,4 @@
+import type { ExtrusionParams } from './asset-extrusion';
 import { DEFAULT_SIZE_SCALE } from '@/constants';
 import type { AssetFaces } from './asset-faces';
 import type { HandheldDeviceParams } from './asset-handheld';
@@ -85,6 +86,7 @@ export interface AssetEntity {
   cylinderParams?: CylinderParams;
   sphereParams?: SphereParams;
   wheelCarParams?: WheelCarParams;
+  extrusionParams?: ExtrusionParams;
   beverageCanParams?: BeverageCanParams;
   tinCanParams?: TinCanParams;
   wineBottleParams?: WineBottleParams;

@@ -1,3 +1,4 @@
+import { isExtrusionAssetKind } from '@/scene/asset-extrusion';
 import { Group, type Material, type Scene } from 'three/webgpu';
 import {
   isRotationalPrintAssetKind,
@@ -324,8 +325,8 @@ export class AssetSystem {
         patchParams:
           kindDefaults.patchParams ?? defaultPatchParamsForKind(assetKind),
       });
-    } else if (isWheelCarAssetKind(assetKind)) {
-      // Meshes built asynchronously in rebuildEntity (SVG lathe).
+    } else if (isWheelCarAssetKind(assetKind) || isExtrusionAssetKind(assetKind)) {
+      // Meshes built in rebuildEntity (from the profile).
     } else if (isFabricClothAssetKind(assetKind)) {
       populateAssetGroup(root, assetKind, {
         faceWidth: face.width,
@@ -368,7 +369,7 @@ export class AssetSystem {
       depth,
       materials,
       handheldParams ?? monitorParams,
-      usesAsyncPackagingRebuild(assetKind)
+      usesAsyncPackagingRebuild(assetKind) || isExtrusionAssetKind(assetKind)
         ? definition.getGeometryVisibilityDefaults()
         : undefined,
       printParams,
@@ -380,7 +381,7 @@ export class AssetSystem {
       void rebuildEntity(this.rebuildCtx, id);
     } else if (isBookAssetKind(assetKind)) {
       void rebuildEntity(this.rebuildCtx, id);
-    } else if (isWheelCarAssetKind(assetKind)) {
+    } else if (isWheelCarAssetKind(assetKind) || isExtrusionAssetKind(assetKind)) {
       void rebuildEntity(this.rebuildCtx, id);
     } else if (isRigidPrimitiveAssetKind(assetKind)) {
       this.rigidPrimitivePhysics?.reconcileEntity(id);

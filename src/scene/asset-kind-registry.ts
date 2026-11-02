@@ -1,5 +1,11 @@
 import { defaultMaterialsForKind } from '@/data/material-presets';
 import {
+  clampExtrusionParams,
+  cloneExtrusionParams,
+  defaultExtrusionParams,
+  type ExtrusionParams,
+} from './asset-extrusion';
+import {
   clampBeverageCanParams,
   cloneBeverageCanParams,
   defaultBeverageCanParams,
@@ -119,6 +125,7 @@ import {
   GEOMETRY_PARTS_TIN_CAN,
   GEOMETRY_PARTS_PEN,
   GEOMETRY_PARTS_WINE_BOTTLE,
+  GEOMETRY_PARTS_EXTRUSION,
 } from './geometry-parts-catalog';
 
 export type AssetKindFamily =
@@ -146,6 +153,7 @@ export type AssetKindDefaultEntitySlice = Partial<
     | 'cylinderParams'
     | 'sphereParams'
     | 'wheelCarParams'
+    | 'extrusionParams'
     | 'beverageCanParams'
     | 'tinCanParams'
     | 'wineBottleParams'
@@ -460,6 +468,27 @@ const ASSET_KIND_DEFINITIONS = {
         wheelCarParams: cloneWheelCarParams(entity.wheelCarParams ?? defaultWheelCarParams()),
         physicsBodyMode: resolvePhysicsBodyMode(entity),
         physicsDensityKgPerM3: resolvePhysicsDensityKgPerM3(entity),
+      }),
+    },
+  ),
+  extrusion: withSharedHooks(
+    {
+      kind: 'extrusion',
+      family: 'block',
+      rebuildStrategy: 'sync-populateAssetGroup',
+      screenImageRole: 'front',
+      geometryParts: GEOMETRY_PARTS_EXTRUSION,
+    },
+    {
+      getDefaultEntitySlice: () => ({ extrusionParams: defaultExtrusionParams() }),
+      mergeParamPatch: (entity, partial) => {
+        const current = entity.extrusionParams ?? defaultExtrusionParams();
+        return {
+          extrusionParams: clampExtrusionParams(partial as Partial<ExtrusionParams>, current),
+        };
+      },
+      cloneParamsFromEntity: (entity) => ({
+        extrusionParams: cloneExtrusionParams(entity.extrusionParams ?? defaultExtrusionParams()),
       }),
     },
   ),

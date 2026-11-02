@@ -1,4 +1,4 @@
-import { builtinLatheProfileUrl } from '@/constants/builtin-profile-paths';
+import { builtinProfileUrl, type BuiltinProfileDir } from '@/constants/builtin-profile-paths';
 import { BUILTIN_PROFILE_PATHS } from '@/data/builtin-profiles.generated';
 import { LATHE_PROFILE_METRICS_MM } from '@/data/lathe-profile-metrics.generated';
 import { BUILTIN_PROFILE_FILES } from './builtin-profile-files';
@@ -9,8 +9,9 @@ export { builtinProfileFile, type BuiltinProfileId } from './builtin-profile-fil
 
 /** Library entry: editable profile data plus where a built-in one comes from. */
 export interface ProfileEntry extends Profile {
-  /** Shipped SVG file (built-ins only), under `public/profiles/lathe/`. */
+  /** Shipped SVG file (built-ins only), under `public/profiles/<dir>/`. */
   file?: string;
+  dir?: BuiltinProfileDir;
   /** Asset type that ships with this profile (built-ins only). */
   usedBy?: string;
 }
@@ -26,6 +27,7 @@ function builtinPaths(id: string): ProfilePath[] {
 export interface BuiltinProfileEntry extends ProfileEntry {
   source: 'builtin';
   file: string;
+  dir: BuiltinProfileDir;
   usedBy: string;
 }
 
@@ -62,14 +64,15 @@ function cachedSvg(entry: Profile): string {
 /** Image URL for thumbnails: the shipped SVG for built-ins, generated SVG for user profiles. */
 export function profileUrl(entry: ProfileEntry): string {
   if (entry.file) {
-    return builtinLatheProfileUrl(entry.file);
+    return builtinProfileUrl(entry.dir ?? 'lathe', entry.file);
   }
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(cachedSvg(entry))}`;
 }
 
 export function profileMetrics(entry: ProfileEntry): LatheSvgMetricsMm | undefined {
-  if (entry.file) {
-    return LATHE_PROFILE_METRICS_MM[entry.file];
+  const generated = entry.file ? (LATHE_PROFILE_METRICS_MM[entry.file] as LatheSvgMetricsMm | undefined) : undefined;
+  if (generated) {
+    return generated;
   }
   let metrics = metricsCache.get(entry);
   if (metrics === undefined) {

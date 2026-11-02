@@ -5,6 +5,7 @@ export { BlockFields } from './BlockFields';
 export { CylinderFields } from './CylinderFields';
 export { SphereFields } from './SphereFields';
 export { WheelCarFields } from './WheelCarFields';
+export { ExtrusionFields } from './ExtrusionFields';
 ;
 export { FabricClothFields } from './FabricClothFields';
 export { BookFields } from './BookFields';

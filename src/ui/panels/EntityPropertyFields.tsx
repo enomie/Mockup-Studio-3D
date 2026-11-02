@@ -1,3 +1,4 @@
+import { isExtrusionAssetKind } from '@/scene/asset-extrusion';
 import type { ImageAsset } from '@/data/image-assets';
 import { defaultBlockParams } from '@/scene/asset-block';
 import {
@@ -38,6 +39,7 @@ import {
   CylinderFields,
   SphereFields,
   WheelCarFields,
+  ExtrusionFields,
   FabricClothFields,
   BookFields,
   HandheldFields,
@@ -137,6 +139,8 @@ export function EntityPropertyFields({
         <SphereFields entity={entity} />
       ) : isWheelCarAssetKind(entity.assetKind) ? (
         <WheelCarFields entity={entity} />
+      ) : isExtrusionAssetKind(entity.assetKind) ? (
+        <ExtrusionFields entity={entity} />
       ) : isFabricClothFamilyAssetKind(entity.assetKind) ? (
         <FabricClothFields
           entity={entity}

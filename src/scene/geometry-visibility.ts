@@ -18,7 +18,17 @@ export type AssetGeometryPart =
   | 'capsuleDisc'
   | 'cap'
   | 'ring'
-  | 'penBody';
+  | 'penBody'
+  | 'path0'
+  | 'path1'
+  | 'path2'
+  | 'path3'
+  | 'path4'
+  | 'path5'
+  | 'path6'
+  | 'path7'
+  | 'path8'
+  | 'path9';
 
 export interface AssetGeometryVisibility {
   frame?: boolean;
@@ -37,6 +47,17 @@ export interface AssetGeometryVisibility {
   cap?: boolean;
   ring?: boolean;
   penBody?: boolean;
+  /** Extrusion: one part per profile path slot. */
+  path0?: boolean;
+  path1?: boolean;
+  path2?: boolean;
+  path3?: boolean;
+  path4?: boolean;
+  path5?: boolean;
+  path6?: boolean;
+  path7?: boolean;
+  path8?: boolean;
+  path9?: boolean;
 }
 
 export function defaultGeometryVisibility(

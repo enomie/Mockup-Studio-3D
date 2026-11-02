@@ -19,4 +19,5 @@ export type AssetKind =
   | 'book-softcover'
   | 'book-hardcover'
   | 'triangle-patch'
-  | 'quad-patch';
+  | 'quad-patch'
+  | 'extrusion';

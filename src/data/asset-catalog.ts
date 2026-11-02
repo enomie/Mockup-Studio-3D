@@ -1,4 +1,5 @@
 import {
+  Spline,
   Book,
   Box,
   Circle,
@@ -51,6 +52,7 @@ export const ASSET_CATALOG: AssetCatalogEntry[] = [
   { kind: 'cylinder', label: 'Object Cylinder', category: 'objects', icon: Database },
   { kind: 'sphere', label: 'Object Sphere', category: 'objects', icon: Circle },
   { kind: 'wheel-car', label: 'Wheel Car', category: 'objects', icon: CircleDot },
+  { kind: 'extrusion', label: 'Object Extrusion', category: 'objects', icon: Spline },
   {
     kind: 'fabric-cloth',
     label: 'Fabric cloth',

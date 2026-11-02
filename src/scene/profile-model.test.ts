@@ -18,7 +18,7 @@ const TOLERANCE_MM = 0.05;
 describe('profile model', () => {
   it.each(BUILTIN_PROFILES)('$id round-trips to an SVG with the same metrics', (entry) => {
     const original = measureLatheSvgMm(
-      readFileSync(resolve('public/profiles/lathe', entry.file), 'utf8'),
+      readFileSync(resolve('public/profiles', entry.dir, entry.file), 'utf8'),
     );
     const roundTrip = measureLatheSvgMm(profileToSvg(entry));
     for (const key of ['minX', 'maxX', 'minY', 'maxY'] as const) {
@@ -47,7 +47,7 @@ describe('profile model', () => {
   });
 
   it.each(BUILTIN_PROFILES)('$id generated paths are in sync (run scripts/generate-builtin-profiles.ts)', (entry) => {
-    const svg = readFileSync(resolve('public/profiles/lathe', entry.file), 'utf8');
+    const svg = readFileSync(resolve('public/profiles', entry.dir, entry.file), 'utf8');
     const imported = importProfilePathsFromSvg(svg, (slot) => builtinPathName(entry.usedBy, slot));
     expect(BUILTIN_PROFILE_PATHS[entry.id]).toEqual(roundProfilePaths(imported));
   });

@@ -1,6 +1,6 @@
 # Plan D: Neues Asset „Extrusion“
 
-Status: **Entwurf – wartet auf Freigabe.** Teil von `plan-profiles-2d-editor.md` (Schritt D).
+Status: **Umgesetzt.** Entscheidungen: Material pro Pfad, Startprofil abgerundetes Rechteck, Name „Object Extrusion“. Ohne Physik (kein Kollider). Die Maße des Extrude-Profils werden aus den Profildaten berechnet, nicht generiert. Stand: `_docs/requirements/requirements-profiles.md`.
 Aktueller Stand der Profile: `_docs/requirements/requirements-profiles.md`.
 
 ## Ziel
