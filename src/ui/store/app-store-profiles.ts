@@ -1,6 +1,10 @@
 import { getProfile, type ProfileEntry } from '@/scene/profile-library';
-import type { ProfilePath } from '@/scene/profile-model';
+import type { ProfilePath, ProfileVec2 } from '@/scene/profile-model';
 import {
+  appendPenNode,
+  finishPenPath,
+  orientForDrawing,
+  startPenPath,
   breakAtNode,
   breakAtSegment,
   joinEndpoints,
@@ -33,12 +37,14 @@ export function openProfileEditor(id: string): void {
     profileNodeSelection: null,
     hiddenProfilePathIds: [],
     profileEditorTool: 'select',
+    profilePenPathId: null,
   });
   store.emit();
 }
 
 export function closeProfileEditor(): void {
   if (store.state.editingProfileId === null) {return;}
+  finishProfilePen();
   store.setAppState({ ...store.state, editingProfileId: null, profileNodeSelection: null });
   store.emit();
 }
@@ -234,6 +240,74 @@ export function toggleProfilePathHidden(pathId: string): void {
 }
 
 export function setProfileEditorTool(tool: ProfileEditorTool): void {
+  finishProfilePen();
   store.setAppState({ ...store.state, profileEditorTool: tool });
+  store.emit();
+}
+
+/** Pen: starts a new path at `at`, or continues an open path from one of its end points. */
+export function startProfilePen(id: string, at: ProfileVec2, continueFrom?: PathPoint): boolean {
+  const profile = store.state.userProfiles.find((entry) => entry.id === id);
+  if (!profile) {return false;}
+  if (continueFrom) {
+    editProfilePath(id, continueFrom.pathId, (path) => orientForDrawing(path, continueFrom.index));
+    const path = store.state.userProfiles.find((entry) => entry.id === id)?.paths
+      .find((entry) => entry.id === continueFrom.pathId);
+    store.setAppState({
+      ...store.state,
+      profilePenPathId: continueFrom.pathId,
+      profileNodeSelection: path ? { pathId: path.id, index: path.nodes.length - 1 } : null,
+    });
+    store.emit();
+    return true;
+  }
+  const started = startPenPath(profile.paths, at);
+  if (!started) {return false;}
+  editProfilePaths(id, () => started.paths);
+  store.setAppState({
+    ...store.state,
+    profilePenPathId: started.pathId,
+    profileNodeSelection: { pathId: started.pathId, index: 0 },
+    profileJoinTarget: null,
+  });
+  store.emit();
+  return true;
+}
+
+/** Pen: adds a point at the end of the path being drawn; returns its index. */
+export function appendProfilePenNode(id: string, at: ProfileVec2): number | null {
+  const pathId = store.state.profilePenPathId;
+  const path = store.state.userProfiles
+    .find((entry) => entry.id === id)?.paths.find((entry) => entry.id === pathId);
+  if (!pathId || !path) {return null;}
+  const index = path.nodes.length;
+  editProfilePath(id, pathId, (current) => appendPenNode(current, at));
+  store.setAppState({ ...store.state, profileNodeSelection: { pathId, index } });
+  store.emit();
+  return index;
+}
+
+/** Pen: closes the path being drawn (click on its first point). */
+export function closeProfilePen(id: string): void {
+  const pathId = store.state.profilePenPathId;
+  if (!pathId) {return;}
+  editProfilePath(id, pathId, (path) => (path.nodes.length >= 3 ? { ...path, closed: true } : path));
+  finishProfilePen();
+}
+
+/** Ends drawing; a path with a single point is removed. */
+export function finishProfilePen(): void {
+  const pathId = store.state.profilePenPathId;
+  const id = store.state.editingProfileId;
+  if (!pathId) {return;}
+  if (id) {editProfilePaths(id, (paths) => finishPenPath(paths, pathId));}
+  const stillThere = store.state.userProfiles.some(
+    (entry) => entry.id === id && entry.paths.some((path) => path.id === pathId),
+  );
+  store.setAppState({
+    ...store.state,
+    profilePenPathId: null,
+    profileNodeSelection: stillThere ? { pathId, index: null } : null,
+  });
   store.emit();
 }

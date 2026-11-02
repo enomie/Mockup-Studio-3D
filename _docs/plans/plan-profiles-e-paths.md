@@ -1,6 +1,6 @@
 # Plan E: Pfade aufbrechen, neue Pfade zeichnen, Meter statt mm, rechtes Panel im 2D-Editor
 
-Status: **Freigegeben** (Inspector rechts, Join mit in E3, Kürzel V/P/C). **E1 (Meter), E2 (Inspector) und E3 (Scissors, Join) umgesetzt**, E4 (Pen) offen. Ergänzung E3: Shift-Klick wählt bei übereinanderliegenden Enden das nicht ausgewählte.
+Status: **Umgesetzt (E1–E4).** Abweichung E4: Jeder Pen-Punkt ist ein eigener Undo-Schritt (statt der ganze Pfad), damit Undo beim Zeichnen den letzten Punkt entfernt. Stand: `_docs/requirements/requirements-profiles.md`.
 
 ## 1. Meter statt mm (überall in der Oberfläche)
 - **Ist:** Der Editor zeigt X, Y, Radius und Handle-Länge in mm. Die Extrusion zeigt Depth in mm,

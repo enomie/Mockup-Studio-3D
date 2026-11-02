@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
   addSquarePath,
+  appendPenNode,
+  finishPenPath,
+  orientForDrawing,
+  setPenHandles,
+  startPenPath,
   breakAtNode,
   breakAtSegment,
   joinEndpoints,
@@ -206,5 +211,27 @@ describe('scissors and join', () => {
     const result = joinEndpoints([open3()], { pathId: 'o', index: 0 }, { pathId: 'o', index: 2 });
     expect(result?.paths[0].closed).toBe(true);
     expect(joinEndpoints([open3()], { pathId: 'o', index: 0 }, { pathId: 'o', index: 1 })).toBeNull();
+  });
+});
+
+describe('pen', () => {
+  it('draws a new path point by point, with mirrored or broken handles', () => {
+    const started = startPenPath([square()], { x: 50, y: 50 });
+    if (!started) {throw new Error('start failed');}
+    expect(started.paths[1].slot).toBe(1);
+    let path = started.paths[1];
+    path = appendPenNode(path, { x: 60, y: 50 });
+    path = setPenHandles(path, 1, { x: 3, y: 0 }, false);
+    expect(path.nodes[1]).toMatchObject({ mode: 'smooth', handleIn: { x: -3, y: 0 }, handleOut: { x: 3, y: 0 } });
+    path = setPenHandles(path, 1, { x: 0, y: 4 }, true);
+    expect(path.nodes[1]).toMatchObject({ mode: 'corner', handleIn: { x: -3, y: 0 }, handleOut: { x: 0, y: 4 } });
+  });
+
+  it('continues from either end and drops one-point paths', () => {
+    const line: ProfilePath = { ...curve(), id: 'l' };
+    expect(orientForDrawing(line, 0).nodes[1].x).toBe(0);
+    expect(orientForDrawing(line, 1)).toBe(line);
+    const started = startPenPath([], { x: 0, y: 0 });
+    expect(started && finishPenPath(started.paths, started.pathId)).toEqual([]);
   });
 });

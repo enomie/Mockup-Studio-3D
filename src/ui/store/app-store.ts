@@ -86,6 +86,10 @@ export {
   breakProfileAtNode,
   breakProfileAtSegment,
   joinProfileEndpoints,
+  startProfilePen,
+  appendProfilePenNode,
+  closeProfilePen,
+  finishProfilePen,
   showProfilesPanel,
   editProfileFromAsset,
 } from './app-store-profiles';

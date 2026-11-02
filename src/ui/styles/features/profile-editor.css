@@ -179,3 +179,16 @@
 .profile-editor__canvas--scissors .profile-editor__segment-hit {
   cursor: crosshair;
 }
+
+.profile-editor__pen-preview {
+  stroke: var(--color-accent);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 4;
+  pointer-events: none;
+}
+
+.profile-editor__canvas--pen,
+.profile-editor__canvas--pen .profile-editor__hit,
+.profile-editor__canvas--pen .profile-editor__segment-hit {
+  cursor: crosshair;
+}

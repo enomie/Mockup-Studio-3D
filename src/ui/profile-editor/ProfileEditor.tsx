@@ -14,6 +14,7 @@ import {
   deleteNode,
   insertNode,
   isEndpoint,
+  setPenHandles,
   moveNode,
   removePath,
   segmentControlPoints,
@@ -42,6 +43,10 @@ import {
   breakProfileAtNode,
   breakProfileAtSegment,
   joinProfileEndpoints,
+  startProfilePen,
+  appendProfilePenNode,
+  closeProfilePen,
+  finishProfilePen,
   selectProfileNode,
 } from '@/ui/store/app-store';
 import { useAppStore } from '@/ui/store/use-app-store';
@@ -69,13 +74,17 @@ const SEGMENT_HIT_WIDTH_PX = 14;
 const CLICK_SLOP_PX = 3;
 /** Two presses on the same point within this time (ms) count as a double-click. */
 const DOUBLE_CLICK_MS = 350;
+/** Pen: a drag shorter than this (px) keeps the new point a corner. */
+const PEN_DRAG_MIN_PX = 4;
 /** Free area next to the floating side panels when fitting the view. */
 const FIT_PADDING = { left: 420, right: 380, top: 80, bottom: 80 };
 
 type Drag =
   | { kind: 'pan'; startX: number; startY: number; view: EditorView; moved: boolean; deselect: boolean }
   | { kind: 'node'; pathId: string; index: number; grabOffset: ProfileVec2 }
-  | { kind: 'handle'; pathId: string; index: number; side: HandleSide };
+  | { kind: 'handle'; pathId: string; index: number; side: HandleSide }
+  /** Pen: dragging after a click pulls the handles of the new point. */
+  | { kind: 'pen-handle'; pathId: string; index: number };
 
 function isEditableTarget(target: EventTarget | null): boolean {
   return target instanceof Element && Boolean(target.closest('input, textarea, select, [contenteditable="true"]'));
@@ -216,6 +225,8 @@ export function ProfileEditor() {
   const hiddenPathIds = useAppStore((s) => s.hiddenProfilePathIds);
   const joinTargetPoint = useAppStore((s) => s.profileJoinTarget);
   const activeTool = useAppStore((s) => s.profileEditorTool);
+  const penPathId = useAppStore((s) => s.profilePenPathId);
+  const [penHover, setPenHover] = useState<ProfileVec2 | null>(null);
   const visiblePaths = profile ? profile.paths.filter((path) => !hiddenPathIds.includes(path.id)) : [];
 
   // Keys: the editor owns the keyboard while open (no scene delete or viewport shortcuts).
@@ -225,9 +236,14 @@ export function ProfileEditor() {
       if (isEditableTarget(event.target)) {return;}
       if (event.ctrlKey || event.metaKey) {return;}
       event.stopPropagation();
-      if (event.key === 'Escape') {
+      if (event.key === 'Escape' || event.key === 'Enter') {
         event.preventDefault();
-        closeProfileEditor();
+        // First Esc/Enter ends a Pen path; Esc without a Pen path closes the editor.
+        if (getAppState().profilePenPathId) {
+          finishProfilePen();
+        } else if (event.key === 'Escape') {
+          closeProfileEditor();
+        }
       } else if (event.key === 'Delete' || event.key === 'Backspace') {
         event.preventDefault();
         const current = getAppState().profileNodeSelection;
@@ -242,6 +258,8 @@ export function ProfileEditor() {
         }
       } else if (event.key === 'v' || event.key === 'V') {
         setProfileEditorTool('select');
+      } else if (event.key === 'p' || event.key === 'P') {
+        setProfileEditorTool('pen');
       } else if (event.key === 'c' || event.key === 'C') {
         setProfileEditorTool('scissors');
       } else if (event.key === 'j' || event.key === 'J') {
@@ -318,6 +336,30 @@ export function ProfileEditor() {
     const index = Number(data?.index);
     const tool = getAppState().profileEditorTool;
 
+    if (tool === 'pen') {
+      const penPathId = getAppState().profilePenPathId;
+      if (!penPathId) {
+        if (data?.kind === 'node' && path && isEndpoint(path, index)) {
+          // Clicking an open end continues that path.
+          startProfilePen(profileId, mm, { pathId: path.id, index });
+          return;
+        }
+        if (startProfilePen(profileId, mm)) {
+          const started = getAppState().profilePenPathId;
+          if (started) {dragRef.current = { kind: 'pen-handle', pathId: started, index: 0 };}
+        }
+        return;
+      }
+      const drawing = findPath(penPathId);
+      if (drawing && data?.kind === 'node' && path?.id === penPathId && index === 0 && drawing.nodes.length >= 3) {
+        closeProfilePen(profileId);
+        return;
+      }
+      const added = appendProfilePenNode(profileId, mm);
+      if (added !== null) {dragRef.current = { kind: 'pen-handle', pathId: penPathId, index: added };}
+      return;
+    }
+
     if (tool === 'scissors') {
       if (data?.kind === 'node' && path) {
         breakProfileAtNode(profileId, path.id, index);
@@ -378,6 +420,7 @@ export function ProfileEditor() {
 
   const onPointerMove = (event: ReactPointerEvent<SVGSVGElement>) => {
     const drag = dragRef.current;
+    if (activeTool === 'pen') {setPenHover(pointerMm(event));}
     if (!drag) {return;}
     if (drag.kind === 'pan') {
       const dx = event.clientX - drag.startX;
@@ -388,6 +431,16 @@ export function ProfileEditor() {
     }
     const mm = pointerMm(event);
     if (!mm) {return;}
+    if (drag.kind === 'pen-handle') {
+      const minMm = PEN_DRAG_MIN_PX / (view?.scale ?? 1);
+      editProfilePath(profileId, drag.pathId, (path) => {
+        const node = path.nodes.at(drag.index);
+        if (!node) {return path;}
+        const out = { x: mm.x - node.x, y: mm.y - node.y };
+        return Math.hypot(out.x, out.y) < minMm ? path : setPenHandles(path, drag.index, out, event.shiftKey);
+      });
+      return;
+    }
     if (drag.kind === 'node') {
       editProfilePath(profileId, drag.pathId, (path) =>
         drag.index < path.nodes.length
@@ -414,6 +467,12 @@ export function ProfileEditor() {
       selectProfileNode(null);
     }
   };
+
+  // Pen: dashed line from the last point of the path being drawn to the pointer.
+  const penLast = penPathId ? findPath(penPathId)?.nodes.at(-1) : undefined;
+  const penPreview = view && penLast && penHover && activeTool === 'pen'
+    ? { from: toScreen(view, penLast), to: toScreen(view, penHover) }
+    : null;
 
   const transform = view
     ? `matrix(${view.scale} 0 0 ${view.scale} ${view.offsetX} ${view.offsetY})`
@@ -463,6 +522,16 @@ export function ProfileEditor() {
                 );
               })}
             </g>
+
+            {penPreview ? (
+              <line
+                x1={penPreview.from.x}
+                y1={penPreview.from.y}
+                x2={penPreview.to.x}
+                y2={penPreview.to.y}
+                className="profile-editor__pen-preview"
+              />
+            ) : null}
 
             {selectedPath && selectedIndex !== null
               ? visibleHandles(selectedPath, selectedIndex).map((handle) => {
@@ -534,6 +603,7 @@ export function ProfileEditor() {
         {view ? `Grid ${formatGridStepMeters(gridStepMm(view.scale))} m · ` : null}
         Drag points and handles · Shift: break handles · Click a path: add point · Del: delete point ·
         Double-click: corner/smooth · C: scissors · Shift-click end + J: join · V: select ·
+        P: pen (click = corner, drag = curve, click first point = close, Enter = finish) ·
         Wheel: zoom · Space or middle mouse: pan · Esc: close
       </p>
     </div>

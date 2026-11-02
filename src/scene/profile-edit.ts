@@ -421,3 +421,56 @@ export function joinEndpoints(
     select: { pathId: pathA.id, index: head.nodes.length - (touching ? 1 : 0) },
   };
 }
+
+/** Pen: starts a new open path with one corner point in the next free slot. */
+export function startPenPath(
+  paths: readonly ProfilePath[],
+  at: ProfileVec2,
+): { paths: ProfilePath[]; pathId: string } | null {
+  const slot = nextFreeSlot(paths);
+  if (slot === null) {return null;}
+  const path: ProfilePath = {
+    id: uniquePathId(paths),
+    name: uniquePathName(paths, `Path ${paths.length + 1}`),
+    slot,
+    closed: false,
+    nodes: [{ x: at.x, y: at.y, mode: 'corner' }],
+  };
+  return { paths: [...paths, path], pathId: path.id };
+}
+
+/** Pen: adds a corner point at the end of the path. */
+export function appendPenNode(path: ProfilePath, at: ProfileVec2): ProfilePath {
+  return { ...path, nodes: [...path.nodes, { x: at.x, y: at.y, mode: 'corner' }] };
+}
+
+/**
+ * Pen drag: pulls the outgoing handle of a point to `out` (relative). The incoming handle
+ * mirrors it (smooth point) unless `breakSymmetry` (Shift) is held.
+ */
+export function setPenHandles(
+  path: ProfilePath,
+  index: number,
+  out: ProfileVec2,
+  breakSymmetry: boolean,
+): ProfilePath {
+  const node = path.nodes.at(index);
+  if (!node) {return path;}
+  const next: ProfileNode = breakSymmetry
+    ? { ...node, handleOut: out, mode: 'corner' }
+    : { ...node, handleOut: out, handleIn: { x: 0 - out.x, y: 0 - out.y }, mode: 'smooth' };
+  const nodes = [...path.nodes];
+  nodes[index] = next;
+  return { ...path, nodes };
+}
+
+/** Pen continues at an end point: the path is turned so that this end is the last point. */
+export function orientForDrawing(path: ProfilePath, index: number): ProfilePath {
+  return index === 0 && path.nodes.length > 1 ? reversePath(path) : path;
+}
+
+/** Pen finished: a path with a single point is dropped. */
+export function finishPenPath(paths: readonly ProfilePath[], pathId: string): ProfilePath[] {
+  const path = paths.find((entry) => entry.id === pathId);
+  return path && path.nodes.length < 2 ? removePath(paths, pathId) : [...paths];
+}

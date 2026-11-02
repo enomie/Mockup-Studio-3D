@@ -167,11 +167,13 @@ Die Seitenpanels bleiben sichtbar. **Done** oder **Esc** schließt ihn wieder.
 | Auswahl aufheben | Klick ins Leere | ja |
 | Zoomen | Mausrad (um den Mauszeiger) | – |
 | Verschieben | mittlere Maustaste oder **Leertaste** + Ziehen | – |
-| Werkzeug Select / Scissors | **V** / **C** (oder Tools rechts) | – |
+| Werkzeug Select / Pen / Scissors | **V** / **P** / **C** (oder Tools rechts) | – |
+| Neuen Pfad zeichnen | **Pen**: Klick = Eckpunkt, Klicken + Ziehen = glatter Punkt mit gegenüberliegenden Handles (**Shift** beim Ziehen entkoppelt). Klick auf den **ersten Punkt** schließt den Pfad (ab 3 Punkten). **Enter** oder **Esc** beendet ihn offen. Ein Pfad mit nur einem Punkt wird verworfen. Eine gestrichelte Linie zeigt das nächste Segment. Neuer Pfad: nächster freier Slot, Name „Path ‹n›“. | ähnlich |
+| An offenem Pfad weiterzeichnen | **Pen**: Klick auf einen Endpunkt eines offenen Pfads, dann weiter klicken. Am Anfangspunkt wird der Pfad dafür umgedreht. | – |
 | Pfad aufbrechen | **Scissors**: Klick auf einen Punkt oder auf ein Segment (dort wird zuerst ein Punkt eingefügt). Geschlossen → wird dort geöffnet (Punkt verdoppelt). Offen → wird in zwei Pfade geteilt, der zweite bekommt den nächsten freien Slot und den Namen „‹Name› 2“. Oder **Break here** rechts. | – |
 | Pfade verbinden | Endpunkt auswählen, **Shift-Klick** auf einen zweiten Endpunkt (markiert mit dickem Rand), dann **J** oder **Join** rechts. Zwei Pfade werden einer (Name und Slot des ausgewählten), Endpunkte an gleicher Stelle verschmelzen. Anfang + Ende desselben Pfads schließt ihn. Liegen Enden übereinander, nimmt Shift-Klick das Ende, das nicht schon ausgewählt ist. | – |
-| Schließen | **Esc** oder **Done** | – |
-| Rückgängig | Strg/Cmd + Z, eine Ziehbewegung ist ein Schritt | ja |
+| Schließen | **Esc** (beendet zuerst einen laufenden Pen-Pfad) oder **Done** | – |
+| Rückgängig | Strg/Cmd + Z, eine Ziehbewegung ist ein Schritt. Beim Pen ist jeder gesetzte Punkt ein Schritt. | ja |
 
 - **Darstellung:** Das Raster passt sich dem Zoom an (Schritte 0,1 / 0,5 / 1 / 5 / 10 / 50 / 100 … mm, jede fünfte Linie kräftiger). Der Hinweis unten nennt die Rasterweite in m, z. B. „Grid 0.01 m“. Der Ursprung (0/0) ist
   markiert, die x = 0-Linie ist die Drehachse der Lathe-Profile. Pfade erscheinen in ihrer
@@ -182,7 +184,7 @@ Die Seitenpanels bleiben sichtbar. **Done** oder **Esc** schließt ihn wieder.
 - **Rechts: 2D-Inspector „Profile editor“** (`ProfileInspector.tsx`). Solange der Editor offen ist,
   ersetzt er die rechten 3D-Panels, und die rechte Icon-Leiste ist ausgeblendet. Nach Done/Esc
   ist alles wieder wie vorher.
-  - **Tools:** Select (V), Scissors (C). Pen (P) ist sichtbar, aber noch deaktiviert (E4).
+  - **Tools:** Select (V), Pen (P), Scissors (C).
   - **Paths:** alle Pfade nach Slot sortiert, mit Farbe, Name (umbenennbar), Auge (nur im Editor
     ausblenden, wird nicht gespeichert) und Löschen. Ein Klick auf die Farbe wählt den Pfad aus.
     Der aktive Pfad zeigt **Slot** (1–10, ein belegter Slot wird getauscht), die Rolle des Slots für
@@ -206,7 +208,7 @@ Die Seitenpanels bleiben sichtbar. **Done** oder **Esc** schließt ihn wieder.
 | Katalog der eingebauten Profile und Pfadnamen | `src/scene/builtin-profile-files.ts`, `src/scene/builtin-profile-path-names.ts` |
 | SVG-Import | `src/engine/profile-svg-import.ts` |
 | Generator und generierte Daten | `scripts/generate-builtin-profiles.ts`, `src/data/builtin-profiles.generated.ts` |
-| Store | `src/ui/store/app-store-profiles.ts` (`userProfiles`, `selectedProfileId`, `editingProfileId`, `profileNodeSelection` (Punkt-Index kann null sein = nur Pfad), `hiddenProfilePathIds`, `profileEditorTool`) |
+| Store | `src/ui/store/app-store-profiles.ts` (`userProfiles`, `selectedProfileId`, `editingProfileId`, `profileNodeSelection` (Punkt-Index kann null sein = nur Pfad), `hiddenProfilePathIds`, `profileEditorTool`, `profileJoinTarget`, `profilePenPathId`) |
 | Speichern | `src/ui/persistence/project-snapshot.ts`, `project-persistence.ts` |
 | Panel | `src/ui/panels/ProfilesPanel.tsx` |
 | Register für Szene und Engine (eigene Profile, Versionen, alte IDs) | `src/scene/profile-registry.ts` |
@@ -222,7 +224,6 @@ Die Seitenpanels bleiben sichtbar. **Done** oder **Esc** schließt ihn wieder.
 | Editor (Zeichenfläche, Ansicht, Zahlenfelder) | `src/ui/profile-editor/ProfileEditor.tsx`, `profile-editor-view.ts`, `ProfileInspector.tsx` (rechts), `ProfileNodeFields.tsx` (Point-Bereich), Styles in `src/ui/styles/features/profile-editor.css` |
 
 ## 7. Bewusst noch nicht drin
-- Neue Pfade zeichnen (Pen-Werkzeug, E4)
 - Fangen (Snapping), Constraints, Bemaßungen
 - SVG-Import und -Export für Nutzer
 - Extrusion: Löcher, Fasen, Sweep entlang eines Pfads, Physik-Kollider, Bilder auf der Extrusion

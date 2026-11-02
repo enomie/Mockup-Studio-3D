@@ -111,6 +111,8 @@ export interface AppState {
   /** Second end point picked with Shift-click, for Join. */
   profileJoinTarget: { pathId: string; index: number } | null;
   profileEditorTool: ProfileEditorTool;
+  /** Path the Pen tool is currently drawing (points are appended at its end). */
+  profilePenPathId: string | null;
   environments: EnvironmentPreset[];
   activeEnvironmentId: string;
   lightingPresets: LightingPreset[];
@@ -183,6 +185,7 @@ export let state: AppState = {
   hiddenProfilePathIds: [],
   profileJoinTarget: null,
   profileEditorTool: 'select',
+  profilePenPathId: null,
   environments: ENVIRONMENT_PRESETS.map(cloneEnvironmentPreset),
   activeEnvironmentId: BUILTIN_ENV_DEFAULT_ID,
   lightingPresets: LIGHTING_PRESETS.map(cloneLightingPreset),
