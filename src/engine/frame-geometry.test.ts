@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   computeFramePerimeterS,
+  createExtrudedFrameGeometry,
   createRectangularGlassSlabGeometry,
   type FrameGeometryParams,
 } from './frame-geometry';
@@ -93,5 +94,59 @@ describe('createRectangularGlassSlabGeometry', () => {
     expect(box).toBeDefined();
     expect(box!.max.z).toBeCloseTo(0, 6);
     expect(box!.min.z).toBeCloseTo(-0.002, 6);
+  });
+});
+
+describe('createExtrudedFrameGeometry', () => {
+  const geometry = createExtrudedFrameGeometry(0.5, 0.6, FRAME_THICKNESS, FRAME_DEPTH);
+  const pos = geometry.getAttribute('position');
+  const nrm = geometry.getAttribute('normal');
+  const uv = geometry.getAttribute('uv');
+  const triCount = pos.count / 3;
+
+  it('has triangle winding consistent with the stored normals', () => {
+    for (let t = 0; t < triCount; t++) {
+      const i = t * 3;
+      const ax = pos.getX(i + 1) - pos.getX(i);
+      const ay = pos.getY(i + 1) - pos.getY(i);
+      const az = pos.getZ(i + 1) - pos.getZ(i);
+      const bx = pos.getX(i + 2) - pos.getX(i);
+      const by = pos.getY(i + 2) - pos.getY(i);
+      const bz = pos.getZ(i + 2) - pos.getZ(i);
+      const cx = ay * bz - az * by;
+      const cy = az * bx - ax * bz;
+      const cz = ax * by - ay * bx;
+      const dot = cx * nrm.getX(i) + cy * nrm.getY(i) + cz * nrm.getZ(i);
+      expect(dot).toBeGreaterThan(0);
+    }
+  });
+
+  it('uses meter UVs with no triangle stretched across bars', () => {
+    const outerPerimeter = 2 * (0.5 + 0.6 + FRAME_THICKNESS * 4);
+    for (let t = 0; t < triCount; t++) {
+      const us = [0, 1, 2].map((k) => uv.getX(t * 3 + k));
+      const vs = [0, 1, 2].map((k) => uv.getY(t * 3 + k));
+      expect(Math.max(...us) - Math.min(...us)).toBeLessThanOrEqual(0.6 + FRAME_THICKNESS * 2 + 1e-6);
+      expect(Math.max(...vs) - Math.min(...vs)).toBeLessThanOrEqual(
+        Math.max(FRAME_THICKNESS, FRAME_DEPTH) + 1e-6,
+      );
+      for (const u of us) {
+        expect(u).toBeGreaterThanOrEqual(-1e-6);
+        expect(u).toBeLessThanOrEqual(outerPerimeter + 1e-6);
+      }
+    }
+  });
+
+  it('maps the left outer wall to its own perimeter range', () => {
+    const outerWidth = 0.5 + FRAME_THICKNESS * 2;
+    const outerHeight = 0.6 + FRAME_THICKNESS * 2;
+    for (let i = 0; i < pos.count; i++) {
+      if (nrm.getX(i) < -0.5) {
+        const isOuter = pos.getX(i) < -0.25 - FRAME_THICKNESS * 0.5;
+        if (!isOuter) {continue;}
+        expect(uv.getX(i)).toBeGreaterThanOrEqual(2 * outerWidth + outerHeight - 1e-6);
+        expect(uv.getX(i)).toBeLessThanOrEqual(2 * outerWidth + 2 * outerHeight + 1e-6);
+      }
+    }
   });
 });

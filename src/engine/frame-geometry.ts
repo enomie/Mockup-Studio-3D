@@ -1,9 +1,8 @@
 import {
-  BufferAttribute,
+  BufferGeometry,
   ExtrudeGeometry,
-  Path,
+  Float32BufferAttribute,
   Shape,
-  type BufferGeometry,
 } from 'three/webgpu';
 import { ensureGeometryTangents } from '@/engine/geometry-tangents';
 
@@ -12,37 +11,6 @@ export interface FrameGeometryParams {
   faceHeight: number;
   frameThickness: number;
   frameDepth: number;
-}
-
-const CAP_EPSILON_RATIO = 0.02;
-
-function buildFrameShape(
-  halfOuterW: number,
-  halfOuterH: number,
-  halfFaceW: number,
-  halfFaceH: number,
-): Shape {
-  const shape = new Shape();
-  shape.moveTo(-halfOuterW, -halfOuterH);
-  shape.lineTo(halfOuterW, -halfOuterH);
-  shape.lineTo(halfOuterW, halfOuterH);
-  shape.lineTo(-halfOuterW, halfOuterH);
-  shape.closePath();
-
-  const hole = new Path();
-  hole.moveTo(-halfFaceW, -halfFaceH);
-  hole.lineTo(halfFaceW, -halfFaceH);
-  hole.lineTo(halfFaceW, halfFaceH);
-  hole.lineTo(-halfFaceW, halfFaceH);
-  hole.closePath();
-  shape.holes.push(hole);
-
-  return shape;
-}
-
-interface FrameUvSample {
-  u: number;
-  v: number;
 }
 
 type FrameBarSide = 'top' | 'bottom' | 'right' | 'left' | 'interior';
@@ -93,95 +61,139 @@ export function computeFramePerimeterS(
   }
 }
 
-function sampleFramePerimeterUv(
-  x: number,
-  y: number,
-  z: number,
-  params: FrameGeometryParams,
-): FrameUvSample {
-  const { faceWidth, faceHeight, frameThickness, frameDepth } = params;
-  const halfFaceW = faceWidth * 0.5;
-  const halfFaceH = faceHeight * 0.5;
-
-  const u = computeFramePerimeterS(x, y, params);
-  const bar = resolveFrameBarSide(x, y, halfFaceW, halfFaceH);
-
-  let vCross: number;
-  switch (bar) {
-    case 'top':
-      vCross = (y - halfFaceH) / frameThickness;
-      break;
-    case 'bottom':
-      vCross = (-halfFaceH - y) / frameThickness;
-      break;
-    case 'right':
-      vCross = (x - halfFaceW) / frameThickness;
-      break;
-    case 'left':
-      vCross = (-halfFaceW - x) / frameThickness;
-      break;
-    default:
-      vCross = 0.5;
-      break;
-  }
-
-  const capEpsilon = frameDepth * CAP_EPSILON_RATIO;
-  const isFrontCap = z > -capEpsilon;
-  const isBackCap = z < -frameDepth + capEpsilon;
-  const v = isFrontCap || isBackCap ? vCross : -z / frameDepth;
-
-  return { u, v };
+interface Vec2 {
+  x: number;
+  y: number;
 }
 
-function assignExtrudedFrameUvs(
-  geometry: BufferGeometry,
-  params: FrameGeometryParams,
-): void {
-  const position = geometry.getAttribute('position');
-  const uvArray = new Float32Array(position.count * 2);
-
-  for (let i = 0; i < position.count; i++) {
-    const x = position.getX(i);
-    const y = position.getY(i);
-    const z = position.getZ(i);
-    const { u, v } = sampleFramePerimeterUv(x, y, z, params);
-    uvArray[i * 2] = u;
-    uvArray[i * 2 + 1] = v;
-  }
-
-  geometry.setAttribute('uv', new BufferAttribute(uvArray, 2));
+/** One mitred frame bar: outer/inner edge endpoints in CCW perimeter order. */
+interface FrameBar {
+  outerStart: Vec2;
+  outerEnd: Vec2;
+  innerStart: Vec2;
+  innerEnd: Vec2;
+  /** Unit direction along the bar (CCW around the frame). */
+  along: Vec2;
+  /** Unit outward normal of the bar (away from the opening). */
+  outward: Vec2;
+  /** Perimeter arc-length at `outerStart` (meters). */
+  sOffset: number;
 }
 
+function buildFrameBars(params: FrameGeometryParams): FrameBar[] {
+  const { faceWidth, faceHeight, frameThickness } = params;
+  const outerWidth = faceWidth + frameThickness * 2;
+  const outerHeight = faceHeight + frameThickness * 2;
+  const ow = outerWidth * 0.5;
+  const oh = outerHeight * 0.5;
+  const fw = faceWidth * 0.5;
+  const fh = faceHeight * 0.5;
+  return [
+    {
+      outerStart: { x: -ow, y: -oh }, outerEnd: { x: ow, y: -oh },
+      innerStart: { x: -fw, y: -fh }, innerEnd: { x: fw, y: -fh },
+      along: { x: 1, y: 0 }, outward: { x: 0, y: -1 }, sOffset: 0,
+    },
+    {
+      outerStart: { x: ow, y: -oh }, outerEnd: { x: ow, y: oh },
+      innerStart: { x: fw, y: -fh }, innerEnd: { x: fw, y: fh },
+      along: { x: 0, y: 1 }, outward: { x: 1, y: 0 }, sOffset: outerWidth,
+    },
+    {
+      outerStart: { x: ow, y: oh }, outerEnd: { x: -ow, y: oh },
+      innerStart: { x: fw, y: fh }, innerEnd: { x: -fw, y: fh },
+      along: { x: -1, y: 0 }, outward: { x: 0, y: 1 }, sOffset: outerWidth + outerHeight,
+    },
+    {
+      outerStart: { x: -ow, y: oh }, outerEnd: { x: -ow, y: -oh },
+      innerStart: { x: -fw, y: fh }, innerEnd: { x: -fw, y: -fh },
+      along: { x: 0, y: -1 }, outward: { x: -1, y: 0 },
+      sOffset: 2 * outerWidth + outerHeight,
+    },
+  ];
+}
+
+interface FrameVertex {
+  p: Vec2;
+  z: number;
+}
+
+class FrameMeshBuilder {
+  readonly positions: number[] = [];
+  readonly normals: number[] = [];
+  readonly uvs: number[] = [];
+
+  /** Quad a-b-c-d (CCW seen from the normal side), split into two triangles. */
+  addQuad(
+    verts: [FrameVertex, FrameVertex, FrameVertex, FrameVertex],
+    normal: [number, number, number],
+    uvOf: (v: FrameVertex) => [number, number],
+  ): void {
+    for (const i of [0, 1, 2, 0, 2, 3]) {
+      const v = verts[i];
+      this.positions.push(v.p.x, v.p.y, v.z);
+      this.normals.push(...normal);
+      this.uvs.push(...uvOf(v));
+    }
+  }
+}
+
+/**
+ * Picture-frame body built from four mitred bars (front at z = 0, back at z = -frameDepth).
+ * UVs are in meters per bar: `u` = perimeter arc-length along the bar (grain direction),
+ * `v` = cross-bar distance — on caps from the inner edge, on walls wrapped around via depth.
+ * Each bar owns its triangles, so the grain turns cleanly at the mitre.
+ */
 export function createExtrudedFrameGeometry(
   faceWidth: number,
   faceHeight: number,
   frameThickness: number,
   frameDepth: number,
 ): BufferGeometry {
-  const outerWidth = faceWidth + frameThickness * 2;
-  const outerHeight = faceHeight + frameThickness * 2;
-  const halfOuterW = outerWidth * 0.5;
-  const halfOuterH = outerHeight * 0.5;
-  const halfFaceW = faceWidth * 0.5;
-  const halfFaceH = faceHeight * 0.5;
+  const params: FrameGeometryParams = { faceWidth, faceHeight, frameThickness, frameDepth };
+  const builder = new FrameMeshBuilder();
+  const front = 0;
+  const back = -frameDepth;
 
-  const shape = buildFrameShape(halfOuterW, halfOuterH, halfFaceW, halfFaceH);
-  const geometry = new ExtrudeGeometry(shape, {
-    depth: frameDepth,
-    bevelEnabled: false,
-  });
+  for (const bar of buildFrameBars(params)) {
+    const alongU = (p: Vec2) =>
+      bar.sOffset + (p.x - bar.outerStart.x) * bar.along.x + (p.y - bar.outerStart.y) * bar.along.y;
+    const cross = (p: Vec2) =>
+      (p.x - bar.innerStart.x) * bar.outward.x + (p.y - bar.innerStart.y) * bar.outward.y;
 
-  geometry.translate(0, 0, -frameDepth);
+    const capUv = (v: FrameVertex): [number, number] => [alongU(v.p), cross(v.p)];
+    const outerWallUv = (v: FrameVertex): [number, number] => [alongU(v.p), frameThickness - v.z];
+    const innerWallUv = (v: FrameVertex): [number, number] => [alongU(v.p), v.z];
 
-  const params: FrameGeometryParams = {
-    faceWidth,
-    faceHeight,
-    frameThickness,
-    frameDepth,
-  };
-  assignExtrudedFrameUvs(geometry, params);
+    const { outerStart: o0, outerEnd: o1, innerStart: i0, innerEnd: i1, outward } = bar;
+
+    builder.addQuad(
+      [{ p: o0, z: front }, { p: o1, z: front }, { p: i1, z: front }, { p: i0, z: front }],
+      [0, 0, 1],
+      capUv,
+    );
+    builder.addQuad(
+      [{ p: o0, z: back }, { p: i0, z: back }, { p: i1, z: back }, { p: o1, z: back }],
+      [0, 0, -1],
+      capUv,
+    );
+    builder.addQuad(
+      [{ p: o0, z: back }, { p: o1, z: back }, { p: o1, z: front }, { p: o0, z: front }],
+      [outward.x, outward.y, 0],
+      outerWallUv,
+    );
+    builder.addQuad(
+      [{ p: i1, z: back }, { p: i0, z: back }, { p: i0, z: front }, { p: i1, z: front }],
+      [-outward.x, -outward.y, 0],
+      innerWallUv,
+    );
+  }
+
+  const geometry = new BufferGeometry();
+  geometry.setAttribute('position', new Float32BufferAttribute(builder.positions, 3));
+  geometry.setAttribute('normal', new Float32BufferAttribute(builder.normals, 3));
+  geometry.setAttribute('uv', new Float32BufferAttribute(builder.uvs, 2));
   ensureGeometryTangents(geometry);
-
   return geometry;
 }
 
