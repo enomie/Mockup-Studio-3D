@@ -10,14 +10,8 @@ import {
   type ProceduralResolveOptions,
 } from './procedural-params';
 import { normalizeProceduralProfile } from './procedural-profile';
-import {
-  getProceduralMaterialNodes,
-  isMetalProceduralProfile,
-  isWoodProceduralProfile,
-} from './procedural-registry';
-
-const WOOD_CLEARCOAT = 0.08;
-const WOOD_CLEARCOAT_ROUGHNESS = 0.35;
+import { getProceduralMaterialNodes } from './procedural-registry';
+import { proceduralProfileSpec } from '../material-spec';
 
 export function createTexturedMaterial(
   preset: MaterialPreset,
@@ -31,15 +25,13 @@ export function createTexturedMaterial(
   const profile = normalizeProceduralProfile(preset.proceduralProfile);
   const params = proceduralParamsFromPreset(preset, tint, options);
   const nodes = getProceduralMaterialNodes(profile, params);
+  const spec = proceduralProfileSpec(profile);
+  const clearcoat = preset.clearcoat ?? spec.clearcoat?.amount.default ?? 0;
   const usePhysical =
-    isMetalProceduralProfile(profile) ||
-    isWoodProceduralProfile(profile) ||
-    profile === 'coated-gloss' ||
-    profile === 'plastic-smooth' ||
-    profile === 'silk-fine' ||
+    spec.physical ||
     (preset.metalness ?? 0) >= 0.5 ||
     (preset.anisotropy ?? 0) > 0 ||
-    (preset.clearcoat ?? 0) > 0;
+    clearcoat > 0;
 
   const material = usePhysical
     ? new MeshPhysicalNodeMaterial({ metalness: preset.metalness ?? 0 })
@@ -62,12 +54,10 @@ export function createTexturedMaterial(
 
   if (material instanceof MeshPhysicalNodeMaterial) {
     applyPhysicalAnisotropy(material, preset);
-    if (isWoodProceduralProfile(profile)) {
-      material.clearcoat = WOOD_CLEARCOAT;
-      material.clearcoatRoughness = WOOD_CLEARCOAT_ROUGHNESS;
-    } else if (preset.clearcoat != null && preset.clearcoat > 0) {
-      material.clearcoat = preset.clearcoat;
-      material.clearcoatRoughness = preset.clearcoatRoughness ?? 0.12;
+    if (clearcoat > 0) {
+      material.clearcoat = clearcoat;
+      material.clearcoatRoughness =
+        preset.clearcoatRoughness ?? spec.clearcoat?.roughness.default ?? 0.12;
     }
   }
 

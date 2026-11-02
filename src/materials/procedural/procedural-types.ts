@@ -32,9 +32,9 @@ export interface ProceduralMaterialNodes {
   depthWrite?: boolean;
 }
 
-export const DEFAULT_TILE_SCALE_WOOD = 6;
-/** Repeats per meter — ~400 ≈ 2.5 mm grain period. */
-export const DEFAULT_TILE_SCALE_PAPER = 400;
-/** Lines per meter — 1000 = 1 mm grid pitch. */
-export const DEFAULT_TILE_SCALE_GRID_PAPER = 1000;
+export {
+  DEFAULT_TILE_SCALE_GRID_PAPER,
+  DEFAULT_TILE_SCALE_PAPER,
+  DEFAULT_TILE_SCALE_WOOD,
+} from '../material-spec';
 export const DEFAULT_NORMAL_SCALE = 1;

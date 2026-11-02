@@ -1,6 +1,6 @@
 # Plan: Materialien – Live-Update & Shader-Überarbeitung
 
-Status: **Freigegeben** (inkl. Phase 6). Phase 1 umgesetzt.
+Status: **Freigegeben** (inkl. Phase 6). Phase 1–2 umgesetzt.
 Datum: 2026-11-02
 
 ## Ausgangslage
@@ -173,3 +173,10 @@ Farbe, Rauheit, Metalness, Normal scale, Clearcoat, Anisotropie, IOR als TSL-`un
 ## Fortschritt
 
 - [x] Phase 1 – `src/engine/entity-material-usage.ts` + Test, `MATERIAL_ENTITY_SLOTS` in `material-types.ts`, Cache-Invalidierung mit migrierter ID.
+- [x] Phase 2 – `src/materials/material-spec.ts` (+ Test). Panel rendert Regler generisch aus der Spec; Engine liest Defaults (Tile, Clearcoat, Glas) und `physical` daraus. Änderungen im Verhalten:
+  - Clearcoat-Regler bei allen opaken Materialien sichtbar (vorher nur bei einzelnen Profilen oder wenn schon > 0).
+  - Holz-Lack (0.08 / 0.35) ist jetzt Default des Clearcoat-Reglers statt versteckter Konstante.
+  - Glas: Surface tile scale + Seed sichtbar.
+  - Silk / Metal brushed: wirkungslose Regler (Normal, Tile, Seed) ausgeblendet – Silk bekommt in Phase 4 eigene Regler.
+  - Grid paper: Seed ausgeblendet (wird nicht verwendet).
+  - Tile-Default im Panel bei Metall jetzt 4 (wie Engine), vorher fälschlich 6.

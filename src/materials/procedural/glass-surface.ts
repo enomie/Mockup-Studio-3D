@@ -4,8 +4,14 @@ import type { MaterialPreset } from '@/scene/material-types';
 import { meterPositionLocal } from './procedural-position';
 import type { ProceduralMaterialParams } from './procedural-types';
 
-export const DEFAULT_GLASS_SURFACE_NORMAL_SCALE = 0.15;
-const DEFAULT_GLASS_SURFACE_TILE_SCALE = 10;
+import {
+  DEFAULT_GLASS_SURFACE_NORMAL_SCALE,
+  proceduralProfileSpec,
+} from '../material-spec';
+
+export { DEFAULT_GLASS_SURFACE_NORMAL_SCALE };
+const DEFAULT_GLASS_SURFACE_TILE_SCALE =
+  proceduralProfileSpec('glass-surface').tileScale?.default ?? 10;
 
 function glassSurfaceParamsFromPreset(preset: MaterialPreset): ProceduralMaterialParams {
   const scale = preset.surfaceNormalScale ?? DEFAULT_GLASS_SURFACE_NORMAL_SCALE;

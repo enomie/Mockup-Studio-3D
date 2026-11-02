@@ -1,14 +1,12 @@
 import { Copy, Plus, Shuffle, Trash2 } from 'lucide-react';
 import {
-  DEFAULT_TILE_SCALE_GRID_PAPER,
-  DEFAULT_TILE_SCALE_PAPER,
-  DEFAULT_TILE_SCALE_WOOD,
-} from '@/materials/procedural';
-import { DEFAULT_GLASS_SURFACE_NORMAL_SCALE } from '@/materials/procedural/glass-surface';
-import { isWoodProceduralProfile } from '@/materials/procedural/procedural-registry';
+  resolveMaterialSpec,
+  SEED_MAX,
+  type MaterialSpec,
+  type RangeSpec,
+} from '@/materials/material-spec';
 import type { MaterialPreset } from '@/scene/entity-types';
-import type { GridPaperUnit, ProceduralProfileId } from '@/scene/material-types';
-import { NORMALIZED_DECIMALS, NORMALIZED_STEP } from '@/units/normalized';
+import type { GridPaperUnit } from '@/scene/material-types';
 import { ColorPicker } from '@/ui/components/ColorPicker';
 import { Icon } from '@/ui/components/Icon';
 import { PanelSelect } from '@/ui/components/PanelSelect';
@@ -48,45 +46,6 @@ function swatchColor(preset: MaterialPreset): string {
   return `rgb(${r}, ${g}, ${b})`;
 }
 
-function profileLabel(profile: MaterialPreset['proceduralProfile']): string {
-  switch (profile) {
-    case 'paper-grain':
-      return 'Paper grain';
-    case 'wood-soft':
-      return 'Wood soft';
-    case 'wood-porous':
-      return 'Wood porous';
-    case 'metal-polished':
-      return 'Metal polished';
-    case 'metal-brushed':
-      return 'Metal brushed';
-    case 'grid-paper-opaque':
-      return 'Grid paper (opaque)';
-    case 'grid-paper-lines':
-      return 'Grid lines (transparent)';
-    case 'concrete-stained':
-      return 'Concrete stained';
-    case 'concrete-porous':
-      return 'Concrete porous';
-    case 'fabric-linen':
-      return 'Fabric Linen';
-    case 'silk-fine':
-      return 'Fabric Silk';
-    case 'coated-gloss':
-      return 'Coated gloss';
-    case 'plastic-matte':
-      return 'Plastic matte';
-    case 'plastic-smooth':
-      return 'Plastic smooth';
-    default:
-      return profile ?? 'Textured';
-  }
-}
-
-function isGridPaperProfile(profile: ProceduralProfileId | undefined): boolean {
-  return profile === 'grid-paper-opaque' || profile === 'grid-paper-lines';
-}
-
 const GRID_UNIT_OPTIONS: { value: GridPaperUnit; label: string }[] = [
   { value: 'mm', label: 'Millimeter (1 mm)' },
   { value: 'cm', label: 'Centimeter (1 cm)' },
@@ -94,102 +53,76 @@ const GRID_UNIT_OPTIONS: { value: GridPaperUnit; label: string }[] = [
   { value: 'm', label: 'Meter (1 m)' },
 ];
 
-interface TileScaleConfig {
-  min: number;
-  max: number;
-  step: number;
-  defaultValue: number;
-  decimals: number;
-}
-
-function tileScaleConfig(profile: ProceduralProfileId | undefined): TileScaleConfig {
-  if (profile === 'paper-grain') {
-    return {
-      min: 100,
-      max: 800,
-      step: 10,
-      defaultValue: DEFAULT_TILE_SCALE_PAPER,
-      decimals: 0,
-    };
-  }
-
-  if (isGridPaperProfile(profile)) {
-    return {
-      min: 500,
-      max: 2000,
-      step: 50,
-      defaultValue: DEFAULT_TILE_SCALE_GRID_PAPER,
-      decimals: 0,
-    };
-  }
-
-  return {
-    min: 0.5,
-    max: 24,
-    step: 0.1,
-    defaultValue: DEFAULT_TILE_SCALE_WOOD,
-    decimals: 1,
-  };
-}
-
 function kindLabel(preset: MaterialPreset): string {
   if (preset.kind === 'analysis') {
     return preset.analysisMode === 'wireframe' ? 'Wireframe' : 'Zebra analysis';
   }
-  if (preset.kind === 'transmission') {
-    return preset.glassVariant === 'solid' ? 'Glass solid' : 'Glass pane';
-  }
-  if (preset.kind === 'textured') {
-    return profileLabel(preset.proceduralProfile);
-  }
-  return 'PBR';
+  if (preset.kind === 'solid-pbr') {return 'PBR';}
+  return resolveMaterialSpec(preset).label;
 }
-
-const PROCEDURAL_SEED_MAX = 99_999;
 
 function randomProceduralSeed(): number {
-  return Math.floor(Math.random() * (PROCEDURAL_SEED_MAX + 1));
+  return Math.floor(Math.random() * (SEED_MAX + 1));
 }
 
-function generalProfileLabel(preset: MaterialPreset): string {
-  if (preset.kind === 'textured') {
-    return profileLabel(preset.proceduralProfile);
-  }
-  if (preset.kind === 'transmission' || preset.kind === 'analysis') {
-    return kindLabel(preset);
-  }
-  return 'Solid PBR';
+type NumericField =
+  | 'roughness'
+  | 'metalness'
+  | 'clearcoat'
+  | 'clearcoatRoughness'
+  | 'normalScale'
+  | 'tileScale'
+  | 'anisotropy'
+  | 'anisotropyRotation'
+  | 'ior'
+  | 'surfaceNormalScale';
+
+interface SpecSliderProps {
+  preset: MaterialPreset;
+  field: NumericField;
+  label: string;
+  range: RangeSpec;
 }
 
-function showGlassSection(preset: MaterialPreset): boolean {
-  return preset.kind === 'transmission';
-}
-
-function showAnisotropySection(preset: MaterialPreset): boolean {
-  const profile = preset.proceduralProfile;
+/** Slider bound to a numeric preset field; range and fallback come from the material spec. */
+function SpecSlider({ preset, field, label, range }: SpecSliderProps) {
   return (
-    preset.kind === 'textured' && (profile === 'metal-brushed' || profile === 'silk-fine')
+    <RangeSlider
+      label={label}
+      min={range.min}
+      max={range.max}
+      step={range.step}
+      value={preset[field] ?? range.default}
+      onChange={(value) => { updateMaterial(preset.id, { [field]: value }); }}
+      valueInputLabel={label}
+      valueInputDecimals={range.decimals}
+    />
   );
 }
 
-function showClearcoatInFinish(preset: MaterialPreset): boolean {
-  const isOpaqueKind = preset.kind === 'solid-pbr' || preset.kind === 'textured';
-  if (!isOpaqueKind) {return false;}
-  if (
-    preset.kind === 'textured' &&
-    preset.proceduralProfile &&
-    isWoodProceduralProfile(preset.proceduralProfile)
-  ) {
-    return false;
-  }
-  if (
-    preset.proceduralProfile === 'plastic-smooth' ||
-    preset.proceduralProfile === 'coated-gloss' ||
-    preset.proceduralProfile === 'metal-polished'
-  ) {
-    return true;
-  }
-  return (preset.clearcoat ?? 0) > 0;
+function SeedControls({ preset }: { preset: MaterialPreset }) {
+  return (
+    <>
+      <RangeSlider
+        label="Seed"
+        min={0}
+        max={SEED_MAX}
+        step={1}
+        value={preset.seed ?? 0}
+        onChange={(value) => { updateMaterial(preset.id, { seed: Math.round(value) }); }}
+        valueInputLabel="Seed"
+        valueInputDecimals={0}
+      />
+      <button
+        type="button"
+        className="btn"
+        onClick={() => { updateMaterial(preset.id, { seed: randomProceduralSeed() }); }}
+      >
+        <Icon icon={Shuffle} size={16} strokeWidth={1.75} />
+        Randomize
+      </button>
+    </>
+  );
 }
 
 const ZEBRA_STRIPE_SCALE_MIN = 2;
@@ -246,26 +179,84 @@ interface MaterialEditorProps {
   preset: MaterialPreset;
 }
 
+function ColorSection({ preset, spec }: { preset: MaterialPreset; spec: MaterialSpec }) {
+  return (
+    <SubPanelSection title="Color">
+      <ColorPicker
+        label={spec.colorLabel}
+        value={preset[spec.colorField] ?? spec.defaultColor}
+        onChange={(color) => { updateMaterial(preset.id, { [spec.colorField]: color }); }}
+      />
+      {spec.lineColor ? (
+        <ColorPicker
+          label="Line color"
+          value={preset.lineColor ?? spec.lineColor.default}
+          onChange={(lineColor) => { updateMaterial(preset.id, { lineColor }); }}
+        />
+      ) : null}
+    </SubPanelSection>
+  );
+}
+
+function FinishSection({ preset, spec }: { preset: MaterialPreset; spec: MaterialSpec }) {
+  return (
+    <SubPanelSection title="Finish">
+      <SpecSlider preset={preset} field="roughness" label="Roughness" range={spec.roughness} />
+      {spec.metalness ? (
+        <SpecSlider preset={preset} field="metalness" label="Metalness" range={spec.metalness} />
+      ) : null}
+      {spec.clearcoat ? (
+        <>
+          <SpecSlider
+            preset={preset}
+            field="clearcoat"
+            label="Clearcoat"
+            range={spec.clearcoat.amount}
+          />
+          <SpecSlider
+            preset={preset}
+            field="clearcoatRoughness"
+            label="Clearcoat roughness"
+            range={spec.clearcoat.roughness}
+          />
+        </>
+      ) : null}
+    </SubPanelSection>
+  );
+}
+
+function PatternSection({ preset, spec }: { preset: MaterialPreset; spec: MaterialSpec }) {
+  const showTileSlider = spec.tileScale && !spec.gridUnit;
+  if (!spec.gridUnit && !showTileSlider && !spec.seed) {return null;}
+  return (
+    <SubPanelSection title="Pattern">
+      {spec.gridUnit ? (
+        <PanelSelect
+          label="Grid unit"
+          id="material-grid-unit"
+          value={preset.gridUnit ?? 'mm'}
+          options={GRID_UNIT_OPTIONS}
+          onChange={(gridUnit) => { updateMaterial(preset.id, { gridUnit: gridUnit as GridPaperUnit }); }
+          }
+        />
+      ) : null}
+      {showTileSlider && spec.tileScale ? (
+        <SpecSlider preset={preset} field="tileScale" label="Tile scale" range={spec.tileScale} />
+      ) : null}
+      {spec.seed ? <SeedControls preset={preset} /> : null}
+    </SubPanelSection>
+  );
+}
+
 function MaterialEditor({ preset }: MaterialEditorProps) {
   const isBuiltin = preset.source === 'builtin';
-  const tileConfig = tileScaleConfig(preset.proceduralProfile);
-  const gridProfile = isGridPaperProfile(preset.proceduralProfile);
-  const primaryColorLabel =
-    preset.proceduralProfile === 'grid-paper-lines' ? 'Line color' : 'Color';
-  const showNormalScale =
-    preset.kind === 'textured' &&
-    preset.proceduralProfile !== 'metal-brushed' &&
-    !gridProfile;
-
-  const showPatternSection =
-    preset.kind === 'textured' && preset.proceduralProfile !== 'metal-brushed';
-
-  const isOpaqueKind = preset.kind === 'solid-pbr' || preset.kind === 'textured';
-  const showClearcoat = showClearcoatInFinish(preset);
 
   if (preset.kind === 'analysis') {
     return <AnalysisMaterialEditor preset={preset} />;
   }
+
+  const spec = resolveMaterialSpec(preset);
+  const glass = spec.glass;
 
   return (
     <div className="panel-stack">
@@ -279,228 +270,77 @@ function MaterialEditor({ preset }: MaterialEditorProps) {
         />
         <div className="panel-field-row">
           <span className="panel-field-label">Profile</span>
-          <span className="panel-field-controls panel-field-value">
-            {generalProfileLabel(preset)}
-          </span>
+          <span className="panel-field-controls panel-field-value">{spec.label}</span>
         </div>
       </SubPanelSection>
 
-      <SubPanelSection title="Color">
-        {isOpaqueKind ? (
-          <>
-            <ColorPicker
-              label={primaryColorLabel}
-              value={preset.color ?? { r: 0.8, g: 0.8, b: 0.8 }}
-              onChange={(color) => { updateMaterial(preset.id, { color }); }}
-            />
-            {preset.proceduralProfile === 'grid-paper-opaque' ? (
-              <ColorPicker
-                label="Line color"
-                value={preset.lineColor ?? { r: 0.72, g: 0.78, b: 0.88 }}
-                onChange={(lineColor) => { updateMaterial(preset.id, { lineColor }); }}
-              />
-            ) : null}
-          </>
-        ) : (
-          <ColorPicker
-            label="Tint"
-            value={preset.tint ?? { r: 1, g: 1, b: 1 }}
-            onChange={(tint) => { updateMaterial(preset.id, { tint }); }}
-          />
-        )}
-      </SubPanelSection>
+      <ColorSection preset={preset} spec={spec} />
+      <FinishSection preset={preset} spec={spec} />
 
-      <SubPanelSection title="Finish">
-        {isOpaqueKind ? (
-          <>
-            <RangeSlider
-              label="Roughness"
-              min={0}
-              max={1}
-              step={NORMALIZED_STEP}
-              value={preset.roughness ?? 0.5}
-              onChange={(value) => { updateMaterial(preset.id, { roughness: value }); }}
-              valueInputLabel="Roughness"
-              valueInputDecimals={NORMALIZED_DECIMALS}
-            />
-            <RangeSlider
-              label="Metalness"
-              min={0}
-              max={1}
-              step={NORMALIZED_STEP}
-              value={preset.metalness ?? 0}
-              onChange={(value) => { updateMaterial(preset.id, { metalness: value }); }}
-              valueInputLabel="Metalness"
-              valueInputDecimals={NORMALIZED_DECIMALS}
-            />
-            {showClearcoat ? (
-              <>
-                <RangeSlider
-                  label="Clearcoat"
-                  min={0}
-                  max={1}
-                  step={NORMALIZED_STEP}
-                  value={preset.clearcoat ?? 0}
-                  onChange={(value) => { updateMaterial(preset.id, { clearcoat: value }); }}
-                  valueInputLabel="Clearcoat"
-                  valueInputDecimals={NORMALIZED_DECIMALS}
-                />
-                <RangeSlider
-                  label="Clearcoat roughness"
-                  min={0}
-                  max={1}
-                  step={NORMALIZED_STEP}
-                  value={preset.clearcoatRoughness ?? 0.12}
-                  onChange={(value) => { updateMaterial(preset.id, { clearcoatRoughness: value }); }
-                  }
-                  valueInputLabel="Clearcoat roughness"
-                  valueInputDecimals={NORMALIZED_DECIMALS}
-                />
-              </>
-            ) : null}
-          </>
-        ) : (
-          <RangeSlider
-            label="Roughness"
-            min={0}
-            max={1}
-            step={NORMALIZED_STEP}
-            value={preset.roughness ?? 0.02}
-            onChange={(value) => { updateMaterial(preset.id, { roughness: value }); }}
-            valueInputLabel="Roughness"
-            valueInputDecimals={NORMALIZED_DECIMALS}
-          />
-        )}
-      </SubPanelSection>
-
-      {showNormalScale ? (
+      {spec.normalScale && !glass ? (
         <SubPanelSection title="Relief">
-          <RangeSlider
+          <SpecSlider
+            preset={preset}
+            field="normalScale"
             label="Normal scale"
-            min={0}
-            max={2}
-            step={0.01}
-            value={preset.normalScale ?? 1}
-            onChange={(value) => { updateMaterial(preset.id, { normalScale: value }); }}
-            valueInputLabel="Normal"
-            valueInputDecimals={2}
+            range={spec.normalScale}
           />
         </SubPanelSection>
       ) : null}
 
-      {showPatternSection ? (
-        <SubPanelSection title="Pattern">
-          {gridProfile ? (
-            <PanelSelect
-              label="Grid unit"
-              id="material-grid-unit"
-              value={preset.gridUnit ?? 'mm'}
-              options={GRID_UNIT_OPTIONS}
-              onChange={(gridUnit) => { updateMaterial(preset.id, { gridUnit: gridUnit as GridPaperUnit }); }
-              }
-            />
-          ) : null}
-          {!gridProfile ? (
-            <RangeSlider
-              label="Tile scale"
-              min={tileConfig.min}
-              max={tileConfig.max}
-              step={tileConfig.step}
-              value={preset.tileScale ?? tileConfig.defaultValue}
-              onChange={(value) => { updateMaterial(preset.id, { tileScale: value }); }}
-              valueInputLabel="Tile"
-              valueInputDecimals={tileConfig.decimals}
-            />
-          ) : null}
-          <RangeSlider
-            label="Seed"
-            min={0}
-            max={PROCEDURAL_SEED_MAX}
-            step={1}
-            value={preset.seed ?? 0}
-            onChange={(value) => { updateMaterial(preset.id, { seed: Math.round(value) }); }}
-            valueInputLabel="Seed"
-            valueInputDecimals={0}
-          />
-          <button
-            type="button"
-            className="btn"
-            onClick={() => { updateMaterial(preset.id, { seed: randomProceduralSeed() }); }}
-          >
-            <Icon icon={Shuffle} size={16} strokeWidth={1.75} />
-            Randomize
-          </button>
-        </SubPanelSection>
-      ) : null}
+      {!glass ? <PatternSection preset={preset} spec={spec} /> : null}
 
-      {showAnisotropySection(preset) ? (
+      {spec.anisotropy ? (
         <SubPanelSection title="Anisotropy">
-          <RangeSlider
+          <SpecSlider
+            preset={preset}
+            field="anisotropy"
             label="Anisotropy"
-            min={0}
-            max={1}
-            step={NORMALIZED_STEP}
-            value={preset.anisotropy ?? 0}
-            onChange={(value) => { updateMaterial(preset.id, { anisotropy: value }); }}
-            valueInputLabel="Anisotropy"
-            valueInputDecimals={NORMALIZED_DECIMALS}
+            range={spec.anisotropy.amount}
           />
-          <RangeSlider
+          <SpecSlider
+            preset={preset}
+            field="anisotropyRotation"
             label="Rotation"
-            min={0}
-            max={360}
-            step={1}
-            value={preset.anisotropyRotation ?? 0}
-            onChange={(value) => { updateMaterial(preset.id, { anisotropyRotation: value }); }}
-            valueInputLabel="Rotation"
-            valueInputDecimals={0}
+            range={spec.anisotropy.rotation}
           />
         </SubPanelSection>
       ) : null}
 
-      {showGlassSection(preset) ? (
-        <SubPanelSection title="Glass">
-          <PanelSelect
-            label="Variant"
-            id="material-glass-variant"
-            value={preset.glassVariant ?? 'pane'}
-            disabled={isBuiltin}
-            options={[
-              { value: 'pane', label: 'Pane' },
-              { value: 'solid', label: 'Solid' },
-            ]}
-            onChange={(next) => {
-              updateMaterial(preset.id, {
-                glassVariant: next as 'pane' | 'solid',
-              });
-            }}
-          />
-          <RangeSlider
-            label="IOR"
-            min={1}
-            max={2.5}
-            step={0.01}
-            value={preset.ior ?? 1.5}
-            onChange={(value) => { updateMaterial(preset.id, { ior: value }); }}
-            valueInputLabel="IOR"
-            valueInputDecimals={2}
-          />
-        </SubPanelSection>
-      ) : null}
-
-      {showGlassSection(preset) ? (
-        <SubPanelSection title="Surface">
-          <RangeSlider
-            label="Surface normal scale"
-            min={0}
-            max={1}
-            step={0.01}
-            value={preset.surfaceNormalScale ?? DEFAULT_GLASS_SURFACE_NORMAL_SCALE}
-            onChange={(value) => { updateMaterial(preset.id, { surfaceNormalScale: value }); }}
-            valueInputLabel="Surface normal"
-            valueInputDecimals={2}
-          />
-        </SubPanelSection>
+      {glass ? (
+        <>
+          <SubPanelSection title="Glass">
+            <PanelSelect
+              label="Variant"
+              id="material-glass-variant"
+              value={preset.glassVariant ?? 'pane'}
+              disabled={isBuiltin}
+              options={[
+                { value: 'pane', label: 'Pane' },
+                { value: 'solid', label: 'Solid' },
+              ]}
+              onChange={(next) => {
+                updateMaterial(preset.id, { glassVariant: next as 'pane' | 'solid' });
+              }}
+            />
+            <SpecSlider preset={preset} field="ior" label="IOR" range={glass.ior} />
+          </SubPanelSection>
+          <SubPanelSection title="Surface">
+            <SpecSlider
+              preset={preset}
+              field="surfaceNormalScale"
+              label="Surface normal scale"
+              range={glass.surfaceNormalScale}
+            />
+            <SpecSlider
+              preset={preset}
+              field="tileScale"
+              label="Surface tile scale"
+              range={glass.surfaceTileScale}
+            />
+            <SeedControls preset={preset} />
+          </SubPanelSection>
+        </>
       ) : null}
 
       <div className="material-editor-actions">

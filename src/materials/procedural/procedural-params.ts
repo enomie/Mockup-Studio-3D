@@ -4,11 +4,9 @@ import {
   type MaterialPreset,
   type ProceduralProfileId,
 } from '@/scene/material-types';
+import { defaultTileScaleForProfile } from '../material-spec';
 import {
   DEFAULT_NORMAL_SCALE,
-  DEFAULT_TILE_SCALE_GRID_PAPER,
-  DEFAULT_TILE_SCALE_PAPER,
-  DEFAULT_TILE_SCALE_WOOD,
   type ProceduralMaterialParams,
   type ProceduralSamplingSpace,
   type ProceduralSurfaceRole,
@@ -50,7 +48,7 @@ export function proceduralParamsFromPreset(
     : undefined;
   const tileScale = isGridPaperProfileId(profile)
     ? resolveGridPaperTileScale(preset.gridUnit, preset.tileScale)
-    : (preset.tileScale ?? defaultTileScaleForProfile(preset.proceduralProfile));
+    : (preset.tileScale ?? defaultTileScaleForProfile(profile));
 
   return {
     color: multiplyRgb(baseColor, effectiveTint),
@@ -63,29 +61,4 @@ export function proceduralParamsFromPreset(
     grainAlongU: options.grainAlongU ?? true,
     samplingSpace: resolveProceduralSamplingSpace(preset.proceduralProfile, surfaceRole),
   };
-}
-
-function defaultTileScaleForProfile(
-  profile: MaterialPreset['proceduralProfile'],
-): number {
-  const resolved = profile ? normalizeProceduralProfile(profile) : undefined;
-  if (resolved === 'wood-soft' || resolved === 'wood-porous') {
-    return DEFAULT_TILE_SCALE_WOOD;
-  }
-  if (resolved === 'paper-grain') {return DEFAULT_TILE_SCALE_PAPER;}
-  if (resolved === 'grid-paper-opaque' || resolved === 'grid-paper-lines') {
-    return DEFAULT_TILE_SCALE_GRID_PAPER;
-  }
-  if (
-    resolved === 'fabric-linen' ||
-    resolved === 'silk-fine' ||
-    resolved === 'concrete-stained' ||
-    resolved === 'concrete-porous' ||
-    resolved === 'coated-gloss' ||
-    resolved === 'plastic-matte' ||
-    resolved === 'plastic-smooth'
-  ) {
-    return 6;
-  }
-  return 4;
 }
