@@ -1,8 +1,8 @@
-/** Built-in UI name: Print Matt */
+/** Built-in UI name: Paper (finish slider matt ↔ glossy). */
 export const MATERIAL_PAPER_ID = 'material-paper';
 export const MATERIAL_GOLD_ID = 'material-gold';
-/** Built-in UI name: Print Glossy */
-export const MATERIAL_GLOSSY_PRINT_ID = 'material-glossy-print';
+/** Load migration only: former Print Glossy preset → Paper with gloss 1. */
+export const LEGACY_MATERIAL_GLOSSY_PRINT_ID = 'material-glossy-print';
 export const MATERIAL_CHROME_ID = 'material-chrome';
 export const MATERIAL_GOLD_BRUSHED_ID = 'material-gold-brushed';
 /** ID spelling british; UI name: Brushed Aluminum */
@@ -28,6 +28,7 @@ const LEGACY_MATERIAL_SILVER_ID = 'material-silver';
 
 const LEGACY_MATERIAL_ID_MAP: Readonly<Record<string, string>> = {
   [LEGACY_MATERIAL_SILVER_ID]: MATERIAL_CHROME_ID,
+  [LEGACY_MATERIAL_GLOSSY_PRINT_ID]: MATERIAL_PAPER_ID,
 };
 
 export function migrateMaterialId(materialId: string): string {

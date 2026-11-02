@@ -1,3 +1,4 @@
+import { clampGloss } from '@/scene/paper-gloss';
 import type { PatchNode } from '@/scene/patch-nodes';
 import type { Object3D } from 'three/webgpu';
 import {
@@ -367,6 +368,21 @@ export class EntityRegistry {
       runtime.entity.materials ?? defaultMaterialsForKind(runtime.entity.assetKind),
     );
     materials[slot] = materialId;
+    this.updateEntity(runtime, { materials });
+  }
+
+  setEntityMaterialGloss(
+    entityId: string,
+    slot: MaterialEntitySlot,
+    gloss: number,
+  ): void {
+    const runtime = this.entities.get(entityId);
+    if (!runtime) {return;}
+
+    const materials = cloneAssetMaterials(
+      runtime.entity.materials ?? defaultMaterialsForKind(runtime.entity.assetKind),
+    );
+    materials.slotGloss = { ...materials.slotGloss, [slot]: clampGloss(gloss) };
     this.updateEntity(runtime, { materials });
   }
 

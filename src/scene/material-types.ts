@@ -115,6 +115,8 @@ export interface AssetMaterialSlots {
   pathMaterial7Id?: string;
   pathMaterial8Id?: string;
   pathMaterial9Id?: string;
+  /** Finish slider (0 = matt, 1 = glossy) per slot; only used when the slot material is Paper. */
+  slotGloss?: Partial<Record<MaterialEntitySlot, number>>;
 }
 
 export type MaterialEntitySlot =
@@ -175,6 +177,7 @@ export function cloneAssetMaterials(slots: AssetMaterialSlots): AssetMaterialSlo
   return {
     ...slots,
     faceTints,
+    slotGloss: slots.slotGloss ? { ...slots.slotGloss } : undefined,
     bookPagesTint: slots.bookPagesTint ? { ...slots.bookPagesTint } : undefined,
     bookCoverTint: slots.bookCoverTint ? { ...slots.bookCoverTint } : undefined,
   };

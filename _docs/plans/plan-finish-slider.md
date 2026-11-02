@@ -1,6 +1,6 @@
 # Plan: Ein Material „Paper“ mit Finish-Schieberegler (Matt ↔ Glossy)
 
-Status: **Entwurf v2 – wartet auf Freigabe**
+Status: **Umgesetzt (2026-11-02)**
 
 ## Ziel
 
@@ -75,3 +75,13 @@ Status: **Entwurf v2 – wartet auf Freigabe**
 5. UI umstellen (`ImageSurfaceFields.tsx`, Entity-Fields).
 6. Visuelle Prüfung an Picture, Smartphone, Tapete, Passepartout, Book, Block.
 7. `npx vitest run`, `npm run lint`, `npm run build`, Commit auf `main`.
+
+## Umsetzung (2026-11-02)
+- `src/scene/paper-gloss.ts`: `applyPaperGloss` (interpoliert roughness 0.92→0.15, clearcoat 0→0.35,
+  clearcoatRoughness →0.12, Papierstruktur normalScale 0.85→0.15), `resolveSlotGloss`.
+- Papier-Struktur bleibt durchgehend `paper-grain` (Roughness-Untergrenze im Shader von 0.75 auf 0.02 gesenkt),
+  dadurch ein stetiger Übergang statt Profilwechsel zu `coated-gloss`.
+- Resolver: Option `gloss` und `MaterialResolver.withGloss(gloss)` (für Buch-Cover/Spine/Fabric, die einen Slot über mehrere Helfer auflösen).
+- Alle Slot-Auflösungen geben den Slot-Gloss mit; `MaterialSelect` zeigt den Regler bei Paper (Store → `setEntityMaterialGloss`).
+- Default-Slots für Bild-Fronten speichern `slotGloss = 1` (wie früher Print Glossy).
+- Nicht visuell im 3D-Viewport geprüft (WebGPU im Headless-Container nicht verfügbar) — bitte lokal bei 0 / 0.5 / 1 ansehen.

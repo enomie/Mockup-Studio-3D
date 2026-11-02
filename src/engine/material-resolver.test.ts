@@ -8,7 +8,7 @@ import {
   MATERIAL_GRID_LINES_ID,
   MATERIAL_GRID_PAPER_ID,
   MATERIAL_CHROME_ID,
-  MATERIAL_GLOSSY_PRINT_ID,
+  MATERIAL_PAPER_ID,
   MATERIAL_GOLD_BRUSHED_ID,
   MATERIAL_GOLD_ID,
   MATERIAL_ALUMINUM_BRUSHED_ID,
@@ -129,13 +129,13 @@ describe('createMaterialFromPreset — display glazing', () => {
 });
 
 describe('createMaterialFromPreset — textured built-ins', () => {
-  it('builds concrete, fabric, and glossy print presets', () => {
+  it('builds concrete, fabric, and paper presets', () => {
     for (const id of [
       'material-concrete',
       'material-concrete-porous',
       'material-fabric',
       'material-silk',
-      MATERIAL_GLOSSY_PRINT_ID,
+      MATERIAL_PAPER_ID,
       MATERIAL_PLASTIC_MATTE_ID,
     ]) {
       const material = createMaterialFromPreset(presetById(id));
@@ -155,14 +155,26 @@ describe('createMaterialFromPreset — textured built-ins', () => {
     expect(silk.normalScale).toBe(goldBrushed.normalScale);
   });
 
-  it('applies preset clearcoat on Print Glossy', () => {
-    const material = createMaterialFromPreset(
-      presetById(MATERIAL_GLOSSY_PRINT_ID),
-    ) as MeshPhysicalNodeMaterial;
+  it('applies glossy clearcoat on Paper at gloss 1', () => {
+    const material = createMaterialFromPreset(presetById(MATERIAL_PAPER_ID), {
+      gloss: 1,
+    }) as MeshPhysicalNodeMaterial;
 
     expect(material).toBeInstanceOf(MeshPhysicalNodeMaterial);
     expect(material.clearcoat).toBeCloseTo(0.35, 5);
     expect(material.clearcoatRoughness).toBeCloseTo(0.12, 5);
+  });
+
+  it('keeps matt Paper without clearcoat at gloss 0', () => {
+    const material = createMaterialFromPreset(presetById(MATERIAL_PAPER_ID), { gloss: 0 });
+    expect(material).not.toBeInstanceOf(MeshPhysicalNodeMaterial);
+  });
+
+  it('ignores gloss on non-Paper presets', () => {
+    const material = createMaterialFromPreset(presetById(MATERIAL_PLASTIC_MATTE_ID), {
+      gloss: 1,
+    });
+    expect(material).not.toBeInstanceOf(MeshPhysicalNodeMaterial);
   });
 
   it('applies preset clearcoat on polished metals', () => {

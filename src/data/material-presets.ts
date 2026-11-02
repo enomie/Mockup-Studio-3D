@@ -1,7 +1,11 @@
 import { isHandheldAssetKind } from '@/scene/asset-handheld';
 import { isMonitorAssetKind } from '@/scene/asset-monitor';
 import type { AssetKind } from '@/scene/entity-types';
-import type { AssetMaterialSlots, MaterialPreset } from '@/scene/material-types';
+import type {
+  AssetMaterialSlots,
+  MaterialEntitySlot,
+  MaterialPreset,
+} from '@/scene/material-types';
 import {
   MATERIAL_ALUMINUM_BRUSHED_ID,
   MATERIAL_CHROME_ID,
@@ -10,7 +14,6 @@ import {
   MATERIAL_GLASS_PANE_ID,
   MATERIAL_GLASS_SOLID_ID,
   MATERIAL_GLASS_WINE_BOTTLE_ID,
-  MATERIAL_GLOSSY_PRINT_ID,
   MATERIAL_GOLD_BRUSHED_ID,
   MATERIAL_GRID_LINES_ID,
   MATERIAL_GRID_PAPER_ID,
@@ -24,13 +27,15 @@ import {
   MATERIAL_WIREFRAME_ID,
   MATERIAL_WOOD_POROUS_ID,
   MATERIAL_ZEBRA_ANALYSIS_ID,
+  LEGACY_MATERIAL_GLOSSY_PRINT_ID,
   migrateMaterialId,
 } from '@/scene/material-ids';
+import { PAPER_GLOSS_GLOSSY } from '@/scene/paper-gloss';
 
 export const MATERIAL_PRESETS: MaterialPreset[] = [
   {
     id: MATERIAL_PAPER_ID,
-    name: 'Print Matt',
+    name: 'Paper',
     source: 'builtin',
     kind: 'textured',
     proceduralProfile: 'paper-grain',
@@ -66,21 +71,6 @@ export const MATERIAL_PRESETS: MaterialPreset[] = [
     roughness: 0.9,
     metalness: 0,
     tileScale: 1000,
-    seed: 0,
-  },
-  {
-    id: MATERIAL_GLOSSY_PRINT_ID,
-    name: 'Print Glossy',
-    source: 'builtin',
-    kind: 'textured',
-    proceduralProfile: 'coated-gloss',
-    color: { r: 0.95, g: 0.93, b: 0.91 },
-    roughness: 0.15,
-    metalness: 0,
-    clearcoat: 0.35,
-    clearcoatRoughness: 0.12,
-    normalScale: 0.5,
-    tileScale: 6,
     seed: 0,
   },
   {
@@ -370,7 +360,8 @@ function defaultBookMaterials(): AssetMaterialSlots {
 function defaultWallMaterials(): AssetMaterialSlots {
   return {
     wallMaterialId: MATERIAL_PAPER_ID,
-    frontMaterialId: MATERIAL_GLOSSY_PRINT_ID,
+    frontMaterialId: MATERIAL_PAPER_ID,
+    slotGloss: { frontMaterialId: PAPER_GLOSS_GLOSSY },
   };
 }
 
@@ -378,17 +369,22 @@ function defaultPictureMaterials(): AssetMaterialSlots {
   return {
     frameMaterialId: MATERIAL_GOLD_ID,
     backWallMaterialId: MATERIAL_PAPER_ID,
-    frontMaterialId: MATERIAL_GLOSSY_PRINT_ID,
+    frontMaterialId: MATERIAL_PAPER_ID,
     glazingMaterialId: MATERIAL_GLASS_PANE_ID,
+    slotGloss: { frontMaterialId: PAPER_GLOSS_GLOSSY },
   };
 }
 
 function defaultPrintMaterials(): AssetMaterialSlots {
   return {
-    frontMaterialId: MATERIAL_GLOSSY_PRINT_ID,
-    backMaterialId: MATERIAL_GLOSSY_PRINT_ID,
+    frontMaterialId: MATERIAL_PAPER_ID,
+    backMaterialId: MATERIAL_PAPER_ID,
     sideMaterialId: MATERIAL_PAPER_ID,
     faceTints: {},
+    slotGloss: {
+      frontMaterialId: PAPER_GLOSS_GLOSSY,
+      backMaterialId: PAPER_GLOSS_GLOSSY,
+    },
   };
 }
 
@@ -398,8 +394,9 @@ function defaultHandheldMaterials(): AssetMaterialSlots {
     sideButtonMaterialId: MATERIAL_ALUMINUM_BRUSHED_ID,
     backWallMaterialId: MATERIAL_CHROME_ID,
     backGlassMaterialId: MATERIAL_CHROME_ID,
-    frontMaterialId: MATERIAL_GLOSSY_PRINT_ID,
+    frontMaterialId: MATERIAL_PAPER_ID,
     glazingMaterialId: MATERIAL_GLASS_PANE_ID,
+    slotGloss: { frontMaterialId: PAPER_GLOSS_GLOSSY },
   };
 }
 
@@ -455,8 +452,9 @@ function defaultMonitorMaterials(): AssetMaterialSlots {
     backGlassMaterialId: MATERIAL_ALUMINUM_BRUSHED_ID,
     standBaseMaterialId: MATERIAL_ALUMINUM_BRUSHED_ID,
     standFootMaterialId: MATERIAL_ALUMINUM_BRUSHED_ID,
-    frontMaterialId: MATERIAL_GLOSSY_PRINT_ID,
+    frontMaterialId: MATERIAL_PAPER_ID,
     glazingMaterialId: MATERIAL_GLASS_PANE_ID,
+    slotGloss: { frontMaterialId: PAPER_GLOSS_GLOSSY },
   };
 }
 
@@ -510,6 +508,20 @@ export function cloneMaterialPreset(preset: MaterialPreset): MaterialPreset {
   };
 }
 
+/** Former Print Glossy in a slot → Paper with gloss 1 on that slot (stored gloss wins). */
+function migrateSlotGloss(
+  slots: AssetMaterialSlots,
+): AssetMaterialSlots['slotGloss'] {
+  let slotGloss = slots.slotGloss ? { ...slots.slotGloss } : undefined;
+  for (const [key, value] of Object.entries(slots)) {
+    if (value !== LEGACY_MATERIAL_GLOSSY_PRINT_ID) {continue;}
+    const slot = key as MaterialEntitySlot;
+    if (slotGloss?.[slot] !== undefined) {continue;}
+    slotGloss = { ...slotGloss, [slot]: PAPER_GLOSS_GLOSSY };
+  }
+  return slotGloss;
+}
+
 export function migrateMaterialSlots(slots: AssetMaterialSlots): AssetMaterialSlots {
   const migrateId = (id?: string) => (id ? migrateMaterialId(id) : id);
 
@@ -534,5 +546,6 @@ export function migrateMaterialSlots(slots: AssetMaterialSlots): AssetMaterialSl
     metalMaterialId: migrateId(slots.metalMaterialId),
     patchMaterialId: migrateId(slots.patchMaterialId),
     faceTints: slots.faceTints,
+    slotGloss: migrateSlotGloss(slots),
   };
 }

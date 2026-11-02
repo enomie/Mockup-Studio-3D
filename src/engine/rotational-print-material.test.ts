@@ -1,10 +1,10 @@
+import { applyPaperGloss } from '@/scene/paper-gloss';
 import { describe, expect, it } from 'vitest';
 import { MeshPhysicalNodeMaterial, MeshStandardNodeMaterial, Texture } from 'three/webgpu';
 import { MATERIAL_PRESETS } from '@/data/material-presets';
 import {
   MATERIAL_ALUMINUM_BRUSHED_ID,
   MATERIAL_GLASS_WINE_BOTTLE_ID,
-  MATERIAL_GLOSSY_PRINT_ID,
   MATERIAL_PAPER_ID,
   MATERIAL_PLASTIC_MATTE_ID,
 } from '@/scene/material-ids';
@@ -35,9 +35,9 @@ function build(baseId: string, finish: 'matt' | 'glossy', substrate: number) {
       baseMaterial,
       texture: new Texture(),
       fit: rotationalPrintFit('wrap-width', 0.2, 0.1, 2000, 1000),
-      surface: { ...DEFAULT_IMAGE_SURFACE, finish },
+      surface: { ...DEFAULT_IMAGE_SURFACE, gloss: finish === 'glossy' ? 1 : 0 },
       mattPreset: presetById(MATERIAL_PAPER_ID),
-      glossyPreset: presetById(MATERIAL_GLOSSY_PRINT_ID),
+      glossyPreset: applyPaperGloss(presetById(MATERIAL_PAPER_ID), 1),
       settings: { substrate, inkOpacity: 1, gloss: finish === 'glossy' ? 1 : 0 },
     }),
   };

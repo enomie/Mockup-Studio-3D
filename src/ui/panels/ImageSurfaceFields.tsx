@@ -3,7 +3,6 @@ import {
   imageSurfaceSupportsPassepartout,
   resolveImageSurfaceSettings,
   type AssetImageSurfaceId,
-  type ImageSurfaceFinish,
 } from '@/scene/image-surface';
 import {
   formatLengthMeters,
@@ -19,6 +18,7 @@ import {
   resolveRotationalPrintSettings,
 } from '@/scene/rotational-print';
 import { ColorPicker } from '@/ui/components/ColorPicker';
+import { FinishSlider } from '@/ui/components/FinishSlider';
 import { PanelAxisField } from '@/ui/components/PanelAxisField/PanelAxisField';
 import { PanelCheckbox } from '@/ui/components/PanelCheckbox';
 import { PanelSelect } from '@/ui/components/PanelSelect';
@@ -69,31 +69,6 @@ export function ImageSelect({
   );
 }
 
-function ImageFinishSelect({
-  id,
-  label,
-  value,
-  onChange,
-}: {
-  id: string;
-  label: string;
-  value: ImageSurfaceFinish;
-  onChange: (finish: ImageSurfaceFinish) => void;
-}) {
-  return (
-    <PanelSelect
-      label={label}
-      id={id}
-      value={value}
-      options={[
-        { value: 'matt', label: 'Matt' },
-        { value: 'glossy', label: 'Glossy' },
-      ]}
-      onChange={(next) => { onChange(next as ImageSurfaceFinish); }}
-    />
-  );
-}
-
 export function ImageSurfaceFields({
   entityId,
   faceId,
@@ -132,31 +107,15 @@ export function ImageSurfaceFields({
         />
       ) : null}
 
-      {printSettings ? null : (
-        <ImageFinishSelect
-          id={`${entityId}-${faceId}-finish`}
-          label="Finish"
-          value={surface.finish}
-          onChange={(finish) => {
-            setImageSurface(entityId, faceId, { finish });
-          }}
-        />
-      )}
+      <FinishSlider
+        value={surface.gloss}
+        onChange={(gloss) => {
+          setImageSurface(entityId, faceId, { gloss });
+        }}
+      />
 
       {printSettings ? (
         <>
-          <RangeSlider
-            label="Finish (Matt ↔ Glossy)"
-            min={0}
-            max={1}
-            step={NORMALIZED_STEP}
-            value={printSettings.gloss}
-            valueInputLabel="Gloss"
-            valueInputDecimals={NORMALIZED_DECIMALS}
-            onChange={(value) => {
-              setImageSurface(entityId, faceId, { gloss: value });
-            }}
-          />
           <RangeSlider
             label="Substrate (Paper ↔ Direct)"
             min={0}
@@ -231,12 +190,10 @@ export function ImageSurfaceFields({
             }}
           />
 
-          <ImageFinishSelect
-            id={`${entityId}-${faceId}-passepartout-finish`}
-            label="Finish"
-            value={surface.passepartoutFinish}
-            onChange={(finish) => {
-              setImageSurface(entityId, faceId, { passepartoutFinish: finish });
+          <FinishSlider
+            value={surface.passepartoutGloss}
+            onChange={(passepartoutGloss) => {
+              setImageSurface(entityId, faceId, { passepartoutGloss });
             }}
           />
         </SubPanelSection>

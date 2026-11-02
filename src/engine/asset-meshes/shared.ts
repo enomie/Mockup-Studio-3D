@@ -1,11 +1,13 @@
 import type { Material } from 'three/webgpu';
 import type { AssetFaceId, AssetFaces } from '@/scene/asset-faces';
 import type { Rgb } from '@/colors/rgb';
-import { TINT_NEUTRAL, type AssetMaterialSlots } from '@/scene/material-types';
 import {
-  MATERIAL_GLOSSY_PRINT_ID,
-  MATERIAL_PAPER_ID,
-} from '@/scene/material-ids';
+  TINT_NEUTRAL,
+  type AssetMaterialSlots,
+  type MaterialEntitySlot,
+} from '@/scene/material-types';
+import { MATERIAL_PAPER_ID } from '@/scene/material-ids';
+import { resolveSlotGloss } from '@/scene/paper-gloss';
 import {
   createSolidPbrMaterial,
   type MaterialResolveOptions,
@@ -26,17 +28,17 @@ export const GLAZING_IMAGE_GAP = 0.001;
 
 const SIDE_FACE_IDS: AssetFaceId[] = ['left', 'right', 'top', 'bottom'];
 
+export function faceMaterialSlot(faceId: AssetFaceId): MaterialEntitySlot {
+  if (faceId === 'front') {return 'frontMaterialId';}
+  if (faceId === 'back') {return 'backMaterialId';}
+  return 'sideMaterialId';
+}
+
 export function resolveMaterialId(
   faceId: AssetFaceId,
   materials: AssetMaterialSlots,
 ): string {
-  if (faceId === 'front') {
-    return materials.frontMaterialId ?? MATERIAL_GLOSSY_PRINT_ID;
-  }
-  if (faceId === 'back') {
-    return materials.backMaterialId ?? MATERIAL_GLOSSY_PRINT_ID;
-  }
-  return materials.sideMaterialId ?? MATERIAL_PAPER_ID;
+  return materials[faceMaterialSlot(faceId)] ?? MATERIAL_PAPER_ID;
 }
 
 export function resolveMeshMaterial(
@@ -57,6 +59,20 @@ export function resolveMeshMaterial(
       metalness: 0,
     })
   );
+}
+
+/** Mesh material for a slot; passes the slot's finish (gloss) for Paper. */
+export function resolveSlotMeshMaterial(
+  resolver: MaterialResolver,
+  materials: AssetMaterialSlots,
+  slot: MaterialEntitySlot,
+  fallbackMaterialId: string,
+  options: MaterialResolveOptions = {},
+): Material {
+  return resolveMeshMaterial(resolver, materials[slot] ?? fallbackMaterialId, {
+    ...options,
+    gloss: resolveSlotGloss(materials, slot),
+  });
 }
 
 export function resolveFaceTint(

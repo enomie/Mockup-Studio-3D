@@ -1,5 +1,7 @@
 import type { Material } from 'three/webgpu';
-import { finishToMaterialId, resolveImageSurfaceSettings } from '@/scene/image-surface';
+import { resolveImageSurfaceSettings } from '@/scene/image-surface';
+import { MATERIAL_PAPER_ID } from '@/scene/material-ids';
+import { applyPaperGloss, PAPER_GLOSS_GLOSSY, PAPER_GLOSS_MATT } from '@/scene/paper-gloss';
 import {
   resolveRotationalPrintSettings,
   type RotationalPrintAssetKind,
@@ -50,6 +52,7 @@ export function resolveRotationalPrintBodyMaterial(
   const surface = resolveImageSurfaceSettings(context.imageSurfaces, 'label', {
     assetKind: input.assetKind,
   });
+  const paperPreset = resolver.resolvePreset(MATERIAL_PAPER_ID);
   return createRotationalPrintMaterial({
     baseMaterial,
     texture: tex,
@@ -61,8 +64,8 @@ export function resolveRotationalPrintBodyMaterial(
       context.imageHeight,
     ),
     surface,
-    mattPreset: resolver.resolvePreset(finishToMaterialId('matt')),
-    glossyPreset: resolver.resolvePreset(finishToMaterialId('glossy')),
+    mattPreset: paperPreset ? applyPaperGloss(paperPreset, PAPER_GLOSS_MATT) : null,
+    glossyPreset: paperPreset ? applyPaperGloss(paperPreset, PAPER_GLOSS_GLOSSY) : null,
     settings: resolveRotationalPrintSettings(surface, input.assetKind),
   });
 }

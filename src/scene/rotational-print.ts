@@ -33,16 +33,16 @@ export function defaultRotationalPrintSettings(
   return { substrate: DEFAULT_SUBSTRATE[assetKind], inkOpacity: 1, gloss: 1 };
 }
 
-/** Stored values from the label surface, falling back to the asset defaults. Gloss falls back to `finish`. */
+/** Stored values from the label surface, falling back to the asset defaults. */
 export function resolveRotationalPrintSettings(
-  surface: Pick<ImageSurfaceSettings, 'substrate' | 'inkOpacity' | 'gloss' | 'finish'>,
+  surface: Pick<ImageSurfaceSettings, 'substrate' | 'inkOpacity' | 'gloss'>,
   assetKind: RotationalPrintAssetKind,
 ): RotationalPrintSettings {
   const defaults = defaultRotationalPrintSettings(assetKind);
   return {
     substrate: surface.substrate ?? defaults.substrate,
     inkOpacity: surface.inkOpacity ?? defaults.inkOpacity,
-    gloss: surface.gloss ?? (surface.finish === 'matt' ? 0 : 1),
+    gloss: surface.gloss,
   };
 }
 

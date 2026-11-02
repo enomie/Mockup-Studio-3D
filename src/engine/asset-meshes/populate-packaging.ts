@@ -1,4 +1,5 @@
 import type { Group } from 'three/webgpu';
+import { resolveSlotGloss } from '@/scene/paper-gloss';
 import {
   defaultBeverageCanParams,
 } from '@/scene/asset-beverage-can';
@@ -64,6 +65,7 @@ export async function populateBeverageCanGroup(
   });
   if (!bodyMetalMaterial) {return;}
   const topRingMetalMaterial = resolveMeshMaterial(resolver, metalMaterialId, {
+    gloss: resolveSlotGloss(context.materials, 'metalMaterialId'),
     surfaceRole: 'frame',
     grainAlongU: false,
   });
@@ -94,7 +96,11 @@ export function populateTinCanGroup(
   const bodyMetalMaterial = resolveRotationalPrintBodyMaterial(context, {
     assetKind: 'tin-can',
     bodyMaterialId: context.materials?.metalMaterialId ?? MATERIAL_ALUMINUM_BRUSHED_ID,
-    bodyOptions: { surfaceRole: 'frame', grainAlongU: true },
+    bodyOptions: {
+      surfaceRole: 'frame',
+      grainAlongU: true,
+      gloss: resolveSlotGloss(context.materials, 'metalMaterialId'),
+    },
     layout: 'wrap-width',
     planeW: coverPlane.planeW,
     planeH: coverPlane.planeH,
@@ -148,16 +154,17 @@ export async function populateWineBottleGroup(
   const corkMaterial = resolveMeshMaterial(
     resolver,
     materials.corkMaterialId ?? MATERIAL_WOOD_POROUS_ID,
-  );
+  { gloss: resolveSlotGloss(materials, 'corkMaterialId') },
+);
   const foilMaterial = resolveMeshMaterial(
     resolver,
     materials.capsuleFoilMaterialId ?? MATERIAL_GOLD_BRUSHED_ID,
-    { surfaceRole: 'frame', grainAlongU: true },
+    { surfaceRole: 'frame', grainAlongU: true, gloss: resolveSlotGloss(materials, 'capsuleFoilMaterialId') },
   );
   const discMaterial = resolveMeshMaterial(
     resolver,
     materials.capsuleDiscMaterialId ?? MATERIAL_GOLD_BRUSHED_ID,
-    { surfaceRole: 'frame', grainAlongU: false },
+    { surfaceRole: 'frame', grainAlongU: false, gloss: resolveSlotGloss(materials, 'capsuleDiscMaterialId') },
   );
 
   const meshes = await buildWineBottleMeshes({
@@ -194,16 +201,19 @@ export async function populatePenGroup(
   const capMaterial = resolveMeshMaterial(
     resolver,
     materials.capMaterialId ?? MATERIAL_PLASTIC_MATTE_ID,
-  );
+  { gloss: resolveSlotGloss(materials, 'capMaterialId') },
+);
   const ringMaterial = resolveMeshMaterial(
     resolver,
     materials.ringMaterialId ?? MATERIAL_ALUMINUM_BRUSHED_ID,
-  );
+  { gloss: resolveSlotGloss(materials, 'ringMaterialId') },
+);
   const profiles = await loadPenLatheProfiles(params.penBodyProfile, sizeScale);
   const coverPlane = penBodyCoverPlaneFromProfiles(profiles);
   const bodyMaterial = resolveRotationalPrintBodyMaterial(context, {
     assetKind: 'pen',
     bodyMaterialId: materials.bodyMaterialId ?? MATERIAL_PLASTIC_SMOOTH_ID,
+    bodyOptions: { gloss: resolveSlotGloss(materials, 'bodyMaterialId') },
     layout: 'wrap-height',
     planeW: coverPlane.planeW,
     planeH: coverPlane.planeH,

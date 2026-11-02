@@ -1,7 +1,7 @@
 import type { Rgb } from '@/colors/rgb';
 import { TINT_NEUTRAL, type AssetMaterialSlots } from './material-types';
 
-/** Default pages tint — matches Print Matt paper preset base. */
+/** Default pages tint — matches Paper preset base. */
 export const DEFAULT_BOOK_PAGES_TINT: Rgb = { r: 0.96, g: 0.95, b: 0.92 };
 
 export const DEFAULT_BOOK_COVER_TINT: Rgb = TINT_NEUTRAL;

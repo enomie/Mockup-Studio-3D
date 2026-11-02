@@ -231,6 +231,11 @@ export interface SceneApi {
     slot: MaterialEntitySlot,
     materialId: string,
   ): void;
+  setEntityMaterialGloss(
+    entityId: string,
+    slot: MaterialEntitySlot,
+    gloss: number,
+  ): void;
   setFaceTint(entityId: string, faceId: AssetFaceId, tint: Rgb): void;
   setImageSurface(
     entityId: string,

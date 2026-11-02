@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import {
   MATERIAL_GRID_LINES_ID,
   MATERIAL_GRID_PAPER_ID,
-  MATERIAL_GLOSSY_PRINT_ID,
   MATERIAL_PAPER_ID,
 } from '@/scene/material-ids';
 import { DEFAULT_TILE_SCALE_GRID_PAPER } from './procedural-types';
@@ -80,7 +79,7 @@ describe('proceduralParamsFromPreset — surfaceRole', () => {
     expect(params.samplingSpace).toBe('uv');
   });
 
-  it('keeps planar-meters for Print Matt on frame', () => {
+  it('keeps planar-meters for Paper on frame', () => {
     const preset = presetById(MATERIAL_PAPER_ID);
     const params = proceduralParamsFromPreset(preset, undefined, { surfaceRole: 'frame' });
     expect(params.samplingSpace).toBe('planar-meters');
@@ -107,11 +106,4 @@ describe('proceduralParamsFromPreset — surfaceRole', () => {
     expect(params.samplingSpace).toBe('triplanar-meters');
   });
 
-  it('textured glossy print uses coated-gloss profile', () => {
-    const preset = presetById(MATERIAL_GLOSSY_PRINT_ID);
-    expect(preset.kind).toBe('textured');
-    expect(preset.proceduralProfile).toBe('coated-gloss');
-    const params = proceduralParamsFromPreset(preset);
-    expect(params.samplingSpace).toBe('meter-3d');
-  });
 });

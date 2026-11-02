@@ -2,26 +2,33 @@ import type { Rgb } from '@/colors/rgb';
 import type { AssetFaceId, AssetFaces } from './asset-faces';
 import type { AssetKind } from './asset-kind';
 import {
-  MATERIAL_GLOSSY_PRINT_ID,
+  LEGACY_MATERIAL_GLOSSY_PRINT_ID,
   MATERIAL_PAPER_ID,
 } from './material-ids';
-import type { AssetMaterialSlots } from './material-types';
+import type { AssetMaterialSlots, MaterialEntitySlot } from './material-types';
+import { clampGloss, PAPER_GLOSS_GLOSSY, PAPER_GLOSS_MATT } from './paper-gloss';
 
-export type ImageSurfaceFinish = 'matt' | 'glossy';
+/** Load migration only: finish before the gloss slider. */
+type LegacyImageSurfaceFinish = 'matt' | 'glossy';
+
+interface LegacyImageSurfaceFields {
+  finish?: LegacyImageSurfaceFinish;
+  passepartoutFinish?: LegacyImageSurfaceFinish;
+}
 
 export interface ImageSurfaceSettings {
-  finish: ImageSurfaceFinish;
+  /** Image finish on Paper: 0 = matt, 1 = glossy. */
+  gloss: number;
   emissiveEnabled: boolean;
   emissiveIntensity: number;
   passepartoutColor: Rgb;
   passepartoutOffsetM: number;
-  passepartoutFinish: ImageSurfaceFinish;
+  /** Passepartout finish on Paper: 0 = matt, 1 = glossy. */
+  passepartoutGloss: number;
   /** Rotational assets only: 0 = paper label, 1 = direct print. Unset → per-asset default. */
   substrate?: number;
   /** Rotational assets only: scales the image alpha. Unset → 1. */
   inkOpacity?: number;
-  /** Rotational assets only: 0 = matt, 1 = glossy lacquer. Unset → from `finish`. */
-  gloss?: number;
 }
 
 interface ImageSurfaceMigrationInput {
@@ -64,12 +71,12 @@ export function computePassepartoutInnerBounds(
 }
 
 export const DEFAULT_IMAGE_SURFACE: ImageSurfaceSettings = {
-  finish: 'glossy',
+  gloss: PAPER_GLOSS_GLOSSY,
   emissiveEnabled: false,
   emissiveIntensity: 0,
   passepartoutColor: PASSEPARTOUT_COLOR_WHITE,
   passepartoutOffsetM: 0,
-  passepartoutFinish: 'matt',
+  passepartoutGloss: PAPER_GLOSS_MATT,
 };
 
 export function imageSurfaceSupportsPassepartout(assetKind: AssetKind): boolean {
@@ -93,8 +100,12 @@ function defaultPassepartoutColor(assetKind: AssetKind): Rgb {
   return PASSEPARTOUT_COLOR_WHITE;
 }
 
-export function finishToMaterialId(finish: ImageSurfaceFinish): string {
-  return finish === 'matt' ? MATERIAL_PAPER_ID : MATERIAL_GLOSSY_PRINT_ID;
+function legacyFinishToGloss(
+  finish: LegacyImageSurfaceFinish | undefined,
+): number | undefined {
+  if (finish === 'matt') {return PAPER_GLOSS_MATT;}
+  if (finish === 'glossy') {return PAPER_GLOSS_GLOSSY;}
+  return undefined;
 }
 
 export function clampPassepartoutOffsetM(
@@ -134,9 +145,19 @@ export function resolveImageSurfaceSettings(
     };
   }
 
+  const { finish, passepartoutFinish, ...rest } =
+    stored as Partial<ImageSurfaceSettings> & LegacyImageSurfaceFields;
+  const gloss = rest.gloss ?? legacyFinishToGloss(finish) ?? DEFAULT_IMAGE_SURFACE.gloss;
+  const passepartoutGloss =
+    rest.passepartoutGloss ??
+    legacyFinishToGloss(passepartoutFinish) ??
+    DEFAULT_IMAGE_SURFACE.passepartoutGloss;
+
   return {
     ...DEFAULT_IMAGE_SURFACE,
-    ...stored,
+    ...rest,
+    gloss: clampGloss(gloss),
+    passepartoutGloss: clampGloss(passepartoutGloss),
     passepartoutColor: { ...stored.passepartoutColor },
   };
 }
@@ -154,9 +175,15 @@ function cloneImageSurfaces(
   );
 }
 
-function finishFromMaterialId(materialId: string): ImageSurfaceFinish | null {
-  if (materialId === MATERIAL_PAPER_ID) {return 'matt';}
-  if (materialId === MATERIAL_GLOSSY_PRINT_ID) {return 'glossy';}
+function glossFromMaterialSlot(
+  materials: AssetMaterialSlots,
+  slot: MaterialEntitySlot,
+): number | null {
+  const materialId = materials[slot];
+  if (materialId === LEGACY_MATERIAL_GLOSSY_PRINT_ID) {return PAPER_GLOSS_GLOSSY;}
+  if (materialId === MATERIAL_PAPER_ID) {
+    return materials.slotGloss?.[slot] ?? PAPER_GLOSS_MATT;
+  }
   return null;
 }
 
@@ -195,21 +222,21 @@ export function migrateImageSurfaces(
 
   const migrateFaceFromSlot = (
     faceId: AssetFaceId,
-    slotId: string | undefined,
+    slot: MaterialEntitySlot,
   ) => {
-    if (migrated[faceId] || !faceHasImage(entity, faceId) || !slotId) {return;}
-    const finish = finishFromMaterialId(slotId);
-    if (!finish) {return;}
+    if (migrated[faceId] || !faceHasImage(entity, faceId)) {return;}
+    const gloss = glossFromMaterialSlot(materials, slot);
+    if (gloss === null) {return;}
     migrated[faceId] = {
       ...resolveImageSurfaceSettings(undefined, faceId, {
         assetKind: entity.assetKind,
       }),
-      finish,
+      gloss,
     };
   };
 
-  migrateFaceFromSlot('front', materials.frontMaterialId);
-  migrateFaceFromSlot('back', materials.backMaterialId);
+  migrateFaceFromSlot('front', 'frontMaterialId');
+  migrateFaceFromSlot('back', 'backMaterialId');
 
   return Object.keys(migrated).length > 0 ? migrated : undefined;
 }

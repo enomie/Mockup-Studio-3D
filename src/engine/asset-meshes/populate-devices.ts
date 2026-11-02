@@ -1,4 +1,5 @@
 import { Group, Mesh, type Material, type Texture } from 'three/webgpu';
+import { resolveSlotGloss } from '@/scene/paper-gloss';
 import {
   bezelWidthM,
   outerEdgeRadiusM,
@@ -159,7 +160,7 @@ function buildHandheldDisplayMeshes(
     outerEdgeRadius,
   );
 
-  const frameMaterial = resolveMeshMaterial(resolver, frameMaterialId, {
+  const frameMaterial = resolveMeshMaterial(resolver, frameMaterialId, { gloss: resolveSlotGloss(materials, 'frameMaterialId'),
     meshDepthM: bodyDepth,
     surfaceRole: 'frame',
     grainAlongU: true,
@@ -191,7 +192,7 @@ function buildHandheldDisplayMeshes(
   const outerBackGlassMaterial = resolveMeshMaterial(
     resolver,
     backGlassMaterialId,
-    { meshDepthM: outerBackThickness },
+    { gloss: resolveSlotGloss(materials, 'backGlassMaterialId'), meshDepthM: outerBackThickness },
   );
   const outerBackGlassGeometry = createHandheldBackPlateGeometry(
     stack.outerBackGlass.width,
@@ -204,7 +205,7 @@ function buildHandheldDisplayMeshes(
   outerBackGlass.userData.assetMeshRole = 'outerBackPlate';
   outerBackGlass.renderOrder = 0;
 
-  const innerBackMaterial = resolveMeshMaterial(resolver, innerBackMaterialId);
+  const innerBackMaterial = resolveMeshMaterial(resolver, innerBackMaterialId, { gloss: resolveSlotGloss(materials, 'backWallMaterialId') });
   const innerBackThickness = layerThickness(stack.innerBack);
   const innerBackGeometry = createHandheldBackPlateGeometry(
     stack.innerBack.width,
@@ -262,7 +263,7 @@ function buildHandheldDisplayMeshes(
     const sideButtonMaterial = resolveMeshMaterial(
       resolver,
       sideButtonMaterialId,
-      {
+      { gloss: resolveSlotGloss(materials, 'sideButtonMaterialId'),
         meshDepthM: (SIDE_BUTTON_INSET_MM + SIDE_BUTTON_PROUD_MM) * mm,
         surfaceRole: 'frame',
         grainAlongU: true,
@@ -356,7 +357,7 @@ export function addMonitor(
       baseHeightM,
       baseCornerM,
     );
-    const baseMaterial = resolveMeshMaterial(resolver, standBaseMaterialId, {
+    const baseMaterial = resolveMeshMaterial(resolver, standBaseMaterialId, { gloss: resolveSlotGloss(materials, 'standBaseMaterialId'),
       meshDepthM: baseHeightM,
       surfaceRole: 'frame',
       grainAlongU: true,
@@ -373,7 +374,7 @@ export function addMonitor(
       footDepthM,
       footHeightM,
     );
-    const footMaterial = resolveMeshMaterial(resolver, standFootMaterialId, {
+    const footMaterial = resolveMeshMaterial(resolver, standFootMaterialId, { gloss: resolveSlotGloss(materials, 'standFootMaterialId'),
       meshDepthM: footDepthM,
       surfaceRole: 'frame',
       grainAlongU: true,

@@ -789,6 +789,18 @@ export class AssetSystem {
     await rebuildEntity(this.rebuildCtx, entityId);
   }
 
+  async setEntityMaterialGloss(
+    entityId: string,
+    slot: MaterialEntitySlot,
+    gloss: number,
+  ): Promise<void> {
+    const runtime = this.registry.getRuntime(entityId);
+    if (!runtime) {return;}
+
+    this.registry.setEntityMaterialGloss(entityId, slot, gloss);
+    await rebuildEntity(this.rebuildCtx, entityId);
+  }
+
   async setFaceTint(
     entityId: string,
     faceId: AssetFaceId,

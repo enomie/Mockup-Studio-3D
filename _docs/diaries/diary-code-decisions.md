@@ -1631,3 +1631,8 @@ Aktueller Stand → [`requirements-profiles.md`](../requirements/requirements-pr
 - **Entscheidung:** Vite Port **4040**; Dev-Server startet **User**, Agent **nie** `npm run dev`.
 - **Grund:** HMR läuft dauerhaft; Agent soll Server nicht doppelt starten.
 - **Update 2026-10-30 — Ausnahme Cloud-Sessions:** In einer Cloud-Session (eigener Container, nicht Johanns Rechner) darf der Agent für Test-Renders und Browser-Checks einen eigenen Vite-Server starten — auf einem **anderen Port** als 4040, und danach wieder beenden. Lokal gilt die Regel unverändert.
+
+### 2026-11-02 — Paper mit Finish-Schieberegler statt Print Matt / Print Glossy
+- **Entscheidung:** „Print Matt“ und „Print Glossy“ sind zu **einem Material „Paper“** zusammengelegt. Matt ↔ Glossy ist ein stufenloser Regler (0–1), gespeichert **pro Fläche/Slot** (`ImageSurfaceSettings.gloss` / `passepartoutGloss`, `AssetMaterialSlots.slotGloss`). Der Regler erscheint überall, wo Paper gewählt ist; das Matt/Glossy-Dropdown ist entfernt.
+- **Regel:** Material-Varianten, die sich nur in einer Eigenschaft unterscheiden, werden **ein** Material mit Schieberegler — keine Dropdowns, keine Preset-Duplikate.
+- **Migration:** `material-glossy-print` → `material-paper` + Gloss 1 am Slot; `finish`/`passepartoutFinish` → 0/1. Details: `_docs/plans/plan-finish-slider.md`.

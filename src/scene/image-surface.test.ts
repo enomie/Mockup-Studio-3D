@@ -1,26 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import {
-  MATERIAL_GLOSSY_PRINT_ID,
+  LEGACY_MATERIAL_GLOSSY_PRINT_ID,
   MATERIAL_PAPER_ID,
 } from './material-ids';
 import {
   clampPassepartoutOffsetM,
   computePassepartoutInnerBounds,
   DEFAULT_IMAGE_SURFACE,
-  finishToMaterialId,
   imageSurfaceSupportsPassepartout,
   migrateImageSurfaces,
   PASSEPARTOUT_COLOR_BLACK,
   PASSEPARTOUT_COLOR_WHITE,
   resolveImageSurfaceSettings,
+  type ImageSurfaceSettings,
 } from './image-surface';
-
-describe('finishToMaterialId', () => {
-  it('maps matt and glossy to print presets', () => {
-    expect(finishToMaterialId('matt')).toBe(MATERIAL_PAPER_ID);
-    expect(finishToMaterialId('glossy')).toBe(MATERIAL_GLOSSY_PRINT_ID);
-  });
-});
 
 describe('imageSurfaceSupportsPassepartout', () => {
   it('is enabled for mockup screen assets only', () => {
@@ -82,25 +75,56 @@ describe('resolveImageSurfaceSettings', () => {
       resolveImageSurfaceSettings(
         {
           front: {
-            finish: 'matt',
+            gloss: 0.25,
             emissiveEnabled: true,
             emissiveIntensity: 0.5,
             passepartoutColor: PASSEPARTOUT_COLOR_BLACK,
             passepartoutOffsetM: 0.01,
-            passepartoutFinish: 'glossy',
+            passepartoutGloss: 0.75,
           },
         },
         'front',
         { assetKind: 'picture' },
       ),
     ).toEqual({
-      finish: 'matt',
+      gloss: 0.25,
       emissiveEnabled: true,
       emissiveIntensity: 0.5,
       passepartoutColor: PASSEPARTOUT_COLOR_BLACK,
       passepartoutOffsetM: 0.01,
-      passepartoutFinish: 'glossy',
+      passepartoutGloss: 0.75,
     });
+  });
+
+  it('migrates legacy matt/glossy finish to gloss values', () => {
+    const legacy = {
+      finish: 'matt',
+      emissiveEnabled: false,
+      emissiveIntensity: 0,
+      passepartoutColor: PASSEPARTOUT_COLOR_WHITE,
+      passepartoutOffsetM: 0,
+      passepartoutFinish: 'glossy',
+    } as unknown as ImageSurfaceSettings;
+    const resolved = resolveImageSurfaceSettings({ front: legacy }, 'front');
+    expect(resolved.gloss).toBe(0);
+    expect(resolved.passepartoutGloss).toBe(1);
+    expect(resolved).not.toHaveProperty('finish');
+    expect(resolved).not.toHaveProperty('passepartoutFinish');
+  });
+
+  it('prefers a stored gloss over the legacy finish', () => {
+    const stored = {
+      ...DEFAULT_IMAGE_SURFACE,
+      finish: 'matt',
+      gloss: 0.6,
+    } as unknown as ImageSurfaceSettings;
+    expect(resolveImageSurfaceSettings({ front: stored }, 'front').gloss).toBeCloseTo(0.6, 6);
+  });
+
+  it('defaults to a glossy image and a matt passepartout', () => {
+    const resolved = resolveImageSurfaceSettings(undefined, 'front');
+    expect(resolved.gloss).toBe(1);
+    expect(resolved.passepartoutGloss).toBe(0);
   });
 });
 
@@ -116,7 +140,7 @@ describe('migrateImageSurfaces', () => {
       ...resolveImageSurfaceSettings(undefined, 'front', {
         assetKind: 'picture',
       }),
-      finish: 'matt',
+      gloss: 0,
     });
   });
 
@@ -133,12 +157,25 @@ describe('migrateImageSurfaces', () => {
         bottom: { mode: 'color', color: { r: 1, g: 1, b: 1 } },
       },
       materials: {
-        frontMaterialId: MATERIAL_GLOSSY_PRINT_ID,
+        frontMaterialId: LEGACY_MATERIAL_GLOSSY_PRINT_ID,
         backMaterialId: MATERIAL_PAPER_ID,
       },
     });
 
-    expect(migrated?.front?.finish).toBe('glossy');
-    expect(migrated?.back?.finish).toBe('matt');
+    expect(migrated?.front?.gloss).toBe(1);
+    expect(migrated?.back?.gloss).toBe(0);
+  });
+
+  it('reads slot gloss from already migrated Paper slots', () => {
+    const migrated = migrateImageSurfaces({
+      assetKind: 'picture',
+      screenImageId: null,
+      materials: {
+        frontMaterialId: MATERIAL_PAPER_ID,
+        slotGloss: { frontMaterialId: 1 },
+      },
+    });
+
+    expect(migrated?.front?.gloss).toBe(1);
   });
 });

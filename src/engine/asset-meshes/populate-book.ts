@@ -10,6 +10,7 @@ import type { AssetKind } from '@/scene/asset-kind';
 import { bookCoverTint, bookPagesTint } from '@/scene/book-material-tints';
 import type { AssetMaterialSlots } from '@/scene/material-types';
 import { MATERIAL_PAPER_ID } from '@/scene/material-ids';
+import { resolveSlotGloss } from '@/scene/paper-gloss';
 import type { MaterialResolver } from '@/engine/material-resolver';
 import { resolveMeshMaterial } from './shared';
 
@@ -43,7 +44,9 @@ export function addBook(
   const coverMaterialId = materials.bookCoverMaterialId ?? MATERIAL_PAPER_ID;
   const pagesTint = bookPagesTint(materials);
   const coverTint = bookCoverTint(materials);
-  const resolvePreset = (id: string) => resolver.resolvePreset(id);
+  const pagesResolver = resolver.withGloss(resolveSlotGloss(materials, 'bookPagesMaterialId'));
+  const coverResolver = resolver.withGloss(resolveSlotGloss(materials, 'bookCoverMaterialId'));
+  const resolvePreset = (id: string) => coverResolver.resolvePreset(id);
 
   for (const part of layout.parts) {
     const geometry = new BoxGeometry(part.sizeX, part.sizeY, part.sizeZ);
@@ -51,14 +54,14 @@ export function addBook(
 
     switch (part.role) {
       case 'bookPages':
-        material = resolveMeshMaterial(resolver, pagesMaterialId, {
+        material = resolveMeshMaterial(pagesResolver, pagesMaterialId, {
           tint: pagesTint,
         });
         break;
       case 'bookSpine':
         material = createBookSpineMaterial(
           resolvePreset,
-          resolver,
+          coverResolver,
           coverMaterialId,
           textures.spine,
           part.sizeZ,
@@ -72,7 +75,7 @@ export function addBook(
       case 'bookFrontCover':
         material = textures.front
           ? createBookCoverBoxMaterials(
-              resolver,
+              coverResolver,
               resolvePreset,
               'bookFrontCover',
               coverMaterialId,
@@ -87,7 +90,7 @@ export function addBook(
               textures.frontMeta?.name,
             )
           : createBookSolidCoverMaterial(
-              resolver,
+              coverResolver,
               coverMaterialId,
               part.sizeX,
               bookParams,
@@ -98,7 +101,7 @@ export function addBook(
       case 'bookBackCover':
         material = textures.back
           ? createBookCoverBoxMaterials(
-              resolver,
+              coverResolver,
               resolvePreset,
               'bookBackCover',
               coverMaterialId,
@@ -113,7 +116,7 @@ export function addBook(
               textures.backMeta?.name,
             )
           : createBookSolidCoverMaterial(
-              resolver,
+              coverResolver,
               coverMaterialId,
               part.sizeX,
               bookParams,
@@ -122,7 +125,7 @@ export function addBook(
             );
         break;
       default:
-        material = resolveMeshMaterial(resolver, coverMaterialId);
+        material = resolveMeshMaterial(coverResolver, coverMaterialId);
     }
 
     const mesh = new Mesh(geometry, material);

@@ -4,7 +4,7 @@ import { MATERIAL_PAPER_ID } from './material-ids';
 import { normalizeGroundSettings } from './ground-settings';
 
 describe('normalizeGroundSettings', () => {
-  it('defaults to Print Matt when materialId is missing', () => {
+  it('defaults to Paper when materialId is missing', () => {
     const legacy = {
       visible: true,
       color: { r: 0.79, g: 0.66, b: 0.49 },

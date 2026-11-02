@@ -1,4 +1,5 @@
 import type { AssetKind } from '@/scene/asset-kind';
+import { resolveSlotGloss } from '@/scene/paper-gloss';
 import type { Group, Texture } from 'three/webgpu';
 import { defaultHandheldParams } from '@/scene/asset-handheld';
 import {
@@ -313,7 +314,9 @@ function rebuildExtrusion(ctx: AssetRebuildContext, root: Group, entity: AssetEn
     .filter((path) => isGeometryVisible(visibility, `path${path.slot}` as AssetGeometryPart))
     .map((path) => ({
       path,
-      material: resolveMeshMaterial(ctx.materialResolver, bodyMaterialId(path.slot)),
+      material: resolveMeshMaterial(ctx.materialResolver, bodyMaterialId(path.slot), {
+        gloss: resolveSlotGloss(materials, `pathMaterial${path.slot}Id` as 'pathMaterial0Id'),
+      }),
       holes: entry.paths
         .filter((hole) => {
           const role = roles.get(hole.id);

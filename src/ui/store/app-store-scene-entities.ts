@@ -73,6 +73,16 @@ export function setEntityMaterial(
 }
 
 
+/** Finish slider (0 = matt, 1 = glossy) for a slot holding Paper. */
+export function setEntityMaterialGloss(
+  entityId: string,
+  slot: MaterialEntitySlot,
+  gloss: number,
+): void {
+  store.sceneApi?.setEntityMaterialGloss(entityId, slot, gloss);
+}
+
+
 export function setFaceTint(
   entityId: string,
   faceId: AssetFaceId,

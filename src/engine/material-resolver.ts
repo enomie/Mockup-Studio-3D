@@ -25,7 +25,8 @@ import {
   imageFormatMayHaveAlpha,
   resolveImageFileName,
 } from './image-surface-alpha';
-import { finishToMaterialId, type ImageSurfaceSettings } from '@/scene/image-surface';
+import type { ImageSurfaceSettings } from '@/scene/image-surface';
+import { applyPaperGloss } from '@/scene/paper-gloss';
 import { multiplyRgb, type Rgb } from '@/colors/rgb';
 import { createAnalysisMaterial } from '@/materials/analysis/analysis-material';
 import { createTexturedMaterial } from '@/materials/procedural';
@@ -33,6 +34,7 @@ import type { ProceduralSurfaceRole } from '@/materials/procedural/procedural-pa
 import { applyGlassSurfaceToPhysicalMaterial } from '@/materials/procedural/glass-surface';
 import {
   MATERIAL_GLASS_WINE_BOTTLE_ID,
+  MATERIAL_PAPER_ID,
   MATERIAL_PLASTIC_MATTE_ID,
   migrateMaterialId,
 } from '@/scene/material-ids';
@@ -69,6 +71,8 @@ export interface MaterialResolveOptions {
     | 'displayGlass'
     | 'handheldGlazing'
     | 'wallpaper';
+  /** Finish slider (0 = matt, 1 = glossy); only applied to the Paper preset. */
+  gloss?: number;
 }
 
 function rgbToColor(rgb: Rgb): Color {
@@ -193,9 +197,10 @@ export function createGroundSurfaceMaterial(
 }
 
 export function createMaterialFromPreset(
-  preset: MaterialPreset,
+  basePreset: MaterialPreset,
   options: MaterialResolveOptions = {},
 ): MeshStandardNodeMaterial | MeshPhysicalNodeMaterial {
+  const preset = applyPaperGloss(basePreset, options.gloss);
   if (preset.kind === 'analysis') {
     return createAnalysisMaterial(preset, options.tint);
   }
@@ -328,7 +333,10 @@ export function createPassepartoutPbrMaterial(
   resolvePreset: MaterialPresetResolver,
   surface: ImageSurfaceSettings,
 ): MeshStandardNodeMaterial | MeshPhysicalNodeMaterial {
-  const matPreset = resolvePreset(finishToMaterialId(surface.passepartoutFinish));
+  const paperPreset = resolvePreset(MATERIAL_PAPER_ID);
+  const matPreset = paperPreset
+    ? applyPaperGloss(paperPreset, surface.passepartoutGloss)
+    : null;
 
   if (!matPreset) {
     return createSolidPbrMaterial({
@@ -395,12 +403,12 @@ export function createWallpaperImageMaterial(
     resolveImageFileName(tex, imageName),
   );
   const surfaceSettings = surface ?? {
-    finish: 'glossy',
+    gloss: 1,
     emissiveEnabled: false,
     emissiveIntensity: 0,
     passepartoutColor: { r: 1, g: 1, b: 1 },
     passepartoutOffsetM: 0,
-    passepartoutFinish: 'matt',
+    passepartoutGloss: 0,
   };
 
   if (useAlphaChannel) {
@@ -439,7 +447,8 @@ export function createImagePbrMaterial(
   tint?: Rgb,
   imageName?: string,
 ): MeshStandardNodeMaterial | MeshPhysicalNodeMaterial {
-  const imagePreset = resolvePreset(finishToMaterialId(surface.finish));
+  const paperPreset = resolvePreset(MATERIAL_PAPER_ID);
+  const imagePreset = paperPreset ? applyPaperGloss(paperPreset, surface.gloss) : null;
 
   if (!imagePreset) {
     return createPassepartoutPbrMaterial(resolvePreset, surface);
@@ -484,12 +493,12 @@ export function createImagePbrMaterial(
 }
 
 const FABRIC_PLACEHOLDER_SURFACE: ImageSurfaceSettings = {
-  finish: 'matt',
+  gloss: 0,
   emissiveEnabled: false,
   emissiveIntensity: 0,
   passepartoutColor: { r: 0.85, g: 0.85, b: 0.85 },
   passepartoutOffsetM: 0,
-  passepartoutFinish: 'matt',
+  passepartoutGloss: 0,
 };
 
 function createStructureBaseMaterial(
@@ -748,8 +757,9 @@ export class MaterialResolver {
     const hasDepth = options.meshDepthM !== undefined;
     const hasGrainAxis = options.grainAlongU !== undefined;
     const hasSurfaceRole = options.surfaceRole !== undefined;
+    const hasGloss = options.gloss !== undefined && options.gloss > 0;
 
-    if (!hasTint && !hasDepth && !hasGrainAxis && !hasSurfaceRole) {
+    if (!hasTint && !hasDepth && !hasGrainAxis && !hasSurfaceRole && !hasGloss) {
       const cached = this.baseCache.get(resolvedId);
       if (cached) {return cached;}
 
@@ -769,4 +779,25 @@ export class MaterialResolver {
     const preset = this.resolvePreset(migrateMaterialId(materialId));
     return preset ? createMaterialFromPreset(preset, options) : null;
   }
+
+  /**
+   * View of this resolver with a slot finish applied: Paper presets and materials
+   * come out with `gloss`. For builders that resolve one slot through several helpers.
+   */
+  withGloss(gloss: number): MaterialResolver {
+    return createGlossScopedResolver(this, gloss);
+  }
+}
+
+function createGlossScopedResolver(base: MaterialResolver, gloss: number): MaterialResolver {
+  const scoped = Object.create(base) as MaterialResolver;
+  scoped.resolvePreset = (materialId) => {
+    const preset = base.resolvePreset(materialId);
+    return preset ? applyPaperGloss(preset, gloss) : null;
+  };
+  scoped.create = (materialId, options) =>
+    base.create(materialId, { ...options, gloss: options?.gloss ?? gloss });
+  scoped.createUncached = (materialId, options) =>
+    base.createUncached(materialId, { ...options, gloss: options?.gloss ?? gloss });
+  return scoped;
 }

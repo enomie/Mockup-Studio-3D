@@ -77,14 +77,14 @@ export const ENVIRONMENT_PRESETS: EnvironmentPreset[] = [
     id: BUILTIN_ENV_DEFAULT_ID,
     name: 'Default',
     source: 'builtin',
-    description: 'Neutral light gray studio, Print Matt ground, studio reflections.',
+    description: 'Neutral light gray studio, Paper ground, studio reflections.',
     snapshot: environmentFromSceneDefaults(),
   },
   {
     id: BUILTIN_ENV_BLUE_SKY_ID,
     name: 'Blue Sky',
     source: 'builtin',
-    description: 'Blue-gray sky with distant haze, Print Matt ground.',
+    description: 'Blue-gray sky with distant haze, Paper ground.',
     snapshot: buildBlueSkySnapshot(),
   },
   {

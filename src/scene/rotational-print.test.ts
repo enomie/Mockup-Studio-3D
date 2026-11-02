@@ -14,13 +14,13 @@ describe('rotational print settings', () => {
   });
 
   it('prefers stored values over defaults', () => {
-    expect(resolveRotationalPrintSettings({ substrate: 0.4, finish: 'matt' }, 'pen')).toEqual({
+    expect(resolveRotationalPrintSettings({ substrate: 0.4, gloss: 0 }, 'pen')).toEqual({
       substrate: 0.4,
       inkOpacity: 1,
       gloss: 0,
     });
     expect(
-      resolveRotationalPrintSettings({ finish: 'matt', gloss: 0.3 }, 'pen').gloss,
+      resolveRotationalPrintSettings({ gloss: 0.3 }, 'pen').gloss,
     ).toBeCloseTo(0.3, 6);
   });
 

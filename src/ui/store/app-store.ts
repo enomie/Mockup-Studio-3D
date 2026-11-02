@@ -52,6 +52,7 @@ export {
   setAssetSizeScale,
   setEntityVisible,
   setEntityMaterial,
+  setEntityMaterialGloss,
   setFaceTint,
   setImageSurface,
   setGeometryVisible,

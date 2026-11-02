@@ -74,7 +74,7 @@ export function buildPaperGrainNodes(
   const normalNode = bumpMap(grain, bumpStrength);
 
   const roughBase = float(params.roughness);
-  const roughnessNode = clamp(roughBase.add(grain.sub(0.5).mul(0.03)), 0.75, 1);
+  const roughnessNode = clamp(roughBase.add(grain.sub(0.5).mul(0.03)), 0.02, 1);
 
   return {
     colorNode,

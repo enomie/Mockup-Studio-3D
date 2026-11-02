@@ -5,6 +5,7 @@ import {
   MeshStandardNodeMaterial,
   type Group,
 } from 'three/webgpu';
+import { resolveSlotGloss } from '@/scene/paper-gloss';
 import {
   defaultTrianglePatchParams,
   getPatchMirrorSigns,
@@ -33,7 +34,9 @@ export function addTrianglePatch(
 
   // Resolve material or fallback to double-sided PBR material
   const materialId = materials.patchMaterialId ?? MATERIAL_ALUMINUM_BRUSHED_ID;
-  let material = resolver?.create(materialId);
+  let material = resolver?.create(materialId, {
+    gloss: resolveSlotGloss(materials, 'patchMaterialId'),
+  });
   if (!material) {
     material = new MeshStandardNodeMaterial({
       color: 0x0284c7,

@@ -2,7 +2,10 @@ import type { MaterialEntitySlot, MaterialPreset } from '@/scene/entity-types';
 import type { MaterialKind } from '@/scene/material-types';
 import { PanelSelect } from '@/ui/components/PanelSelect';
 import { sortPanelSelectOptions } from '@/ui/utils/library-list-order';
-import { setEntityMaterial } from '@/ui/store/app-store';
+import { isPaperMaterialId, resolveSlotGloss } from '@/scene/paper-gloss';
+import { FinishSlider } from '@/ui/components/FinishSlider';
+import { setEntityMaterial, setEntityMaterialGloss } from '@/ui/store/app-store';
+import { useAppStore } from '@/ui/store/use-app-store';
 
 interface MaterialSelectProps {
   entityId: string;
@@ -33,6 +36,9 @@ export function MaterialSelect({
   allowedMaterialIds,
   disabled = false,
 }: MaterialSelectProps) {
+  const slotMaterials = useAppStore(
+    (state) => state.entities.find((entry) => entry.id === entityId)?.materials,
+  );
   const filtered = materials.filter((material) => {
     if (allowedMaterialIds && !allowedMaterialIds.includes(material.id)) {return false;}
     if (excludeKinds?.includes(material.kind)) {return false;}
@@ -56,21 +62,31 @@ export function MaterialSelect({
       : filtered;
 
   return (
-    <PanelSelect
-      label={label}
-      ariaLabel={ariaLabel ?? label ?? `${slot} material`}
-      id={id}
-      value={value ?? ''}
-      disabled={disabled}
-      options={sortPanelSelectOptions(
-        options.map((material) => ({
-          value: material.id,
-          label: material.name,
-        })),
-      )}
-      onChange={(next) => {
-        if (next) {setEntityMaterial(entityId, slot, next);}
-      }}
-    />
+    <>
+      <PanelSelect
+        label={label}
+        ariaLabel={ariaLabel ?? label ?? `${slot} material`}
+        id={id}
+        value={value ?? ''}
+        disabled={disabled}
+        options={sortPanelSelectOptions(
+          options.map((material) => ({
+            value: material.id,
+            label: material.name,
+          })),
+        )}
+        onChange={(next) => {
+          if (next) {setEntityMaterial(entityId, slot, next);}
+        }}
+      />
+      {isPaperMaterialId(value) && !disabled ? (
+        <FinishSlider
+          value={resolveSlotGloss(slotMaterials, slot)}
+          onChange={(gloss) => {
+            setEntityMaterialGloss(entityId, slot, gloss);
+          }}
+        />
+      ) : null}
+    </>
   );
 }

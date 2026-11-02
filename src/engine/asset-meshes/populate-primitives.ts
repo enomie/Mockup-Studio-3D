@@ -29,16 +29,15 @@ import {
 import type { AssetKind } from '@/scene/entity-types';
 import { isGeometryVisible, type AssetGeometryVisibility } from '@/scene/geometry-visibility';
 import {
-  finishToMaterialId,
   resolveImageSurfaceSettings,
   type ImageSurfaceSettings,
 } from '@/scene/image-surface';
 import type { AssetMaterialSlots } from '@/scene/material-types';
+import { applyPaperGloss, resolveSlotGloss } from '@/scene/paper-gloss';
 import {
   MATERIAL_GLASS_PANE_ID,
   MATERIAL_GOLD_ID,
   MATERIAL_FABRIC_ID,
-  MATERIAL_GLOSSY_PRINT_ID,
   MATERIAL_PAPER_ID,
 } from '@/scene/material-ids';
 import { buildBlockGeometry } from '@/engine/block-geometry';
@@ -61,6 +60,7 @@ import type { ImageSize } from './asset-build-context';
 import {
   BACK_WALL_THICKNESS,
   facePlaneSize,
+  faceMaterialSlot,
   FRAME_DEPTH,
   FRAME_THICKNESS,
   GLAZING_IMAGE_GAP,
@@ -69,6 +69,7 @@ import {
   resolveFaceTint,
   resolveMaterialId,
   resolveMeshMaterial,
+  resolveSlotMeshMaterial,
   WALLPAPER_FRONT_Z_EPSILON_M,
 } from './shared';
 
@@ -145,8 +146,10 @@ export function addFacetedPrism(
 
     const materialId = resolveMaterialId(placement.faceId, materials);
     const tint = resolveFaceTint(placement.faceId, materials, faces);
+    const gloss = resolveSlotGloss(materials, faceMaterialSlot(placement.faceId));
     const material =
-      resolver.create(materialId, { tint }) ?? resolver.create(MATERIAL_PAPER_ID);
+      resolver.create(materialId, { tint, gloss }) ??
+      resolver.create(MATERIAL_PAPER_ID, { gloss });
     if (!material) {continue;}
 
     const mesh = new Mesh(placement.geometry, material);
@@ -179,7 +182,6 @@ export function addPicture(
   imageSurfaces?: Partial<Record<AssetFaceId, ImageSurfaceSettings>>,
 ): void {
   const frameMaterialId = materials.frameMaterialId ?? MATERIAL_GOLD_ID;
-  const backWallMaterialId = materials.backWallMaterialId ?? MATERIAL_PAPER_ID;
   const glazingMaterialId = materials.glazingMaterialId ?? MATERIAL_GLASS_PANE_ID;
 
   const frameThickness = FRAME_THICKNESS * sizeScale;
@@ -201,6 +203,7 @@ export function addPicture(
     frameDepth,
   );
   const frameMaterial = resolveMeshMaterial(resolver, frameMaterialId, {
+    gloss: resolveSlotGloss(materials, 'frameMaterialId'),
     meshDepthM: frameDepth,
     surfaceRole: 'frame',
     grainAlongU: true,
@@ -208,7 +211,12 @@ export function addPicture(
   const frame = new Mesh(frameGeometry, frameMaterial);
   frame.userData.assetMeshRole = 'frame';
 
-  const backWallMaterial = resolveMeshMaterial(resolver, backWallMaterialId);
+  const backWallMaterial = resolveSlotMeshMaterial(
+    resolver,
+    materials,
+    'backWallMaterialId',
+    MATERIAL_PAPER_ID,
+  );
 
   const backWall = new Mesh(
     new BoxGeometry(faceWidth, faceHeight, backWallThickness),
@@ -274,8 +282,12 @@ export function addWall(
   wallParams: WallParams = defaultWallParams(),
   wallpaperPattern: WallpaperPattern = defaultWallpaperPattern(),
 ): void {
-  const wallMaterialId = materials.wallMaterialId ?? MATERIAL_PAPER_ID;
-  const bodyMaterial = resolveMeshMaterial(resolver, wallMaterialId);
+  const bodyMaterial = resolveSlotMeshMaterial(
+    resolver,
+    materials,
+    'wallMaterialId',
+    MATERIAL_PAPER_ID,
+  );
 
   const bodyGeometry = buildWallBodyGeometry(assetKind, wallParams);
   const body = new Mesh(bodyGeometry, bodyMaterial);
@@ -285,8 +297,8 @@ export function addWall(
   if (!imageTexture) {return;}
 
   const frontSurface = resolveImageSurfaceSettings(imageSurfaces, 'front');
-  const screenMaterialId = finishToMaterialId(frontSurface.finish);
-  const screenPreset = resolver.resolvePreset(screenMaterialId);
+  const paperPreset = resolver.resolvePreset(MATERIAL_PAPER_ID);
+  const screenPreset = paperPreset ? applyPaperGloss(paperPreset, frontSurface.gloss) : null;
   const frontMaterial = screenPreset
     ? createWallpaperImageMaterial(
         screenPreset,
@@ -298,7 +310,7 @@ export function addWall(
         undefined,
         frontSurface,
       )
-    : resolveMeshMaterial(resolver, MATERIAL_GLOSSY_PRINT_ID);
+    : resolveMeshMaterial(resolver, MATERIAL_PAPER_ID, { gloss: frontSurface.gloss });
 
   const withDoor = assetKind === 'wall-door';
   const frontGeometry = createWallFrontGeometry(
@@ -321,8 +333,12 @@ export function addBlock(
   materials: AssetMaterialSlots = {},
   blockParams: BlockParams = defaultBlockParams(),
 ): void {
-  const blockMaterialId = materials.blockMaterialId ?? MATERIAL_PAPER_ID;
-  const material = resolveMeshMaterial(resolver, blockMaterialId);
+  const material = resolveSlotMeshMaterial(
+    resolver,
+    materials,
+    'blockMaterialId',
+    MATERIAL_PAPER_ID,
+  );
   const geometry = buildBlockGeometry(blockParams);
   const mesh = new Mesh(geometry, material);
   mesh.userData.assetMeshRole = 'blockBody';
@@ -335,8 +351,12 @@ export function addCylinder(
   materials: AssetMaterialSlots = {},
   cylinderParams: CylinderParams = defaultCylinderParams(),
 ): void {
-  const cylinderMaterialId = materials.cylinderMaterialId ?? MATERIAL_PAPER_ID;
-  const material = resolveMeshMaterial(resolver, cylinderMaterialId);
+  const material = resolveSlotMeshMaterial(
+    resolver,
+    materials,
+    'cylinderMaterialId',
+    MATERIAL_PAPER_ID,
+  );
   const geometry = buildCylinderGeometry(cylinderParams);
   const mesh = new Mesh(geometry, material);
   mesh.userData.assetMeshRole = 'cylinderBody';
@@ -349,8 +369,12 @@ export function addSphere(
   materials: AssetMaterialSlots = {},
   sphereParams: SphereParams = defaultSphereParams(),
 ): void {
-  const sphereMaterialId = materials.sphereMaterialId ?? MATERIAL_PAPER_ID;
-  const material = resolveMeshMaterial(resolver, sphereMaterialId);
+  const material = resolveSlotMeshMaterial(
+    resolver,
+    materials,
+    'sphereMaterialId',
+    MATERIAL_PAPER_ID,
+  );
   const geometry = buildSphereGeometry(sphereParams);
   const mesh = new Mesh(geometry, material);
   mesh.userData.assetMeshRole = 'sphereBody';
@@ -371,7 +395,10 @@ export function addFabricCloth(
 ): void {
   const clothMaterialId = materials.fabricClothMaterialId ?? MATERIAL_FABRIC_ID;
   const clothMaterial = createFabricClothMaterial(
-    (id: string) => resolver.resolvePreset(id),
+    (id: string) =>
+      resolver
+        .withGloss(resolveSlotGloss(materials, 'fabricClothMaterialId'))
+        .resolvePreset(id),
     clothMaterialId,
     imageTexture,
     faceWidth,
@@ -399,7 +426,10 @@ export function addBakedFabricCloth(
   const meshPayload = normalizeFabricClothBakedMeshPayload(meshPayloadInput);
   const clothMaterialId = materials.fabricClothMaterialId ?? MATERIAL_FABRIC_ID;
   const clothMaterial = createFabricClothMaterial(
-    (id: string) => resolver.resolvePreset(id),
+    (id: string) =>
+      resolver
+        .withGloss(resolveSlotGloss(materials, 'fabricClothMaterialId'))
+        .resolvePreset(id),
     clothMaterialId,
     imageTexture,
     meshPayload.planeWidthM,

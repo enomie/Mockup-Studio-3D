@@ -17,7 +17,7 @@ describe('createGroundSurfaceMaterial', () => {
     material.dispose();
   });
 
-  it('builds textured Print Matt for ground', () => {
+  it('builds textured Paper for ground', () => {
     const preset = resolveBuiltinMaterialPreset(MATERIAL_PAPER_ID);
     expect(preset).not.toBeNull();
     const material = createGroundSurfaceMaterial(preset!);

@@ -629,6 +629,16 @@ export class MockupEngine implements SceneApi {
     );
   }
 
+  setEntityMaterialGloss(
+    entityId: string,
+    slot: MaterialEntitySlot,
+    gloss: number,
+  ): void {
+    this.applyAssetMutation(() =>
+      this.assets.setEntityMaterialGloss(entityId, slot, gloss),
+    );
+  }
+
   setFaceTint(entityId: string, faceId: AssetFaceId, tint: Rgb): void {
     this.applyAssetMutation(() => this.assets.setFaceTint(entityId, faceId, tint));
   }

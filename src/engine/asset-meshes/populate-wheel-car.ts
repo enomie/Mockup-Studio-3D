@@ -1,4 +1,5 @@
 import type { Group } from 'three/webgpu';
+import { resolveSlotGloss } from '@/scene/paper-gloss';
 import { applyAssetShadowFlags } from '@/render/shadow-setup';
 import { addWheelCarMeshesFromSvg } from '@/engine/wheel-car-geometry';
 import { loadWheelCarLatheProfiles } from '@/engine/wheel-car-svg-profile';
@@ -25,8 +26,12 @@ export async function addWheelCar(
   disposeAssetGroup(group);
   const tireMaterialId = materials.tireMaterialId ?? MATERIAL_PLASTIC_MATTE_ID;
   const rimMaterialId = materials.rimMaterialId ?? MATERIAL_CHROME_ID;
-  const tireMaterial = resolveMeshMaterial(resolver, tireMaterialId);
-  const rimMaterial = resolveMeshMaterial(resolver, rimMaterialId);
+  const tireMaterial = resolveMeshMaterial(resolver, tireMaterialId, {
+    gloss: resolveSlotGloss(materials, 'tireMaterialId'),
+  });
+  const rimMaterial = resolveMeshMaterial(resolver, rimMaterialId, {
+    gloss: resolveSlotGloss(materials, 'rimMaterialId'),
+  });
   const profiles = await loadWheelCarLatheProfiles(sizeScale, wheelCarParams.profileId);
   addWheelCarMeshesFromSvg(
     group,
