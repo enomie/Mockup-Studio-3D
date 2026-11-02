@@ -13,6 +13,7 @@ import {
   closestTOnSegment,
   deleteNode,
   insertNode,
+  isEndpoint,
   moveNode,
   removePath,
   segmentControlPoints,
@@ -37,6 +38,10 @@ import {
   getAppState,
   selectProfilePath,
   setProfileEditorTool,
+  setProfileJoinTarget,
+  breakProfileAtNode,
+  breakProfileAtSegment,
+  joinProfileEndpoints,
   selectProfileNode,
 } from '@/ui/store/app-store';
 import { useAppStore } from '@/ui/store/use-app-store';
@@ -78,6 +83,23 @@ function isEditableTarget(target: EventTarget | null): boolean {
 
 function readData(target: EventTarget | null): DOMStringMap | null {
   return target instanceof SVGElement ? target.dataset : null;
+}
+
+/** Open end points at the same position as `at`, excluding the current selection. */
+export function pickJoinTarget(
+  paths: readonly ProfilePath[],
+  at: ProfileVec2,
+  selection: { pathId: string; index: number | null } | null,
+): { pathId: string; index: number } | null {
+  for (const path of paths) {
+    for (const index of [0, path.nodes.length - 1]) {
+      const node = path.nodes[index];
+      const same = Math.abs(node.x - at.x) < 1e-6 && Math.abs(node.y - at.y) < 1e-6;
+      const selected = selection?.pathId === path.id && selection.index === index;
+      if (same && !selected && isEndpoint(path, index)) {return { pathId: path.id, index };}
+    }
+  }
+  return null;
 }
 
 function handlePoint(node: ProfileNode, side: HandleSide): ProfileVec2 | null {
@@ -192,6 +214,8 @@ export function ProfileEditor() {
       ? selection.index
       : null;
   const hiddenPathIds = useAppStore((s) => s.hiddenProfilePathIds);
+  const joinTargetPoint = useAppStore((s) => s.profileJoinTarget);
+  const activeTool = useAppStore((s) => s.profileEditorTool);
   const visiblePaths = profile ? profile.paths.filter((path) => !hiddenPathIds.includes(path.id)) : [];
 
   // Keys: the editor owns the keyboard while open (no scene delete or viewport shortcuts).
@@ -218,6 +242,15 @@ export function ProfileEditor() {
         }
       } else if (event.key === 'v' || event.key === 'V') {
         setProfileEditorTool('select');
+      } else if (event.key === 'c' || event.key === 'C') {
+        setProfileEditorTool('scissors');
+      } else if (event.key === 'j' || event.key === 'J') {
+        const state = getAppState();
+        const a = state.profileNodeSelection;
+        const b = state.profileJoinTarget;
+        if (a?.index != null && b) {
+          joinProfileEndpoints(editingProfileId, { pathId: a.pathId, index: a.index }, b);
+        }
       } else if (event.key === ' ') {
         event.preventDefault();
         spaceRef.current = true;
@@ -283,6 +316,29 @@ export function ProfileEditor() {
 
     const path = findPath(data?.pathId);
     const index = Number(data?.index);
+    const tool = getAppState().profileEditorTool;
+
+    if (tool === 'scissors') {
+      if (data?.kind === 'node' && path) {
+        breakProfileAtNode(profileId, path.id, index);
+        return;
+      }
+      if (data?.kind === 'segment' && path) {
+        const segment = Number(data.segment);
+        breakProfileAtSegment(profileId, path.id, segment, closestTOnSegment(path, segment, mm));
+        return;
+      }
+      startPan(false);
+      return;
+    }
+
+    if (data?.kind === 'node' && path && event.shiftKey) {
+      // Shift-click picks a second end point for Join (the selection stays). Cut ends lie on
+      // top of each other, so take any open end under the pointer that is not the selection.
+      const target = pickJoinTarget(visiblePaths, path.nodes[index], getAppState().profileNodeSelection);
+      if (target) {setProfileJoinTarget(target);}
+      return;
+    }
     if (data?.kind === 'node' && path) {
       // Double-click detection here: pointer capture retargets the native dblclick to the canvas.
       const key = `${path.id}:${index}`;
@@ -367,7 +423,7 @@ export function ProfileEditor() {
     <div className="profile-editor">
       <svg
         ref={svgRef}
-        className="profile-editor__canvas"
+        className={`profile-editor__canvas profile-editor__canvas--${activeTool}`}
         role="application"
         aria-label={`Profile editor: ${profile.name}`}
         onPointerDown={onPointerDown}
@@ -435,16 +491,19 @@ export function ProfileEditor() {
               path.nodes.map((node, index) => {
                 const point = toScreen(view, node);
                 const selected = path.id === selectedPath?.id && index === selectedIndex;
+                const joinTarget = joinTargetPoint?.pathId === path.id && joinTargetPoint.index === index;
+                const nodeClass = `profile-editor__node${selected ? ' profile-editor__node--selected' : ''}${
+                  joinTarget ? ' profile-editor__node--join' : ''}`;
                 return (
                   <g key={`${path.id}-${index}`}>
                     {node.mode === 'smooth' ? (
                       <circle cx={point.x} cy={point.y} r={NODE_RADIUS_PX}
-                        className={`profile-editor__node${selected ? ' profile-editor__node--selected' : ''}`}
+                        className={nodeClass}
                         style={{ stroke: LATHE_PATH_SLOT_STROKES[path.slot] }} />
                     ) : (
                       <rect x={point.x - NODE_RADIUS_PX} y={point.y - NODE_RADIUS_PX}
                         width={NODE_RADIUS_PX * 2} height={NODE_RADIUS_PX * 2}
-                        className={`profile-editor__node${selected ? ' profile-editor__node--selected' : ''}`}
+                        className={nodeClass}
                         style={{ stroke: LATHE_PATH_SLOT_STROKES[path.slot] }} />
                     )}
                     <circle
@@ -474,7 +533,8 @@ export function ProfileEditor() {
       <p className="profile-editor__hint">
         {view ? `Grid ${formatGridStepMeters(gridStepMm(view.scale))} m · ` : null}
         Drag points and handles · Shift: break handles · Click a path: add point · Del: delete point ·
-        Double-click: corner/smooth · Wheel: zoom · Space or middle mouse: pan · Esc: close
+        Double-click: corner/smooth · C: scissors · Shift-click end + J: join · V: select ·
+        Wheel: zoom · Space or middle mouse: pan · Esc: close
       </p>
     </div>
   );

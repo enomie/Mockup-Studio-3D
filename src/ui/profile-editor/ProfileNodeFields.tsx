@@ -1,5 +1,9 @@
+import { Link, Scissors } from 'lucide-react';
 import {
+  breakAtNode,
   handleFromPolar,
+  isEndpoint,
+  joinEndpoints,
   handlePolar,
   moveNode,
   setHandle,
@@ -11,7 +15,8 @@ import type { ProfileNode, ProfilePath } from '@/scene/profile-model';
 import { PanelAxisField } from '@/ui/components/PanelAxisField/PanelAxisField';
 import { PanelToggleGroup } from '@/ui/components/PanelToggleGroup';
 import { SubPanelSection } from '@/ui/components/SubPanelSection';
-import { editProfilePath } from '@/ui/store/app-store';
+import { Icon } from '@/ui/components/Icon';
+import { breakProfileAtNode, editProfilePath, joinProfileEndpoints } from '@/ui/store/app-store';
 import { useAppStore } from '@/ui/store/use-app-store';
 import { formatMmAsMeters, parseMmFromMetersInput } from '@/units/length';
 
@@ -116,5 +121,50 @@ export function ProfilePointSection({ profile }: { profile: ProfileEntry }) {
       </SubPanelSection>
     );
   }
-  return <NodeFields profileId={profile.id} path={path} index={index} node={node} />;
+  return (
+    <>
+      <NodeFields profileId={profile.id} path={path} index={index} node={node} />
+      <CutJoinSection profile={profile} path={path} index={index} />
+    </>
+  );
+}
+
+/** Break here / Join for the selected point (Scissors and Shift-click + J on the canvas). */
+function CutJoinSection({ profile, path, index }: { profile: ProfileEntry; path: ProfilePath; index: number }) {
+  const target = useAppStore((s) => s.profileJoinTarget);
+  const canBreak = breakAtNode(profile.paths, path.id, index) !== null;
+  const canJoin = target !== null && joinEndpoints(profile.paths, { pathId: path.id, index }, target) !== null;
+  return (
+    <SubPanelSection title="Cut & join">
+      <div className="material-editor-actions">
+        <button
+          type="button"
+          className="btn"
+          disabled={!canBreak}
+          title={canBreak ? 'Cut the path at this point' : 'End points cannot be cut; all ten slots may be used'}
+          onClick={() => { breakProfileAtNode(profile.id, path.id, index); }}
+        >
+          <Icon icon={Scissors} size={16} strokeWidth={1.75} />
+          Break here
+        </button>
+        <button
+          type="button"
+          className="btn"
+          disabled={!canJoin}
+          title="Join with the Shift-clicked end point (J)"
+          onClick={() => {
+            if (target) {joinProfileEndpoints(profile.id, { pathId: path.id, index }, target);}
+          }}
+        >
+          <Icon icon={Link} size={16} strokeWidth={1.75} />
+          Join
+        </button>
+      </div>
+      <p className="profile-hint">
+        {isEndpoint(path, index)
+          ? 'Shift-click another end point, then Join (J). Start + end of one path closes it.'
+          : 'Join works on end points of open paths.'}
+      </p>
+    </SubPanelSection>
+  );
 }

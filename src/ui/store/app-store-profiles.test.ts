@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { BUILTIN_PROFILES } from '@/scene/profile-library';
 import {
   addProfile,
+  breakProfileAtNode,
+  joinProfileEndpoints,
   duplicateProfile,
   getAppState,
   removeProfile,
@@ -49,5 +51,29 @@ describe('profile store', () => {
     renameProfile(builtin.id, 'Changed');
     expect(builtin.name).not.toBe('Changed');
     expect(getAppState().userProfiles).toHaveLength(0);
+  });
+});
+
+describe('profile scissors and join in the store', () => {
+  beforeEach(() => {
+    store.setAppState({ ...store.state, userProfiles: [], selectedProfileId: null });
+  });
+
+  it('opens the default square, splits it and joins it back', () => {
+    const id = addProfile();
+    const pathId = getAppState().userProfiles[0].paths[0].id;
+    expect(breakProfileAtNode(id, pathId, 1)).toBe(true);
+    let profile = getAppState().userProfiles[0];
+    expect(profile.paths[0].closed).toBe(false);
+    expect(getAppState().profileNodeSelection).toEqual({ pathId, index: 0 });
+
+    expect(breakProfileAtNode(id, pathId, 2)).toBe(true);
+    profile = getAppState().userProfiles[0];
+    expect(profile.paths).toHaveLength(2);
+
+    const [a, b] = profile.paths;
+    expect(joinProfileEndpoints(id, { pathId: a.id, index: a.nodes.length - 1 }, { pathId: b.id, index: 0 })).toBe(true);
+    expect(getAppState().userProfiles[0].paths).toHaveLength(1);
+    expect(breakProfileAtNode(id, a.id, 0)).toBe(false);
   });
 });

@@ -167,6 +167,9 @@ Die Seitenpanels bleiben sichtbar. **Done** oder **Esc** schließt ihn wieder.
 | Auswahl aufheben | Klick ins Leere | ja |
 | Zoomen | Mausrad (um den Mauszeiger) | – |
 | Verschieben | mittlere Maustaste oder **Leertaste** + Ziehen | – |
+| Werkzeug Select / Scissors | **V** / **C** (oder Tools rechts) | – |
+| Pfad aufbrechen | **Scissors**: Klick auf einen Punkt oder auf ein Segment (dort wird zuerst ein Punkt eingefügt). Geschlossen → wird dort geöffnet (Punkt verdoppelt). Offen → wird in zwei Pfade geteilt, der zweite bekommt den nächsten freien Slot und den Namen „‹Name› 2“. Oder **Break here** rechts. | – |
+| Pfade verbinden | Endpunkt auswählen, **Shift-Klick** auf einen zweiten Endpunkt (markiert mit dickem Rand), dann **J** oder **Join** rechts. Zwei Pfade werden einer (Name und Slot des ausgewählten), Endpunkte an gleicher Stelle verschmelzen. Anfang + Ende desselben Pfads schließt ihn. Liegen Enden übereinander, nimmt Shift-Klick das Ende, das nicht schon ausgewählt ist. | – |
 | Schließen | **Esc** oder **Done** | – |
 | Rückgängig | Strg/Cmd + Z, eine Ziehbewegung ist ein Schritt | ja |
 
@@ -179,7 +182,7 @@ Die Seitenpanels bleiben sichtbar. **Done** oder **Esc** schließt ihn wieder.
 - **Rechts: 2D-Inspector „Profile editor“** (`ProfileInspector.tsx`). Solange der Editor offen ist,
   ersetzt er die rechten 3D-Panels, und die rechte Icon-Leiste ist ausgeblendet. Nach Done/Esc
   ist alles wieder wie vorher.
-  - **Tools:** Select (V). Pen (P) und Scissors (C) sind sichtbar, aber noch deaktiviert (E3/E4).
+  - **Tools:** Select (V), Scissors (C). Pen (P) ist sichtbar, aber noch deaktiviert (E4).
   - **Paths:** alle Pfade nach Slot sortiert, mit Farbe, Name (umbenennbar), Auge (nur im Editor
     ausblenden, wird nicht gespeichert) und Löschen. Ein Klick auf die Farbe wählt den Pfad aus.
     Der aktive Pfad zeigt **Slot** (1–10, ein belegter Slot wird getauscht), die Rolle des Slots für
@@ -187,6 +190,7 @@ Die Seitenpanels bleiben sichtbar. **Done** oder **Esc** schließt ihn wieder.
     Punktanzahl. **Add path** legt ein Quadrat von 20 × 20 mm im nächsten freien Slot an.
     Höchstens 10 Pfade.
   - **Point:** X, Y, Radius (m), Typ Ecke/Glatt, Länge (m) und Winkel (°) jedes Handles.
+  - **Cut & join:** **Break here** (deaktiviert an Enden offener Pfade oder wenn alle 10 Slots belegt sind) und **Join** (aktiv, wenn ein zweiter Endpunkt per Shift-Klick gewählt ist).
 - **Links** zeigt das Profiles-Panel während des Editierens nur Name, Info und die Aktionen. Die
   Pfadliste steht rechts.
 - **Entf** löscht den ausgewählten Punkt. Ist nur ein Pfad ausgewählt, löscht Entf den ganzen Pfad.
@@ -218,8 +222,7 @@ Die Seitenpanels bleiben sichtbar. **Done** oder **Esc** schließt ihn wieder.
 | Editor (Zeichenfläche, Ansicht, Zahlenfelder) | `src/ui/profile-editor/ProfileEditor.tsx`, `profile-editor-view.ts`, `ProfileInspector.tsx` (rechts), `ProfileNodeFields.tsx` (Point-Bereich), Styles in `src/ui/styles/features/profile-editor.css` |
 
 ## 7. Bewusst noch nicht drin
-- Einen Pfad an einem Punkt aufbrechen, neue Pfade zeichnen (Stift-Werkzeug), Pfade hinzufügen oder
-  löschen
+- Neue Pfade zeichnen (Pen-Werkzeug, E4)
 - Fangen (Snapping), Constraints, Bemaßungen
 - SVG-Import und -Export für Nutzer
 - Extrusion: Löcher, Fasen, Sweep entlang eines Pfads, Physik-Kollider, Bilder auf der Extrusion

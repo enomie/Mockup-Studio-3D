@@ -82,6 +82,10 @@ export {
   selectProfilePath,
   toggleProfilePathHidden,
   setProfileEditorTool,
+  setProfileJoinTarget,
+  breakProfileAtNode,
+  breakProfileAtSegment,
+  joinProfileEndpoints,
   showProfilesPanel,
   editProfileFromAsset,
 } from './app-store-profiles';

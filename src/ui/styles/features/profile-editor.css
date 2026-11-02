@@ -167,3 +167,15 @@
   opacity: 0.4;
   cursor: not-allowed;
 }
+
+.profile-editor__node--join {
+  fill: var(--color-bg);
+  stroke: var(--color-accent) !important;
+  stroke-width: 3;
+}
+
+.profile-editor__canvas--scissors,
+.profile-editor__canvas--scissors .profile-editor__hit,
+.profile-editor__canvas--scissors .profile-editor__segment-hit {
+  cursor: crosshair;
+}

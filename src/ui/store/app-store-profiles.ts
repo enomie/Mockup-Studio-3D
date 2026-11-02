@@ -1,5 +1,12 @@
 import { getProfile, type ProfileEntry } from '@/scene/profile-library';
 import type { ProfilePath } from '@/scene/profile-model';
+import {
+  breakAtNode,
+  breakAtSegment,
+  joinEndpoints,
+  type BreakResult,
+  type PathPoint,
+} from '@/scene/profile-edit';
 import * as store from './app-store-internals';
 import type { ProfileEditorTool, ProfileNodeSelection } from './app-store-internals';
 
@@ -37,8 +44,39 @@ export function closeProfileEditor(): void {
 }
 
 export function selectProfileNode(selection: ProfileNodeSelection | null): void {
-  store.setAppState({ ...store.state, profileNodeSelection: selection });
+  store.setAppState({ ...store.state, profileNodeSelection: selection, profileJoinTarget: null });
   store.emit();
+}
+
+/** Picks a second end point (Shift-click) to join with the selected one. */
+export function setProfileJoinTarget(target: PathPoint | null): void {
+  store.setAppState({ ...store.state, profileJoinTarget: target });
+  store.emit();
+}
+
+function applyPathsResult(id: string, run: (paths: ProfilePath[]) => BreakResult | null): boolean {
+  const profile = store.state.userProfiles.find((entry) => entry.id === id);
+  if (!profile) {return false;}
+  const result = run(profile.paths);
+  if (!result) {return false;}
+  editProfilePaths(id, () => result.paths);
+  selectProfileNode(result.select);
+  return true;
+}
+
+/** Scissors on a point: opens a closed path or splits an open one. */
+export function breakProfileAtNode(id: string, pathId: string, index: number): boolean {
+  return applyPathsResult(id, (paths) => breakAtNode(paths, pathId, index));
+}
+
+/** Scissors on a segment at parameter t. */
+export function breakProfileAtSegment(id: string, pathId: string, segment: number, t: number): boolean {
+  return applyPathsResult(id, (paths) => breakAtSegment(paths, pathId, segment, t));
+}
+
+/** Joins two open end points (or closes a path when they are its start and end). */
+export function joinProfileEndpoints(id: string, a: PathPoint, b: PathPoint): boolean {
+  return applyPathsResult(id, (paths) => joinEndpoints(paths, a, b));
 }
 
 /** Applies a pure edit to one path of a user profile. */

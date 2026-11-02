@@ -108,6 +108,8 @@ export interface AppState {
   profileNodeSelection: ProfileNodeSelection | null;
   /** Paths hidden in the 2D editor only (not saved, not used by assets). */
   hiddenProfilePathIds: string[];
+  /** Second end point picked with Shift-click, for Join. */
+  profileJoinTarget: { pathId: string; index: number } | null;
   profileEditorTool: ProfileEditorTool;
   environments: EnvironmentPreset[];
   activeEnvironmentId: string;
@@ -179,6 +181,7 @@ export let state: AppState = {
   leftPanelRequest: null,
   profileNodeSelection: null,
   hiddenProfilePathIds: [],
+  profileJoinTarget: null,
   profileEditorTool: 'select',
   environments: ENVIRONMENT_PRESETS.map(cloneEnvironmentPreset),
   activeEnvironmentId: BUILTIN_ENV_DEFAULT_ID,

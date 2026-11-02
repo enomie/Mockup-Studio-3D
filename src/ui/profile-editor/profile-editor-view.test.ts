@@ -45,3 +45,14 @@ describe('profile units in the UI', () => {
     expect(parseMmFromMetersInput('0.0125')).toBeCloseTo(12.5, 6);
   });
 });
+
+describe('join target picking', () => {
+  it('takes an overlapping end of another path, not the selected one', async () => {
+    const { pickJoinTarget } = await import('./ProfileEditor');
+    const a = { id: 'a', name: 'A', slot: 0, closed: false, nodes: [{ x: 0, y: 0, mode: 'corner' as const }, { x: 5, y: 0, mode: 'corner' as const }] };
+    const b = { id: 'b', name: 'B', slot: 1, closed: false, nodes: [{ x: 5, y: 0, mode: 'corner' as const }, { x: 9, y: 0, mode: 'corner' as const }] };
+    expect(pickJoinTarget([a, b], { x: 5, y: 0 }, { pathId: 'a', index: 1 })).toEqual({ pathId: 'b', index: 0 });
+    expect(pickJoinTarget([a, b], { x: 5, y: 0 }, { pathId: 'b', index: 0 })).toEqual({ pathId: 'a', index: 1 });
+    expect(pickJoinTarget([a, b], { x: 2, y: 0 }, null)).toBeNull();
+  });
+});

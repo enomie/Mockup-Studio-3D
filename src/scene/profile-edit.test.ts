@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   addSquarePath,
+  breakAtNode,
+  breakAtSegment,
+  joinEndpoints,
   closestTOnSegment,
   nextFreeSlot,
   removePath,
@@ -142,5 +145,66 @@ describe('profile paths', () => {
     expect(swapped.find((path) => path.id === 'a')?.slot).toBe(3);
     expect(setPathSlot(two(), 'b', 5).find((path) => path.id === 'b')?.slot).toBe(5);
     expect(removePath(two(), 'a').map((path) => path.id)).toEqual(['b']);
+  });
+});
+
+describe('scissors and join', () => {
+  const open3 = (): ProfilePath => ({
+    id: 'o',
+    name: 'Line',
+    slot: 0,
+    closed: false,
+    nodes: [
+      { x: 0, y: 0, mode: 'corner' },
+      { x: 10, y: 0, mode: 'smooth', handleIn: { x: -2, y: 0 }, handleOut: { x: 2, y: 0 } },
+      { x: 20, y: 0, mode: 'corner' },
+    ],
+  });
+
+  it('opens a closed path at a point without changing its outline', () => {
+    const result = breakAtNode([square()], 'p', 1);
+    const path = result?.paths[0];
+    expect(path?.closed).toBe(false);
+    expect(path?.nodes.map((node) => [node.x, node.y])).toEqual([[10, 0], [10, 10], [0, 10], [0, 0], [10, 0]]);
+    expect(result?.select).toEqual({ pathId: 'p', index: 0 });
+  });
+
+  it('splits an open path into two, the second in a free slot', () => {
+    const result = breakAtNode([open3()], 'o', 1);
+    expect(result?.paths).toHaveLength(2);
+    const [a, b] = result?.paths ?? [];
+    expect(a.nodes.map((node) => node.x)).toEqual([0, 10]);
+    expect(a.nodes[1].handleOut).toBeUndefined();
+    expect(a.nodes[1].handleIn).toEqual({ x: -2, y: 0 });
+    expect(b.nodes.map((node) => node.x)).toEqual([10, 20]);
+    expect(b.nodes[0].handleIn).toBeUndefined();
+    expect(b.slot).toBe(1);
+    expect(b.name).toBe('Line 2');
+    expect(breakAtNode([open3()], 'o', 0)).toBeNull();
+  });
+
+  it('cuts in the middle of a segment', () => {
+    const result = breakAtSegment([open3()], 'o', 1, 0.5);
+    expect(result?.paths).toHaveLength(2);
+    // Curved segment (handle 10 → 12): the cubic at t = 0.5 lies at x = 15.75.
+    expect(result?.paths[1].nodes[0].x).toBeCloseTo(15.75, 4);
+  });
+
+  it('joins two paths and merges touching endpoints', () => {
+    const split = breakAtNode([open3()], 'o', 1);
+    if (!split) {throw new Error('split failed');}
+    const [a, b] = split.paths;
+    const joined = joinEndpoints(split.paths, { pathId: a.id, index: 1 }, { pathId: b.id, index: 0 });
+    expect(joined?.paths).toHaveLength(1);
+    expect(joined?.paths[0].nodes.map((node) => node.x)).toEqual([0, 10, 20]);
+    // Joining the far ends reverses one path and keeps every point.
+    const far = joinEndpoints(split.paths, { pathId: a.id, index: 0 }, { pathId: b.id, index: 1 });
+    expect(far?.paths[0].nodes.map((node) => node.x)).toEqual([10, 0, 20, 10]);
+  });
+
+  it('closes a path when its own start and end are joined', () => {
+    const result = joinEndpoints([open3()], { pathId: 'o', index: 0 }, { pathId: 'o', index: 2 });
+    expect(result?.paths[0].closed).toBe(true);
+    expect(joinEndpoints([open3()], { pathId: 'o', index: 0 }, { pathId: 'o', index: 1 })).toBeNull();
   });
 });

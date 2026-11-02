@@ -281,3 +281,143 @@ export function setPathSlot(
     return path;
   });
 }
+
+export interface PathPoint {
+  pathId: string;
+  index: number;
+}
+
+/** Reverses the direction of a path; handles swap sides. */
+export function reversePath(path: ProfilePath): ProfilePath {
+  const nodes = [...path.nodes].reverse().map((node) => {
+    const { handleIn, handleOut, ...rest } = node;
+    const next: ProfileNode = { ...rest };
+    if (handleOut) {next.handleIn = handleOut;}
+    if (handleIn) {next.handleOut = handleIn;}
+    return next;
+  });
+  return { ...path, nodes };
+}
+
+function withoutHandle(node: ProfileNode, side: 'handleIn' | 'handleOut'): ProfileNode {
+  const { [side]: _removed, ...rest } = node;
+  return { ...rest, mode: 'corner' };
+}
+
+export function isEndpoint(path: ProfilePath, index: number): boolean {
+  return !path.closed && (index === 0 || index === path.nodes.length - 1);
+}
+
+export interface BreakResult {
+  paths: ProfilePath[];
+  /** Point to select afterwards (the new end of the cut). */
+  select: PathPoint;
+}
+
+/**
+ * Cuts a path at a point (scissors). A closed path opens there: the point is doubled and
+ * becomes start and end. An open path splits in two; the second part gets the next free
+ * slot. Returns null when nothing can be cut (endpoint of an open path, or no free slot).
+ */
+export function breakAtNode(
+  paths: readonly ProfilePath[],
+  pathId: string,
+  index: number,
+): BreakResult | null {
+  const path = paths.find((entry) => entry.id === pathId);
+  if (!path || index < 0 || index >= path.nodes.length) {return null;}
+  const node = path.nodes[index];
+
+  if (path.closed) {
+    const rotated = [...path.nodes.slice(index + 1), ...path.nodes.slice(0, index)];
+    const opened: ProfilePath = {
+      ...path,
+      closed: false,
+      nodes: [withoutHandle(node, 'handleIn'), ...rotated, withoutHandle(node, 'handleOut')],
+    };
+    return {
+      paths: paths.map((entry) => (entry.id === pathId ? opened : entry)),
+      select: { pathId, index: 0 },
+    };
+  }
+
+  if (isEndpoint(path, index)) {return null;}
+  const slot = nextFreeSlot(paths);
+  if (slot === null) {return null;}
+  const first: ProfilePath = {
+    ...path,
+    nodes: [...path.nodes.slice(0, index), withoutHandle(node, 'handleOut')],
+  };
+  const second: ProfilePath = {
+    id: uniquePathId(paths),
+    name: uniquePathName(paths, `${path.name} 2`),
+    slot,
+    closed: false,
+    nodes: [withoutHandle(node, 'handleIn'), ...path.nodes.slice(index + 1)],
+  };
+  return {
+    paths: [...paths.map((entry) => (entry.id === pathId ? first : entry)), second],
+    select: { pathId: second.id, index: 0 },
+  };
+}
+
+/** Cuts a segment at parameter t: inserts a point there (shape unchanged), then cuts. */
+export function breakAtSegment(
+  paths: readonly ProfilePath[],
+  pathId: string,
+  segment: number,
+  t: number,
+): BreakResult | null {
+  const path = paths.find((entry) => entry.id === pathId);
+  if (!path) {return null;}
+  const inserted = insertNode(path, segment, t);
+  const withPoint = paths.map((entry) => (entry.id === pathId ? inserted.path : entry));
+  return breakAtNode(withPoint, pathId, inserted.index);
+}
+
+const MERGE_DISTANCE_MM = 1e-6;
+
+/**
+ * Joins two endpoints of open paths. Start and end of the same path close it; endpoints of
+ * two paths become one path (the first keeps its name and slot). Endpoints at the same
+ * position merge into one point. Returns null when the points are not two open endpoints.
+ */
+export function joinEndpoints(
+  paths: readonly ProfilePath[],
+  a: PathPoint,
+  b: PathPoint,
+): BreakResult | null {
+  const pathA = paths.find((entry) => entry.id === a.pathId);
+  const pathB = paths.find((entry) => entry.id === b.pathId);
+  if (!pathA || !pathB || !isEndpoint(pathA, a.index) || !isEndpoint(pathB, b.index)) {
+    return null;
+  }
+
+  if (pathA.id === pathB.id) {
+    if (a.index === b.index || pathA.nodes.length < 3) {return null;}
+    return {
+      paths: paths.map((entry) => (entry.id === pathA.id ? { ...entry, closed: true } : entry)),
+      select: a,
+    };
+  }
+
+  // A runs towards its chosen end, B starts at its chosen end.
+  const head = a.index === 0 ? reversePath(pathA) : pathA;
+  const tail = b.index === 0 ? pathB : reversePath(pathB);
+  const last = head.nodes[head.nodes.length - 1];
+  const first = tail.nodes[0];
+  const touching =
+    Math.abs(last.x - first.x) < MERGE_DISTANCE_MM && Math.abs(last.y - first.y) < MERGE_DISTANCE_MM;
+  const nodes = touching
+    ? [
+        ...head.nodes.slice(0, -1),
+        { ...first, ...(last.handleIn ? { handleIn: last.handleIn } : {}), mode: 'corner' as const },
+        ...tail.nodes.slice(1),
+      ]
+    : [...head.nodes, ...tail.nodes];
+  const joined: ProfilePath = { ...pathA, nodes };
+  return {
+    paths: paths.filter((entry) => entry.id !== pathB.id).map((entry) => (entry.id === pathA.id ? joined : entry)),
+    select: { pathId: pathA.id, index: head.nodes.length - (touching ? 1 : 0) },
+  };
+}

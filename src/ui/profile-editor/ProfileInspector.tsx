@@ -31,7 +31,7 @@ import { ProfilePointSection } from './ProfileNodeFields';
 const TOOLS: readonly { tool: ProfileEditorTool; label: string; key: string; icon: typeof PenTool; ready: boolean }[] = [
   { tool: 'select', label: 'Select', key: 'V', icon: MousePointer2, ready: true },
   { tool: 'pen', label: 'Pen', key: 'P', icon: PenTool, ready: false },
-  { tool: 'scissors', label: 'Scissors', key: 'C', icon: Scissors, ready: false },
+  { tool: 'scissors', label: 'Scissors', key: 'C', icon: Scissors, ready: true },
 ];
 
 /** What a slot means for the built-in assets, e.g. "Bottle: Glass · Can: Body". */
