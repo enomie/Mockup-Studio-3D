@@ -74,3 +74,51 @@ describe('extrusion', () => {
     expect(entityProfileId(entity)).toBe('user-logo');
   });
 });
+
+describe('extrusion holes', () => {
+  const square = (id: string, slot: number, x: number, size: number, extra = {}) => ({
+    id,
+    name: id,
+    slot,
+    closed: true,
+    nodes: [
+      { x, y: x, mode: 'corner' as const },
+      { x: x + size, y: x, mode: 'corner' as const },
+      { x: x + size, y: x + size, mode: 'corner' as const },
+      { x, y: x + size, mode: 'corner' as const },
+    ],
+    ...extra,
+  });
+
+  it('cuts a hole with its own wall material group', () => {
+    const outer = square('outer', 0, 0, 100);
+    const hole = square('hole', 1, 30, 40);
+    const body = stub();
+    const wall = stub();
+    const [mesh] = buildExtrusionMeshes({
+      paths: [{ path: outer, material: body, holes: [{ path: hole, wallMaterial: wall }] }],
+      bounds: { minX: 0, maxX: 100, minY: 0, maxY: 100 },
+      depthM: 0.01,
+      sizeScale: 1,
+    });
+    expect(mesh.material).toEqual([body, wall]);
+    expect(mesh.geometry.groups.map((group) => group.materialIndex)).toEqual([0, 1]);
+    // Hole wall triangles lie on the hole outline (x within 30…70 mm around the centre).
+    const position = mesh.geometry.getAttribute('position');
+    const holeGroup = mesh.geometry.groups[1];
+    for (let v = holeGroup.start; v < holeGroup.start + holeGroup.count; v++) {
+      expect(Math.abs(position.getX(v))).toBeLessThanOrEqual(0.0201);
+    }
+    // No cap triangle covers the centre of the hole.
+    const caps = mesh.geometry.groups[0];
+    let centreCovered = false;
+    for (let v = caps.start; v < caps.start + caps.count; v += 3) {
+      const xs = [0, 1, 2].map((k) => position.getX(v + k));
+      const ys = [0, 1, 2].map((k) => position.getY(v + k));
+      if (Math.max(...xs) < 0.01 && Math.min(...xs) > -0.01 && Math.max(...ys) < 0.06 && Math.min(...ys) > 0.04) {
+        centreCovered = true;
+      }
+    }
+    expect(centreCovered).toBe(false);
+  });
+});

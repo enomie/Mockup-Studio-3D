@@ -32,6 +32,11 @@ export interface ProfilePath {
   slot: number;
   closed: boolean;
   nodes: ProfileNode[];
+  /**
+   * Extrusion only: a closed path inside another closed path cuts a hole (default).
+   * `false` keeps it a separate solid. Missing = true.
+   */
+  cutHole?: boolean;
 }
 
 /** A profile is a neutral set of named paths; assets decide whether to revolve or extrude. */

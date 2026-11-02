@@ -29,6 +29,8 @@ import {
 import type { ProfileEditorTool } from '@/ui/store/app-store-internals';
 import { useAppStore } from '@/ui/store/use-app-store';
 import { ProfilePointSection } from './ProfileNodeFields';
+import { sampleProfilePathMm } from '@/engine/extrusion-geometry';
+import { classifyExtrusionPaths, type ExtrusionPathRole } from '@/scene/profile-holes';
 
 const TOOLS: readonly { tool: ProfileEditorTool; label: string; key: string; icon: typeof PenTool; ready: boolean }[] = [
   { tool: 'select', label: 'Select', key: 'V', icon: MousePointer2, ready: true },
@@ -95,7 +97,25 @@ function SnappingSection() {
   );
 }
 
-function PathRow({ profile, path }: { profile: ProfileEntry; path: ProfilePath }) {
+function roleText(role: ExtrusionPathRole | undefined, profile: ProfileEntry): string | null {
+  if (role?.kind === 'hole') {
+    const parent = profile.paths.find((entry) => entry.id === role.parentId);
+    return `Hole in ${parent?.name ?? 'path'} (extrusion)`;
+  }
+  if (role?.kind === 'solid' && role.overlaps) {return 'Overlaps – no hole';}
+  return null;
+}
+
+function PathRow({
+  profile,
+  path,
+  role,
+}: {
+  profile: ProfileEntry;
+  path: ProfilePath;
+  role: ExtrusionPathRole | undefined;
+}) {
+  const roleHint = roleText(role, profile);
   const selection = useAppStore((s) => s.profileNodeSelection);
   const hidden = useAppStore((s) => s.hiddenProfilePathIds.includes(path.id));
   const active = selection?.pathId === path.id;
@@ -141,6 +161,7 @@ function PathRow({ profile, path }: { profile: ProfileEntry; path: ProfilePath }
           <Icon icon={Trash2} size={16} strokeWidth={1.75} />
         </button>
       </div>
+      {roleHint ? <p className="profile-hint profile-path-row__role">{roleHint}</p> : null}
       {active ? (
         <div className="profile-path-row__details">
           <PanelSelect
@@ -167,6 +188,25 @@ function PathRow({ profile, path }: { profile: ProfileEntry; path: ProfilePath }
               />
             </span>
           </label>
+          {path.closed ? (
+            <label className="panel-field-row panel-checkbox" title="Object Extrusion: a closed path inside another one cuts a hole">
+              <span className="panel-field-label">Cut hole</span>
+              <span className="panel-field-controls">
+                <input
+                  type="checkbox"
+                  className="panel-checkbox__input"
+                  checked={path.cutHole !== false}
+                  onChange={(event) => {
+                    const cutHole = event.target.checked;
+                    editProfilePath(profile.id, path.id, (current) => {
+                      const { cutHole: _old, ...rest } = current;
+                      return cutHole ? rest : { ...rest, cutHole: false };
+                    });
+                  }}
+                />
+              </span>
+            </label>
+          ) : null}
           <p className="profile-hint">{`${path.nodes.length} points`}</p>
         </div>
       ) : null}
@@ -176,12 +216,13 @@ function PathRow({ profile, path }: { profile: ProfileEntry; path: ProfilePath }
 
 function PathsSection({ profile }: { profile: ProfileEntry }) {
   const full = nextFreeSlot(profile.paths) === null;
+  const roles = classifyExtrusionPaths(profile.paths, sampleProfilePathMm);
   return (
     <SubPanelSection title="Paths">
       <ul className="profile-path-rows" aria-label="Paths">
         {[...profile.paths]
           .sort((a, b) => a.slot - b.slot)
-          .map((path) => <PathRow key={path.id} profile={profile} path={path} />)}
+          .map((path) => <PathRow key={path.id} profile={profile} path={path} role={roles.get(path.id)} />)}
       </ul>
       <button
         type="button"

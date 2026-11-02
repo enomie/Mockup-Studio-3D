@@ -32,6 +32,7 @@ Stand: A, B (B1 Datenmodell, B2 Verwalten, B3 Editor), C (Weinflasche), C2 (Stif
 | | `slot` | Farb-Slot 0–9 (`path_red`, `path_green`, …), die Brücke zu den Lathe-Assets |
 | | `closed` | geschlossen oder offen |
 | | `nodes` | Liste von `ProfileNode` |
+| | `cutHole` | Nur Extrusion: Ein geschlossener Pfad in einem anderen stanzt ein Loch (Standard). `false` lässt ihn ein eigener Körper bleiben. |
 | `ProfileNode` | `x`, `y` | Position in mm, die y-Achse zeigt nach unten (wie im SVG) |
 | | `handleIn`, `handleOut` | Bézier-Handles **relativ** zum Punkt. Fehlt eines, ist das Segment auf dieser Seite gerade. |
 | | `mode` | `smooth`: Die Handles liegen gegenüber und bewegen sich gekoppelt. `corner`: Sie bewegen sich frei. |
@@ -141,6 +142,22 @@ verwenden. Gemeinsam:
   - Rundungen (`radius`) wirken mit.
   - x ist zentriert, der tiefste Punkt steht auf y = 0, die Tiefe ist zentriert auf z.
   - `sizeScale` skaliert alles, auch die Tiefe.
+- **Löcher (G):** Geschlossene Pfade innerhalb geschlossener Pfade stanzen Löcher, nach der
+  Gerade-Ungerade-Regel (`classifyExtrusionPaths` in `src/scene/profile-holes.ts`).
+  - Tiefe 0 → Körper, Tiefe 1 → Loch im direkt umgebenden Körper, Tiefe 2 → wieder Körper
+    („Insel“) usw. „Liegt in“ heißt: alle Abtastpunkte innen und keine Kantenkreuzung.
+  - Teilweise überlappende Pfade bleiben Körper (Hinweis „Overlaps – no hole“). Offene Pfade
+    bleiben Hüllen.
+  - **Cut hole** pro Pfad (`ProfilePath.cutHole`, fehlt = an): aus heißt, der Pfad bleibt immer
+    ein eigener Körper und zählt für die Verschachtelung anderer nicht mit.
+  - Loch-Pfade sind keine eigenen Teile und erscheinen nicht unter Geometries. Die **Lochwand**
+    hat standardmäßig das Material des Körpers und ist unter **Hole walls** änderbar
+    (`extrusionParams.holeWallMaterialIds`, Schlüssel = Slot des Loch-Pfads).
+  - Technisch: `Shape.holes` in `ExtrudeGeometry`. Danach werden die Seitenwände nach Kontur
+    aufgeteilt (`splitHoleWalls`): Gruppe 0 sind Deckel und Außenwand, Gruppe i + 1 die Wand von
+    Loch i.
+  - Im 2D-Editor sind Loch-Pfade gestrichelt. Die Pfadliste rechts zeigt „Hole in ‹Name›
+    (extrusion)“ bzw. „Overlaps – no hole“, im aktiven geschlossenen Pfad den Schalter Cut hole.
 - **Teile und Materialien:** 10 feste Slots `path0` … `path9` / `pathMaterial0Id` … `pathMaterial9Id`
   (Standard Plastic Matte). Die Details zeigen unter Geometries nur die Slots, die das Profil hat,
   beschriftet mit den Pfadnamen.
@@ -230,5 +247,5 @@ Die Seitenpanels bleiben sichtbar. **Done** oder **Esc** schließt ihn wieder.
 - Fangen auf Segmente, Mittel- und Schnittpunkte, Winkel-Fangen (45°), feste Rasterweite
 - Constraints, Bemaßungen
 - SVG-Import und -Export für Nutzer
-- Extrusion: Löcher, Fasen, Sweep entlang eines Pfads, Physik-Kollider, Bilder auf der Extrusion
+- Extrusion: boolesche Operationen bei Überlappung, Fasen, Sweep entlang eines Pfads, Physik-Kollider, Bilder auf der Extrusion
 - Live-3D-Vorschau **während** des Ziehens (Neubau erst nach dem Loslassen)

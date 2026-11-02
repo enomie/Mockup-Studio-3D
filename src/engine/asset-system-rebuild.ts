@@ -21,7 +21,8 @@ import { defaultExtrusionParams, resolveExtrusionProfile } from '@/scene/asset-e
 import { registeredProfileMetrics } from '@/scene/profile-registry';
 import { MATERIAL_PLASTIC_MATTE_ID } from '@/scene/material-ids';
 import { applyAssetShadowFlags } from '@/render/shadow-setup';
-import { buildExtrusionMeshes } from './extrusion-geometry';
+import { buildExtrusionMeshes, sampleProfilePathMm } from './extrusion-geometry';
+import { classifyExtrusionPaths } from '@/scene/profile-holes';
 import { disposeAssetGroup } from './asset-meshes/dispose-asset-group';
 import { resolveMeshMaterial } from './asset-meshes/shared';
 import { defaultPrintParams } from '@/scene/asset-print';
@@ -303,14 +304,28 @@ function rebuildExtrusion(ctx: AssetRebuildContext, root: Group, entity: AssetEn
   const metrics = registeredProfileMetrics(entry);
   disposeAssetGroup(root);
   if (!metrics) {return Promise.resolve();}
+  const bodyMaterialId = (slot: number) =>
+    materials[`pathMaterial${slot}Id` as 'pathMaterial0Id'] ?? MATERIAL_PLASTIC_MATTE_ID;
+  // Closed paths inside closed paths cut holes (even-odd); holes are no parts of their own.
+  const roles = classifyExtrusionPaths(entry.paths, sampleProfilePathMm);
   const paths = entry.paths
+    .filter((path) => roles.get(path.id)?.kind !== 'hole')
     .filter((path) => isGeometryVisible(visibility, `path${path.slot}` as AssetGeometryPart))
     .map((path) => ({
       path,
-      material: resolveMeshMaterial(
-        ctx.materialResolver,
-        materials[`pathMaterial${path.slot}Id` as 'pathMaterial0Id'] ?? MATERIAL_PLASTIC_MATTE_ID,
-      ),
+      material: resolveMeshMaterial(ctx.materialResolver, bodyMaterialId(path.slot)),
+      holes: entry.paths
+        .filter((hole) => {
+          const role = roles.get(hole.id);
+          return role?.kind === 'hole' && role.parentId === path.id;
+        })
+        .map((hole) => ({
+          path: hole,
+          wallMaterial: resolveMeshMaterial(
+            ctx.materialResolver,
+            params.holeWallMaterialIds?.[String(hole.slot)] ?? bodyMaterialId(path.slot),
+          ),
+        })),
     }));
   for (const mesh of buildExtrusionMeshes({
     paths,

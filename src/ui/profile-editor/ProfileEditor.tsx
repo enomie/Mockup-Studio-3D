@@ -2,6 +2,7 @@ import {
   useCallback,
   useEffect,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
   type PointerEvent as ReactPointerEvent,
@@ -53,6 +54,8 @@ import {
 import { useAppStore } from '@/ui/store/use-app-store';
 import { mmToM } from '@/units/length';
 import { snapPoint, type SnapResult } from '@/scene/profile-snap';
+import { classifyExtrusionPaths } from '@/scene/profile-holes';
+import { sampleProfilePathMm } from '@/engine/extrusion-geometry';
 import {
   fitView,
   gridStepMm,
@@ -249,6 +252,13 @@ export function ProfileEditor() {
   const [penHover, setPenHover] = useState<ProfileVec2 | null>(null);
   const [snapHint, setSnapHint] = useState<SnapResult | null>(null);
   const visiblePaths = profile ? profile.paths.filter((path) => !hiddenPathIds.includes(path.id)) : [];
+  // Holes (for the Object Extrusion) are drawn dashed.
+  const pathsForRoles = profile?.paths;
+  const holeIds = useMemo(() => {
+    if (!pathsForRoles) {return new Set<string>();}
+    const roles = classifyExtrusionPaths(pathsForRoles, sampleProfilePathMm);
+    return new Set([...roles].filter(([, role]) => role.kind === 'hole').map(([id]) => id));
+  }, [pathsForRoles]);
 
   // Keys: the editor owns the keyboard while open (no scene delete or viewport shortcuts).
   useEffect(() => {
@@ -563,7 +573,8 @@ export function ProfileEditor() {
                   <g key={path.id}>
                     <path
                       d={profilePathToSvgData(path)}
-                      className={`profile-editor__path${active ? ' profile-editor__path--active' : ''}`}
+                      className={`profile-editor__path${active ? ' profile-editor__path--active' : ''}${
+                        holeIds.has(path.id) ? ' profile-editor__path--hole' : ''}`}
                       style={{ stroke: LATHE_PATH_SLOT_STROKES[path.slot] }}
                     />
                     {Array.from({ length: segmentCount(path) }, (_unused, segment) => {

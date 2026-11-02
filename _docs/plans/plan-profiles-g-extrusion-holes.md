@@ -1,6 +1,6 @@
 # Plan G: Löcher bei der Object Extrusion
 
-Status: **Entwurf – wartet auf Freigabe.** Stand: `_docs/requirements/requirements-profiles.md` (Abschnitt 4b).
+Status: **Umgesetzt.** Entscheidungen: automatische Regel mit „Cut hole“ pro Pfad. Die Lochwand hat standardmäßig das Material des Körpers und ist änderbar (Bereich „Hole walls“ in den Extrusion-Details). Stand: `_docs/requirements/requirements-profiles.md` (4b).
 
 ## Ziel
 Ein geschlossener Pfad **innerhalb** eines anderen geschlossenen Pfads stanzt ein **Loch** in die

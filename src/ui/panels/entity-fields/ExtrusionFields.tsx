@@ -7,6 +7,9 @@ import {
 import { getGeometryPartsForKind } from '@/scene/asset-kind-registry';
 import type { AssetEntity } from '@/scene/entity-types';
 import { PanelAxisField } from '@/ui/components/PanelAxisField/PanelAxisField';
+import { PanelSelect } from '@/ui/components/PanelSelect';
+import { sampleProfilePathMm } from '@/engine/extrusion-geometry';
+import { classifyExtrusionPaths } from '@/scene/profile-holes';
 import { SubPanelSection } from '@/ui/components/SubPanelSection';
 import { GeometryPartsSection } from '@/ui/panels/GeometryPartsSection';
 import { ProfilePickerSection } from '@/ui/panels/ProfilePickerSection';
@@ -26,7 +29,12 @@ export function ExtrusionFields({ entity }: { entity: AssetEntity }) {
   useAppStore((s) => s.userProfiles);
   const params = { ...defaultExtrusionParams(), ...entity.extrusionParams };
   const { entry } = resolveExtrusionProfile(params.profileId);
-  const slots = new Set(entry.paths.map((path) => path.slot));
+  const roles = classifyExtrusionPaths(entry.paths, sampleProfilePathMm);
+  const holes = entry.paths.filter((path) => roles.get(path.id)?.kind === 'hole');
+  // Holes are no parts of their own: their wall material is chosen below.
+  const slots = new Set(
+    entry.paths.filter((path) => roles.get(path.id)?.kind !== 'hole').map((path) => path.slot),
+  );
   const parts = getGeometryPartsForKind(entity.assetKind).filter(
     (part) => part.profileSlot !== undefined && slots.has(part.profileSlot),
   );
@@ -60,6 +68,37 @@ export function ExtrusionFields({ entity }: { entity: AssetEntity }) {
           profilePathName={(slot) => entry.paths.find((path) => path.slot === slot)?.name}
         />
       </SubPanelSection>
+
+      {holes.length > 0 ? (
+        <SubPanelSection title="Hole walls">
+          {holes.map((hole) => {
+            const role = roles.get(hole.id);
+            const parent = role?.kind === 'hole'
+              ? entry.paths.find((path) => path.id === role.parentId)
+              : undefined;
+            const value = params.holeWallMaterialIds?.[String(hole.slot)] ?? '';
+            return (
+              <PanelSelect
+                key={hole.id}
+                label={`${hole.name} wall`}
+                value={value}
+                options={[
+                  { value: '', label: `Same as ${parent?.name ?? 'body'}` },
+                  ...materials.map((material) => ({ value: material.id, label: material.name })),
+                ]}
+                onChange={(materialId) => {
+                  setKindParams('extrusion', entity.id, {
+                    holeWallMaterialIds: {
+                      ...params.holeWallMaterialIds,
+                      [String(hole.slot)]: materialId,
+                    },
+                  });
+                }}
+              />
+            );
+          })}
+        </SubPanelSection>
+      ) : null}
     </>
   );
 }

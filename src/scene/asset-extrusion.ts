@@ -13,6 +13,11 @@ export interface ExtrusionParams {
   /** Profile id (built-in or user). */
   profileId: string;
   depthM: number;
+  /**
+   * Material of hole walls per hole path slot ("0"…"9"). Missing = same material as the
+   * body the hole is cut into.
+   */
+  holeWallMaterialIds?: Partial<Record<string, string>>;
 }
 
 export const DEFAULT_EXTRUSION_PROFILE_ID = 'extrude-rounded-rect';
@@ -31,7 +36,9 @@ export function defaultExtrusionParams(): ExtrusionParams {
 }
 
 export function cloneExtrusionParams(params: ExtrusionParams): ExtrusionParams {
-  return { ...params };
+  return params.holeWallMaterialIds
+    ? { ...params, holeWallMaterialIds: { ...params.holeWallMaterialIds } }
+    : { ...params };
 }
 
 export function clampExtrusionParams(
@@ -39,7 +46,11 @@ export function clampExtrusionParams(
   base: ExtrusionParams,
 ): ExtrusionParams {
   const merged = { ...base, ...partial };
+  const holeWalls = Object.fromEntries(
+    Object.entries(merged.holeWallMaterialIds ?? {}).filter(([, id]) => typeof id === 'string' && id !== ''),
+  );
   return {
+    ...(Object.keys(holeWalls).length > 0 ? { holeWallMaterialIds: holeWalls } : {}),
     profileId: canonicalProfileId(merged.profileId || DEFAULT_EXTRUSION_PROFILE_ID),
     depthM: clamp(
       Number.isFinite(merged.depthM) ? merged.depthM : EXTRUSION_DEPTH_DEFAULT_M,
