@@ -22,3 +22,8 @@
 - Plans in `_docs/plans/` are also committed and pushed to `main`.
 - Before pushing code: run tests, lint and build (`npx vitest run`, `npm run lint`, `npm run build`).
 - Background: see `_docs/diaries/diary-code-decisions.md` (single-branch decision).
+
+## No Backward Compatibility
+- There are no existing user scenes, saved files or production data yet — the software is pre-release.
+- Refactor freely: data models, scene formats and APIs may change without migrations, converters or compatibility shims.
+- Do NOT ask whether old scenes/data must be migrated or may break. They may break; never plan or build migration code unless the user explicitly requests it.
