@@ -1,4 +1,5 @@
-import type { Object3D } from 'three/webgpu';
+import { Object3D, type Quaternion, type Vector3 } from 'three/webgpu';
+import type { AssetEntity } from '@/scene/entity-types';
 import type { AppMode } from '@/scene/scene-api';
 import { isFabricClothAssetKind } from '@/scene/asset-fabric-cloth';
 import { bakesUniformScaleIntoParams } from '@/scene/rigid-primitive-asset';
@@ -9,6 +10,13 @@ import { scalePatchPoints } from '@/scene/triangle-patch-recenter';
 import type { AssetSystem } from './asset-system';
 import type { CameraController } from './camera-controller';
 import type { EntityRegistry } from './entity-registry';
+import {
+  applyGroupRigidDelta,
+  applyGroupScale,
+  groupCenter,
+  type GroupMemberPose,
+  type GroupMemberStart,
+} from './multi-transform';
 import type { FabricClothSimulationParticipant } from './fabric-cloth-simulation-participant';
 import { fabricClothPinCornerIndex, fabricClothPinEntityId } from './fabric-cloth-pins';
 import type { GizmoController } from './gizmo-controller';
@@ -51,6 +59,13 @@ export class GizmoInteractionController {
   private scaleDragBase = 1;
   private scaleCommitPending = false;
   private readonly fabricClothActivePinCorner = new Map<string, number>();
+  /** Invisible gizmo target at the centre of a multi-selection. */
+  private readonly groupPivot = new Object3D();
+  private groupDrag: {
+    members: (GroupMemberStart & { sizeScale: number })[];
+    pivot: Vector3;
+    quaternion: Quaternion;
+  } | null = null;
 
   constructor(private readonly deps: GizmoInteractionDeps) {
     deps.gizmo.setCallbacks({
@@ -74,6 +89,12 @@ export class GizmoInteractionController {
       return;
     }
     const activePatchHandle = patchGizmo.getActiveHandleMesh();
+    const group = this.getGroupRuntimes();
+    if (group && !selectedLightId && !activePatchHandle && worldPhysics.getPhase() === 'idle') {
+      this.attachGroupPivot(group, mode);
+      return;
+    }
+    this.groupPivot.removeFromParent();
     const gizmoTarget =
       activePatchHandle ??
       ((selectedLightId ? lighting.getHelperObject(selectedLightId) : null) ??
@@ -182,8 +203,133 @@ export class GizmoInteractionController {
     );
   }
 
+  /** Visible selected assets when more than one is selected, else null. */
+  private getGroupRuntimes(): { entity: AssetEntity; object: Object3D }[] | null {
+    const { registry } = this.deps;
+    const runtimes = registry.getSelectedEntityIds()
+      .flatMap((id) => {
+        const runtime = registry.getRuntime(id);
+        return runtime?.entity.visible ? [runtime] : [];
+      });
+    return runtimes.length > 1 ? runtimes : null;
+  }
+
+  private attachGroupPivot(group: { object: Object3D }[], mode: AppMode): void {
+    const { gizmo } = this.deps;
+    const parent = group[0].object.parent;
+    const center = groupCenter(group.map((runtime) => runtime.object));
+    if (!parent || !center || (mode !== 'translate' && mode !== 'rotate' && mode !== 'scale')) {
+      gizmo.setEnabled(false);
+      return;
+    }
+    if (this.groupPivot.parent !== parent) {parent.add(this.groupPivot);}
+    if (!this.groupDrag) {
+      this.groupPivot.position.copy(parent.worldToLocal(center));
+      this.groupPivot.quaternion.identity();
+      this.groupPivot.scale.set(1, 1, 1);
+      this.groupPivot.updateMatrixWorld();
+    }
+    gizmo.setTransformMode(mode);
+    gizmo.attach(this.groupPivot);
+    gizmo.setEnabled(true);
+  }
+
+  private onGroupTransform(): void {
+    const drag = this.groupDrag;
+    if (!drag) {return;}
+    const { gizmo, registry } = this.deps;
+    const pivot = this.groupPivot;
+    let poses: GroupMemberPose[];
+    if (this.deps.getMode() === 'scale') {
+      gizmo.enforceUniformScale();
+      const factor = clampSizeScale(pivot.scale.x);
+      poses = applyGroupScale(drag.members, drag.pivot, factor);
+      for (const member of drag.members) {
+        const runtime = registry.getRuntime(member.id);
+        if (runtime && !isWallAssetKind(runtime.entity.assetKind)) {runtime.object.scale.setScalar(factor);}
+      }
+      this.scaleCommitPending = true;
+    } else {
+      poses = applyGroupRigidDelta(drag.members, drag.pivot, drag.quaternion, pivot.position, pivot.quaternion);
+    }
+    for (const pose of poses) {
+      const runtime = registry.getRuntime(pose.id);
+      if (!runtime) {continue;}
+      runtime.object.position.copy(pose.position);
+      runtime.object.quaternion.copy(pose.quaternion);
+      runtime.object.updateMatrixWorld();
+      registry.syncTransformFromObject(pose.id);
+      this.deps.syncFixedRigidPose(pose.id);
+    }
+    this.deps.patchGizmo.syncHelpersFromEntity();
+    this.deps.emit();
+  }
+
+  private onGroupDraggingChanged(dragging: boolean): void {
+    const { registry } = this.deps;
+    if (dragging) {
+      const members = (this.getGroupRuntimes() ?? []).map((runtime) => ({
+        id: runtime.entity.id,
+        position: runtime.object.position.clone(),
+        quaternion: runtime.object.quaternion.clone(),
+        sizeScale: runtime.entity.sizeScale,
+      }));
+      this.groupDrag = {
+        members,
+        pivot: this.groupPivot.position.clone(),
+        quaternion: this.groupPivot.quaternion.clone(),
+      };
+      this.scaleCommitPending = false;
+      return;
+    }
+    const drag = this.groupDrag;
+    this.groupDrag = null;
+    if (drag && this.deps.getMode() === 'scale' && this.scaleCommitPending) {
+      const factor = this.groupPivot.scale.x;
+      for (const member of drag.members) {
+        const runtime = registry.getRuntime(member.id);
+        if (!runtime) {continue;}
+        runtime.object.scale.set(1, 1, 1);
+        if (!isWallAssetKind(runtime.entity.assetKind)) {
+          this.commitUniformScale(runtime.entity, factor, member.sizeScale);
+        }
+      }
+      this.scaleCommitPending = false;
+    }
+    this.refresh();
+  }
+
+  /** Bakes a finished uniform scale drag into the entity (kind-specific). */
+  private commitUniformScale(entity: AssetEntity, uniform: number, baseSizeScale: number): void {
+    const { assets } = this.deps;
+    const entityId = entity.id;
+    const patchParams = entity.patchParams;
+    if (patchParams && isPatchAssetKind(entity.assetKind)) {
+      // Patches bake the scale into their points (around the pivot, which sits at the center).
+      const points = scalePatchPoints(patchParams, clampSizeScale(uniform));
+      this.deps.applyAssetMutation(
+        () => assets.setKindParams('patch', entityId, { points }),
+        { refreshGizmo: true },
+      );
+    } else if (bakesUniformScaleIntoParams(entity.assetKind)) {
+      this.deps.applyAssetMutation(
+        () => assets.applyRigidPrimitiveUniformScale(entityId, uniform),
+        { refreshGizmo: true },
+      );
+    } else {
+      const nextScale = clampSizeScale(baseSizeScale * uniform);
+      this.deps.applyAssetMutation(() =>
+        assets.setAssetSizeScale(entityId, nextScale),
+      );
+    }
+  }
+
   private onTransform(): void {
     const { gizmo, lighting, patchGizmo, registry } = this.deps;
+    if (gizmo.getAttachedObject() === this.groupPivot) {
+      this.onGroupTransform();
+      return;
+    }
     const selectedLightId = lighting.getSelectedLightId();
     if (selectedLightId) {
       lighting.syncOffsetFromHelper(selectedLightId);
@@ -223,9 +369,14 @@ export class GizmoInteractionController {
   }
 
   private onDraggingChanged(dragging: boolean): void {
-    const { cameras, viewportInvalidation, registry, assets } = this.deps;
+    const { cameras, viewportInvalidation, registry } = this.deps;
     cameras.setOrbitEnabled(!dragging);
     viewportInvalidation.setContinuous(dragging || cameras.isInteracting());
+
+    if (this.deps.gizmo.getAttachedObject() === this.groupPivot) {
+      this.onGroupDraggingChanged(dragging);
+      return;
+    }
 
     const patchEntityId = this.deps.patchGizmo.getActiveTarget()?.entityId;
     if (!dragging && patchEntityId && this.deps.getMode() !== 'scale') {
@@ -250,26 +401,7 @@ export class GizmoInteractionController {
     const uniform =
       (selected.object.scale.x + selected.object.scale.y + selected.object.scale.z) / 3;
     selected.object.scale.set(1, 1, 1);
-    const entityId = selected.entity.id;
-    const patchParams = selected.entity.patchParams;
-    if (patchParams && isPatchAssetKind(selected.entity.assetKind)) {
-      // Patches bake the scale into their points (around the pivot, which sits at the center).
-      const points = scalePatchPoints(patchParams, clampSizeScale(uniform));
-      this.deps.applyAssetMutation(
-        () => assets.setKindParams('patch', entityId, { points }),
-        { refreshGizmo: true },
-      );
-    } else if (bakesUniformScaleIntoParams(selected.entity.assetKind)) {
-      this.deps.applyAssetMutation(
-        () => assets.applyRigidPrimitiveUniformScale(entityId, uniform),
-        { refreshGizmo: true },
-      );
-    } else {
-      const nextScale = clampSizeScale(this.scaleDragBase * uniform);
-      this.deps.applyAssetMutation(() =>
-        assets.setAssetSizeScale(entityId, nextScale),
-      );
-    }
+    this.commitUniformScale(selected.entity, uniform, this.scaleDragBase);
     this.scaleCommitPending = false;
   }
 
