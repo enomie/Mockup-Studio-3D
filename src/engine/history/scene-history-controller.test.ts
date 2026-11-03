@@ -172,3 +172,34 @@ describe('SceneHistoryController', () => {
     expect(s.history.getState().canUndo).toBe(false);
   });
 });
+
+describe('SceneHistoryController with multi-selection edits', () => {
+  it('records a group gizmo drag of several objects as one step', async () => {
+    const a = entity('a');
+    const b = entity('b');
+    const s = setup([a, b]);
+    s.history.setPointerDown(true);
+    for (let x = 1; x <= 5; x++) {s.change([entity('a', x), entity('b', x)]);}
+    s.history.setPointerDown(false);
+    // Scale bakes in right after release, before the step settles.
+    s.change([entity('a', 9), entity('b', 9)]);
+    s.settle();
+    await s.history.undo();
+    expect(s.entities).toEqual([a, b]);
+    expect(s.history.getState().canUndo).toBe(false);
+  });
+
+  it('records deleting several selected objects as one step', async () => {
+    const a = entity('a');
+    const b = entity('b');
+    const c = entity('c');
+    const s = setup([a, b, c]);
+    s.change([b, c]);
+    s.change([c]);
+    s.settle();
+    expect(s.history.getState().undoLabel).toBe('Delete 2 objects');
+    await s.history.undo();
+    expect(s.entities.map((e) => e.id)).toEqual(['a', 'b', 'c']);
+    expect(s.history.getState().canUndo).toBe(false);
+  });
+});

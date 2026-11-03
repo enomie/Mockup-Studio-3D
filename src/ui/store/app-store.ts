@@ -85,6 +85,7 @@ export {
   toggleProfilePathHidden,
   setProfileEditorTool,
   toggleProfileNode,
+  selectProfileNodes,
   getProfileSelectedNodes,
   breakProfileAtNode,
   breakProfileAtSegment,

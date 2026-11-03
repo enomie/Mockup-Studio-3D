@@ -28,6 +28,16 @@ export function describeEntityChange(
   }
 
   const count = added.length + removed.length + changed.length;
+  if (count > 1 && removed.length === count) {
+    return { label: `Delete ${count} objects`, focusEntityId: null };
+  }
+  if (count > 1 && changed.length === count) {
+    const onlyMoves = changed.every((entity) => {
+      const previous = beforeById.get(entity.id);
+      return previous !== undefined && JSON.stringify({ ...previous, transform: entity.transform }) === JSON.stringify(entity);
+    });
+    if (onlyMoves) {return { label: `Transform ${count} objects`, focusEntityId: changed[0].id };}
+  }
   if (count > 1) {
     return { label: `Edit ${count} objects`, focusEntityId: [...added, ...changed].at(0)?.id ?? null };
   }

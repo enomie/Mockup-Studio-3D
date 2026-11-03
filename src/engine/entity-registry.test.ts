@@ -55,3 +55,12 @@ describe('EntityRegistry multi-selection', () => {
     expect(registry.getSelectedEntityIds()).toEqual(['c']);
   });
 });
+
+describe('EntityRegistry.setSelectedEntityIds', () => {
+  it('selects all given entities with the last one active', () => {
+    const registry = new EntityRegistry();
+    for (const id of ['a', 'b']) {registry.addEntity(id, 'block', new Group(), defaultTransform());}
+    registry.setSelectedEntityIds(['a', 'b', 'missing']);
+    expect(registry.getSelectedEntityIds()).toEqual(['b', 'a']);
+  });
+});

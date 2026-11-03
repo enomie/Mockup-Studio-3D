@@ -70,6 +70,18 @@ export function toggleProfileNode(point: PathPoint): void {
   store.emit();
 }
 
+/** Ctrl/Cmd+A: selects the given nodes; the last one becomes active. */
+export function selectProfileNodes(points: readonly PathPoint[]): void {
+  const active = points.at(-1);
+  if (!active) {return;}
+  store.setAppState({
+    ...store.state,
+    profileNodeSelection: { pathId: active.pathId, index: active.index },
+    profileExtraNodes: points.slice(0, -1),
+  });
+  store.emit();
+}
+
 /** Active node plus the Shift-collected nodes. */
 export function getProfileSelectedNodes(): PathPoint[] {
   const current = store.state.profileNodeSelection;

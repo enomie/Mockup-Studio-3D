@@ -401,6 +401,7 @@ export class MockupEngine implements SceneApi {
     });
     selection.setSelectHandler((entityId) => { engine.handleSelect(entityId); });
     selection.setToggleHandler((entityId) => { engine.toggleEntitySelection(entityId); });
+    selection.setSelectAllHandler(() => { engine.selectAllEntities(); });
     selection.setDeleteHandler(() => {
       for (const entityId of [...registry.getSelectedEntityIds()]) {
         engine.removeEntity(entityId);
@@ -593,6 +594,19 @@ export class MockupEngine implements SceneApi {
       if (this.patchAddPoint.isActive() && this.patchAddPoint.getEntityId() !== active) {
         this.patchAddPoint.stop();
       }
+      this.gizmoInteraction.refresh();
+    });
+  }
+
+  /** Ctrl/Cmd+A: selects every visible asset. */
+  selectAllEntities(): void {
+    const ids = this.registry.getEntities().filter((entity) => entity.visible).map((entity) => entity.id);
+    this.commitVisualState(() => {
+      this.lighting.setSelectedLightId(null);
+      this.registry.setSelectedEntityIds(ids);
+      const active = this.registry.getSelectedEntityId();
+      this.patchGizmo.setActiveEntity(active);
+      if (this.patchAddPoint.isActive()) {this.patchAddPoint.stop();}
       this.gizmoInteraction.refresh();
     });
   }

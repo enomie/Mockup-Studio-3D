@@ -42,6 +42,13 @@ export class SelectionController {
       return;
     }
 
+    if (event.code === 'KeyA' && (event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey) {
+      if (isEditableTarget(event.target)) {return;}
+      event.preventDefault();
+      this.onSelectAll();
+      return;
+    }
+
     if (event.code !== 'Delete' && event.code !== 'Backspace') {return;}
     if (isEditableTarget(event.target)) {return;}
 
@@ -58,6 +65,7 @@ export class SelectionController {
   private onSelect: (entityId: string | null) => void = noop;
   private onDelete: () => void = noop;
   private onToggle: (entityId: string) => void = noop;
+  private onSelectAll: () => void = noop;
 
   constructor(domElement: HTMLElement, registry: EntityRegistry) {
     this.domElement = domElement;
@@ -83,6 +91,10 @@ export class SelectionController {
 
   setSelectHandler(handler: (entityId: string | null) => void): void {
     this.onSelect = handler;
+  }
+
+  setSelectAllHandler(handler: () => void): void {
+    this.onSelectAll = handler;
   }
 
   setToggleHandler(handler: (entityId: string) => void): void {

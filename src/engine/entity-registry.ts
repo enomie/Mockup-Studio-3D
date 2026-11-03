@@ -333,6 +333,16 @@ export class EntityRegistry {
     this.emitEntities();
   }
 
+  /** Replaces the selection; the last id becomes the active one. */
+  setSelectedEntityIds(entityIds: readonly string[]): void {
+    const ids = entityIds.filter((id) => this.entities.has(id));
+    const active = ids.at(-1) ?? null;
+    this.extraSelectedIds = ids.slice(0, -1);
+    this.selectedEntityId = active;
+    this.selectionListeners.forEach((listener) => { listener(active); });
+    this.emitEntities();
+  }
+
   setSelectedEntityId(entityId: string | null): void {
     if (this.selectedEntityId === entityId && this.extraSelectedIds.length === 0) {return;}
     this.extraSelectedIds = [];

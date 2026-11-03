@@ -56,6 +56,7 @@ import {
   selectProfilePath,
   setProfileEditorTool,
   toggleProfileNode,
+  selectProfileNodes,
   getProfileSelectedNodes,
   breakProfileAtNode,
   breakProfileAtSegment,
@@ -357,6 +358,17 @@ export function ProfileEditor() {
     if (!editingProfileId) {return undefined;}
     const onKeyDown = (event: KeyboardEvent) => {
       if (isEditableTarget(event.target)) {return;}
+      if ((event.ctrlKey || event.metaKey) && event.code === 'KeyA' && !event.altKey && !event.shiftKey) {
+        // Select all points of the visible paths (the scene must not select its assets).
+        event.preventDefault();
+        event.stopPropagation();
+        const state = getAppState();
+        const paths = getProfile(editingProfileId, state.userProfiles)?.paths ?? [];
+        selectProfileNodes(paths
+          .filter((path) => !state.hiddenProfilePathIds.includes(path.id))
+          .flatMap((path) => path.nodes.map((_node, index) => ({ pathId: path.id, index }))));
+        return;
+      }
       if (event.ctrlKey || event.metaKey) {return;}
       event.stopPropagation();
       if (event.key === 'Escape' || event.key === 'Enter') {
