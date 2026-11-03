@@ -24,9 +24,11 @@ export const PROFILE_EDITOR_SHORTCUTS: readonly ProfileEditorShortcutGroup[] = [
       { keys: 'Drag', action: 'Move points and handles' },
       { keys: 'Shift', action: 'Break handles' },
       { keys: 'Click path', action: 'Add point' },
-      { keys: 'Del', action: 'Delete point' },
+      { keys: 'Del', action: 'Delete selected points' },
       { keys: 'Double-click', action: 'Corner / smooth' },
-      { keys: 'Shift-click end + J', action: 'Join' },
+      { keys: 'Shift-click', action: 'Add / remove point from selection' },
+      { keys: 'Arrows (Shift ×10)', action: 'Nudge selected points' },
+      { keys: 'Shift-click 2 ends + J', action: 'Join' },
     ],
   },
   {

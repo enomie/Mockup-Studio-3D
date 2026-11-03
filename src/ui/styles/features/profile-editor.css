@@ -195,7 +195,7 @@
   cursor: not-allowed;
 }
 
-.profile-editor__node--join {
+.profile-editor__node--extra {
   fill: var(--color-bg);
   stroke: var(--color-accent) !important;
   stroke-width: 3;

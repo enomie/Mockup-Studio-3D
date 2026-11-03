@@ -110,6 +110,7 @@ function NodeFields(props: NodeFieldsProps) {
 /** Numeric fields for the selected point of the 2D editor (right inspector). */
 export function ProfilePointSection({ profile }: { profile: ProfileEntry }) {
   const selection = useAppStore((s) => s.profileNodeSelection);
+  const extraCount = useAppStore((s) => s.profileExtraNodes.length);
   const path = selection ? profile.paths.find((entry) => entry.id === selection.pathId) : undefined;
   const index = selection?.index ?? null;
   const node = path && index !== null ? path.nodes.at(index) : undefined;
@@ -123,15 +124,19 @@ export function ProfilePointSection({ profile }: { profile: ProfileEntry }) {
   }
   return (
     <>
+      {extraCount > 0 ? (
+        <p className="profile-hint">{`${extraCount + 1} points selected — drag or arrow keys move them together. Values below: last clicked point.`}</p>
+      ) : null}
       <NodeFields profileId={profile.id} path={path} index={index} node={node} />
       <CutJoinSection profile={profile} path={path} index={index} />
     </>
   );
 }
 
-/** Break here / Join for the selected point (Scissors and Shift-click + J on the canvas). */
+/** Break here / Join for the selected point (Scissors, and two Shift-collected ends + J). */
 function CutJoinSection({ profile, path, index }: { profile: ProfileEntry; path: ProfilePath; index: number }) {
-  const target = useAppStore((s) => s.profileJoinTarget);
+  const extras = useAppStore((s) => s.profileExtraNodes);
+  const target = extras.length === 1 ? extras[0] : null;
   const canBreak = breakAtNode(profile.paths, path.id, index) !== null;
   const canJoin = target !== null && joinEndpoints(profile.paths, { pathId: path.id, index }, target) !== null;
   return (
@@ -151,7 +156,7 @@ function CutJoinSection({ profile, path, index }: { profile: ProfileEntry; path:
           type="button"
           className="btn"
           disabled={!canJoin}
-          title="Join with the Shift-clicked end point (J)"
+          title="Join with the other selected end point (J)"
           onClick={() => {
             if (target) {joinProfileEndpoints(profile.id, { pathId: path.id, index }, target);}
           }}

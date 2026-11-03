@@ -11,6 +11,7 @@ import {
   type BreakResult,
   type PathPoint,
 } from '@/scene/profile-edit';
+import { groupNodes, toggleGroupNode } from '@/scene/profile-node-group';
 import * as store from './app-store-internals';
 import type { ProfileEditorTool, ProfileNodeSelection } from './app-store-internals';
 
@@ -23,6 +24,7 @@ export function selectProfile(profileId: string | null): void {
     selectedProfileId: profileId,
     editingProfileId: keepEditor ? store.state.editingProfileId : null,
     profileNodeSelection: keepEditor ? store.state.profileNodeSelection : null,
+    profileExtraNodes: keepEditor ? store.state.profileExtraNodes : [],
   });
   store.emit();
 }
@@ -35,6 +37,7 @@ export function openProfileEditor(id: string): void {
     selectedProfileId: id,
     editingProfileId: id,
     profileNodeSelection: null,
+    profileExtraNodes: [],
     hiddenProfilePathIds: [],
     profileEditorTool: 'select',
     profilePenPathId: null,
@@ -45,19 +48,33 @@ export function openProfileEditor(id: string): void {
 export function closeProfileEditor(): void {
   if (store.state.editingProfileId === null) {return;}
   finishProfilePen();
-  store.setAppState({ ...store.state, editingProfileId: null, profileNodeSelection: null });
+  store.setAppState({ ...store.state, editingProfileId: null, profileNodeSelection: null, profileExtraNodes: [] });
   store.emit();
 }
 
 export function selectProfileNode(selection: ProfileNodeSelection | null): void {
-  store.setAppState({ ...store.state, profileNodeSelection: selection, profileJoinTarget: null });
+  store.setAppState({ ...store.state, profileNodeSelection: selection, profileExtraNodes: [] });
   store.emit();
 }
 
-/** Picks a second end point (Shift-click) to join with the selected one. */
-export function setProfileJoinTarget(target: PathPoint | null): void {
-  store.setAppState({ ...store.state, profileJoinTarget: target });
+/** Shift-click: adds a node to the multi-selection (it becomes active) or removes it. */
+export function toggleProfileNode(point: PathPoint): void {
+  const current = store.state.profileNodeSelection;
+  const active = current?.index != null ? { pathId: current.pathId, index: current.index } : null;
+  const next = toggleGroupNode({ active, extras: store.state.profileExtraNodes }, point);
+  store.setAppState({
+    ...store.state,
+    profileNodeSelection: next.active ?? (current ? { pathId: current.pathId, index: null } : null),
+    profileExtraNodes: next.extras,
+  });
   store.emit();
+}
+
+/** Active node plus the Shift-collected nodes. */
+export function getProfileSelectedNodes(): PathPoint[] {
+  const current = store.state.profileNodeSelection;
+  const active = current?.index != null ? { pathId: current.pathId, index: current.index } : null;
+  return groupNodes({ active, extras: store.state.profileExtraNodes });
 }
 
 function applyPathsResult(id: string, run: (paths: ProfilePath[]) => BreakResult | null): boolean {
@@ -195,6 +212,7 @@ export function removeProfile(id: string): void {
     editingProfileId: store.state.editingProfileId === id ? null : store.state.editingProfileId,
     profileNodeSelection:
       store.state.editingProfileId === id ? null : store.state.profileNodeSelection,
+    profileExtraNodes: store.state.editingProfileId === id ? [] : store.state.profileExtraNodes,
   });
   store.emit();
 }
@@ -256,6 +274,7 @@ export function startProfilePen(id: string, at: ProfileVec2, continueFrom?: Path
     store.setAppState({
       ...store.state,
       profilePenPathId: continueFrom.pathId,
+      profileExtraNodes: [],
       profileNodeSelection: path ? { pathId: path.id, index: path.nodes.length - 1 } : null,
     });
     store.emit();
@@ -268,7 +287,7 @@ export function startProfilePen(id: string, at: ProfileVec2, continueFrom?: Path
     ...store.state,
     profilePenPathId: started.pathId,
     profileNodeSelection: { pathId: started.pathId, index: 0 },
-    profileJoinTarget: null,
+    profileExtraNodes: [],
   });
   store.emit();
   return true;
@@ -282,7 +301,7 @@ export function appendProfilePenNode(id: string, at: ProfileVec2): number | null
   if (!pathId || !path) {return null;}
   const index = path.nodes.length;
   editProfilePath(id, pathId, (current) => appendPenNode(current, at));
-  store.setAppState({ ...store.state, profileNodeSelection: { pathId, index } });
+  store.setAppState({ ...store.state, profileNodeSelection: { pathId, index }, profileExtraNodes: [] });
   store.emit();
   return index;
 }
@@ -308,6 +327,7 @@ export function finishProfilePen(): void {
     ...store.state,
     profilePenPathId: null,
     profileNodeSelection: stillThere ? { pathId, index: null } : null,
+    profileExtraNodes: [],
   });
   store.emit();
 }

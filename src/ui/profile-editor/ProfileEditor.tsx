@@ -26,6 +26,13 @@ import {
 } from '@/scene/profile-edit';
 import { getProfile } from '@/scene/profile-library';
 import {
+  deleteNodeGroup,
+  moveNodeGroup,
+  nodeStarts,
+  samePoint,
+  type NodeStart,
+} from '@/scene/profile-node-group';
+import {
   profileControlBounds,
   profilePathToSvgData,
   type ProfileNode,
@@ -40,7 +47,8 @@ import {
   getAppState,
   selectProfilePath,
   setProfileEditorTool,
-  setProfileJoinTarget,
+  toggleProfileNode,
+  getProfileSelectedNodes,
   breakProfileAtNode,
   breakProfileAtSegment,
   joinProfileEndpoints,
@@ -88,10 +96,25 @@ const FIT_PADDING = { left: 420, right: 380, top: 80, bottom: 80 };
 
 type Drag =
   | { kind: 'pan'; startX: number; startY: number; view: EditorView; moved: boolean; deselect: boolean }
-  | { kind: 'node'; pathId: string; index: number; grabOffset: ProfileVec2 }
+  /**
+   * Moves the grabbed node; `group` holds the start positions of the other selected nodes,
+   * which follow by the same delta. `collapse`: a click without moving keeps only this node.
+   */
+  | {
+    kind: 'node'; pathId: string; index: number; grabOffset: ProfileVec2;
+    start: ProfileVec2; group: NodeStart[]; collapse: boolean; moved: boolean;
+  }
   | { kind: 'handle'; pathId: string; index: number; side: HandleSide }
   /** Pen: dragging after a click pulls the handles of the new point. */
   | { kind: 'pen-handle'; pathId: string; index: number };
+
+/** Arrow-key nudge directions in mm (profile y points down on screen). */
+const ARROW_KEYS: Record<string, [number, number]> = {
+  ArrowLeft: [-1, 0],
+  ArrowRight: [1, 0],
+  ArrowUp: [0, -1],
+  ArrowDown: [0, 1],
+};
 
 function isEditableTarget(target: EventTarget | null): boolean {
   return target instanceof Element && Boolean(target.closest('input, textarea, select, [contenteditable="true"]'));
@@ -106,13 +129,15 @@ export function pickJoinTarget(
   paths: readonly ProfilePath[],
   at: ProfileVec2,
   selection: { pathId: string; index: number | null } | null,
+  exclude: readonly { pathId: string; index: number }[] = [],
 ): { pathId: string; index: number } | null {
   for (const path of paths) {
     for (const index of [0, path.nodes.length - 1]) {
       const node = path.nodes[index];
       const same = Math.abs(node.x - at.x) < 1e-6 && Math.abs(node.y - at.y) < 1e-6;
       const selected = selection?.pathId === path.id && selection.index === index;
-      if (same && !selected && isEndpoint(path, index)) {return { pathId: path.id, index };}
+      const excluded = exclude.some((point) => point.pathId === path.id && point.index === index);
+      if (same && !selected && !excluded && isEndpoint(path, index)) {return { pathId: path.id, index };}
     }
   }
   return null;
@@ -210,6 +235,8 @@ export function ProfileEditor() {
   const spaceRef = useRef(false);
   const fittedFor = useRef<string | null>(null);
   const lastNodePress = useRef<{ key: string; time: number } | null>(null);
+  const nudgeStepRef = useRef(1);
+  useEffect(() => { nudgeStepRef.current = view ? gridStepMm(view.scale) / 10 : 1; }, [view]);
 
   // Track canvas size.
   useLayoutEffect(() => {
@@ -246,7 +273,7 @@ export function ProfileEditor() {
       ? selection.index
       : null;
   const hiddenPathIds = useAppStore((s) => s.hiddenProfilePathIds);
-  const joinTargetPoint = useAppStore((s) => s.profileJoinTarget);
+  const extraNodes = useAppStore((s) => s.profileExtraNodes);
   const activeTool = useAppStore((s) => s.profileEditorTool);
   const penPathId = useAppStore((s) => s.profilePenPathId);
   const [penHover, setPenHover] = useState<ProfileVec2 | null>(null);
@@ -278,7 +305,11 @@ export function ProfileEditor() {
       } else if (event.key === 'Delete' || event.key === 'Backspace') {
         event.preventDefault();
         const current = getAppState().profileNodeSelection;
-        if (current?.index != null) {
+        const nodes = getProfileSelectedNodes();
+        if (nodes.length > 1) {
+          editProfilePaths(editingProfileId, (paths) => deleteNodeGroup(paths, nodes));
+          selectProfilePath(current?.pathId ?? null);
+        } else if (current?.index != null) {
           const index = current.index;
           editProfilePath(editingProfileId, current.pathId, (path) => deleteNode(path, index));
           selectProfilePath(current.pathId);
@@ -300,10 +331,17 @@ export function ProfileEditor() {
       } else if (event.key === 'j' || event.key === 'J') {
         const state = getAppState();
         const a = state.profileNodeSelection;
-        const b = state.profileJoinTarget;
+        const b = state.profileExtraNodes.length === 1 ? state.profileExtraNodes[0] : null;
         if (a?.index != null && b) {
           joinProfileEndpoints(editingProfileId, { pathId: a.pathId, index: a.index }, b);
         }
+      } else if (event.key in ARROW_KEYS && getProfileSelectedNodes().length > 0) {
+        event.preventDefault();
+        const [ax, ay] = ARROW_KEYS[event.key];
+        const step = nudgeStepRef.current * (event.shiftKey ? 10 : 1);
+        const nodes = getProfileSelectedNodes();
+        editProfilePaths(editingProfileId, (paths) =>
+          moveNodeGroup(paths, nodeStarts(paths, nodes), { x: ax * step, y: ay * step }));
       } else if (event.key === ' ') {
         event.preventDefault();
         spaceRef.current = true;
@@ -356,7 +394,7 @@ export function ProfileEditor() {
   const snap = (
     at: ProfileVec2,
     altKey: boolean,
-    exclude?: { pathId: string; index: number },
+    exclude: readonly { pathId: string; index: number }[] = [],
   ): ProfileVec2 => {
     const state = getAppState();
     if (!view || altKey || (!state.profileSnapGrid && !state.profileSnapPoints)) {
@@ -364,7 +402,7 @@ export function ProfileEditor() {
       return at;
     }
     const targets = visiblePaths.flatMap((path) =>
-      path.nodes.filter((_node, i) => !(exclude?.pathId === path.id && exclude.index === i)),
+      path.nodes.filter((_node, i) => !exclude.some((point) => point.pathId === path.id && point.index === i)),
     );
     const result = snapPoint(at, {
       grid: state.profileSnapGrid,
@@ -438,10 +476,15 @@ export function ProfileEditor() {
     }
 
     if (data?.kind === 'node' && path && event.shiftKey) {
-      // Shift-click picks a second end point for Join (the selection stays). Cut ends lie on
-      // top of each other, so take any open end under the pointer that is not the selection.
-      const target = pickJoinTarget(visiblePaths, path.nodes[index], getAppState().profileNodeSelection);
-      if (target) {setProfileJoinTarget(target);}
+      // Shift-click collects nodes (and toggles them off again). Cut ends lie on top of each
+      // other: clicking the active end adds an unselected open end at the same spot instead.
+      const clicked = { pathId: path.id, index };
+      const selected = getProfileSelectedNodes();
+      const isSelected = selected.some((point) => samePoint(point, clicked));
+      const stacked = isSelected
+        ? pickJoinTarget(visiblePaths, path.nodes[index], getAppState().profileNodeSelection, selected)
+        : null;
+      toggleProfileNode(stacked ?? clicked);
       return;
     }
     if (data?.kind === 'node' && path) {
@@ -455,9 +498,15 @@ export function ProfileEditor() {
       }
       lastNodePress.current = { key, time: event.timeStamp };
       const node = path.nodes[index];
-      selectProfileNode({ pathId: path.id, index });
+      const clicked = { pathId: path.id, index };
+      const selected = getProfileSelectedNodes();
+      const inGroup = selected.length > 1 && selected.some((point) => samePoint(point, clicked));
+      if (!inGroup) {selectProfileNode(clicked);}
+      const others = inGroup ? selected.filter((point) => !samePoint(point, clicked)) : [];
       dragRef.current = {
         kind: 'node', pathId: path.id, index, grabOffset: { x: node.x - mm.x, y: node.y - mm.y },
+        start: { x: node.x, y: node.y }, group: nodeStarts(profile.paths, others),
+        collapse: inGroup, moved: false,
       };
       return;
     }
@@ -475,7 +524,10 @@ export function ProfileEditor() {
         return result.path;
       });
       selectProfileNode({ pathId: path.id, index: inserted });
-      dragRef.current = { kind: 'node', pathId: path.id, index: inserted, grabOffset: { x: 0, y: 0 } };
+      dragRef.current = {
+        kind: 'node', pathId: path.id, index: inserted, grabOffset: { x: 0, y: 0 },
+        start: mm, group: [], collapse: false, moved: false,
+      };
       return;
     }
     startPan(true);
@@ -502,18 +554,25 @@ export function ProfileEditor() {
       editProfilePath(profileId, drag.pathId, (path) => {
         const node = path.nodes.at(drag.index);
         if (!node) {return path;}
-        const tip = snap(mm, event.altKey, { pathId: drag.pathId, index: drag.index });
+        const tip = snap(mm, event.altKey, [{ pathId: drag.pathId, index: drag.index }]);
         const out = { x: tip.x - node.x, y: tip.y - node.y };
         return Math.hypot(out.x, out.y) < minMm ? path : setPenHandles(path, drag.index, out, event.shiftKey);
       });
       return;
     }
     if (drag.kind === 'node') {
+      drag.moved = true;
       const target = snap(
         { x: mm.x + drag.grabOffset.x, y: mm.y + drag.grabOffset.y },
         event.altKey,
-        { pathId: drag.pathId, index: drag.index },
+        [{ pathId: drag.pathId, index: drag.index }, ...drag.group],
       );
+      if (drag.group.length > 0) {
+        const delta = { x: target.x - drag.start.x, y: target.y - drag.start.y };
+        const starts = [{ pathId: drag.pathId, index: drag.index, ...drag.start }, ...drag.group];
+        editProfilePaths(profileId, (paths) => moveNodeGroup(paths, starts, delta));
+        return;
+      }
       editProfilePath(profileId, drag.pathId, (path) =>
         drag.index < path.nodes.length ? moveNode(path, drag.index, target.x, target.y) : path,
       );
@@ -523,7 +582,7 @@ export function ProfileEditor() {
     editProfilePath(profileId, drag.pathId, (path) => {
       const node = path.nodes.at(drag.index);
       if (!node) {return path;}
-      const tip = snap(mm, event.altKey, { pathId: drag.pathId, index: drag.index });
+      const tip = snap(mm, event.altKey, [{ pathId: drag.pathId, index: drag.index }]);
       return setHandle(path, drag.index, drag.side, { x: tip.x - node.x, y: tip.y - node.y }, shift);
     });
   };
@@ -537,6 +596,9 @@ export function ProfileEditor() {
     }
     if (drag?.kind === 'pan' && drag.deselect && !drag.moved) {
       selectProfileNode(null);
+    }
+    if (drag?.kind === 'node' && drag.collapse && !drag.moved) {
+      selectProfileNode({ pathId: drag.pathId, index: drag.index });
     }
   };
 
@@ -635,9 +697,9 @@ export function ProfileEditor() {
               path.nodes.map((node, index) => {
                 const point = toScreen(view, node);
                 const selected = path.id === selectedPath?.id && index === selectedIndex;
-                const joinTarget = joinTargetPoint?.pathId === path.id && joinTargetPoint.index === index;
-                const nodeClass = `profile-editor__node${selected ? ' profile-editor__node--selected' : ''}${
-                  joinTarget ? ' profile-editor__node--join' : ''}`;
+                const extra = extraNodes.some((point) => point.pathId === path.id && point.index === index);
+                const nodeClass = `profile-editor__node${selected || extra ? ' profile-editor__node--selected' : ''}${
+                  extra ? ' profile-editor__node--extra' : ''}`;
                 return (
                   <g key={`${path.id}-${index}`}>
                     {node.mode === 'smooth' ? (

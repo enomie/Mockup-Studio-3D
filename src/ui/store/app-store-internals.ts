@@ -108,8 +108,8 @@ export interface AppState {
   profileNodeSelection: ProfileNodeSelection | null;
   /** Paths hidden in the 2D editor only (not saved, not used by assets). */
   hiddenProfilePathIds: string[];
-  /** Second end point picked with Shift-click, for Join. */
-  profileJoinTarget: { pathId: string; index: number } | null;
+  /** Further nodes collected with Shift-click (besides `profileNodeSelection`, the active one). */
+  profileExtraNodes: { pathId: string; index: number }[];
   profileEditorTool: ProfileEditorTool;
   /** Path the Pen tool is currently drawing (points are appended at its end). */
   profilePenPathId: string | null;
@@ -186,7 +186,7 @@ export let state: AppState = {
   leftPanelRequest: null,
   profileNodeSelection: null,
   hiddenProfilePathIds: [],
-  profileJoinTarget: null,
+  profileExtraNodes: [],
   profileEditorTool: 'select',
   profilePenPathId: null,
   profileSnapGrid: true,
