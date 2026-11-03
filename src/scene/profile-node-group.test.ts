@@ -4,6 +4,8 @@ import {
   deleteNodeGroup,
   groupBounds,
   groupNodes,
+  mergeSelection,
+  nodesInRect,
   moveNodeGroup,
   nodeSnapshots,
   nodeStarts,
@@ -63,5 +65,20 @@ describe('profile node group', () => {
     expect(result.nodes[0].y).toBeCloseTo(-10);
     expect(result.nodes[2].x).toBeCloseTo(10);
     expect(result.nodes[2].y).toBeCloseTo(10);
+  });
+
+  it('finds nodes inside a box', () => {
+    const hits = nodesInRect([path('a', 4), path('b', 2)], { minX: 5, maxX: 20, minY: -1, maxY: 1 });
+    expect(hits).toEqual([{ pathId: 'a', index: 1 }, { pathId: 'a', index: 2 }, { pathId: 'b', index: 1 }]);
+  });
+
+  it('replaces, adds and removes box hits', () => {
+    const p = (index: number) => ({ pathId: 'a', index });
+    const current = { active: p(0), extras: [p(1)] };
+    expect(mergeSelection(current, [p(2), p(3)], 'replace')).toEqual({ active: p(3), extras: [p(2)] });
+    expect(mergeSelection(current, [p(1), p(2)], 'add')).toEqual({ active: p(0), extras: [p(1), p(2)] });
+    expect(mergeSelection(current, [p(0)], 'remove')).toEqual({ active: p(1), extras: [] });
+    expect(mergeSelection(current, [p(1)], 'remove')).toEqual({ active: p(0), extras: [] });
+    expect(mergeSelection({ active: null, extras: [] }, [], 'replace')).toEqual({ active: null, extras: [] });
   });
 });

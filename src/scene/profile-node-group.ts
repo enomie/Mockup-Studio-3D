@@ -153,3 +153,38 @@ export function groupBounds(paths: readonly ProfilePath[], points: readonly Path
     maxY: Math.max(...starts.map((p) => p.y)),
   };
 }
+
+/** Nodes whose position lies inside the box (inclusive). Pass only the visible paths. */
+export function nodesInRect(paths: readonly ProfilePath[], rect: GroupBounds): PathPoint[] {
+  return paths.flatMap((path) =>
+    path.nodes.flatMap((node, index) =>
+      node.x >= rect.minX && node.x <= rect.maxX && node.y >= rect.minY && node.y <= rect.maxY
+        ? [{ pathId: path.id, index }]
+        : [],
+    ),
+  );
+}
+
+export type MarqueeMode = 'replace' | 'add' | 'remove';
+
+/** Box select: replace the selection, add the hits (Shift) or remove them (Alt). */
+export function mergeSelection(
+  current: NodeGroupSelection,
+  hits: readonly PathPoint[],
+  mode: MarqueeMode,
+): NodeGroupSelection {
+  if (mode === 'replace') {
+    return { active: hits.at(-1) ?? null, extras: hits.slice(0, -1) };
+  }
+  const selected = groupNodes(current);
+  if (mode === 'add') {
+    const added = hits.filter((hit) => !selected.some((point) => samePoint(point, hit)));
+    if (current.active) {return { active: current.active, extras: [...current.extras, ...added] };}
+    const all = [...current.extras, ...added];
+    return { active: all.at(-1) ?? null, extras: all.slice(0, -1) };
+  }
+  const keep = (point: PathPoint) => !hits.some((hit) => samePoint(hit, point));
+  const extras = current.extras.filter(keep);
+  if (current.active && keep(current.active)) {return { active: current.active, extras };}
+  return { active: extras.at(-1) ?? null, extras: extras.slice(0, -1) };
+}

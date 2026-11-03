@@ -267,3 +267,11 @@
 .profile-editor__box-rotate {
   cursor: grab;
 }
+
+.profile-editor__marquee {
+  fill: color-mix(in srgb, var(--color-accent) 12%, transparent);
+  stroke: var(--color-accent);
+  stroke-width: 1;
+  stroke-dasharray: 4 3;
+  pointer-events: none;
+}

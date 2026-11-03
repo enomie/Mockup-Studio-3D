@@ -29,7 +29,9 @@ import {
   deleteNodeGroup,
   groupBounds,
   groupNodes,
+  mergeSelection,
   moveNodeGroup,
+  nodesInRect,
   nodeSnapshots,
   nodeStarts,
   rotateAbout,
@@ -37,6 +39,7 @@ import {
   scaleAbout,
   transformNodeGroup,
   type GroupBounds,
+  type MarqueeMode,
   type NodeSnapshot,
   type NodeStart,
 } from '@/scene/profile-node-group';
@@ -109,6 +112,8 @@ const SNAP_RADIUS_PX = 10;
 const FIT_PADDING = { left: 420, right: 380, top: 80, bottom: 80 };
 
 type Drag =
+  /** Box select in screen px; `moved` once past the click slop. */
+  | { kind: 'marquee'; startX: number; startY: number; mode: MarqueeMode; moved: boolean }
   | { kind: 'pan'; startX: number; startY: number; view: EditorView; moved: boolean; deselect: boolean }
   /**
    * Moves the grabbed node; `group` holds the start positions of the other selected nodes,
@@ -344,6 +349,7 @@ export function ProfileEditor() {
   const penPathId = useAppStore((s) => s.profilePenPathId);
   const [penHover, setPenHover] = useState<ProfileVec2 | null>(null);
   const [snapHint, setSnapHint] = useState<SnapResult | null>(null);
+  const [marquee, setMarquee] = useState<{ left: number; top: number; right: number; bottom: number } | null>(null);
   const visiblePaths = profile ? profile.paths.filter((path) => !hiddenPathIds.includes(path.id)) : [];
   // Holes (for the Object Extrusion) are drawn dashed.
   const pathsForRoles = profile?.paths;
@@ -463,6 +469,17 @@ export function ProfileEditor() {
 
   const findPath = (pathId: string | undefined) =>
     profile.paths.find((path) => path.id === pathId);
+
+  /** Nodes of the visible paths inside the marquee (screen box → mm). */
+  const marqueeHits = (box: { left: number; top: number; right: number; bottom: number }) => {
+    if (!view) {return [];}
+    const a = toMm(view, { x: box.left, y: box.top });
+    const b = toMm(view, { x: box.right, y: box.bottom });
+    return nodesInRect(visiblePaths, {
+      minX: Math.min(a.x, b.x), maxX: Math.max(a.x, b.x), minY: Math.min(a.y, b.y), maxY: Math.max(a.y, b.y),
+    });
+  };
+  const marqueePreview = marquee ? marqueeHits(marquee) : [];
 
   /**
    * Snaps a position (mm) to points/axes and the grid unless Alt is held. `exclude` is the
@@ -624,7 +641,15 @@ export function ProfileEditor() {
       };
       return;
     }
-    startPan(true);
+    // Select tool, empty area: box select (Shift adds, Alt removes); a plain click deselects.
+    const rect = event.currentTarget.getBoundingClientRect();
+    dragRef.current = {
+      kind: 'marquee',
+      startX: event.clientX - rect.left,
+      startY: event.clientY - rect.top,
+      mode: event.shiftKey ? 'add' : event.altKey ? 'remove' : 'replace',
+      moved: false,
+    };
   };
 
   const onPointerMove = (event: ReactPointerEvent<SVGSVGElement>) => {
@@ -634,6 +659,20 @@ export function ProfileEditor() {
       setPenHover(hover ? snap(hover, event.altKey) : null);
     }
     if (!drag) {return;}
+    if (drag.kind === 'marquee') {
+      const rect = event.currentTarget.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+      if (!drag.moved && Math.hypot(x - drag.startX, y - drag.startY) <= CLICK_SLOP_PX) {return;}
+      drag.moved = true;
+      setMarquee({
+        left: Math.min(drag.startX, x),
+        top: Math.min(drag.startY, y),
+        right: Math.max(drag.startX, x),
+        bottom: Math.max(drag.startY, y),
+      });
+      return;
+    }
     if (drag.kind === 'pan') {
       const dx = event.clientX - drag.startX;
       const dy = event.clientY - drag.startY;
@@ -711,6 +750,29 @@ export function ProfileEditor() {
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
+    if (drag?.kind === 'marquee') {
+      setMarquee(null);
+      if (!drag.moved) {
+        if (drag.mode === 'replace') {selectProfileNode(null);}
+      } else if (marquee) {
+        const state = getAppState();
+        const current = state.profileNodeSelection;
+        const next = mergeSelection(
+          {
+            active: current?.index != null ? { pathId: current.pathId, index: current.index } : null,
+            extras: state.profileExtraNodes,
+          },
+          marqueeHits(marquee),
+          drag.mode,
+        );
+        if (next.active) {
+          selectProfileNodes([...next.extras, next.active]);
+        } else {
+          selectProfileNode(null);
+        }
+      }
+      return;
+    }
     if (drag?.kind === 'pan' && drag.deselect && !drag.moved) {
       selectProfileNode(null);
     }
@@ -778,6 +840,15 @@ export function ProfileEditor() {
             {groupPoints.length > 1 && activeTool === 'select' ? (
               <SelectionBox view={view} bounds={groupBounds(profile.paths, groupPoints)} />
             ) : null}
+            {marquee ? (
+              <rect
+                x={marquee.left}
+                y={marquee.top}
+                width={marquee.right - marquee.left}
+                height={marquee.bottom - marquee.top}
+                className="profile-editor__marquee"
+              />
+            ) : null}
             {snapHint ? <SnapIndicator view={view} hint={snapHint} height={size.height} width={size.width} /> : null}
 
             {penPreview ? (
@@ -817,7 +888,8 @@ export function ProfileEditor() {
               path.nodes.map((node, index) => {
                 const point = toScreen(view, node);
                 const selected = path.id === selectedPath?.id && index === selectedIndex;
-                const extra = extraNodes.some((point) => point.pathId === path.id && point.index === index);
+                const extra = extraNodes.some((point) => point.pathId === path.id && point.index === index) ||
+                  marqueePreview.some((point) => point.pathId === path.id && point.index === index);
                 const nodeClass = `profile-editor__node${selected || extra ? ' profile-editor__node--selected' : ''}${
                   extra ? ' profile-editor__node--extra' : ''}`;
                 return (

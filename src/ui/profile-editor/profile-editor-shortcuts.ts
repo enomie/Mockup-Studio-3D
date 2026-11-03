@@ -28,6 +28,7 @@ export const PROFILE_EDITOR_SHORTCUTS: readonly ProfileEditorShortcutGroup[] = [
       { keys: 'Double-click', action: 'Corner / smooth' },
       { keys: 'Shift-click', action: 'Add / remove point from selection' },
       { keys: 'Ctrl/Cmd+A', action: 'Select all points' },
+      { keys: 'Drag empty area', action: 'Box select (Shift adds, Alt removes)' },
       { keys: 'Arrows (Shift ×10)', action: 'Nudge selected points' },
       { keys: 'Box corner (Shift)', action: 'Scale selection (proportional)' },
       { keys: 'Box knob (Shift)', action: 'Rotate selection (15° steps)' },
@@ -55,7 +56,7 @@ export const PROFILE_EDITOR_SHORTCUTS: readonly ProfileEditorShortcutGroup[] = [
     title: 'View',
     shortcuts: [
       { keys: 'Wheel', action: 'Zoom' },
-      { keys: 'Space / middle mouse', action: 'Pan' },
+      { keys: 'Space-drag / middle mouse', action: 'Pan' },
       { keys: 'Esc', action: 'Close editor' },
     ],
   },
