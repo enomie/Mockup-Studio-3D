@@ -25,6 +25,18 @@ export function setSelectedEntity(entityId: string | null): void {
   store.emit();
 }
 
+export function setSelectionGroupCenter(center: { x: number; y: number; z: number }): void {
+  store.sceneApi?.setSelectionGroupCenter(center);
+}
+
+export function setSelectionGroupRotation(rotation: { x: number; y: number; z: number }): void {
+  store.sceneApi?.setSelectionGroupRotation(rotation);
+}
+
+export function setSelectionGroupScale(scale: number): void {
+  store.sceneApi?.setSelectionGroupScale(scale);
+}
+
 /** Shift-click in the scene list: adds or removes an asset from the selection. */
 export function toggleEntitySelection(entityId: string): void {
   const api = store.sceneApi;

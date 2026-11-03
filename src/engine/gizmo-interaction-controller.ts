@@ -1,4 +1,4 @@
-import { Object3D, type Quaternion, type Vector3 } from 'three/webgpu';
+import { Euler, Object3D, Quaternion, Vector3 } from 'three/webgpu';
 import type { AssetEntity } from '@/scene/entity-types';
 import type { AppMode } from '@/scene/scene-api';
 import { isFabricClothAssetKind } from '@/scene/asset-fabric-cloth';
@@ -24,6 +24,15 @@ import type { LightingSystem } from './lighting/lighting-system';
 import type { TrianglePatchGizmoController } from './triangle-patch-gizmo-controller';
 import type { ViewportInvalidation } from './viewport-invalidation';
 import type { WorldPhysicsSessionController } from './world-physics-session';
+
+export interface SelectionGroupState {
+  /** Centre of the selected assets (scene space, m). */
+  center: { x: number; y: number; z: number };
+  /** Rotation since the selection was formed (radians, XYZ). */
+  rotation: { x: number; y: number; z: number };
+  /** Uniform scale since the selection was formed (1 = 100 %). */
+  scale: number;
+}
 
 /** Fabric cloth has at most four pinnable corners (indices 0–3). */
 const MAX_PIN_CORNER_INDEX = 3;
@@ -59,6 +68,10 @@ export class GizmoInteractionController {
   private scaleDragBase = 1;
   private scaleCommitPending = false;
   private readonly fabricClothActivePinCorner = new Map<string, number>();
+  /** Group rotation/scale relative to when the current multi-selection was formed. */
+  private groupKey = '';
+  private readonly groupQuaternion = new Quaternion();
+  private groupScale = 1;
   /** Invisible gizmo target at the centre of a multi-selection. */
   private readonly groupPivot = new Object3D();
   private groupDrag: {
@@ -203,6 +216,93 @@ export class GizmoInteractionController {
     );
   }
 
+  /** Group panel values; null unless two or more visible assets are selected. */
+  getGroupState(): SelectionGroupState | null {
+    const group = this.getGroupRuntimes();
+    if (!group) {return null;}
+    this.syncGroupKey(group);
+    const center = groupCenter(group.map((runtime) => runtime.object));
+    const parent = group[0].object.parent;
+    if (!center || !parent) {return null;}
+    const local = parent.worldToLocal(center.clone());
+    const euler = new Euler().setFromQuaternion(this.groupQuaternion);
+    return {
+      center: { x: local.x, y: local.y, z: local.z },
+      rotation: { x: euler.x, y: euler.y, z: euler.z },
+      scale: this.groupScale,
+    };
+  }
+
+  /** Moves the whole group so its centre lands on `center`. */
+  setGroupCenter(center: { x: number; y: number; z: number }): void {
+    const state = this.getGroupState();
+    if (!state) {return;}
+    const delta = new Vector3(center.x - state.center.x, center.y - state.center.y, center.z - state.center.z);
+    this.applyGroupEdit((members) =>
+      members.map((member) => ({ id: member.id, position: member.position.clone().add(delta), quaternion: member.quaternion.clone() })));
+  }
+
+  /** Turns the group about its centre to the relative rotation `rotation` (radians, XYZ). */
+  setGroupRotation(rotation: { x: number; y: number; z: number }): void {
+    const state = this.getGroupState();
+    if (!state) {return;}
+    const target = new Quaternion().setFromEuler(new Euler(rotation.x, rotation.y, rotation.z));
+    const delta = target.clone().multiply(this.groupQuaternion.clone().invert());
+    const pivot = new Vector3(state.center.x, state.center.y, state.center.z);
+    this.applyGroupEdit((members) => applyGroupRigidDelta(members, pivot, new Quaternion(), pivot, delta));
+    this.groupQuaternion.copy(target);
+  }
+
+  /** Scales the group about its centre to the relative uniform scale `scale`. */
+  setGroupScale(scale: number): void {
+    const state = this.getGroupState();
+    if (!state || scale <= 0) {return;}
+    const factor = clampSizeScale(scale / this.groupScale);
+    const pivot = new Vector3(state.center.x, state.center.y, state.center.z);
+    const sizes = new Map((this.getGroupRuntimes() ?? []).map((runtime) => [runtime.entity.id, runtime.entity.sizeScale]));
+    this.applyGroupEdit((members) => applyGroupScale(members, pivot, factor));
+    for (const runtime of this.getGroupRuntimes() ?? []) {
+      if (!isWallAssetKind(runtime.entity.assetKind)) {
+        this.commitUniformScale(runtime.entity, factor, sizes.get(runtime.entity.id) ?? runtime.entity.sizeScale);
+      }
+    }
+    this.groupScale *= factor;
+  }
+
+  private applyGroupEdit(edit: (members: GroupMemberStart[]) => GroupMemberPose[]): void {
+    const members = (this.getGroupRuntimes() ?? []).map((runtime) => ({
+      id: runtime.entity.id,
+      position: runtime.object.position.clone(),
+      quaternion: runtime.object.quaternion.clone(),
+    }));
+    this.applyPoses(edit(members));
+    this.refresh();
+  }
+
+  private applyPoses(poses: readonly GroupMemberPose[]): void {
+    const { registry } = this.deps;
+    for (const pose of poses) {
+      const runtime = registry.getRuntime(pose.id);
+      if (!runtime) {continue;}
+      runtime.object.position.copy(pose.position);
+      runtime.object.quaternion.copy(pose.quaternion);
+      runtime.object.updateMatrixWorld();
+      registry.syncTransformFromObject(pose.id);
+      this.deps.syncFixedRigidPose(pose.id);
+    }
+    this.deps.patchGizmo.syncHelpersFromEntity();
+    this.deps.emit();
+  }
+
+  /** A new set of selected assets starts again at 0° / 100 %. */
+  private syncGroupKey(group: readonly { entity: AssetEntity }[]): void {
+    const key = group.map((runtime) => runtime.entity.id).sort().join('|');
+    if (key === this.groupKey) {return;}
+    this.groupKey = key;
+    this.groupQuaternion.identity();
+    this.groupScale = 1;
+  }
+
   /** Visible selected assets when more than one is selected, else null. */
   private getGroupRuntimes(): { entity: AssetEntity; object: Object3D }[] | null {
     const { registry } = this.deps;
@@ -252,17 +352,7 @@ export class GizmoInteractionController {
     } else {
       poses = applyGroupRigidDelta(drag.members, drag.pivot, drag.quaternion, pivot.position, pivot.quaternion);
     }
-    for (const pose of poses) {
-      const runtime = registry.getRuntime(pose.id);
-      if (!runtime) {continue;}
-      runtime.object.position.copy(pose.position);
-      runtime.object.quaternion.copy(pose.quaternion);
-      runtime.object.updateMatrixWorld();
-      registry.syncTransformFromObject(pose.id);
-      this.deps.syncFixedRigidPose(pose.id);
-    }
-    this.deps.patchGizmo.syncHelpersFromEntity();
-    this.deps.emit();
+    this.applyPoses(poses);
   }
 
   private onGroupDraggingChanged(dragging: boolean): void {
@@ -284,8 +374,13 @@ export class GizmoInteractionController {
     }
     const drag = this.groupDrag;
     this.groupDrag = null;
+    if (drag && this.deps.getMode() === 'rotate') {
+      const delta = this.groupPivot.quaternion.clone().multiply(drag.quaternion.clone().invert());
+      this.groupQuaternion.premultiply(delta);
+    }
     if (drag && this.deps.getMode() === 'scale' && this.scaleCommitPending) {
-      const factor = this.groupPivot.scale.x;
+      const factor = clampSizeScale(this.groupPivot.scale.x);
+      this.groupScale *= factor;
       for (const member of drag.members) {
         const runtime = registry.getRuntime(member.id);
         if (!runtime) {continue;}

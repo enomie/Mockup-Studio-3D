@@ -53,7 +53,7 @@ export function closeProfileEditor(): void {
 }
 
 export function selectProfileNode(selection: ProfileNodeSelection | null): void {
-  store.setAppState({ ...store.state, profileNodeSelection: selection, profileExtraNodes: [] });
+  store.setAppState({ ...store.state, profileNodeSelection: selection, profileExtraNodes: [], profileGroupRotationDeg: 0 });
   store.emit();
 }
 
@@ -66,6 +66,7 @@ export function toggleProfileNode(point: PathPoint): void {
     ...store.state,
     profileNodeSelection: next.active ?? (current ? { pathId: current.pathId, index: null } : null),
     profileExtraNodes: next.extras,
+    profileGroupRotationDeg: 0,
   });
   store.emit();
 }
@@ -78,7 +79,14 @@ export function selectProfileNodes(points: readonly PathPoint[]): void {
     ...store.state,
     profileNodeSelection: { pathId: active.pathId, index: active.index },
     profileExtraNodes: points.slice(0, -1),
+    profileGroupRotationDeg: 0,
   });
+  store.emit();
+}
+
+/** Adds to the relative rotation shown for a multi-selection (box knob or field). */
+export function addProfileGroupRotation(deltaDeg: number): void {
+  store.setAppState({ ...store.state, profileGroupRotationDeg: store.state.profileGroupRotationDeg + deltaDeg });
   store.emit();
 }
 

@@ -1,5 +1,6 @@
 import { SubPanel } from '@/ui/components/SubPanel';
 import { EntityPropertyFields } from './EntityPropertyFields';
+import { SceneGroupPanel } from './SceneGroupPanel';
 import { useAppStore } from '@/ui/store/use-app-store';
 
 /** Settings of the entity selected in the Scene list; hidden when nothing is selected. */
@@ -10,6 +11,9 @@ export function SceneDetailPanel() {
   const images = useAppStore((s) => s.images);
   const selected = entities.find((entity) => entity.id === selectedEntityId);
 
+  if (selectedCount > 1) {
+    return <SceneGroupPanel />;
+  }
   if (!selected) {
     return null;
   }
@@ -17,9 +21,6 @@ export function SceneDetailPanel() {
   return (
     <SubPanel title={selected.name} side="right">
       <div className="scene-detail__title">{selected.name}</div>
-      {selectedCount > 1 ? (
-        <p className="placeholder">{`${selectedCount} objects selected (Shift-click to add or remove). Settings below: last clicked object.`}</p>
-      ) : null}
       <EntityPropertyFields
         key={selected.id}
         entity={selected}

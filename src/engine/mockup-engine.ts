@@ -114,7 +114,7 @@ import { AssetSystem } from './asset-system';
 import { ProfileRebuildScheduler } from './profile-rebuild-scheduler';
 import { ImageTextureLoader } from './image-texture-loader';
 import { GizmoController } from './gizmo-controller';
-import { GizmoInteractionController } from './gizmo-interaction-controller';
+import { GizmoInteractionController, type SelectionGroupState } from './gizmo-interaction-controller';
 import {
   TrianglePatchGizmoController,
 } from './triangle-patch-gizmo-controller';
@@ -596,6 +596,22 @@ export class MockupEngine implements SceneApi {
       }
       this.gizmoInteraction.refresh();
     });
+  }
+
+  getSelectionGroupState(): SelectionGroupState | null {
+    return this.gizmoInteraction.getGroupState();
+  }
+
+  setSelectionGroupCenter(center: { x: number; y: number; z: number }): void {
+    this.gizmoInteraction.setGroupCenter(center);
+  }
+
+  setSelectionGroupRotation(rotation: { x: number; y: number; z: number }): void {
+    this.gizmoInteraction.setGroupRotation(rotation);
+  }
+
+  setSelectionGroupScale(scale: number): void {
+    this.gizmoInteraction.setGroupScale(scale);
   }
 
   /** Ctrl/Cmd+A: selects every visible asset. */

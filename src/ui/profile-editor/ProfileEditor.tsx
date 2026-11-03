@@ -60,6 +60,7 @@ import {
   setProfileEditorTool,
   toggleProfileNode,
   selectProfileNodes,
+  addProfileGroupRotation,
   getProfileSelectedNodes,
   breakProfileAtNode,
   breakProfileAtSegment,
@@ -127,7 +128,7 @@ type Drag =
   /** Selection box: scale from the opposite corner (`corner` is the grabbed one). */
   | { kind: 'box-scale'; corner: ProfileVec2; pivot: ProfileVec2; snaps: NodeSnapshot[] }
   /** Selection box: rotate about its centre. */
-  | { kind: 'box-rotate'; pivot: ProfileVec2; startAngle: number; snaps: NodeSnapshot[] }
+  | { kind: 'box-rotate'; pivot: ProfileVec2; startAngle: number; snaps: NodeSnapshot[]; angle: number }
   /** Pen: dragging after a click pulls the handles of the new point. */
   | { kind: 'pen-handle'; pathId: string; index: number };
 
@@ -577,7 +578,7 @@ export function ProfileEditor() {
       if (data.kind === 'box-rotate') {
         const pivot = boxCenter(bounds);
         dragRef.current = {
-          kind: 'box-rotate', pivot, snaps, startAngle: Math.atan2(mm.y - pivot.y, mm.x - pivot.x),
+          kind: 'box-rotate', pivot, snaps, startAngle: Math.atan2(mm.y - pivot.y, mm.x - pivot.x), angle: 0,
         };
         return;
       }
@@ -712,6 +713,7 @@ export function ProfileEditor() {
     if (drag.kind === 'box-rotate') {
       let angle = Math.atan2(mm.y - drag.pivot.y, mm.x - drag.pivot.x) - drag.startAngle;
       if (event.shiftKey) {angle = Math.round(angle / ROTATE_SNAP_RAD) * ROTATE_SNAP_RAD;}
+      drag.angle = angle;
       const m = rotateAbout(drag.pivot, angle);
       editProfilePaths(profileId, (paths) => transformNodeGroup(paths, drag.snaps, m));
       return;
@@ -749,6 +751,9 @@ export function ProfileEditor() {
     if (activeTool !== 'pen') {setSnapHint(null);}
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    if (drag?.kind === 'box-rotate' && drag.angle !== 0) {
+      addProfileGroupRotation((drag.angle * 180) / Math.PI);
     }
     if (drag?.kind === 'marquee') {
       setMarquee(null);

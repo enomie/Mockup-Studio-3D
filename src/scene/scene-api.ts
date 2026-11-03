@@ -1,3 +1,4 @@
+import type { SelectionGroupState } from '@/engine/gizmo-interaction-controller';
 import type { ArrangementContent } from './arrangement-types';
 import type { PatchNode } from '@/scene/patch-nodes';
 import type { PatchEdgeLink, PatchSegment } from '@/scene/triangle-patch-edge-link';
@@ -224,6 +225,11 @@ export interface SceneApi {
   getSelectedEntityIds(): readonly string[];
   toggleEntitySelection(entityId: string): void;
   selectAllEntities(): void;
+  /** Centre / relative rotation / relative scale of a multi-selection; null below two assets. */
+  getSelectionGroupState(): SelectionGroupState | null;
+  setSelectionGroupCenter(center: { x: number; y: number; z: number }): void;
+  setSelectionGroupRotation(rotation: { x: number; y: number; z: number }): void;
+  setSelectionGroupScale(scale: number): void;
   getEntities(): readonly AssetEntity[];
   setEntityTransform(entityId: string, partial: Partial<EntityTransform>): void;
   setAssetImage(entityId: string, imageId: string | null): void;

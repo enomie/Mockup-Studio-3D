@@ -1,3 +1,4 @@
+import type { SelectionGroupState } from '@/engine/gizmo-interaction-controller';
 import type { ProfileEntry } from '@/scene/profile-library';
 
 export interface ProfileNodeSelection {
@@ -110,6 +111,8 @@ export interface AppState {
   hiddenProfilePathIds: string[];
   /** Further nodes collected with Shift-click (besides `profileNodeSelection`, the active one). */
   profileExtraNodes: { pathId: string; index: number }[];
+  /** Rotation (degrees) of the selected points since the multi-selection was made. */
+  profileGroupRotationDeg: number;
   profileEditorTool: ProfileEditorTool;
   /** Path the Pen tool is currently drawing (points are appended at its end). */
   profilePenPathId: string | null;
@@ -130,6 +133,8 @@ export interface AppState {
   selectedEntityId: string | null;
   /** All selected assets (active first); more than one after Shift-click. */
   selectedEntityIds: readonly string[];
+  /** Group panel values while two or more assets are selected. */
+  selectionGroup: SelectionGroupState | null;
   patchHandleSelection: PatchHandleSelection | null;
   /** Patch whose viewport add-point mode is running, if any. */
   patchAddPointEntityId: string | null;
@@ -189,6 +194,7 @@ export let state: AppState = {
   profileNodeSelection: null,
   hiddenProfilePathIds: [],
   profileExtraNodes: [],
+  profileGroupRotationDeg: 0,
   profileEditorTool: 'select',
   profilePenPathId: null,
   profileSnapGrid: true,
@@ -204,6 +210,7 @@ export let state: AppState = {
   userProfiles: [],
   selectedEntityId: null,
   selectedEntityIds: [],
+  selectionGroup: null,
   patchHandleSelection: null,
   patchAddPointEntityId: null,
   history: { canUndo: false, canRedo: false, undoLabel: null, redoLabel: null },
@@ -339,6 +346,7 @@ export function syncEngineStateFromEngine(): void {
     entities: sceneApi.getEntities(),
     selectedEntityId: sceneApi.getSelectedEntityId(),
     selectedEntityIds: [...sceneApi.getSelectedEntityIds()],
+    selectionGroup: sceneApi.getSelectionGroupState(),
     patchHandleSelection: sceneApi.getPatchHandleSelection(),
     patchAddPointEntityId: sceneApi.getPatchAddPointEntityId(),
     history: sceneApi.getHistoryState(),

@@ -18,6 +18,7 @@ import { SubPanelSection } from '@/ui/components/SubPanelSection';
 import { Icon } from '@/ui/components/Icon';
 import { breakProfileAtNode, editProfilePath, joinProfileEndpoints } from '@/ui/store/app-store';
 import { useAppStore } from '@/ui/store/use-app-store';
+import { ProfileGroupFields } from './ProfileGroupFields';
 import { formatMmAsMeters, parseMmFromMetersInput } from '@/units/length';
 
 /** Profiles are stored in mm; the UI shows and takes meters like the rest of the app. */
@@ -124,10 +125,9 @@ export function ProfilePointSection({ profile }: { profile: ProfileEntry }) {
   }
   return (
     <>
-      {extraCount > 0 ? (
-        <p className="profile-hint">{`${extraCount + 1} points selected — drag or arrow keys move them, the box scales and rotates them. Values below: last clicked point.`}</p>
-      ) : null}
-      <NodeFields profileId={profile.id} path={path} index={index} node={node} />
+      {extraCount > 0
+        ? <ProfileGroupFields profile={profile} />
+        : <NodeFields profileId={profile.id} path={path} index={index} node={node} />}
       <CutJoinSection profile={profile} path={path} index={index} />
     </>
   );

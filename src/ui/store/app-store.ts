@@ -45,6 +45,9 @@ export {
   
   setSelectedEntity,
   toggleEntitySelection,
+  setSelectionGroupCenter,
+  setSelectionGroupRotation,
+  setSelectionGroupScale,
   removeEntity,
   setEntityTransform,
   setAssetScreenImage,
@@ -86,6 +89,7 @@ export {
   setProfileEditorTool,
   toggleProfileNode,
   selectProfileNodes,
+  addProfileGroupRotation,
   getProfileSelectedNodes,
   breakProfileAtNode,
   breakProfileAtSegment,
