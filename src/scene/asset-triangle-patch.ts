@@ -28,6 +28,24 @@ export interface PatchPoint {
    * node is the single source of truth; the fields above are this patch's view of it.
    */
   nodeId?: string;
+  /**
+   * Set on a point inserted on a linked edge: its cross handle offset (handleCrossIn - pos)
+   * at insertion. While the handle still has that offset, the seam direction there keeps
+   * following the segment ends (as before the insert), so inserting changes nothing. Once
+   * the cross handle is edited, the point steers the seam itself.
+   */
+  seamFollowsEnds?: Vec3;
+}
+
+/** True while an inserted point's cross handle is untouched (see PatchPoint.seamFollowsEnds). */
+export function isSeamFollowingEnds(point: PatchPoint): boolean {
+  const ref = point.seamFollowsEnds;
+  if (!ref) {return false;}
+  const dx = point.handleCrossIn.x - point.pos.x - ref.x;
+  const dy = point.handleCrossIn.y - point.pos.y - ref.y;
+  const dz = point.handleCrossIn.z - point.pos.z - ref.z;
+  const scale = Math.max(1, Math.hypot(ref.x, ref.y, ref.z));
+  return Math.hypot(dx, dy, dz) <= 1e-7 * scale;
 }
 
 type PatchPairMode = 'coupled' | 'free';
@@ -127,6 +145,7 @@ export function clonePatchPoint(point: PatchPoint): PatchPoint {
     ...(point.joint ? { joint: point.joint } : {}),
     ...(point.pinkPair ? { pinkPair: point.pinkPair } : {}),
     ...(point.nodeId ? { nodeId: point.nodeId } : {}),
+    ...(point.seamFollowsEnds ? { seamFollowsEnds: { ...point.seamFollowsEnds } } : {}),
   };
 }
 

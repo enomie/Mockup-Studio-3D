@@ -2,6 +2,7 @@ import { type BufferGeometry, Vector3 } from 'three/webgpu';
 import {
   getPatchEdgeCount,
   getPatchEdgePoints,
+  isSeamFollowingEnds,
   type PatchParams,
   type PatchPoint,
 } from '@/scene/asset-triangle-patch';
@@ -155,23 +156,31 @@ export function prepareEdgeCorrection(params: PatchParams): PreparedEdgeCorrecti
     const segments: CorrectedSegment[] = [];
     for (let k = 0; k + 1 < knots.length; k++) {
       const a = knots[k].point;
-      const b = knots[k + 1].point;
-      if (!isLinked(a.id, b.id)) {continue;}
-      const segment = { startPointId: a.id, endPointId: b.id };
-      const dir0 = acrossDirection(params, a, segment, linksAt(a.id), 'handleNext');
-      const dir1 = acrossDirection(params, b, segment, linksAt(b.id), 'handlePrev');
+      if (!isLinked(a.id, knots[k + 1].point.id)) {continue;}
+      // Inserted points whose cross handle is untouched do not end a segment: the seam
+      // direction runs through them from the surrounding knots, as before the insert.
+      let j = k + 1;
+      while (j + 1 < knots.length && isSeamFollowingEnds(knots[j].point) && isLinked(knots[j].point.id, knots[j + 1].point.id)) {j++;}
+      const b = knots[j].point;
+      const startSegment = { startPointId: a.id, endPointId: knots[k + 1].point.id };
+      const endSegment = { startPointId: knots[j - 1].point.id, endPointId: b.id };
+      const dir0 = acrossDirection(params, a, startSegment, linksAt(a.id), 'handleNext');
+      const dir1 = acrossDirection(params, b, endSegment, linksAt(b.id), 'handlePrev');
       // Coupled where the pair that decides the surface direction there is coupled:
       // the yellow pair at edge points, the pink pair (neighboring edge) at corners.
-      const coupled = (p: PatchPoint) => {
+      const coupled = (p: PatchPoint, segment: { startPointId: string; endPointId: string }) => {
         const key = crossHandleKeyAt(params, p.id, segment, linksAt(p.id));
         return key === 'handleCrossIn' ? p.joint === 'smooth' : p.pinkPair === 'coupled';
       };
-      const sigma0 = coupled(a) && dir0 ? 1 : 0;
-      const sigma1 = coupled(b) && dir1 ? 1 : 0;
+      const sigma0 = coupled(a, startSegment) && dir0 ? 1 : 0;
+      const sigma1 = coupled(b, endSegment) && dir1 ? 1 : 0;
+      const t0 = knots[k].t;
+      const t1 = knots[j].t;
+      k = j - 1;
       if (sigma0 === 0 && sigma1 === 0) {continue;}
       segments.push({
-        t0: knots[k].t,
-        t1: knots[k + 1].t,
+        t0,
+        t1,
         sigma0,
         sigma1,
         dir0: dir0 ?? dir1 ?? new Vector3(),

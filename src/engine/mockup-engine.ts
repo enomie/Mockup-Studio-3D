@@ -941,7 +941,7 @@ export class MockupEngine implements SceneApi {
       const side = { entityId: entity.id, transform: entity.transform, point: q };
       node = node
         ? addInnerNodeUse(node, side, sameDirection)
-        : createInnerNode(crypto.randomUUID(), { entityId: owner.id, transform: owner.transform, point: p }, side, sameDirection);
+        : createInnerNode(crypto.randomUUID(), { entityId: owner.id, transform: owner.transform, point: p }, side, sameDirection, true);
     }
     return node;
   }

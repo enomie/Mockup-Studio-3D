@@ -214,19 +214,19 @@ function createEndNode(
 /**
  * Joins two inner points of a shared edge (e.g. a point inserted on it). `sameDirection`:
  * B runs the edge the same way as A (B's next = A's next), otherwise reversed.
+ * `keepCross`: both cross (yellow) handles stay as they are instead of being put opposite
+ * on their average (a fresh insert must not change either surface).
  */
-export function createInnerNode(id: string, a: NodeSide, b: NodeSide, sameDirection: boolean): PatchNode {
+export function createInnerNode(id: string, a: NodeSide, b: NodeSide, sameDirection: boolean, keepCross = false): PatchNode {
   const pos = avg(plain(toWorldPoint(a.point.pos, a.transform)), plain(toWorldPoint(b.point.pos, b.transform)));
   const bFwdKey = sameDirection ? 'handleNext' : 'handlePrev';
   const bBwdKey = sameDirection ? 'handlePrev' : 'handleNext';
   const fwd = avg(toWorldOffset(offsetOf(a.point, 'handleNext'), a.transform), toWorldOffset(offsetOf(b.point, bFwdKey), b.transform));
   const bwd = avg(toWorldOffset(offsetOf(a.point, 'handlePrev'), a.transform), toWorldOffset(offsetOf(b.point, bBwdKey), b.transform));
   const [f, w] = averageOpposite(vec(fwd), vec(bwd));
-  const [yellowA, yellowB] = averageOpposite(
-    vec(toWorldOffset(offsetOf(a.point, 'handleCrossIn'), a.transform)),
-    vec(toWorldOffset(offsetOf(b.point, 'handleCrossIn'), b.transform)),
-    f,
-  );
+  const crossA = vec(toWorldOffset(offsetOf(a.point, 'handleCrossIn'), a.transform));
+  const crossB = vec(toWorldOffset(offsetOf(b.point, 'handleCrossIn'), b.transform));
+  const [yellowA, yellowB] = keepCross ? [crossA, crossB] : averageOpposite(crossA, crossB, f);
   return {
     id,
     name: a.point.name,

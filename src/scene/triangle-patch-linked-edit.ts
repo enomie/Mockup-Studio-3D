@@ -112,10 +112,22 @@ export function splitLinkOnInsert(
   return { ownerParams: smooth({ ...insert.params, edgeLinks: ownerLinks }, p), partners };
 }
 
+/** The new point: smooth, and its seam direction keeps following the segment ends until edited. */
 function smooth(params: PatchParams, id: string): PatchParams {
   return {
     ...params,
-    points: params.points.map((point) => (point.id === id ? { ...point, joint: 'smooth' as const, pinkPair: 'coupled' as const } : point)),
+    points: params.points.map((point) => (point.id === id
+      ? {
+        ...point,
+        joint: 'smooth' as const,
+        pinkPair: 'coupled' as const,
+        seamFollowsEnds: {
+          x: point.handleCrossIn.x - point.pos.x,
+          y: point.handleCrossIn.y - point.pos.y,
+          z: point.handleCrossIn.z - point.pos.z,
+        },
+      }
+      : point)),
   };
 }
 
