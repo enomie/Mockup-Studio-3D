@@ -27,9 +27,17 @@ import {
 import { getProfile } from '@/scene/profile-library';
 import {
   deleteNodeGroup,
+  groupBounds,
+  groupNodes,
   moveNodeGroup,
+  nodeSnapshots,
   nodeStarts,
+  rotateAbout,
   samePoint,
+  scaleAbout,
+  transformNodeGroup,
+  type GroupBounds,
+  type NodeSnapshot,
   type NodeStart,
 } from '@/scene/profile-node-group';
 import {
@@ -81,6 +89,11 @@ export function formatGridStepMeters(stepMm: number): string {
 /** Screen radius (px) of node and handle hit areas; large on purpose. */
 const HIT_RADIUS_PX = 12;
 const NODE_RADIUS_PX = 6;
+/** Selection box: screen padding around the points, corner size, rotate handle offset. */
+const BOX_PAD_PX = 12;
+const BOX_CORNER_PX = 5;
+const BOX_ROTATE_OFFSET_PX = 26;
+const ROTATE_SNAP_RAD = Math.PI / 12;
 const HANDLE_RADIUS_PX = 5;
 const SEGMENT_HIT_WIDTH_PX = 14;
 /** Movement (px) below which a background press counts as a click. */
@@ -105,8 +118,56 @@ type Drag =
     start: ProfileVec2; group: NodeStart[]; collapse: boolean; moved: boolean;
   }
   | { kind: 'handle'; pathId: string; index: number; side: HandleSide }
+  /** Selection box: scale from the opposite corner (`corner` is the grabbed one). */
+  | { kind: 'box-scale'; corner: ProfileVec2; pivot: ProfileVec2; snaps: NodeSnapshot[] }
+  /** Selection box: rotate about its centre. */
+  | { kind: 'box-rotate'; pivot: ProfileVec2; startAngle: number; snaps: NodeSnapshot[] }
   /** Pen: dragging after a click pulls the handles of the new point. */
   | { kind: 'pen-handle'; pathId: string; index: number };
+
+function boxCenter(bounds: GroupBounds): ProfileVec2 {
+  return { x: (bounds.minX + bounds.maxX) / 2, y: (bounds.minY + bounds.maxY) / 2 };
+}
+
+/** Box around several selected points: corners scale (Shift: proportional), top knob rotates. */
+function SelectionBox({ view, bounds }: { view: EditorView; bounds: GroupBounds | null }) {
+  if (!bounds) {return null;}
+  const min = toScreen(view, { x: bounds.minX, y: bounds.minY });
+  const max = toScreen(view, { x: bounds.maxX, y: bounds.maxY });
+  const left = Math.min(min.x, max.x) - BOX_PAD_PX;
+  const right = Math.max(min.x, max.x) + BOX_PAD_PX;
+  const top = Math.min(min.y, max.y) - BOX_PAD_PX;
+  const bottom = Math.max(min.y, max.y) + BOX_PAD_PX;
+  // Screen y grows with mm y, so the top edge is minY.
+  const corners = [
+    { cx: 'min', cy: 'min', x: left, y: top },
+    { cx: 'max', cy: 'min', x: right, y: top },
+    { cx: 'min', cy: 'max', x: left, y: bottom },
+    { cx: 'max', cy: 'max', x: right, y: bottom },
+  ];
+  const midX = (left + right) / 2;
+  const knobY = top - BOX_ROTATE_OFFSET_PX;
+  return (
+    <g className="profile-editor__box">
+      <rect x={left} y={top} width={right - left} height={bottom - top} className="profile-editor__box-frame" />
+      <line x1={midX} x2={midX} y1={top} y2={knobY} className="profile-editor__box-frame" />
+      {corners.map((corner) => (
+        <rect
+          key={`${corner.cx}-${corner.cy}`}
+          x={corner.x - BOX_CORNER_PX}
+          y={corner.y - BOX_CORNER_PX}
+          width={BOX_CORNER_PX * 2}
+          height={BOX_CORNER_PX * 2}
+          className={`profile-editor__box-corner profile-editor__box-corner--${corner.cx === corner.cy ? 'nwse' : 'nesw'}`}
+          data-kind="box-scale"
+          data-cx={corner.cx}
+          data-cy={corner.cy}
+        />
+      ))}
+      <circle cx={midX} cy={knobY} r={BOX_CORNER_PX + 1} className="profile-editor__box-rotate" data-kind="box-rotate" />
+    </g>
+  );
+}
 
 /** Arrow-key nudge directions in mm (profile y points down on screen). */
 const ARROW_KEYS: Record<string, [number, number]> = {
@@ -274,6 +335,10 @@ export function ProfileEditor() {
       : null;
   const hiddenPathIds = useAppStore((s) => s.hiddenProfilePathIds);
   const extraNodes = useAppStore((s) => s.profileExtraNodes);
+  const groupPoints = groupNodes({
+    active: selection?.index != null ? { pathId: selection.pathId, index: selection.index } : null,
+    extras: extraNodes,
+  });
   const activeTool = useAppStore((s) => s.profileEditorTool);
   const penPathId = useAppStore((s) => s.profilePenPathId);
   const [penHover, setPenHover] = useState<ProfileVec2 | null>(null);
@@ -475,6 +540,23 @@ export function ProfileEditor() {
       return;
     }
 
+    if (data?.kind === 'box-scale' || data?.kind === 'box-rotate') {
+      const points = getProfileSelectedNodes();
+      const bounds = groupBounds(profile.paths, points);
+      if (!bounds) {return;}
+      const snaps = nodeSnapshots(profile.paths, points);
+      if (data.kind === 'box-rotate') {
+        const pivot = boxCenter(bounds);
+        dragRef.current = {
+          kind: 'box-rotate', pivot, snaps, startAngle: Math.atan2(mm.y - pivot.y, mm.x - pivot.x),
+        };
+        return;
+      }
+      const corner = { x: data.cx === 'max' ? bounds.maxX : bounds.minX, y: data.cy === 'max' ? bounds.maxY : bounds.minY };
+      const pivot = { x: data.cx === 'max' ? bounds.minX : bounds.maxX, y: data.cy === 'max' ? bounds.minY : bounds.maxY };
+      dragRef.current = { kind: 'box-scale', corner, pivot, snaps };
+      return;
+    }
     if (data?.kind === 'node' && path && event.shiftKey) {
       // Shift-click collects nodes (and toggles them off again). Cut ends lie on top of each
       // other: clicking the active end adds an unselected open end at the same spot instead.
@@ -558,6 +640,29 @@ export function ProfileEditor() {
         const out = { x: tip.x - node.x, y: tip.y - node.y };
         return Math.hypot(out.x, out.y) < minMm ? path : setPenHandles(path, drag.index, out, event.shiftKey);
       });
+      return;
+    }
+    if (drag.kind === 'box-scale') {
+      const factor = (to: number, corner: number, pivot: number) =>
+        Math.abs(corner - pivot) > 1e-9 ? (to - pivot) / (corner - pivot) : null;
+      const target = snap(mm, event.altKey, drag.snaps);
+      let sx = factor(target.x, drag.corner.x, drag.pivot.x);
+      let sy = factor(target.y, drag.corner.y, drag.pivot.y);
+      if (event.shiftKey) {
+        // Proportional: the larger factor wins (a flat box uses its only factor).
+        const uniform = sx === null ? sy : sy === null ? sx : Math.abs(sx) > Math.abs(sy) ? sx : sy;
+        sx = uniform;
+        sy = uniform;
+      }
+      const m = scaleAbout(drag.pivot, sx ?? 1, sy ?? 1);
+      editProfilePaths(profileId, (paths) => transformNodeGroup(paths, drag.snaps, m));
+      return;
+    }
+    if (drag.kind === 'box-rotate') {
+      let angle = Math.atan2(mm.y - drag.pivot.y, mm.x - drag.pivot.x) - drag.startAngle;
+      if (event.shiftKey) {angle = Math.round(angle / ROTATE_SNAP_RAD) * ROTATE_SNAP_RAD;}
+      const m = rotateAbout(drag.pivot, angle);
+      editProfilePaths(profileId, (paths) => transformNodeGroup(paths, drag.snaps, m));
       return;
     }
     if (drag.kind === 'node') {
@@ -658,6 +763,9 @@ export function ProfileEditor() {
               })}
             </g>
 
+            {groupPoints.length > 1 && activeTool === 'select' ? (
+              <SelectionBox view={view} bounds={groupBounds(profile.paths, groupPoints)} />
+            ) : null}
             {snapHint ? <SnapIndicator view={view} hint={snapHint} height={size.height} width={size.width} /> : null}
 
             {penPreview ? (

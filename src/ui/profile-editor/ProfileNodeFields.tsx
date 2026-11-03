@@ -125,7 +125,7 @@ export function ProfilePointSection({ profile }: { profile: ProfileEntry }) {
   return (
     <>
       {extraCount > 0 ? (
-        <p className="profile-hint">{`${extraCount + 1} points selected — drag or arrow keys move them together. Values below: last clicked point.`}</p>
+        <p className="profile-hint">{`${extraCount + 1} points selected — drag or arrow keys move them, the box scales and rotates them. Values below: last clicked point.`}</p>
       ) : null}
       <NodeFields profileId={profile.id} path={path} index={index} node={node} />
       <CutJoinSection profile={profile} path={path} index={index} />

@@ -1,6 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import type { ProfilePath } from './profile-model';
-import { deleteNodeGroup, groupNodes, moveNodeGroup, nodeStarts, toggleGroupNode } from './profile-node-group';
+import {
+  deleteNodeGroup,
+  groupBounds,
+  groupNodes,
+  moveNodeGroup,
+  nodeSnapshots,
+  nodeStarts,
+  rotateAbout,
+  scaleAbout,
+  toggleGroupNode,
+  transformNodeGroup,
+} from './profile-node-group';
 
 function path(id: string, n: number): ProfilePath {
   return {
@@ -32,5 +43,25 @@ describe('profile node group', () => {
   it('deletes several nodes of one path by index', () => {
     const [result] = deleteNodeGroup([path('a', 5)], [{ pathId: 'a', index: 1 }, { pathId: 'a', index: 3 }]);
     expect(result.nodes.map((node) => node.x)).toEqual([0, 20, 40]);
+  });
+
+  it('scales nodes and handles about a pivot', () => {
+    const base = path('a', 3);
+    base.nodes[2] = { ...base.nodes[2], handleIn: { x: -4, y: 2 } };
+    const snaps = nodeSnapshots([base], [{ pathId: 'a', index: 0 }, { pathId: 'a', index: 2 }]);
+    const [result] = transformNodeGroup([base], snaps, scaleAbout({ x: 0, y: 0 }, 2, 3));
+    expect(result.nodes[2]).toMatchObject({ x: 40, y: 0, handleIn: { x: -8, y: 6 } });
+    expect(result.nodes[1]).toMatchObject({ x: 10, y: 0 });
+  });
+
+  it('rotates nodes about the box centre', () => {
+    const base = path('a', 3);
+    const points = [{ pathId: 'a', index: 0 }, { pathId: 'a', index: 2 }];
+    expect(groupBounds([base], points)).toEqual({ minX: 0, minY: 0, maxX: 20, maxY: 0 });
+    const [result] = transformNodeGroup([base], nodeSnapshots([base], points), rotateAbout({ x: 10, y: 0 }, Math.PI / 2));
+    expect(result.nodes[0].x).toBeCloseTo(10);
+    expect(result.nodes[0].y).toBeCloseTo(-10);
+    expect(result.nodes[2].x).toBeCloseTo(10);
+    expect(result.nodes[2].y).toBeCloseTo(10);
   });
 });

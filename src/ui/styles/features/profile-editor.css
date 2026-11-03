@@ -240,3 +240,30 @@
 .profile-path-row__role {
   margin: var(--space-1) 0 0 32px;
 }
+
+.profile-editor__box-frame {
+  fill: none;
+  stroke: var(--color-accent);
+  stroke-width: 1;
+  stroke-dasharray: 4 3;
+  pointer-events: none;
+}
+
+.profile-editor__box-corner,
+.profile-editor__box-rotate {
+  fill: var(--color-bg);
+  stroke: var(--color-accent);
+  stroke-width: 1.5;
+}
+
+.profile-editor__box-corner--nwse {
+  cursor: nwse-resize;
+}
+
+.profile-editor__box-corner--nesw {
+  cursor: nesw-resize;
+}
+
+.profile-editor__box-rotate {
+  cursor: grab;
+}

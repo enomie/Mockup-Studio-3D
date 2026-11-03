@@ -28,6 +28,8 @@ export const PROFILE_EDITOR_SHORTCUTS: readonly ProfileEditorShortcutGroup[] = [
       { keys: 'Double-click', action: 'Corner / smooth' },
       { keys: 'Shift-click', action: 'Add / remove point from selection' },
       { keys: 'Arrows (Shift ×10)', action: 'Nudge selected points' },
+      { keys: 'Box corner (Shift)', action: 'Scale selection (proportional)' },
+      { keys: 'Box knob (Shift)', action: 'Rotate selection (15° steps)' },
       { keys: 'Shift-click 2 ends + J', action: 'Join' },
     ],
   },
