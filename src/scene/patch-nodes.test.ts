@@ -138,7 +138,7 @@ describe('shared nodes', () => {
     expect(removeNodeUse(node, 'B')).toBeNull();
   });
 
-  it('refuses to join points that already are nodes', () => {
+  it('refuses to join two segments that are already linked with each other', () => {
     const { A, B, segA, segB } = joined();
     const again = joinSharedEdge({ entity: A, segment: segA }, { entity: B, segment: segB }, () => 'x');
     expect(again).toBeNull();
@@ -210,6 +210,104 @@ describe('shared nodes', () => {
       const named = nodes.map((n, i) => ({ ...n, name: `S${String(i + 1)}` }));
       expect(nextSharedNodeName(named)).toBe('S3');
       expect(nextSharedNodeName([], ['S1'])).toBe('S2');
+    });
+  });
+
+  describe('welding into existing nodes (more than two patches)', () => {
+    const worldPoints = (e: AssetEntity, nodes: readonly PatchNode[]) =>
+      resolvePatchPoints(e.patchParams!.points, e.id, e.transform, nodes).map((p) => worldOf(p.pos, e.transform));
+    const segOf = (e: AssetEntity, i: number) => listPatchSegments(e.patchParams!)[i];
+    let n = 100;
+    const id = () => `node-${++n}`;
+
+    it('a second weld on a neighboring edge keeps the first seam closed (window, roof, door)', () => {
+      const { A: window, B: roof, nodes } = joined();
+      const roofBefore = worldPoints(roof, nodes);
+      const door = patch('D', { position: v(-0.4, 0.1, 0.3), rotation: v(0.2, -0.5, 0) });
+      const result = joinSharedEdge(
+        { entity: window, segment: segOf(window, 1) },
+        { entity: door, segment: segOf(door, 0) },
+        id,
+        () => 'S9',
+        nodes,
+      );
+      expect(result).not.toBeNull();
+      const W = { ...window, patchParams: result!.aParams };
+      const D = { ...door, patchParams: result!.bParams };
+      // The roof seam did not move.
+      const roofAfter = worldPoints(roof, result!.nodes);
+      roofBefore.forEach((p, i) => { expect(p.distanceTo(roofAfter[i])).toBeLessThan(1e-9); });
+      // The window corner shared by both edges is one node with three users.
+      const corner = segOf(window, 1).startPointId;
+      const node = result!.nodes.find((x) => x.uses.some((u) => u.entityId === 'A' && u.pointId === corner))!;
+      expect(node.uses.map((u) => u.entityId).sort()).toEqual(['A', 'B', 'D']);
+      expect(pt(W, corner).nodeId).toBe(node.id);
+      // Both window links are kept.
+      expect(W.patchParams.edgeLinks).toHaveLength(2);
+      // The door edge lies exactly on the window edge (same end points, same tangents).
+      const dEnd = segOf(door, 0).startPointId;
+      expect(worldOf(pt(D, dEnd).pos, D.transform).distanceTo(worldOf(pt(W, corner).pos, W.transform))).toBeLessThan(1e-9);
+      // A reconcile run keeps all three patches (no user is dropped).
+      const entities = [W, D, { ...roof, patchParams: { ...roof.patchParams, points: resolvePatchPoints(roof.patchParams.points, 'B', roof.transform, result!.nodes) } }];
+      const sync = reconcilePatchNodes(new Map(entities.map((e) => [e.id, e])), entities, result!.nodes);
+      const after = sync.nodes ?? result!.nodes;
+      expect(after.find((x) => x.id === node.id)?.uses).toHaveLength(3);
+    });
+
+    it('a T-joint links one segment to two patches; the edge stays where it was', () => {
+      const { A: window, B: roof, nodes, segA } = joined();
+      const windowBefore = worldPoints(window, nodes);
+      const roofBefore = worldPoints(roof, nodes);
+      const wall = patch('C', { position: v(0.1, -0.6, 0.2), rotation: v(1.1, 0, 0.3) });
+      const result = joinSharedEdge(
+        { entity: window, segment: segA },
+        { entity: wall, segment: segOf(wall, 2) },
+        id,
+        () => '',
+        nodes,
+      );
+      expect(result).not.toBeNull();
+      const W = { ...window, patchParams: result!.aParams };
+      const C = { ...wall, patchParams: result!.bParams };
+      expect(W.patchParams.edgeLinks!.filter((l) => l.startPointId === segA.startPointId || l.endPointId === segA.startPointId)).toHaveLength(2);
+      const after = worldPoints(window, result!.nodes);
+      windowBefore.forEach((p, i) => { expect(p.distanceTo(after[i])).toBeLessThan(1e-9); });
+      const roofAfter = worldPoints(roof, result!.nodes);
+      roofBefore.forEach((p, i) => { expect(p.distanceTo(roofAfter[i])).toBeLessThan(1e-9); });
+      // No new nodes: both ends joined the existing ones, each now has three users.
+      expect(result!.nodes).toHaveLength(2);
+      for (const node of result!.nodes) {expect(node.uses).toHaveLength(3);}
+      // The wall's segment start sits on the window's segment start, sharing the edge tangent.
+      const c0 = pt(C, segOf(wall, 2).startPointId);
+      const w0 = pt(W, segA.startPointId);
+      expect(c0.nodeId).toBe(w0.nodeId);
+      expect(worldOf(c0.pos, C.transform).distanceTo(worldOf(w0.pos, W.transform))).toBeLessThan(1e-9);
+    });
+
+    it('welding two nodes merges them; points naming the absorbed node still count as users', () => {
+      const first = joined();
+      // A second, separate seam between two other patches.
+      const P = patch('P', { position: v(2, 0, 0), rotation: v(0, 0, 0) });
+      const Q = patch('Q', { position: v(2.3, 0.1, 0), rotation: v(0, 0.4, 0) });
+      const second = joinSharedEdge({ entity: P, segment: segOf(P, 0) }, { entity: Q, segment: segOf(Q, 1) }, id, () => '', first.nodes);
+      expect(second).not.toBeNull();
+      const P2 = { ...P, patchParams: second!.aParams };
+      // Weld A (node-backed) to P (node-backed) on segments whose end points are nodes.
+      const weld = joinSharedEdge({ entity: first.A, segment: first.segA }, { entity: P2, segment: segOf(P2, 0) }, id, () => '', second!.nodes);
+      expect(weld).not.toBeNull();
+      expect(weld!.nodes).toHaveLength(2);
+      const merged = weld!.nodes.find((x) => (x.mergedIds ?? []).length > 0)!;
+      expect(merged.uses.map((u) => u.entityId).sort()).toEqual(['A', 'B', 'P', 'Q']);
+      // Q still names the absorbed node id until it re-reads; reconcile keeps it as a user.
+      const Q2 = { ...Q, patchParams: second!.bParams };
+      const B = first.B;
+      const entities = [{ ...first.A, patchParams: weld!.aParams }, { ...P2, patchParams: weld!.bParams }, Q2, B];
+      const sync = reconcilePatchNodes(new Map(entities.map((e) => [e.id, e])), entities, weld!.nodes);
+      const node = (sync.nodes ?? weld!.nodes).find((x) => x.id === merged.id)!;
+      expect(node.uses).toHaveLength(4);
+      // After re-reading, Q's point names the merged node.
+      const qPoints = sync.points.get('Q');
+      expect(qPoints?.some((p) => p.nodeId === merged.id)).toBe(true);
     });
   });
 });

@@ -4,7 +4,7 @@ import { SubPanelSection } from '@/ui/components/SubPanelSection';
 import { useAppStore } from '@/ui/store/use-app-store';
 import type { PatchParams } from '@/scene/asset-triangle-patch';
 import type { AssetEntity } from '@/scene/entity-types';
-import { isEdgeLinkValid, isSameSegment, listPatchSegments } from '@/scene/triangle-patch-edge-link';
+import { isEdgeLinkValid, isSameSegment, listPatchSegments, type PatchEdgeLink } from '@/scene/triangle-patch-edge-link';
 import {
   copyPatchEdge,
   pastePatchEdge,
@@ -40,15 +40,17 @@ export function PatchEdgesSection({ entity, params }: PatchEdgesSectionProps) {
             selEntityId === entity.id &&
             selStart !== undefined && selEnd !== undefined &&
             isSameSegment(segment, { startPointId: selStart, endPointId: selEnd });
-          const link = (params.edgeLinks ?? []).find((l) => isSameSegment(l, segment));
-          const partner = link ? findEntity(link.partnerEntityId) : undefined;
-          const valid = link ? isEdgeLinkValid(entity, link, findEntity) : false;
-          const partnerLabel = link && partner?.patchParams
-            ? `${partner.name} · ${segmentLabel(partner.patchParams, {
-              startPointId: link.partnerStartPointId,
-              endPointId: link.partnerEndPointId,
-            })}`
-            : 'missing partner';
+          // Several links on one segment: a T-joint (three or more patches share the edge).
+          const links = (params.edgeLinks ?? []).filter((l) => isSameSegment(l, segment));
+          const partnerLabel = (link: PatchEdgeLink) => {
+            const partner = findEntity(link.partnerEntityId);
+            return partner?.patchParams
+              ? `${partner.name} · ${segmentLabel(partner.patchParams, {
+                startPointId: link.partnerStartPointId,
+                endPointId: link.partnerEndPointId,
+              })}`
+              : 'missing partner';
+          };
           const isClipSource = clipboard?.sourceEntityId === entity.id && isSameSegment(clipboard.segment, segment);
           return (
             <li key={key} className="patch-point-inspector-item">
@@ -81,29 +83,37 @@ export function PatchEdgesSection({ entity, params }: PatchEdgesSectionProps) {
                   type="button"
                   className="btn btn--icon"
                   aria-label={`Link edge ${segmentLabel(params, segment)}`}
-                  title="Link edge (paste and keep both edges together)"
+                  title="Link edge (paste and keep both edges together; already linked edges and shared points stay put)"
                   disabled={!clipboard || clipboard.sourceEntityId === entity.id}
                   onClick={(e) => { e.stopPropagation(); pastePatchEdge(entity.id, segment, true); }}
                 >
                   <Icon icon={Link} />
                 </button>
               </div>
-              {link ? (
-                <div className="patch-point-inspector-point">
-                  <span className="panel-field-label" title={valid ? 'Linked edge' : 'Link is broken (partner deleted or edge split)'}>
-                    {valid ? '🔗' : '⚠'} {partnerLabel}
-                  </span>
-                  <button
-                    type="button"
-                    className="btn btn--icon"
-                    aria-label="Unlink edge"
-                    title="Unlink (both edges stay where they are)"
-                    onClick={() => { unlinkPatchEdge(entity.id, link); }}
-                  >
-                    <Icon icon={Unlink} />
-                  </button>
-                </div>
-              ) : null}
+              {links.map((link) => {
+                const valid = isEdgeLinkValid(entity, link, findEntity);
+                return (
+                  <div key={`${link.partnerEntityId}:${link.partnerStartPointId}>${link.partnerEndPointId}`} className="patch-point-inspector-point">
+                    <span
+                      className="panel-field-label"
+                      title={valid
+                        ? (links.length > 1 ? 'Linked edge (T-joint)' : 'Linked edge')
+                        : 'Link is broken (partner deleted or edge split)'}
+                    >
+                      {valid ? '🔗' : '⚠'} {partnerLabel(link)}
+                    </span>
+                    <button
+                      type="button"
+                      className="btn btn--icon"
+                      aria-label={`Unlink edge from ${partnerLabel(link)}`}
+                      title="Unlink from this patch (both edges stay where they are)"
+                      onClick={() => { unlinkPatchEdge(entity.id, link); }}
+                    >
+                      <Icon icon={Unlink} />
+                    </button>
+                  </div>
+                );
+              })}
             </li>
           );
         })}

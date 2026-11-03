@@ -28,7 +28,9 @@ export function remapArrangementIds(
     if (uses.length < 2) {continue;}
     const id = createId();
     nodeIds.set(node.id, id);
-    nextNodes.push({ ...node, id, uses });
+    for (const merged of node.mergedIds ?? []) {nodeIds.set(merged, id);}
+    const { mergedIds: _merged, ...rest } = node;
+    nextNodes.push({ ...rest, id, uses });
   }
 
   const nextEntities = entities.map((entity): AssetEntity => {

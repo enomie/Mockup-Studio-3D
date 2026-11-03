@@ -35,6 +35,7 @@ import {
   setNodeSlot,
   type PatchNode,
   type PatchNodeUse,
+  isNodeIdOf,
 } from '@/scene/patch-nodes';
 
 const PATCH_GIZMO_HANDLE_ROLE = 'patchGizmoHandle';
@@ -644,7 +645,7 @@ export class TrianglePatchGizmoController {
 
   private nodeAndUse(point: PatchPoint): { node: PatchNode; use: PatchNodeUse } | null {
     if (!point.nodeId || !this.activeEntityId) {return null;}
-    const node = this.registry.getPatchNodes().find((n) => n.id === point.nodeId);
+    const node = this.registry.getPatchNodes().find((n) => isNodeIdOf(n, point.nodeId));
     const use = node?.uses.find((u) => u.entityId === this.activeEntityId && u.pointId === point.id);
     return node && use ? { node, use } : null;
   }

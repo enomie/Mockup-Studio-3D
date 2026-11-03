@@ -1,7 +1,7 @@
 import { Euler, Quaternion, Vector3 } from 'three';
 import type { PatchParams, PatchPoint } from './asset-triangle-patch';
 import type { AssetEntity, EntityTransform, Vec3 } from './entity-types';
-import { segmentHandleKeys, type PatchEdgeLink, type PatchSegment } from './triangle-patch-edge-link';
+import { isSameSegment, segmentHandleKeys, type PatchEdgeLink, type PatchSegment } from './triangle-patch-edge-link';
 
 /**
  * Shared patch points ("nodes"): one point stored once in the scene and used by several
@@ -42,6 +42,16 @@ export interface PatchNode {
   /** Slots that run along the shared edge (define the edge axis). */
   along: string[];
   uses: PatchNodeUse[];
+  /**
+   * Ids of nodes merged into this one by a weld. Patch points may still name them until
+   * they re-read the node; they count as users of this node.
+   */
+  mergedIds?: string[];
+}
+
+/** True when a patch point's nodeId refers to `node` (directly or via a merged id). */
+export function isNodeIdOf(node: PatchNode, nodeId: string | undefined): boolean {
+  return nodeId !== undefined && (nodeId === node.id || (node.mergedIds?.includes(nodeId) ?? false));
 }
 
 const EPS = 1e-12;
@@ -366,43 +376,162 @@ export interface JoinSide {
   segment: PatchSegment;
 }
 
+type IntoKey = 'handleNext' | 'handlePrev';
+
+const USE_SLOT: Record<IntoKey | 'handleCrossIn', 'next' | 'prev' | 'cross'> = {
+  handleNext: 'next',
+  handlePrev: 'prev',
+  handleCrossIn: 'cross',
+};
+
+function findNodeUse(node: PatchNode, entityId: string, pointId: string): PatchNodeUse | undefined {
+  return node.uses.find((u) => u.entityId === entityId && u.pointId === pointId);
+}
+
+/** A free patch point as a node with one user and no pairs (only used while merging). */
+function singletonNode(id: string, side: NodeSide): PatchNode {
+  const key = (k: 'handleNext' | 'handlePrev' | 'handleCrossIn') => toWorldOffset(offsetOf(side.point, k), side.transform);
+  return {
+    id,
+    name: side.point.name,
+    pos: plain(toWorldPoint(side.point.pos, side.transform)),
+    handles: { [`${id}:n`]: key('handleNext'), [`${id}:p`]: key('handlePrev'), [`${id}:c`]: key('handleCrossIn') },
+    pairs: [],
+    along: [],
+    uses: [{ entityId: side.entityId, pointId: side.point.id, next: `${id}:n`, prev: `${id}:p`, cross: `${id}:c` }],
+  };
+}
+
+/** Replaces slot `from` by `to` everywhere in the node (the `from` handle is dropped). */
+function renameSlot(node: PatchNode, from: string, to: string): PatchNode {
+  if (from === to) {return node;}
+  const r = (slot: string) => (slot === from ? to : slot);
+  const { [from]: _drop, ...handles } = node.handles;
+  return {
+    ...node,
+    handles,
+    pairs: node.pairs.map((p) => ({ ...p, a: r(p.a), b: r(p.b) })).filter((p) => p.a !== p.b),
+    along: [...new Set(node.along.map(r))],
+    uses: node.uses.map((u) => ({ ...u, next: r(u.next), prev: r(u.prev), cross: r(u.cross) })),
+  };
+}
+
 /**
- * Joins two edge segments: their 4 end points become 2 nodes used by both patches.
- * Returns the nodes and both patches' new params (points now views of the nodes; the
- * shared segment is also recorded in edgeLinks for the surface code). Null when a point
- * is already a node or the segments are not valid.
+ * Merges `absorb` into `keep`: users, handles and pairs of both; position and name of
+ * `keep`. Slot ids of `absorb` that clash with `keep` are renamed first.
+ */
+export function mergeNodes(keep: PatchNode, absorb: PatchNode): PatchNode {
+  let other = absorb;
+  for (const slot of Object.keys(absorb.handles)) {
+    if (!(slot in keep.handles)) {continue;}
+    let i = 2;
+    while (`${slot}~${i}` in keep.handles || `${slot}~${i}` in other.handles) {i++;}
+    const fresh = `${slot}~${i}`;
+    const renamed = renameSlot(other, slot, fresh);
+    other = { ...renamed, handles: { ...renamed.handles, [fresh]: other.handles[slot] } };
+  }
+  const uses = [...keep.uses];
+  for (const u of other.uses) {
+    if (!findNodeUse(keep, u.entityId, u.pointId)) {uses.push(u);}
+  }
+  const merged = [...(keep.mergedIds ?? []), ...(absorb.id === keep.id ? [] : [absorb.id]), ...(absorb.mergedIds ?? [])];
+  return {
+    ...keep,
+    handles: { ...other.handles, ...keep.handles },
+    pairs: [...keep.pairs, ...other.pairs],
+    along: [...new Set([...keep.along, ...other.along])],
+    uses,
+    ...(merged.length > 0 ? { mergedIds: [...new Set(merged)] } : {}),
+  };
+}
+
+/**
+ * Welds two end points that run into a shared segment. Existing nodes win: a free point
+ * joins the node of the other side, two nodes merge (the one with more users keeps its
+ * position). The handles running into the segment become one slot; its direction comes
+ * from the side that was already welded, so existing seams never move.
+ */
+function weldEnd(
+  nodes: PatchNode[],
+  a: NodeSide,
+  intoA: IntoKey,
+  b: NodeSide,
+  intoB: IntoKey,
+  newNodeId: () => string,
+): PatchNode[] {
+  const nodeA = a.point.nodeId ? nodes.find((n) => isNodeIdOf(n, a.point.nodeId)) : undefined;
+  const nodeB = b.point.nodeId ? nodes.find((n) => isNodeIdOf(n, b.point.nodeId)) : undefined;
+  const keepA = nodeA !== undefined && (!nodeB || nodeA.uses.length >= nodeB.uses.length);
+  const keep = keepA ? nodeA : nodeB;
+  if (!keep) {return [...nodes, createEndNode(newNodeId(), a, intoA, b, intoB)];}
+  const otherSide = keepA ? b : a;
+  const absorbed = keepA ? nodeB : nodeA;
+  const absorb = absorbed && absorbed.id !== keep.id ? absorbed : undefined;
+  const merged = absorbed && !absorb ? keep : mergeNodes(keep, absorb ?? singletonNode(newNodeId(), otherSide));
+
+  const slotA = findNodeUse(merged, a.entityId, a.point.id)?.[USE_SLOT[intoA]];
+  const slotB = findNodeUse(merged, b.entityId, b.point.id)?.[USE_SLOT[intoB]];
+  let welded = merged;
+  if (slotA && slotB) {
+    const [from, to] = keepA ? [slotB, slotA] : [slotA, slotB];
+    welded = renameSlot(merged, from, to);
+    if (!welded.along.includes(to)) {welded = { ...welded, along: [...welded.along, to] };}
+  }
+  return [...nodes.filter((n) => n.id !== keep.id && n.id !== absorb?.id), welded];
+}
+
+function linkMatches(l: PatchEdgeLink, from: JoinSide, to: JoinSide): boolean {
+  return l.partnerEntityId === to.entity.id && isSameSegment(l, from.segment) &&
+    isSameSegment({ startPointId: l.partnerStartPointId, endPointId: l.partnerEndPointId }, to.segment);
+}
+
+/**
+ * Joins two edge segments. End points become shared nodes; points that already are
+ * nodes keep their node (it gains users, or two nodes merge), so earlier seams stay
+ * closed. A segment may be linked to several patches (T-joint). `existing` are the
+ * scene's nodes; the result holds the complete new node list and both patches' params
+ * (points now views of the nodes, the link recorded in edgeLinks on both sides). Null
+ * when the segments are invalid or already linked with each other.
  */
 export function joinSharedEdge(
   a: JoinSide,
   b: JoinSide,
   newNodeId: () => string,
   newNodeName: () => string = () => '',
+  existing: readonly PatchNode[] = [],
 ): { nodes: PatchNode[]; aParams: PatchParams; bParams: PatchParams } | null {
   const pa = a.entity.patchParams;
   const pb = b.entity.patchParams;
   if (!pa || !pb || a.entity.id === b.entity.id) {return null;}
-  const find = (params: PatchParams, id: string) => params.points.find((p) => p.id === id);
+  if ((pa.edgeLinks ?? []).some((l) => linkMatches(l, a, b))) {return null;}
+  const find = (points: readonly PatchPoint[], id: string) => points.find((p) => p.id === id);
   const ends: [string, string, string, string][] = [
     [a.segment.startPointId, a.segment.endPointId, b.segment.startPointId, b.segment.endPointId],
     [a.segment.endPointId, a.segment.startPointId, b.segment.endPointId, b.segment.startPointId],
   ];
-  const nodes: PatchNode[] = [];
+  const before = new Set(existing.map((n) => n.id));
+  let nodes = [...existing];
   for (const [aId, aOther, bId, bOther] of ends) {
-    const ap = find(pa, aId);
-    const bp = find(pb, bId);
+    // Re-resolve: the first end may have merged nodes this end refers to.
+    const ap = find(resolvePatchPoints(pa.points, a.entity.id, a.entity.transform, nodes), aId);
+    const bp = find(resolvePatchPoints(pb.points, b.entity.id, b.entity.transform, nodes), bId);
     const ka = segmentHandleKeys(pa, aId, aOther);
     const kb = segmentHandleKeys(pb, bId, bOther);
-    if (!ap || !bp || !ka || !kb || ap.nodeId || bp.nodeId) {return null;}
-    const node = createEndNode(
-      newNodeId(),
+    if (!ap || !bp || !ka || !kb) {return null;}
+    nodes = weldEnd(
+      nodes,
       { entityId: a.entity.id, transform: a.entity.transform, point: ap },
       ka.a,
       { entityId: b.entity.id, transform: b.entity.transform, point: bp },
       kb.a,
+      newNodeId,
     );
-    const name = newNodeName();
-    nodes.push(name ? { ...node, name } : node);
   }
+  nodes = nodes.map((n) => {
+    if (before.has(n.id)) {return n;}
+    const name = newNodeName();
+    return name ? { ...n, name } : n;
+  });
   const link = (from: JoinSide, to: JoinSide): PatchEdgeLink => ({
     startPointId: from.segment.startPointId,
     endPointId: from.segment.endPointId,
@@ -469,7 +598,7 @@ export function reconcilePatchNodes(
 
   for (const original of nodes) {
     let node = original;
-    const uses = node.uses.filter((u) => pointOf(u)?.nodeId === node.id);
+    const uses = node.uses.filter((u) => isNodeIdOf(node, pointOf(u)?.nodeId));
     if (uses.length !== node.uses.length) {node = { ...node, uses };}
     if (uses.length < 2) {
       dissolved.push(...uses);

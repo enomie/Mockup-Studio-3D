@@ -83,25 +83,12 @@ export function copyPatchEdge(entityId: string, segment: PatchSegment): boolean 
   return true;
 }
 
-/** Links on `params` without any link that uses `segment` (either direction). */
-function withoutSegmentLinks(params: PatchParams, segment: PatchSegment): PatchEdgeLink[] {
-  return (params.edgeLinks ?? []).filter((link) => !isSameSegment(link, segment));
-}
-
-/** Removes the back link of every link that `segment` has on `entityId`. */
-function detachPartners(entityId: string, params: PatchParams, segment: PatchSegment): void {
-  for (const link of params.edgeLinks ?? []) {
-    if (!isSameSegment(link, segment)) {continue;}
-    const partner = findPatch(link.partnerEntityId);
-    if (!partner) {continue;}
-    const edgeLinks = (partner.params.edgeLinks ?? []).filter((back) =>
-      !(back.partnerEntityId === entityId && isSameSegment(back, {
-        startPointId: link.partnerStartPointId,
-        endPointId: link.partnerEndPointId,
-      })),
-    );
-    setKindParams('patch', partner.entity.id, { edgeLinks });
-  }
+/** Same link (both segments, same partner). */
+function sameLink(a: PatchEdgeLink, b: PatchEdgeLink): boolean {
+  return a.partnerEntityId === b.partnerEntityId && isSameSegment(a, b) && isSameSegment(
+    { startPointId: a.partnerStartPointId, endPointId: a.partnerEndPointId },
+    { startPointId: b.partnerStartPointId, endPointId: b.partnerEndPointId },
+  );
 }
 
 /**
@@ -132,33 +119,43 @@ export function pastePatchEdge(entityId: string, segment: PatchSegment, link: bo
     return true;
   }
 
-  // Joining: the 4 end points become 2 shared points used by both patches (average,
-  // all handles opposite). The copied side's segment pairs with the oriented target.
-  detachPartners(entityId, target.params, segment);
-  detachPartners(source.entity.id, source.params, clip.segment);
+  // Joining: the end points become shared points. Points that already are shared keep
+  // their place (earlier seams stay closed); a segment may link to several patches.
   store.sceneApi?.joinPatchEdges(source.entity.id, clip.segment, entityId, oriented);
   return true;
 }
 
+/**
+ * Removes one link (both directions). Shared end points stay shared where either patch
+ * still has another linked segment there (other seams, T-joints).
+ */
 export function unlinkPatchEdge(entityId: string, link: PatchEdgeLink): void {
   const owner = findPatch(entityId);
   if (!owner) {return;}
-  const segment = { startPointId: link.startPointId, endPointId: link.endPointId };
-  detachPartners(entityId, owner.params, segment);
-  const remaining = withoutSegmentLinks(owner.params, segment);
-  // Shared points at the ends become separate points again (one per patch), unless they
-  // still belong to another joined segment. The node dissolves once no patch uses it.
+  const partner = findPatch(link.partnerEntityId);
+  const back: PatchEdgeLink = {
+    startPointId: link.partnerStartPointId,
+    endPointId: link.partnerEndPointId,
+    partnerEntityId: entityId,
+    partnerStartPointId: link.startPointId,
+    partnerEndPointId: link.endPointId,
+  };
+  const ownLinks = (owner.params.edgeLinks ?? []).filter((l) => !sameLink(l, link));
+  const partnerLinks = (partner?.params.edgeLinks ?? []).filter((l) => !sameLink(l, back));
+  const touches = (links: readonly PatchEdgeLink[], id: string) =>
+    links.some((l) => l.startPointId === id || l.endPointId === id);
   const pairs: [string, string][] = [
     [link.startPointId, link.partnerStartPointId],
     [link.endPointId, link.partnerEndPointId],
   ];
-  const stillShared = (id: string) => remaining.some((l) => l.startPointId === id || l.endPointId === id);
-  const ownIds = pairs.filter(([id]) => !stillShared(id)).map(([id]) => id);
-  const partnerIds = pairs.filter(([id]) => !stillShared(id)).map(([, pid]) => pid);
-  setKindParams('patch', entityId, { points: withoutNodes(owner.params.points, ownIds), edgeLinks: remaining });
-  const partner = findPatch(link.partnerEntityId);
+  const ownIds = pairs.filter(([id]) => !touches(ownLinks, id)).map(([id]) => id);
+  const partnerIds = pairs.filter(([, pid]) => !touches(partnerLinks, pid)).map(([, pid]) => pid);
+  setKindParams('patch', entityId, { points: withoutNodes(owner.params.points, ownIds), edgeLinks: ownLinks });
   if (partner) {
-    setKindParams('patch', partner.entity.id, { points: withoutNodes(partner.params.points, partnerIds) });
+    setKindParams('patch', partner.entity.id, {
+      points: withoutNodes(partner.params.points, partnerIds),
+      edgeLinks: partnerLinks,
+    });
   }
 }
 

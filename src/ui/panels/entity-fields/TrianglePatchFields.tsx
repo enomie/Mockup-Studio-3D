@@ -11,6 +11,7 @@ import {
   nodeSlotLocal,
   patchLocalToWorld,
   patchWorldToLocal,
+  isNodeIdOf,
 } from '@/scene/patch-nodes';
 import { PanelToggleGroup, type PanelToggleOption } from '@/ui/components/PanelToggleGroup';
 import { SubPanelSection } from '@/ui/components/SubPanelSection';
@@ -114,7 +115,7 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
   // Shared point (node): the handles this patch does not map itself are edited on the node.
   const patchNodes = useAppStore((s) => s.patchNodes);
   const nodeOf = (point: PatchPoint) => {
-    const node = point.nodeId ? patchNodes.find((n) => n.id === point.nodeId) : undefined;
+    const node = point.nodeId ? patchNodes.find((n) => isNodeIdOf(n, point.nodeId)) : undefined;
     const use = node?.uses.find((u) => u.entityId === entity.id && u.pointId === point.id);
     return node && use ? { node, use } : null;
   };

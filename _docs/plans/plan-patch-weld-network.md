@@ -123,3 +123,28 @@ Vor jedem Push: `npx vitest run`, `npm run lint`, `npm run build`.
 
 - Größerer Umbau quer durch Scene/Engine/UI – in Schritten committen, jeder grün.
 - Sternpunkt-Glätte (welche Kanten laufen durch) ist heuristisch → manuell überschreibbar.
+
+## Umsetzung (Stand 2026-11-03)
+
+Umgesetzt wurde zuerst der Kern ohne neues Szenen-Objekt `PatchSharedEdge`: Das bestehende
+Modell (`PatchNode.uses[]` + `edgeLinks` pro Patch) trägt bereits N Nutzer, wenn der Join
+nicht mehr abbricht. Dadurch keine Migration nötig, alte Szenen laden unverändert.
+
+- `joinSharedEdge` (`src/scene/patch-nodes.ts`) schweißt in vorhandene Nodes ein:
+  freier Punkt tritt dem Node bei, zwei Nodes verschmelzen (`mergeNodes`, mehr Nutzer
+  gewinnt Position). Die in die Kante laufenden Handles werden ein Slot, Richtung von der
+  schon verschweißten Seite → bestehende Nähte bewegen sich nicht.
+- `PatchNode.mergedIds`: Punkte, die noch die alte Node-Id tragen, zählen weiter als
+  Nutzer (`isNodeIdOf`) und lesen beim nächsten Abgleich die neue Id.
+- Paste/Link löst keine vorhandenen Links mehr (`detachPartners` entfernt) → T-Stoß =
+  mehrere Links auf einem Segment.
+- Unlink löst genau einen Link; geteilte Endpunkte bleiben, solange ein Patch dort noch
+  eine andere gekoppelte Kante hat.
+- Flächenkorrektur zählt gekoppelte Segmente statt Links (T-Stoß ≠ Sternpunkt).
+- Panel zeigt alle Partner einer Kante, Unlink pro Partner.
+- Tests: Fenster/Dach/Tür, T-Stoß, Node-Merge (`src/scene/patch-nodes.test.ts`).
+
+Offen (Folgeschritte):
+- Punkt einfügen auf einer T-Stoß-Kante teilt nur den ersten Partner mit.
+- Neue Nutzer eines bestehenden Nodes bekommen freie (nicht gekoppelte) Quer-Handles;
+  Glätte am Stern/T-Stoß per Auswahl noch nicht wählbar.

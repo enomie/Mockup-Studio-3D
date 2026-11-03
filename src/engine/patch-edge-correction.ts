@@ -144,7 +144,10 @@ export function prepareEdgeCorrection(params: PatchParams): PreparedEdgeCorrecti
   if (links.length === 0) {return null;}
   const sides = getPatchEdgeCount(params);
   const quad = sides === 4;
-  const linksAt = (id: string) => links.filter((l) => l.startPointId === id || l.endPointId === id).length;
+  // Linked segments (not links: a T-joint links one segment to several patches) at a point.
+  const linksAt = (id: string) => new Set(links
+    .filter((l) => l.startPointId === id || l.endPointId === id)
+    .map((l) => [l.startPointId, l.endPointId].sort().join('|'))).size;
   const isLinked = (a: string, b: string) => links.some((l: PatchEdgeLink) =>
     (l.startPointId === a && l.endPointId === b) || (l.startPointId === b && l.endPointId === a));
 

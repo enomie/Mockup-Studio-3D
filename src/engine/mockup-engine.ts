@@ -794,9 +794,10 @@ export class MockupEngine implements SceneApi {
         taken.push(name);
         return name;
       },
+      this.registry.getPatchNodes(),
     );
     if (!joined) {return;}
-    this.registry.setPatchNodes([...this.registry.getPatchNodes(), ...joined.nodes]);
+    this.registry.setPatchNodes(joined.nodes);
     this.setKindParams('patch', aEntityId, { points: joined.aParams.points, edgeLinks: joined.aParams.edgeLinks });
     this.setKindParams('patch', bEntityId, { points: joined.bParams.points, edgeLinks: joined.bParams.edgeLinks });
   }
