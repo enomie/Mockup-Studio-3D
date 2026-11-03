@@ -11,6 +11,7 @@ Status: Entwurf – wartet auf Freigabe.
 | ⌘V | Einfügen **versetzt**, danach ist **Move-Tool sofort aktiv** auf den eingefügten Objekten |
 | ⌘⇧V | Einfügen **an derselben Position** wie das Original |
 | ⌘D | Duplizieren (= Kopieren + versetzt Einfügen, ohne das Clipboard zu überschreiben) |
+| ⌥ + Ziehen (Move) | Duplizieren beim Verschieben – Kopie bewegt sich, Original bleibt
 
 - Funktioniert **über Arrangements hinweg** (Clipboard überlebt `loadArrangement`).
 - **3D-Editor** und **2D-Editor (Profil-Editor)** haben **getrennte Clipboards**, kein Austausch.
@@ -29,8 +30,13 @@ Status: Entwurf – wartet auf Freigabe.
    - Versatz bei ⌘V: fester Offset auf der Bodenebene (z. B. +10 cm in x/z). Mehrfaches Einfügen versetzt kumulativ.
    - Nach ⌘V: Move-Tool aktivieren (wie die Tool-Shortcuts in `useViewportToolShortcuts`), Gizmo auf die Gruppe.
 4. **Hook** `useSceneClipboardShortcuts.ts` (im 3D-Modus aktiv, nicht im Profil-Editor).
-5. **TopSubBar-Buttons** (englische Labels: Cut, Copy, Paste, Duplicate).
-6. **Tests**: Snapshot-Roundtrip, neue IDs, Offset vs. In-place, Cut als ein Undo-Schritt, Multiselect.
+5. **Alt-Drag-Duplizieren** (`gizmo-interaction-controller.ts`): Ist im Move-Modus beim **Start** des Ziehens die Alt-Taste (⌥) gedrückt, wird die Auswahl (auch Multiselect) per `insertEntities` an Ort und Stelle dupliziert. Danach bewegt sich die **Kopie**, das Original bleibt stehen. Das gilt sowohl beim Ziehen am Gizmo als auch beim direkten Ziehen am Objekt.
+   - Wird Alt erst während des Ziehens gedrückt, passiert nichts. Maßgeblich ist der Zustand beim Drag-Start.
+   - Duplikat und Verschiebung zusammen sind **ein** Undo-Schritt. Das Clipboard bleibt unberührt.
+   - Bricht man den Drag mit Esc ab, wird das Duplikat wieder entfernt.
+   - Test: Alt-Drag erzeugt N neue Entities, die Originale behalten ihren Transform.
+6. **TopSubBar-Buttons** (englische Labels: Cut, Copy, Paste, Duplicate).
+7. **Tests**: Snapshot-Roundtrip, neue IDs, Offset vs. In-place, Cut als ein Undo-Schritt, Multiselect.
 
 ### Etappe 2 – Über Arrangements hinweg
 - Prüfen, dass `loadArrangement` / `applyArrangement` das Clipboard nicht leert und eingefügte Objekte ins jetzt aktive Arrangement gehen.
