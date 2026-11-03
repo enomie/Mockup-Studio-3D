@@ -57,6 +57,7 @@ export class SelectionController {
   private patchAddPoint: PatchAddPointHandlers | null = null;
   private onSelect: (entityId: string | null) => void = noop;
   private onDelete: () => void = noop;
+  private onToggle: (entityId: string) => void = noop;
 
   constructor(domElement: HTMLElement, registry: EntityRegistry) {
     this.domElement = domElement;
@@ -82,6 +83,15 @@ export class SelectionController {
 
   setSelectHandler(handler: (entityId: string | null) => void): void {
     this.onSelect = handler;
+  }
+
+  setToggleHandler(handler: (entityId: string) => void): void {
+    this.onToggle = handler;
+  }
+
+  /** Shift-click: adds or removes the entity from the selection. */
+  toggleEntity(entityId: string): void {
+    this.onToggle(entityId);
   }
 
   setDeleteHandler(handler: () => void): void {

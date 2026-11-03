@@ -23,3 +23,35 @@ describe('EntityRegistry.setKindParams', () => {
     expect(registry.getRuntime('sphere-1')?.entity).toEqual(before);
   });
 });
+
+describe('EntityRegistry multi-selection', () => {
+  function setup() {
+    const registry = new EntityRegistry();
+    for (const id of ['a', 'b', 'c']) {registry.addEntity(id, 'block', new Group(), defaultTransform());}
+    return registry;
+  }
+
+  it('collects entities with toggle and makes the last one active', () => {
+    const registry = setup();
+    registry.setSelectedEntityId('a');
+    registry.toggleSelectedEntityId('b');
+    registry.toggleSelectedEntityId('c');
+    expect(registry.getSelectedEntityId()).toBe('c');
+    expect(registry.getSelectedEntityIds()).toEqual(['c', 'a', 'b']);
+    registry.toggleSelectedEntityId('c');
+    expect(registry.getSelectedEntityIds()).toEqual(['b', 'a']);
+    registry.toggleSelectedEntityId('a');
+    expect(registry.getSelectedEntityIds()).toEqual(['b']);
+  });
+
+  it('a plain select and removal shrink the selection', () => {
+    const registry = setup();
+    registry.setSelectedEntityId('a');
+    registry.toggleSelectedEntityId('b');
+    registry.removeEntity('b');
+    expect(registry.getSelectedEntityIds()).toEqual(['a']);
+    registry.toggleSelectedEntityId('c');
+    registry.setSelectedEntityId('c');
+    expect(registry.getSelectedEntityIds()).toEqual(['c']);
+  });
+});

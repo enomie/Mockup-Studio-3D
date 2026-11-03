@@ -9,7 +9,7 @@ import type { LightingSystem } from './lighting/lighting-system';
 import { LIGHT_FILL_ID, LIGHT_KEY_ID, type StudioLightId } from '@/scene/light-ids';
 
 /**
- * Marks meshes of the selected asset on {@link SELECTION_MASK_LAYER}; the viewport
+ * Marks meshes of the selected assets on {@link SELECTION_MASK_LAYER}; the viewport
  * render pipeline draws a screen-space outline from that layer.
  */
 export class SelectionHighlight {
@@ -21,12 +21,12 @@ export class SelectionHighlight {
     this.registry = registry;
     this.lighting = lighting;
 
-    registry.subscribeSelection((entityId) => {
-      this.updateAssetMask(entityId);
+    registry.subscribeSelection(() => {
+      this.updateAssetMask(registry.getSelectedEntityIds());
     });
 
     registry.subscribeEntities(() => {
-      this.updateAssetMask(registry.getSelectedEntityId());
+      this.updateAssetMask(registry.getSelectedEntityIds());
     });
 
     lighting.subscribeSelection((lightId) => {
@@ -46,18 +46,17 @@ export class SelectionHighlight {
     this.updateLightWireframes(null);
   }
 
-  private updateAssetMask(entityId: string | null): void {
+  private updateAssetMask(entityIds: readonly string[]): void {
     this.clearAssetMask();
-    if (!entityId) {return;}
-
-    const runtime = this.registry.getRuntime(entityId);
-    if (!runtime) {return;}
-
-    runtime.object.traverse((child) => {
-      if (!(child instanceof Mesh) || !child.geometry) {return;}
-      child.layers.enable(SELECTION_MASK_LAYER);
-      this.markedMeshes.push(child);
-    });
+    for (const entityId of entityIds) {
+      const runtime = this.registry.getRuntime(entityId);
+      if (!runtime) {continue;}
+      runtime.object.traverse((child) => {
+        if (!(child instanceof Mesh) || !child.geometry) {return;}
+        child.layers.enable(SELECTION_MASK_LAYER);
+        this.markedMeshes.push(child);
+      });
+    }
   }
 
   private clearAssetMask(): void {

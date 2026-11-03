@@ -2,13 +2,14 @@ import { Eye, EyeOff, Trash2 } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { Icon } from '@/ui/components/Icon';
 import { SubPanel } from '@/ui/components/SubPanel';
-import { removeEntity, setEntityVisible, setSelectedEntity } from '@/ui/store/app-store';
+import { removeEntity, setEntityVisible, setSelectedEntity, toggleEntitySelection } from '@/ui/store/app-store';
 import { useAppStore } from '@/ui/store/use-app-store';
 
 /** Entity overview; the selected entity's settings open in `SceneDetailPanel`. */
 export function SceneSubPanel() {
   const entities = useAppStore((s) => s.entities);
   const selectedEntityId = useAppStore((s) => s.selectedEntityId);
+  const selectedEntityIds = useAppStore((s) => s.selectedEntityIds);
   const rowRefs = useRef(new Map<string, HTMLElement>());
 
   useEffect(() => {
@@ -23,7 +24,7 @@ export function SceneSubPanel() {
       ) : (
         <ul className="scene-entity-list scene-entity-list--rows">
           {entities.map((entity) => {
-            const isSelected = entity.id === selectedEntityId;
+            const isSelected = selectedEntityIds.includes(entity.id) || entity.id === selectedEntityId;
             return (
               <li
                 key={entity.id}
@@ -41,7 +42,15 @@ export function SceneSubPanel() {
                     type="button"
                     className="scene-entity-block__title"
                     aria-current={isSelected ? 'true' : undefined}
-                    onClick={() => { setSelectedEntity(isSelected ? null : entity.id); }}
+                    onClick={(event) => {
+                      if (event.shiftKey) {
+                        toggleEntitySelection(entity.id);
+                      } else if (isSelected && selectedEntityIds.length > 1) {
+                        setSelectedEntity(entity.id);
+                      } else {
+                        setSelectedEntity(isSelected ? null : entity.id);
+                      }
+                    }}
                   >
                     {entity.name}
                   </button>

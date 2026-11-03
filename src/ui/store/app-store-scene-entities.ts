@@ -17,7 +17,24 @@ export function addAssetFromCatalog(assetKind: AssetKind): void {
 
 export function setSelectedEntity(entityId: string | null): void {
   store.sceneApi?.selectEntity(entityId);
-  store.setAppState({ ...store.state, selectedEntityId: entityId });
+  store.setAppState({
+    ...store.state,
+    selectedEntityId: entityId,
+    selectedEntityIds: entityId && store.sceneApi ? [...store.sceneApi.getSelectedEntityIds()] : [],
+  });
+  store.emit();
+}
+
+/** Shift-click in the scene list: adds or removes an asset from the selection. */
+export function toggleEntitySelection(entityId: string): void {
+  const api = store.sceneApi;
+  if (!api) {return;}
+  api.toggleEntitySelection(entityId);
+  store.setAppState({
+    ...store.state,
+    selectedEntityId: api.getSelectedEntityId(),
+    selectedEntityIds: [...api.getSelectedEntityIds()],
+  });
   store.emit();
 }
 

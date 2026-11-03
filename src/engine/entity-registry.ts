@@ -95,6 +95,8 @@ export class EntityRegistry {
   private readonly entities = new Map<string, EntityRuntime>();
   private readonly kindCounters = new Map<AssetKind, number>();
   private selectedEntityId: string | null = null;
+  /** Further entities collected with Shift-click; `selectedEntityId` is the active one. */
+  private extraSelectedIds: string[] = [];
   private spawnIndex = 0;
 
   private readonly entityListeners = new Set<EntityChangeListener>();
@@ -252,8 +254,11 @@ export class EntityRegistry {
   removeEntity(entityId: string): void {
     if (!this.entities.has(entityId)) {return;}
     this.entities.delete(entityId);
+    if (this.extraSelectedIds.includes(entityId)) {
+      this.extraSelectedIds = this.extraSelectedIds.filter((id) => id !== entityId);
+    }
     if (this.selectedEntityId === entityId) {
-      this.setSelectedEntityId(null);
+      this.toggleSelectedEntityId(entityId);
     }
     this.markEntitiesChanged();
   }
@@ -301,8 +306,36 @@ export class EntityRegistry {
 
   // --- Selection & transform ---
 
+  /** All selected entities, active one first. */
+  getSelectedEntityIds(): readonly string[] {
+    return this.selectedEntityId ? [this.selectedEntityId, ...this.extraSelectedIds] : [];
+  }
+
+  /**
+   * Shift-click: adds `entityId` (it becomes active) or removes it when already selected;
+   * removing the active entity makes the most recently added one active.
+   */
+  toggleSelectedEntityId(entityId: string): void {
+    const active = this.selectedEntityId;
+    let next: string | null;
+    if (active === entityId) {
+      next = this.extraSelectedIds.at(-1) ?? null;
+      this.extraSelectedIds = this.extraSelectedIds.slice(0, -1);
+    } else if (this.extraSelectedIds.includes(entityId)) {
+      this.extraSelectedIds = this.extraSelectedIds.filter((id) => id !== entityId);
+      next = active;
+    } else {
+      if (active) {this.extraSelectedIds = [...this.extraSelectedIds, active];}
+      next = entityId;
+    }
+    this.selectedEntityId = next;
+    this.selectionListeners.forEach((listener) => { listener(next); });
+    this.emitEntities();
+  }
+
   setSelectedEntityId(entityId: string | null): void {
-    if (this.selectedEntityId === entityId) {return;}
+    if (this.selectedEntityId === entityId && this.extraSelectedIds.length === 0) {return;}
+    this.extraSelectedIds = [];
     this.selectedEntityId = entityId;
     this.selectionListeners.forEach((listener) => { listener(entityId); });
     this.emitEntities();

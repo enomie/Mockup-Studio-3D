@@ -18,6 +18,7 @@ function createFixture() {
     subscribeSelection: (fn: (id: string | null) => void) => { selectionListener = fn; },
     subscribeEntities: () => {},
     getSelectedEntityId: () => selectedId,
+    getSelectedEntityIds: () => (selectedId ? [selectedId] : []),
     getRuntime: (id: string) => (id === 'a' ? { object: root } : undefined),
   } as unknown as EntityRegistry;
   const lighting = {

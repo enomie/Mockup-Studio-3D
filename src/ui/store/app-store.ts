@@ -44,6 +44,7 @@ export {
 export {
   
   setSelectedEntity,
+  toggleEntitySelection,
   removeEntity,
   setEntityTransform,
   setAssetScreenImage,
@@ -274,7 +275,7 @@ export function setSceneApi(api: SceneApi | null): void {
     historySettingsUnsubscribe = store.subscribe(() => { api.noteHistorySettingsChanged(); });
     onSceneApiConnected(api);
   } else {
-    store.setAppState({ ...store.state, entities: [], selectedEntityId: null });
+    store.setAppState({ ...store.state, entities: [], selectedEntityId: null, selectedEntityIds: [] });
     store.emit();
   }
 }

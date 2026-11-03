@@ -128,6 +128,8 @@ export interface AppState {
   /** User-made profiles; built-ins come from the profile library. */
   userProfiles: ProfileEntry[];
   selectedEntityId: string | null;
+  /** All selected assets (active first); more than one after Shift-click. */
+  selectedEntityIds: readonly string[];
   patchHandleSelection: PatchHandleSelection | null;
   /** Patch whose viewport add-point mode is running, if any. */
   patchAddPointEntityId: string | null;
@@ -201,6 +203,7 @@ export let state: AppState = {
   userBakedAssets: [],
   userProfiles: [],
   selectedEntityId: null,
+  selectedEntityIds: [],
   patchHandleSelection: null,
   patchAddPointEntityId: null,
   history: { canUndo: false, canRedo: false, undoLabel: null, redoLabel: null },
@@ -335,6 +338,7 @@ export function syncEngineStateFromEngine(): void {
     },
     entities: sceneApi.getEntities(),
     selectedEntityId: sceneApi.getSelectedEntityId(),
+    selectedEntityIds: [...sceneApi.getSelectedEntityIds()],
     patchHandleSelection: sceneApi.getPatchHandleSelection(),
     patchAddPointEntityId: sceneApi.getPatchAddPointEntityId(),
     history: sceneApi.getHistoryState(),

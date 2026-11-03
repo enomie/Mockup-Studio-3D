@@ -220,6 +220,9 @@ export interface SceneApi {
   ): Promise<void>;
   selectEntity(entityId: string | null): void;
   getSelectedEntityId(): string | null;
+  /** Active entity first, then the Shift-collected ones (assets only). */
+  getSelectedEntityIds(): readonly string[];
+  toggleEntitySelection(entityId: string): void;
   getEntities(): readonly AssetEntity[];
   setEntityTransform(entityId: string, partial: Partial<EntityTransform>): void;
   setAssetImage(entityId: string, imageId: string | null): void;

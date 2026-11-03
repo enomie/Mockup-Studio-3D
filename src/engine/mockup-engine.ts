@@ -400,10 +400,11 @@ export class MockupEngine implements SceneApi {
       cancel: () => { engine.setPatchAddPointMode(null); },
     });
     selection.setSelectHandler((entityId) => { engine.handleSelect(entityId); });
+    selection.setToggleHandler((entityId) => { engine.toggleEntitySelection(entityId); });
     selection.setDeleteHandler(() => {
-      const selectedAssetId = registry.getSelectedEntityId();
-      if (!selectedAssetId) {return;}
-      engine.removeEntity(selectedAssetId);
+      for (const entityId of [...registry.getSelectedEntityIds()]) {
+        engine.removeEntity(entityId);
+      }
     });
 
     // Default portfolio scene: picture, print (A5), smartphone, tablet, monitor.
@@ -577,6 +578,27 @@ export class MockupEngine implements SceneApi {
 
   selectEntity(entityId: string | null): void {
     this.handleSelect(entityId);
+  }
+
+  /** Shift-click: adds or removes an asset from the multi-selection (lights select alone). */
+  toggleEntitySelection(entityId: string): void {
+    if (isStudioLightId(entityId) || this.lighting.getSelectedLightId()) {
+      this.handleSelect(entityId);
+      return;
+    }
+    this.commitVisualState(() => {
+      this.registry.toggleSelectedEntityId(entityId);
+      const active = this.registry.getSelectedEntityId();
+      this.patchGizmo.setActiveEntity(active);
+      if (this.patchAddPoint.isActive() && this.patchAddPoint.getEntityId() !== active) {
+        this.patchAddPoint.stop();
+      }
+      this.gizmoInteraction.refresh();
+    });
+  }
+
+  getSelectedEntityIds(): readonly string[] {
+    return this.registry.getSelectedEntityIds();
   }
 
   getSelectedEntityId(): string | null {

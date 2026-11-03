@@ -173,9 +173,11 @@ export class ViewportInputController {
         this.selection.commitPatchAddPointAt(event.clientX, event.clientY);
       } else if (this.pendingHitId === '__PATCH_HANDLE_SELECTED__') {
         // Point handle was selected directly in pickAt
+      } else if (this.pendingHitId && event.shiftKey) {
+        this.selection.toggleEntity(this.pendingHitId);
       } else if (this.pendingHitId) {
         this.selection.selectEntity(this.pendingHitId);
-      } else {
+      } else if (!event.shiftKey) {
         this.selection.deselect();
       }
     }
