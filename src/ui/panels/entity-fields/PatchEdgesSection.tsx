@@ -1,9 +1,10 @@
-import { ClipboardPaste, Copy, Link, Unlink, X } from 'lucide-react';
+import { ClipboardPaste, Copy, Link, Spline, Unlink, X } from 'lucide-react';
 import { Icon } from '@/ui/components/Icon';
 import { SubPanelSection } from '@/ui/components/SubPanelSection';
 import { useAppStore } from '@/ui/store/use-app-store';
 import type { PatchParams } from '@/scene/asset-triangle-patch';
 import type { AssetEntity } from '@/scene/entity-types';
+import { isSmoothSeam } from '@/scene/patch-nodes';
 import { isEdgeLinkValid, isSameSegment, listPatchSegments, type PatchEdgeLink } from '@/scene/triangle-patch-edge-link';
 import {
   copyPatchEdge,
@@ -12,6 +13,7 @@ import {
   selectPatchEdge,
   setPatchEdgeClipboard,
   setPatchEdgePickMode,
+  setPatchSmoothSeam,
   unlinkPatchEdge,
   usePatchEdgeClipboard,
 } from '@/ui/store/patch-edge-store';
@@ -29,6 +31,7 @@ export function PatchEdgesSection({ entity, params }: PatchEdgesSectionProps) {
   const selStart = useAppStore((s) => s.patchEdgeSelection?.startPointId);
   const selEnd = useAppStore((s) => s.patchEdgeSelection?.endPointId);
   const clipboard = usePatchEdgeClipboard();
+  const patchNodes = useAppStore((s) => s.patchNodes);
   const findEntity = (id: string) => entities.find((e) => e.id === id);
 
   return (
@@ -92,6 +95,8 @@ export function PatchEdgesSection({ entity, params }: PatchEdgesSectionProps) {
               </div>
               {links.map((link) => {
                 const valid = isEdgeLinkValid(entity, link, findEntity);
+                const partner = findEntity(link.partnerEntityId);
+                const smooth = valid && partner ? isSmoothSeam(patchNodes, entity, link, partner) : false;
                 return (
                   <div key={`${link.partnerEntityId}:${link.partnerStartPointId}>${link.partnerEndPointId}`} className="patch-point-inspector-point">
                     <span
@@ -102,6 +107,20 @@ export function PatchEdgesSection({ entity, params }: PatchEdgesSectionProps) {
                     >
                       {valid ? '🔗' : '⚠'} {partnerLabel(link)}
                     </span>
+                    {links.length > 1 && valid ? (
+                      <button
+                        type="button"
+                        className="btn btn--icon"
+                        aria-pressed={smooth}
+                        aria-label={`Smooth seam with ${partnerLabel(link)}`}
+                        title={smooth
+                          ? 'Smooth seam (the other patches on this edge may crease)'
+                          : 'Make this the smooth seam (the other patches on this edge may crease)'}
+                        onClick={() => { setPatchSmoothSeam(entity.id, link); }}
+                      >
+                        <Icon icon={Spline} />
+                      </button>
+                    ) : null}
                     <button
                       type="button"
                       className="btn btn--icon"

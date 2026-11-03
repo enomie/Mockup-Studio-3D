@@ -6,7 +6,7 @@ import {
   type PatchPoint,
 } from '@/scene/asset-triangle-patch';
 import type { Vec3 } from '@/scene/entity-types';
-import { crossHandleKeyAt, type PatchEdgeLink } from '@/scene/triangle-patch-edge-link';
+import { crossHandleKeyAt, linkedSegmentCountAt, type PatchEdgeLink } from '@/scene/triangle-patch-edge-link';
 import { evalPatchSurfacePoint } from './triangle-patch-geometry';
 import { evalQuadPatchSurfacePoint } from './quad-patch-geometry';
 
@@ -144,10 +144,7 @@ export function prepareEdgeCorrection(params: PatchParams): PreparedEdgeCorrecti
   if (links.length === 0) {return null;}
   const sides = getPatchEdgeCount(params);
   const quad = sides === 4;
-  // Linked segments (not links: a T-joint links one segment to several patches) at a point.
-  const linksAt = (id: string) => new Set(links
-    .filter((l) => l.startPointId === id || l.endPointId === id)
-    .map((l) => [l.startPointId, l.endPointId].sort().join('|'))).size;
+  const linksAt = (id: string) => linkedSegmentCountAt(links, id);
   const isLinked = (a: string, b: string) => links.some((l: PatchEdgeLink) =>
     (l.startPointId === a && l.endPointId === b) || (l.startPointId === b && l.endPointId === a));
 

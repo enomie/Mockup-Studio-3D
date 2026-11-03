@@ -26,54 +26,96 @@ function linkBetween(
   return { startPointId, endPointId, partnerEntityId, partnerStartPointId, partnerEndPointId };
 }
 
+/** A partner patch split along with the owner: its new params and the new point there. */
+export interface SplitPartner {
+  partnerId: string;
+  partnerParams: PatchParams;
+  pointId: string;
+}
+
+/** New params for the edited patch and every linked partner after an insert. */
+export interface LinkedSplitResult {
+  ownerParams: PatchParams;
+  partners: SplitPartner[];
+}
+
 /**
  * After `insert` split a segment of `owner` (owner.patchParams is the state before the
- * insert): when that segment was validly linked, splits the partner segment at the same
- * curve parameter and turns the one link into two on both sides. Null when not linked.
+ * insert): every partner validly linked on that segment (one at a seam, several at a
+ * T-joint) is split at the same curve parameter, and each link turns into two on both
+ * sides. Null when the segment is not linked.
  */
 export function splitLinkOnInsert(
   owner: AssetEntity,
   insert: InsertedPatchPoint,
   findEntity: FindEntity,
-): LinkedEditResult | null {
+): LinkedSplitResult | null {
   const segment = { startPointId: insert.startPointId, endPointId: insert.endPointId };
-  const link = (owner.patchParams?.edgeLinks ?? []).find((l) => isSameSegment(l, segment));
-  if (!link || !isEdgeLinkValid(owner, link, findEntity)) {return null;}
-  const partner = findEntity(link.partnerEntityId);
-  const partnerBefore = partner?.patchParams;
-  if (!partner || !partnerBefore) {return null;}
-
-  // Split parameter measured from the link's start point, then applied from the partner's start.
-  const sFromLinkStart = link.startPointId === insert.startPointId ? insert.s : 1 - insert.s;
-  const partnerInsert = insertPatchPointInSegment(
-    partnerBefore,
-    link.partnerStartPointId,
-    link.partnerEndPointId,
-    sFromLinkStart,
-  );
-  if (!partnerInsert) {return null;}
+  const links = (owner.patchParams?.edgeLinks ?? [])
+    .filter((l) => isSameSegment(l, segment) && isEdgeLinkValid(owner, l, findEntity));
+  if (links.length === 0) {return null;}
 
   const p = insert.pointId;
-  const q = partnerInsert.pointId;
-  const ownerLinks = [
-    ...(insert.params.edgeLinks ?? []).filter((l) => l !== link && !isSameSegment(l, segment)),
-    linkBetween(link.startPointId, p, partner.id, link.partnerStartPointId, q),
-    linkBetween(p, link.endPointId, partner.id, q, link.partnerEndPointId),
-  ];
-  const partnerSegment = { startPointId: link.partnerStartPointId, endPointId: link.partnerEndPointId };
-  const partnerLinks = [
-    ...(partnerInsert.params.edgeLinks ?? []).filter((l) => !isSameSegment(l, partnerSegment)),
-    linkBetween(link.partnerStartPointId, q, owner.id, link.startPointId, p),
-    linkBetween(q, link.partnerEndPointId, owner.id, p, link.endPointId),
-  ];
-  const smooth = (params: PatchParams, id: string): PatchParams => ({
+  const ownerLinks = (insert.params.edgeLinks ?? []).filter((l) => !isSameSegment(l, segment));
+  const partners: SplitPartner[] = [];
+  for (const link of links) {
+    const partner = findEntity(link.partnerEntityId);
+    const partnerBefore = partner?.patchParams;
+    if (!partner || !partnerBefore) {continue;}
+    // Split parameter measured from the link's start point, then applied from the partner's start.
+    const sFromLinkStart = link.startPointId === insert.startPointId ? insert.s : 1 - insert.s;
+    const partnerInsert = insertPatchPointInSegment(
+      partnerBefore,
+      link.partnerStartPointId,
+      link.partnerEndPointId,
+      sFromLinkStart,
+    );
+    if (!partnerInsert) {continue;}
+    const q = partnerInsert.pointId;
+    ownerLinks.push(
+      linkBetween(link.startPointId, p, partner.id, link.partnerStartPointId, q),
+      linkBetween(p, link.endPointId, partner.id, q, link.partnerEndPointId),
+    );
+    const partnerSegment = { startPointId: link.partnerStartPointId, endPointId: link.partnerEndPointId };
+    const partnerLinks = [
+      // Links of the partner's segment to other patches (it may itself be a T-joint) are
+      // only kept when they point to patches split here too.
+      ...(partnerInsert.params.edgeLinks ?? []).filter((l) => !isSameSegment(l, partnerSegment)),
+      linkBetween(link.partnerStartPointId, q, owner.id, link.startPointId, p),
+      linkBetween(q, link.partnerEndPointId, owner.id, p, link.endPointId),
+    ];
+    partners.push({ partnerId: partner.id, partnerParams: smooth({ ...partnerInsert.params, edgeLinks: partnerLinks }, q), pointId: q });
+  }
+  if (partners.length === 0) {return null;}
+
+  // Partners linked with each other on the same edge (T-joint between them) relink at the split.
+  for (const a of partners) {
+    for (const b of partners) {
+      if (a === b) {continue;}
+      const aBefore = findEntity(a.partnerId)?.patchParams;
+      const cross = (aBefore?.edgeLinks ?? []).filter((l) => l.partnerEntityId === b.partnerId &&
+        links.some((own) => own.partnerEntityId === a.partnerId && isSameSegment(l, {
+          startPointId: own.partnerStartPointId, endPointId: own.partnerEndPointId,
+        })));
+      for (const l of cross) {
+        a.partnerParams = {
+          ...a.partnerParams,
+          edgeLinks: [
+            ...(a.partnerParams.edgeLinks ?? []),
+            linkBetween(l.startPointId, a.pointId, b.partnerId, l.partnerStartPointId, b.pointId),
+            linkBetween(a.pointId, l.endPointId, b.partnerId, b.pointId, l.partnerEndPointId),
+          ],
+        };
+      }
+    }
+  }
+  return { ownerParams: smooth({ ...insert.params, edgeLinks: ownerLinks }, p), partners };
+}
+
+function smooth(params: PatchParams, id: string): PatchParams {
+  return {
     ...params,
     points: params.points.map((point) => (point.id === id ? { ...point, joint: 'smooth' as const, pinkPair: 'coupled' as const } : point)),
-  });
-  return {
-    ownerParams: smooth({ ...insert.params, edgeLinks: ownerLinks }, p),
-    partnerId: partner.id,
-    partnerParams: smooth({ ...partnerInsert.params, edgeLinks: partnerLinks }, q),
   };
 }
 

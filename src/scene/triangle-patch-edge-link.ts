@@ -180,6 +180,13 @@ export function crossHandleKeyAt(
   return keys.a === 'handleNext' ? 'handlePrev' : 'handleNext';
 }
 
+/** Number of distinct linked segments at a point (a T-joint links one segment several times). */
+export function linkedSegmentCountAt(links: readonly PatchEdgeLink[], pointId: string): number {
+  return new Set(links
+    .filter((l) => l.startPointId === pointId || l.endPointId === pointId)
+    .map((l) => [l.startPointId, l.endPointId].sort().join('|'))).size;
+}
+
 /** Removes links of `params` that touch `pointId` (used when the point is deleted). */
 export function dropEdgeLinksForPoint(params: PatchParams, pointId: string): PatchParams {
   if (!params.edgeLinks) {return params;}

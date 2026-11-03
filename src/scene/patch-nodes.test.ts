@@ -5,7 +5,9 @@ import type { AssetEntity, EntityTransform, Vec3 } from './entity-types';
 import {
   alignNodeOpposite,
   applyPointEditToNode,
+  isSmoothSeam,
   joinSharedEdge,
+  setSmoothSeam,
   moveNodeWithPatch,
   extraSlotsFor,
   nextSharedNodeName,
@@ -308,6 +310,43 @@ describe('shared nodes', () => {
       // After re-reading, Q's point names the merged node.
       const qPoints = sync.points.get('Q');
       expect(qPoints?.some((p) => p.nodeId === merged.id)).toBe(true);
+    });
+  
+    it('the door joining the window corner is coupled smooth with the window there', () => {
+      const { A: window, B: roof, nodes } = joined();
+      const door = patch('D', { position: v(-0.4, 0.1, 0.3), rotation: v(0.2, -0.5, 0) });
+      const result = joinSharedEdge(
+        { entity: window, segment: segOf(window, 1) }, { entity: door, segment: segOf(door, 0) }, id, () => '', nodes,
+      )!;
+      const W = { ...window, patchParams: result.aParams };
+      const D = { ...door, patchParams: result.bParams };
+      const link = W.patchParams.edgeLinks!.find((l) => l.partnerEntityId === 'D')!;
+      expect(isSmoothSeam(result.nodes, W, link, D)).toBe(true);
+      // The roof seam is still smooth too.
+      const roofLink = W.patchParams.edgeLinks!.find((l) => l.partnerEntityId === 'B')!;
+      const R = { ...roof, patchParams: { ...roof.patchParams } };
+      expect(isSmoothSeam(result.nodes, W, roofLink, R)).toBe(true);
+    });
+
+    it('T-joint: the first seam stays smooth; choosing the wall moves smoothness, not positions', () => {
+      const { A: window, B: roof, nodes, segA } = joined();
+      const wall = patch('C', { position: v(0.1, -0.6, 0.2), rotation: v(1.1, 0, 0.3) });
+      const result = joinSharedEdge(
+        { entity: window, segment: segA }, { entity: wall, segment: segOf(wall, 2) }, id, () => '', nodes,
+      )!;
+      const W = { ...window, patchParams: result.aParams };
+      const C = { ...wall, patchParams: result.bParams };
+      const toRoof = W.patchParams.edgeLinks!.find((l) => l.partnerEntityId === 'B')!;
+      const toWall = W.patchParams.edgeLinks!.find((l) => l.partnerEntityId === 'C')!;
+      expect(isSmoothSeam(result.nodes, W, toRoof, roof)).toBe(true);
+      expect(isSmoothSeam(result.nodes, W, toWall, C)).toBe(false);
+
+      const before = worldPoints(W, result.nodes);
+      const next = setSmoothSeam(result.nodes, W, toWall, C);
+      expect(isSmoothSeam(next, W, toWall, C)).toBe(true);
+      expect(isSmoothSeam(next, W, toRoof, roof)).toBe(false);
+      const after = worldPoints(W, next);
+      before.forEach((p, i) => { expect(p.distanceTo(after[i])).toBeLessThan(1e-9); });
     });
   });
 });

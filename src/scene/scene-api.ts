@@ -1,6 +1,6 @@
 import type { ArrangementContent } from './arrangement-types';
 import type { PatchNode } from '@/scene/patch-nodes';
-import type { PatchSegment } from '@/scene/triangle-patch-edge-link';
+import type { PatchEdgeLink, PatchSegment } from '@/scene/triangle-patch-edge-link';
 import type { PatchEdgeSelection } from '@/engine/triangle-patch-add-point-tool';
 import type { HistorySettingsAdapter, SceneHistoryState } from '@/engine/history/scene-history-controller';
 import type { KindParamFamily, KindParamsByFamily } from './kind-param-families';
@@ -279,6 +279,8 @@ export interface SceneApi {
   /** Joins two edge segments into shared points (start pairs with start). */
   joinPatchEdges(aEntityId: string, aSegment: PatchSegment, bEntityId: string, bSegment: PatchSegment): void;
   getPatchNodes(): readonly PatchNode[];
+  /** Makes the seam of `link` (on `entityId`) the smooth one at its shared points (T-joints). */
+  setPatchSmoothSeam(entityId: string, link: PatchEdgeLink): void;
   /** Sets one handle of a shared point (world offset from the point); `free` uncouples its pair. */
   setPatchNodeSlot(nodeId: string, slot: string, worldOffset: Vec3, free: boolean): void;
   /** "Align handles opposite" on a shared point. */

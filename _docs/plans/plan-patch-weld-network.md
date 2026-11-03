@@ -144,7 +144,13 @@ nicht mehr abbricht. Dadurch keine Migration nötig, alte Szenen laden unveränd
 - Panel zeigt alle Partner einer Kante, Unlink pro Partner.
 - Tests: Fenster/Dach/Tür, T-Stoß, Node-Merge (`src/scene/patch-nodes.test.ts`).
 
-Offen (Folgeschritte):
-- Punkt einfügen auf einer T-Stoß-Kante teilt nur den ersten Partner mit.
-- Neue Nutzer eines bestehenden Nodes bekommen freie (nicht gekoppelte) Quer-Handles;
-  Glätte am Stern/T-Stoß per Auswahl noch nicht wählbar.
+Nachgezogen (zweiter Schritt):
+- Punkt einfügen auf einer T-Stoß-Kante teilt alle Partner (`splitLinkOnInsert` liefert
+  `partners[]`); auf verschweißten Kanten wird der neue Punkt ein Node aller Patches
+  (`addInnerNodeUse`).
+- Neue Nutzer eines bestehenden Nodes werden quer zur neuen Naht gekoppelt (glatt); nur
+  die neu dazukommende Seite dreht sich. Paare haben jetzt eine eigene Achse (`axis`), damit
+  Ecken mit mehreren Kanten richtig ausgerichtet werden.
+- T-Stoß: die erste Naht bleibt glatt; im Edges-Panel kann pro Partner gewählt werden,
+  welche Naht glatt ist (`setSmoothSeam`, Spline-Button). Die anderen behalten ihre
+  Position und dürfen knicken.

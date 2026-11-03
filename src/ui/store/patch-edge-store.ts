@@ -167,6 +167,11 @@ function withoutNodes(points: readonly PatchPoint[], ids: readonly string[]): Pa
   });
 }
 
+/** Makes this seam the smooth one at a T-joint (the other patches on the edge may crease). */
+export function setPatchSmoothSeam(entityId: string, link: PatchEdgeLink): void {
+  store.sceneApi?.setPatchSmoothSeam(entityId, link);
+}
+
 /** Sets one handle of a shared point (world offset); coupled pairs turn along. */
 export function setPatchNodeSlot(nodeId: string, slot: string, worldOffset: { x: number; y: number; z: number }): void {
   store.sceneApi?.setPatchNodeSlot(nodeId, slot, worldOffset, false);

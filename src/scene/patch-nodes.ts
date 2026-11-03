@@ -1,7 +1,7 @@
 import { Euler, Quaternion, Vector3 } from 'three';
 import type { PatchParams, PatchPoint } from './asset-triangle-patch';
 import type { AssetEntity, EntityTransform, Vec3 } from './entity-types';
-import { isSameSegment, segmentHandleKeys, type PatchEdgeLink, type PatchSegment } from './triangle-patch-edge-link';
+import { crossHandleKeyAt, isSameSegment, linkedSegmentCountAt, segmentHandleKeys, type PatchEdgeLink, type PatchSegment } from './triangle-patch-edge-link';
 
 /**
  * Shared patch points ("nodes"): one point stored once in the scene and used by several
@@ -29,6 +29,11 @@ interface PatchNodePair {
   b: string;
   kind: 'across' | 'line';
   coupled: boolean;
+  /**
+   * 'across' pairs: the slot along the edge they lie across. Unset: the node's first
+   * along slot (nodes with one shared edge line).
+   */
+  axis?: string;
 }
 
 export interface PatchNode {
@@ -103,8 +108,12 @@ function differs(a: Vec3, b: Vec3): boolean {
   return Math.abs(a.x - b.x) > 1e-9 || Math.abs(a.y - b.y) > 1e-9 || Math.abs(a.z - b.z) > 1e-9;
 }
 
-/** Unit edge axis of a node (from its along slots), or null. */
-function edgeAxis(node: PatchNode): Vector3 | null {
+/** Unit edge axis of a node for a pair (its axis slot, else the along slots), or null. */
+function edgeAxis(node: PatchNode, pair?: PatchNodePair): Vector3 | null {
+  if (pair?.axis) {
+    const v = vec(node.handles[pair.axis] ?? { x: 0, y: 0, z: 0 });
+    if (v.lengthSq() > EPS) {return v.normalize();}
+  }
   for (const slot of node.along) {
     const h = node.handles[slot];
     const v = vec(h);
@@ -285,7 +294,7 @@ function realignPartner(node: PatchNode, pair: PatchNodePair, movedSlot: string)
   if (pair.kind === 'line') {
     next = moved.clone().normalize().multiplyScalar(-partner.length());
   } else {
-    const axis = edgeAxis(node);
+    const axis = edgeAxis(node, pair);
     if (!axis) {return node.handles;}
     const perpMoved = moved.clone().addScaledVector(axis, -moved.dot(axis));
     if (perpMoved.lengthSq() < EPS) {return node.handles;}
@@ -345,9 +354,9 @@ export function applyPointEditToNode(node: PatchNode, use: PatchNodeUse, transfo
 /** "Align handles opposite": every pair opposite on its average direction, coupled. */
 export function alignNodeOpposite(node: PatchNode): PatchNode {
   let handles = { ...node.handles };
-  const axis = edgeAxis(node) ?? undefined;
   for (const pair of node.pairs) {
-    const [a, b] = averageOpposite(vec(handles[pair.a]), vec(handles[pair.b]), pair.kind === 'across' ? axis : undefined);
+    const axis = pair.kind === 'across' ? edgeAxis({ ...node, handles }, pair) ?? undefined : undefined;
+    const [a, b] = averageOpposite(vec(handles[pair.a]), vec(handles[pair.b]), axis);
     handles = { ...handles, [pair.a]: plain(a), [pair.b]: plain(b) };
   }
   return { ...node, handles, pairs: node.pairs.map((p) => ({ ...p, coupled: true })) };
@@ -410,7 +419,9 @@ function renameSlot(node: PatchNode, from: string, to: string): PatchNode {
   return {
     ...node,
     handles,
-    pairs: node.pairs.map((p) => ({ ...p, a: r(p.a), b: r(p.b) })).filter((p) => p.a !== p.b),
+    pairs: node.pairs
+      .map((p) => ({ ...p, a: r(p.a), b: r(p.b), ...(p.axis ? { axis: r(p.axis) } : {}) }))
+      .filter((p) => p.a !== p.b),
     along: [...new Set(node.along.map(r))],
     uses: node.uses.map((u) => ({ ...u, next: r(u.next), prev: r(u.prev), cross: r(u.cross) })),
   };
@@ -485,6 +496,122 @@ function linkMatches(l: PatchEdgeLink, from: JoinSide, to: JoinSide): boolean {
     isSameSegment({ startPointId: l.partnerStartPointId, endPointId: l.partnerEndPointId }, to.segment);
 }
 
+interface SeamEnd {
+  side: JoinSide;
+  /** The patch's params including the link of this seam. */
+  params: PatchParams;
+  pointId: string;
+}
+
+/** Slots of a patch at a node for a seam: the cross slot (decides how the surface leaves it) and the edge slot. */
+function seamSlots(node: PatchNode, end: SeamEnd): { cross: string; edge: string } | null {
+  const use = findNodeUse(node, end.side.entity.id, end.pointId);
+  const seg = end.side.segment;
+  const other = seg.startPointId === end.pointId ? seg.endPointId : seg.startPointId;
+  const into = segmentHandleKeys(end.params, end.pointId, other)?.a;
+  const crossKey = crossHandleKeyAt(end.params, end.pointId, seg, linkedSegmentCountAt(end.params.edgeLinks ?? [], end.pointId));
+  if (!use || !into || !crossKey) {return null;}
+  return { cross: use[USE_SLOT[crossKey]], edge: use[USE_SLOT[into]] };
+}
+
+/**
+ * Couples the cross slots of two patches at a node opposite across their shared edge
+ * (smooth seam). `fixed` is the side that keeps its handle; the other turns. Without
+ * `force`, slots that already belong to a pair are left alone (an existing smooth seam
+ * wins, e.g. the first two patches of a T-joint). With `force`, those pairs are dropped.
+ */
+function coupleSeamAt(node: PatchNode, a: SeamEnd, b: SeamEnd, fixed: 'a' | 'b', force: boolean): PatchNode {
+  const sa = seamSlots(node, a);
+  const sb = seamSlots(node, b);
+  if (!sa || !sb || sa.cross === sb.cross || sa.cross === sa.edge || sb.cross === sb.edge) {return node;}
+  const inPair = (slot: string) => node.pairs.some((p) => p.a === slot || p.b === slot);
+  if (!force && (inPair(sa.cross) || inPair(sb.cross))) {return node;}
+  const pair: PatchNodePair = { a: sa.cross, b: sb.cross, kind: 'across', coupled: true, axis: sa.edge };
+  const pairs = [
+    ...node.pairs.filter((p) => ![p.a, p.b].some((s) => s === sa.cross || s === sb.cross)),
+    pair,
+  ];
+  const next = { ...node, pairs };
+  return { ...next, handles: realignPartner(next, pair, fixed === 'a' ? sa.cross : sb.cross) };
+}
+
+/**
+ * Makes the seam between `owner` and the partner of `link` the smooth one at both end
+ * nodes (T-joint: the other patches on that edge keep their position, but may crease).
+ * The owner's handles stay; the partner's turn. Returns the new node list.
+ */
+export function setSmoothSeam(
+  nodes: readonly PatchNode[],
+  owner: AssetEntity,
+  link: PatchEdgeLink,
+  partner: AssetEntity,
+): PatchNode[] {
+  const po = owner.patchParams;
+  const pp = partner.patchParams;
+  if (!po || !pp) {return [...nodes];}
+  const ownSide: JoinSide = { entity: owner, segment: { startPointId: link.startPointId, endPointId: link.endPointId } };
+  const partnerSide: JoinSide = {
+    entity: partner,
+    segment: { startPointId: link.partnerStartPointId, endPointId: link.partnerEndPointId },
+  };
+  const ends: [string, string][] = [
+    [link.startPointId, link.partnerStartPointId],
+    [link.endPointId, link.partnerEndPointId],
+  ];
+  return nodes.map((node) => {
+    const end = ends.find(([o, p]) => findNodeUse(node, owner.id, o) && findNodeUse(node, partner.id, p));
+    if (!end) {return node;}
+    return coupleSeamAt(
+      node,
+      { side: ownSide, params: po, pointId: end[0] },
+      { side: partnerSide, params: pp, pointId: end[1] },
+      'a',
+      true,
+    );
+  });
+}
+
+/** True when the seam of `link` is the coupled (smooth) one at every shared end. */
+export function isSmoothSeam(
+  nodes: readonly PatchNode[],
+  owner: AssetEntity,
+  link: PatchEdgeLink,
+  partner: AssetEntity,
+): boolean {
+  const po = owner.patchParams;
+  const pp = partner.patchParams;
+  if (!po || !pp) {return false;}
+  const ownSide: JoinSide = { entity: owner, segment: { startPointId: link.startPointId, endPointId: link.endPointId } };
+  const partnerSide: JoinSide = {
+    entity: partner,
+    segment: { startPointId: link.partnerStartPointId, endPointId: link.partnerEndPointId },
+  };
+  let checked = 0;
+  for (const [o, p] of [[link.startPointId, link.partnerStartPointId], [link.endPointId, link.partnerEndPointId]]) {
+    const node = nodes.find((n) => findNodeUse(n, owner.id, o) && findNodeUse(n, partner.id, p));
+    if (!node) {continue;}
+    const sa = seamSlots(node, { side: ownSide, params: po, pointId: o });
+    const sb = seamSlots(node, { side: partnerSide, params: pp, pointId: p });
+    if (!sa || !sb) {continue;}
+    checked++;
+    const paired = node.pairs.some((x) => x.coupled &&
+      ((x.a === sa.cross && x.b === sb.cross) || (x.a === sb.cross && x.b === sa.cross)));
+    if (!paired) {return false;}
+  }
+  return checked > 0;
+}
+
+/** Adds a patch point as one more user of an inner node (a point inserted on a T-joint edge). */
+export function addInnerNodeUse(node: PatchNode, side: NodeSide, sameDirection: boolean): PatchNode {
+  const single = singletonNode(`${node.id}+${node.uses.length}`, side);
+  let merged = mergeNodes(node, single);
+  const use = findNodeUse(merged, side.entityId, side.point.id);
+  if (!use) {return node;}
+  merged = renameSlot(merged, use.next, sameDirection ? 'fwd' : 'bwd');
+  merged = renameSlot(merged, use.prev, sameDirection ? 'bwd' : 'fwd');
+  return { ...merged, mergedIds: node.mergedIds };
+}
+
 /**
  * Joins two edge segments. End points become shared nodes; points that already are
  * nodes keep their node (it gains users, or two nodes merge), so earlier seams stay
@@ -511,6 +638,7 @@ export function joinSharedEdge(
   ];
   const before = new Set(existing.map((n) => n.id));
   let nodes = [...existing];
+  const aWasShared: boolean[] = [];
   for (const [aId, aOther, bId, bOther] of ends) {
     // Re-resolve: the first end may have merged nodes this end refers to.
     const ap = find(resolvePatchPoints(pa.points, a.entity.id, a.entity.transform, nodes), aId);
@@ -518,6 +646,7 @@ export function joinSharedEdge(
     const ka = segmentHandleKeys(pa, aId, aOther);
     const kb = segmentHandleKeys(pb, bId, bOther);
     if (!ap || !bp || !ka || !kb) {return null;}
+    aWasShared.push(ap.nodeId !== undefined);
     nodes = weldEnd(
       nodes,
       { entityId: a.entity.id, transform: a.entity.transform, point: ap },
@@ -539,12 +668,23 @@ export function joinSharedEdge(
     partnerStartPointId: to.segment.startPointId,
     partnerEndPointId: to.segment.endPointId,
   });
-  const resolveSide = (side: JoinSide, params: PatchParams, other: JoinSide): PatchParams => ({
+  const linksA = [...(pa.edgeLinks ?? []), link(a, b)];
+  const linksB = [...(pb.edgeLinks ?? []), link(b, a)];
+  // Ends that joined an existing node: couple the handles that decide how both surfaces
+  // leave the new seam (opposite across it), turning only the newly joined side.
+  ends.forEach(([aId, , bId], i) => {
+    nodes = nodes.map((node) => {
+      if (!findNodeUse(node, a.entity.id, aId) || !findNodeUse(node, b.entity.id, bId)) {return node;}
+      const ends2 = { a: { side: a, params: { ...pa, edgeLinks: linksA }, pointId: aId }, b: { side: b, params: { ...pb, edgeLinks: linksB }, pointId: bId } };
+      return coupleSeamAt(node, ends2.a, ends2.b, aWasShared[i] ? 'a' : 'b', false);
+    });
+  });
+  const resolveSide = (side: JoinSide, params: PatchParams, links: PatchEdgeLink[]): PatchParams => ({
     ...params,
     points: resolvePatchPoints(params.points, side.entity.id, side.entity.transform, nodes),
-    edgeLinks: [...(params.edgeLinks ?? []), link(side, other)],
+    edgeLinks: links,
   });
-  return { nodes, aParams: resolveSide(a, pa, b), bParams: resolveSide(b, pb, a) };
+  return { nodes, aParams: resolveSide(a, pa, linksA), bParams: resolveSide(b, pb, linksB) };
 }
 
 /** Points of a patch with every node-backed point read from its node. */

@@ -9,6 +9,7 @@ import {
   type PatchEdgeLink,
 } from './triangle-patch-edge-link';
 import { mergeLinksOnRemove, splitLinkOnInsert } from './triangle-patch-linked-edit';
+import { joinSharedEdge } from './patch-nodes';
 import { insertPatchPoint, insertPatchPointInSegment } from './triangle-patch-point-edit';
 
 function patchEntity(id: string, params: PatchParams, transform: EntityTransform): AssetEntity {
@@ -59,7 +60,7 @@ describe('insert on a linked edge', () => {
       expect(result).not.toBeNull();
       if (!result) {return;}
       const A2 = { ...A, patchParams: result.ownerParams };
-      const B2 = { ...B, patchParams: result.partnerParams };
+      const B2 = { ...B, patchParams: result.partners[0].partnerParams };
       expect(A2.patchParams.points).toHaveLength(4);
       expect(B2.patchParams.points).toHaveLength(4);
       expect(A2.patchParams.edgeLinks).toHaveLength(2);
@@ -96,7 +97,7 @@ describe('remove on a linked edge', () => {
     const split = splitLinkOnInsert(A, inserted, find);
     if (!split) {throw new Error('split failed');}
     const A2 = { ...A, patchParams: split.ownerParams };
-    const B2 = { ...B, patchParams: split.partnerParams };
+    const B2 = { ...B, patchParams: split.partners[0].partnerParams };
     const find2 = (id: string) => (id === 'A' ? A2 : id === 'B' ? B2 : undefined);
 
     const merged = mergeLinksOnRemove(A2, inserted.pointId, find2);
@@ -130,5 +131,46 @@ describe('insertPatchPointInSegment', () => {
     const p2 = two.params.points.find((p) => p.id === two.pointId);
     expect(p1?.pos.x).toBeCloseTo(p2?.pos.x ?? NaN, 9);
     expect(p1?.pos.z).toBeCloseTo(p2?.pos.z ?? NaN, 9);
+  });
+});
+
+describe('insert on a T-joint edge', () => {
+  it('splits every partner on the edge and keeps all links valid', () => {
+    const t = (x: number, ry: number): EntityTransform => ({ position: { x, y: 0, z: 0 }, rotation: { x: 0, y: ry, z: 0 } });
+    const A0 = patchEntity('A', defaultPatchParamsForKind('triangle-patch'), t(0, 0));
+    const B0 = patchEntity('B', defaultPatchParamsForKind('triangle-patch'), t(0.4, 0.8));
+    const C0 = patchEntity('C', defaultPatchParamsForKind('triangle-patch'), t(-0.3, -0.6));
+    const segA = listPatchSegments(A0.patchParams!)[0];
+    let n = 0;
+    const first = joinSharedEdge({ entity: A0, segment: segA }, { entity: B0, segment: listPatchSegments(B0.patchParams!)[1] }, () => `n${++n}`);
+    if (!first) {throw new Error('join failed');}
+    const A1 = { ...A0, patchParams: first.aParams };
+    const second = joinSharedEdge({ entity: A1, segment: segA }, { entity: C0, segment: listPatchSegments(C0.patchParams!)[2] }, () => `n${++n}`, () => '', first.nodes);
+    if (!second) {throw new Error('T join failed');}
+    const A = { ...A1, patchParams: second.aParams };
+    const B = { ...B0, patchParams: first.bParams };
+    const C = { ...C0, patchParams: second.bParams };
+    const find = (id: string) => ({ A, B, C } as Record<string, AssetEntity | undefined>)[id];
+
+    const inserted = insertPatchPoint(A.patchParams, 0, 0.4);
+    const result = splitLinkOnInsert(A, inserted, find);
+    if (!result) {throw new Error('split failed');}
+    expect(result.partners.map((p) => p.partnerId).sort()).toEqual(['B', 'C']);
+    const A2 = { ...A, patchParams: result.ownerParams };
+    const after: Record<string, AssetEntity> = { A: A2 };
+    for (const p of result.partners) {after[p.partnerId] = { ...find(p.partnerId)!, patchParams: p.partnerParams };}
+    expect(A2.patchParams.edgeLinks).toHaveLength(4);
+    const find2 = (id: string) => after[id];
+    for (const e of Object.values(after)) {
+      for (const l of e.patchParams!.edgeLinks ?? []) {expect(isEdgeLinkValid(e, l, find2)).toBe(true);}
+    }
+    // The new points coincide in world space.
+    const p = worldOf(A2, inserted.pointId)!;
+    for (const part of result.partners) {
+      const q = worldOf(after[part.partnerId], part.pointId)!;
+      expect(q.x).toBeCloseTo(p.x, 6);
+      expect(q.y).toBeCloseTo(p.y, 6);
+      expect(q.z).toBeCloseTo(p.z, 6);
+    }
   });
 });
