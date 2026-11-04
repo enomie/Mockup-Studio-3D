@@ -1,6 +1,6 @@
 # Plan: Car-Arrangement — Chassis-Block + 2 Achsen
 
-**Status:** Entwurf, wartet auf Freigabe
+**Status:** Freigegeben 2026-11-04 · umgesetzt
 **Datum:** 2026-11-04
 **Bezug:** `src/data/builtin-arrangements.ts` (CAR_ASSETS)
 
@@ -31,5 +31,5 @@ Das Built-in-Arrangement **Car** spawnt zusätzlich zu den 4 Rädern:
 
 ## Offene Fragen
 
-1. **Achslänge:** Spurweite (Radmitte–Radmitte, wie oben) — oder eine feste Länge? Du hattest nur den Radius angegeben.
-2. **Achsen-Physik:** Dynamic wie der Block, oder Static/ohne Physik?
+1. Achslänge: Spurweite der Räder (vorn 1.589, hinten 1.557). → entschieden
+2. Physik: alles Static — Block, Achsen und Räder. → entschieden

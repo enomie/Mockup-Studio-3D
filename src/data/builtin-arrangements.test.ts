@@ -38,9 +38,11 @@ describe('built-in arrangements', () => {
     const car = ARRANGEMENT_PRESETS.find((preset) => preset.name === 'Car');
     expect(car?.content.kind).toBe('spawn');
     if (car?.content.kind !== 'spawn') {return;}
-    const wheels = car.content.assets;
+    const assets = car.content.assets;
+    expect(assets).toHaveLength(7);
+    expect(assets.every((a) => a.physicsBodyMode === 'fixed')).toBe(true);
+    const wheels = assets.filter((a) => a.assetKind === 'wheel-car');
     expect(wheels).toHaveLength(4);
-    expect(wheels.every((w) => w.assetKind === 'wheel-car')).toBe(true);
     const front = wheels.filter((w) => w.position.z < 0);
     const rear = wheels.filter((w) => w.position.z > 0);
     expect(front).toHaveLength(2);
@@ -48,5 +50,27 @@ describe('built-in arrangements', () => {
     expect(rear[0].position.z - front[0].position.z).toBeCloseTo(2.45, 6);
     expect(Math.abs(front[0].position.x - front[1].position.x)).toBeCloseTo(1.589, 6);
     expect(Math.abs(rear[0].position.x - rear[1].position.x)).toBeCloseTo(1.557, 6);
+  });
+
+  it('Car: static brushed aluminum chassis block and two axles spanning the track', () => {
+    const car = ARRANGEMENT_PRESETS.find((preset) => preset.name === 'Car');
+    if (car?.content.kind !== 'spawn') {throw new Error('Car must be a spawn arrangement');}
+    const block = car.content.assets.find((a) => a.assetKind === 'block');
+    expect(block).toMatchObject({
+      position: { x: 0, z: 0 },
+      positionY: 0.2613,
+      blockParams: { widthM: 0.5, heightM: 0.2, depthM: 2.7, cornerRadiusMm: 5 },
+      materialSlot: 'blockMaterialId',
+      materialId: 'material-aluminium-brushed',
+      physicsDensityKgPerM3: 1000,
+    });
+    const axles = car.content.assets.filter((a) => a.assetKind === 'cylinder');
+    expect(axles.map((a) => a.cylinderParams?.heightM)).toEqual([1.589, 1.557]);
+    for (const axle of axles) {
+      expect(axle.cylinderParams?.radiusM).toBe(0.03);
+      expect(axle.rotationDeg).toEqual({ z: 90 });
+      expect(axle.position.x).toBeCloseTo((axle.cylinderParams?.heightM ?? 0) / 2, 6);
+      expect(axle.materialId).toBe('material-aluminium-brushed');
+    }
   });
 });

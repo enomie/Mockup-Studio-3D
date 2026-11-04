@@ -70,7 +70,6 @@ import {
   isRigidPrimitiveAssetKind,
 } from '@/scene/rigid-primitive-asset';
 import {
-  resolvePhysicsBodyMode,
   type PhysicsBodyMode,
 } from '@/scene/physics-rigid-body';
 import {
@@ -444,20 +443,37 @@ export class AssetSystem {
     const runtime = this.registry.getRuntime(entityId);
     if (!runtime) {return;}
 
-    if (entry.positionY !== undefined || entry.rotationYDeg !== undefined) {
+    let needsRebuild = false;
+    if (entry.blockParams) {
+      this.registry.setKindParams('block', entityId, entry.blockParams);
+      needsRebuild = true;
+    }
+    if (entry.cylinderParams) {
+      this.registry.setKindParams('cylinder', entityId, entry.cylinderParams);
+      needsRebuild = true;
+    }
+    if (entry.physicsBodyMode) {
+      this.registry.setPhysicsBodyMode(entityId, entry.physicsBodyMode);
+    }
+    if (entry.physicsDensityKgPerM3 !== undefined) {
+      this.registry.setPhysicsDensityKgPerM3(entityId, entry.physicsDensityKgPerM3);
+    }
+
+    if (entry.positionY !== undefined || entry.rotationDeg !== undefined) {
       const { position, rotation } = runtime.entity.transform;
+      const toRad = Math.PI / 180;
+      const deg = entry.rotationDeg;
       this.registry.updateTransform(entityId, {
         position: { ...position, y: entry.positionY ?? position.y },
-        rotation: entry.rotationYDeg === undefined
+        rotation: deg === undefined
           ? rotation
-          : { ...rotation, y: (entry.rotationYDeg * Math.PI) / 180 },
+          : {
+              ...rotation,
+              x: (deg.x ?? 0) * toRad,
+              y: (deg.y ?? 0) * toRad,
+              z: (deg.z ?? 0) * toRad,
+            },
       });
-      if (
-        isRigidPrimitiveAssetKind(runtime.entity.assetKind) &&
-        resolvePhysicsBodyMode(runtime.entity) === 'fixed'
-      ) {
-        this.rigidPrimitivePhysics?.syncPoseFromRuntime(entityId);
-      }
     }
 
     if (entry.materialSlot && entry.materialId) {
@@ -466,7 +482,18 @@ export class AssetSystem {
         entry.materialSlot,
         entry.materialId,
       );
-      void rebuildEntity(this.rebuildCtx, entityId);
+      needsRebuild = true;
+    }
+
+    const reconcilePhysics = (): void => {
+      if (isRigidPrimitiveAssetKind(runtime.entity.assetKind)) {
+        this.rigidPrimitivePhysics?.reconcileEntity(entityId);
+      }
+    };
+    if (needsRebuild) {
+      void rebuildEntity(this.rebuildCtx, entityId).then(reconcilePhysics);
+    } else {
+      reconcilePhysics();
     }
 
     if (entry.screenImageId) {

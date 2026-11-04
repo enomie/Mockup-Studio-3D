@@ -1,6 +1,9 @@
 import type { AssetEntity, AssetKind } from '@/scene/entity-types';
 import type { PatchNode } from '@/scene/patch-nodes';
 import type { MaterialEntitySlot } from '@/scene/material-types';
+import type { BlockParams } from '@/scene/asset-block';
+import type { CylinderParams } from '@/scene/asset-cylinder';
+import type { PhysicsBodyMode } from '@/scene/physics-rigid-body';
 
 type ArrangementSource = 'builtin' | 'user';
 
@@ -11,11 +14,17 @@ export interface ArrangementSpawn {
   position: { x: number; z: number };
   /** Foot world Y for foot-pivot kinds (`block`, `fabric-cloth`, …). */
   positionY?: number;
-  /** Rotation around the world Y axis in degrees. */
-  rotationYDeg?: number;
+  /** Euler rotation in degrees (missing axes stay 0). */
+  rotationDeg?: { x?: number; y?: number; z?: number };
   screenImageId?: string;
   materialSlot?: MaterialEntitySlot;
   materialId?: string;
+  /** Overrides for the block kind defaults (`block`). */
+  blockParams?: Partial<BlockParams>;
+  /** Overrides for the cylinder kind defaults (`cylinder`). */
+  cylinderParams?: Partial<CylinderParams>;
+  physicsBodyMode?: PhysicsBodyMode;
+  physicsDensityKgPerM3?: number;
 }
 
 /**
