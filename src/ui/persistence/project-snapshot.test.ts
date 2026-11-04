@@ -89,7 +89,7 @@ describe('scenes in the snapshot', () => {
         { id: 'scene-b', name: 'B', createdAt: '2026-01-01T00:00:00.000Z', data: { ...stored, session: otherSession } },
       ],
     }, scene);
-    expect(snapshot.scenes.map((entry) => entry.name)).toEqual(['Scene', 'B']);
+    expect(snapshot.scenes.map((entry) => entry.name)).toEqual(['Default', 'B']);
     expect(snapshot.scenes[0].data.session).toEqual(scene);
     expect(snapshot.scenes[1].data.session.gravityScale).toBe(2);
     expect(snapshot.activeSceneId).toBe(state.activeSceneId);
