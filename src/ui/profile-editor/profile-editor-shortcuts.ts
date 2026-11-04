@@ -33,6 +33,10 @@ export const PROFILE_EDITOR_SHORTCUTS: readonly ProfileEditorShortcutGroup[] = [
       { keys: 'Box corner (Shift)', action: 'Scale selection (proportional)' },
       { keys: 'Box knob (Shift)', action: 'Rotate selection (15° steps)' },
       { keys: 'Shift-click 2 ends + J', action: 'Join' },
+      { keys: 'Ctrl/Cmd+C / X', action: 'Copy / cut selected points or path' },
+      { keys: 'Ctrl/Cmd+V', action: 'Paste shifted as new paths' },
+      { keys: 'Ctrl/Cmd+Shift+V', action: 'Paste in place' },
+      { keys: 'Ctrl/Cmd+D', action: 'Duplicate selection' },
     ],
   },
   {

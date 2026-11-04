@@ -219,7 +219,7 @@ export function nextFreeSlot(paths: readonly ProfilePath[]): number | null {
   return null;
 }
 
-function uniquePathId(paths: readonly ProfilePath[]): string {
+export function uniquePathId(paths: readonly ProfilePath[]): string {
   let n = paths.length + 1;
   while (paths.some((path) => path.id === `path-${n}`)) {n += 1;}
   return `path-${n}`;

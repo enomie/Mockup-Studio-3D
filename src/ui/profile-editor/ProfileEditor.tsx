@@ -8,6 +8,12 @@ import {
   type PointerEvent as ReactPointerEvent,
   type ReactElement,
 } from 'react';
+import {
+  copyProfileNodes,
+  cutProfileNodes,
+  duplicateProfileNodes,
+  pasteProfileNodes,
+} from '@/ui/store/profile-clipboard-store';
 import { Check } from 'lucide-react';
 import { LATHE_PATH_SLOT_STROKES } from '@/engine/lathe-svg-path-slots';
 import {
@@ -374,6 +380,22 @@ export function ProfileEditor() {
         selectProfileNodes(paths
           .filter((path) => !state.hiddenProfilePathIds.includes(path.id))
           .flatMap((path) => path.nodes.map((_node, index) => ({ pathId: path.id, index }))));
+        return;
+      }
+      if ((event.ctrlKey || event.metaKey) && !event.altKey) {
+        const key = event.key.toLowerCase();
+        let handled = false;
+        if (key === 'c' && !event.shiftKey) {handled = copyProfileNodes();}
+        else if (key === 'x' && !event.shiftKey) {handled = cutProfileNodes();}
+        else if (key === 'v') {handled = pasteProfileNodes({ inPlace: event.shiftKey });}
+        else if (key === 'd' && !event.shiftKey) {
+          event.preventDefault();
+          handled = duplicateProfileNodes();
+        }
+        if (handled || key === 'd') {
+          event.preventDefault();
+          event.stopPropagation();
+        }
         return;
       }
       if (event.ctrlKey || event.metaKey) {return;}

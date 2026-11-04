@@ -10,6 +10,12 @@ import {
   pasteClipboard,
   useSceneClipboardHasContent,
 } from '@/ui/store/scene-clipboard-store';
+import {
+  copyProfileNodes,
+  cutProfileNodes,
+  duplicateProfileNodes,
+  pasteProfileNodes,
+} from '@/ui/store/profile-clipboard-store';
 import { VIEWPORT_TOOLS, viewportToolLabel } from './viewport-tools';
 
 export function TopSubBar() {
@@ -22,16 +28,23 @@ export function TopSubBar() {
   const hasSelection = useAppStore((s) => s.selectedEntityIds.length > 0);
   const hasClipboard = useSceneClipboardHasContent();
   const editingProfile = useAppStore((s) => s.editingProfileId !== null);
+  const hasProfileSelection = useAppStore((s) => s.profileNodeSelection !== null);
+  const canSelect = editingProfile ? hasProfileSelection : hasSelection;
   const clipboardActions = [
-    { label: 'Cut (Ctrl+X)', icon: Scissors, enabled: hasSelection, run: cutSelection },
-    { label: 'Copy (Ctrl+C)', icon: Copy, enabled: hasSelection, run: copySelection },
+    { label: 'Cut (Ctrl+X)', icon: Scissors, enabled: canSelect, run: editingProfile ? cutProfileNodes : cutSelection },
+    { label: 'Copy (Ctrl+C)', icon: Copy, enabled: canSelect, run: editingProfile ? copyProfileNodes : copySelection },
     {
       label: 'Paste (Ctrl+V; Ctrl+Shift+V pastes in place)',
       icon: ClipboardPaste,
-      enabled: hasClipboard,
-      run: () => pasteClipboard(),
+      enabled: editingProfile || hasClipboard,
+      run: () => (editingProfile ? pasteProfileNodes() : pasteClipboard()),
     },
-    { label: 'Duplicate (Ctrl+D; Alt-drag in move mode)', icon: CopyPlus, enabled: hasSelection, run: duplicateSelection },
+    {
+      label: editingProfile ? 'Duplicate (Ctrl+D)' : 'Duplicate (Ctrl+D; Alt-drag in move mode)',
+      icon: CopyPlus,
+      enabled: canSelect,
+      run: editingProfile ? duplicateProfileNodes : duplicateSelection,
+    },
   ];
   const redoTitle = redoLabel ? `Redo: ${redoLabel} (Ctrl+Shift+Z)` : 'Redo (Ctrl+Shift+Z)';
 
@@ -61,8 +74,7 @@ export function TopSubBar() {
       </div>
 
       <div className="top-bar__history">
-      {!editingProfile && (
-        <div className="top-bar__clipboard" role="toolbar" aria-label="Clipboard">
+      <div className="top-bar__clipboard" role="toolbar" aria-label="Clipboard">
           {clipboardActions.map((action) => (
             <button
               key={action.label}
@@ -76,8 +88,7 @@ export function TopSubBar() {
               <Icon icon={action.icon} />
             </button>
           ))}
-        </div>
-      )}
+      </div>
 
       <div className="top-bar__clipboard" role="toolbar" aria-label="History">
         <button

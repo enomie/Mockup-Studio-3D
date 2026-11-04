@@ -1,6 +1,6 @@
 # Plan: Clipboard (Ausschneiden / Kopieren / Einfügen / Duplizieren) + „Asset erstellen“
 
-Status: Freigegeben. Etappe 1 umgesetzt.
+Status: Freigegeben. Etappe 1 und 3 umgesetzt.
 
 ## Anforderungen (abgestimmt)
 
