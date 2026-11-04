@@ -1,6 +1,6 @@
 # Plan: Clipboard (Ausschneiden / Kopieren / Einfügen / Duplizieren) + „Asset erstellen“
 
-Status: Freigegeben. Etappe 1 und 3 umgesetzt.
+Status: Etappe 1 und 3 umgesetzt. Etappe 4 („Asset erstellen“) zurückgestellt (auf Wunsch, vorerst nicht).
 
 ## Anforderungen (abgestimmt)
 
@@ -48,7 +48,7 @@ Status: Freigegeben. Etappe 1 und 3 umgesetzt.
 - Ist der Profil-Editor offen, greifen die 3D-Shortcuts nicht.
 - Tests für Einfügen in offene/geschlossene Pfade.
 
-### Etappe 4 – „Asset erstellen“ aus Auswahl
+### Etappe 4 – „Asset erstellen“ aus Auswahl (ZURÜCKGESTELLT)
 - Neue Quellart für User-Assets: `UserGroupAsset { id, name, members: EntitySnapshot[] }`. Die Member-Transforms werden relativ zum Gruppenzentrum (Boden) gespeichert. Ablage neben `UserBakedAsset` in `app-store-user-baked-assets.ts`, oder ein umbenanntes, gemeinsames `app-store-user-assets.ts`. Kein Migrationscode nötig.
 - Button „Create asset“ unten im `AssetsPanel.tsx`, aktiv bei ≥ 1 Auswahl.
 - Name: Einzelobjekt → `<Name> 2` (nächste freie Nummer, analog `nextArrangementSaveName`). Mehrere Objekte → Name des ersten Objekts + Nummer.
