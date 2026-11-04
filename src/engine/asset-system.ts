@@ -69,8 +69,8 @@ import {
   bakesUniformScaleIntoParams,
   isRigidPrimitiveAssetKind,
 } from '@/scene/rigid-primitive-asset';
-import {
-  type PhysicsBodyMode,
+import type {
+  PhysicsBodyMode,
 } from '@/scene/physics-rigid-body';
 import {
   cloneFabricClothParams,
