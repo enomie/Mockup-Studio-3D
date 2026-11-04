@@ -1643,3 +1643,6 @@ Aktueller Stand → [`requirements-profiles.md`](../requirements/requirements-pr
 - **Verworfen:** Licht/Umgebung projektweit teilen (komplizierteres Modell, für Mockups kaum nötig; als Preset später nachrüstbar). Undo pro Scene halten (mehr Zustand, wenig Nutzen).
 - **Autosave** pausiert während eines Szenenwechsels (`sceneSwitchInFlight`), sonst würde die halb geladene Engine als neue Scene gespeichert.
 
+
+## Silk: finer, softer weave (2026-11-04)
+The first `silk-fine` shader (30 threads x tileScale 20, strict over/under) looked like the carbon twill. Now 150 threads per tile, a soft over/under contrast, stronger slubs (0.4) and warp-direction fibre streaks; the sheen lobe carries the look. Rejected: reusing the brushed-metal builder again (metallic, not fabric).

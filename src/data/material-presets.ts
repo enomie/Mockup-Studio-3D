@@ -196,7 +196,7 @@ export const MATERIAL_PRESETS: MaterialPreset[] = [
     roughness: 0.45,
     metalness: 0,
     anisotropy: 0.2,
-    normalScale: 0.6,
+    normalScale: 0.4,
     tileScale: 20,
     seed: 0,
     sheen: 1,

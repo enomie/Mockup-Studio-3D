@@ -15,7 +15,7 @@ import {
 import { proceduralNoise3 } from './tsl-noise';
 
 /** Threads per tileScale unit (tileScale = repeats per meter). */
-const THREADS_PER_TILE = 30;
+const THREADS_PER_TILE = 150;
 const TAU = Math.PI * 2;
 
 function silkSeedOffset(seed: Node<'float'>) {
@@ -30,10 +30,13 @@ function weaveHeight(sampleUv: Node<'vec2'>, seed: Node<'float'>) {
   // Thread profile across its width (0 at gaps, 1 at the crown).
   const warp = sin(coord.x.mul(TAU)).mul(0.5).add(0.5);
   const weft = sin(coord.y.mul(TAU)).mul(0.5).add(0.5);
-  const crowns = mix(warp, weft, over);
-  // Slight per-thread irregularity (slubs).
-  const slub = proceduralNoise3(vec3(cell.x.mul(0.37), cell.y.mul(0.37), seed)).mul(0.15);
-  const height = clamp(crowns.add(slub), 0, 1);
+  // Soft weave: the over/under contrast is low so it never reads as a checkerboard.
+  const crowns = mix(warp, weft, over.mul(0.5).add(0.25));
+  // Per-thread irregularity (slubs).
+  const slub = proceduralNoise3(vec3(cell.x.mul(0.37), cell.y.mul(0.37), seed)).mul(0.4);
+  // Fine fibre streaks running along the warp (noise stretched along the thread).
+  const fibres = proceduralNoise3(vec3(coord.x.mul(0.9), coord.y.mul(0.02), seed.add(3.1))).mul(0.25);
+  const height = clamp(crowns.mul(0.5).add(0.25).add(slub).add(fibres), 0, 1);
   // Fade the weave once a thread gets close to pixel size.
   const fade = float(1).sub(smoothstep(float(0.25), float(0.5), fwidth(coord.x).add(fwidth(coord.y))));
   return mix(float(0.5), height, fade);
@@ -48,7 +51,7 @@ export function buildSilkFineNodes(params: ProceduralMaterialParams): Procedural
       : triplanarScalar(params.tileScale, offset, (uv) => weaveHeight(uv, seed));
 
   const base = params.uniforms.color;
-  const colorNode = base.mul(mix(float(0.94), float(1.04), weave));
+  const colorNode = base.mul(mix(float(0.97), float(1.02), weave));
   const normalNode = bumpMap(weave, float(params.normalScale * 0.02));
   const roughnessNode = clamp(
     params.uniforms.roughness.add(weave.sub(0.5).mul(0.06)),
