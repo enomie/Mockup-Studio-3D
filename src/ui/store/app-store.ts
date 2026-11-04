@@ -189,6 +189,13 @@ export {
 } from './app-store-arrangements';
 
 export {
+  switchScene,
+  addScene,
+  renameScene,
+  removeScene,
+} from './app-store-scenes';
+
+export {
   loadLightingPreset,
   saveCurrentAsLightingPreset,
   updateLightingPreset,

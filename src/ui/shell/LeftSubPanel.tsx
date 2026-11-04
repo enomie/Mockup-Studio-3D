@@ -1,3 +1,4 @@
+import { ScenesPanel } from '@/ui/panels/ScenesPanel';
 import { ArrangementsPanel } from '@/ui/panels/ArrangementsPanel';
 import { AssetsPanel } from '@/ui/panels/AssetsPanel';
 import { ColorsPanel } from '@/ui/panels/ColorsPanel';
@@ -23,6 +24,8 @@ export function LeftSubPanel({
     content = <EnvironmentsPanel />;
   } else if (selectedId === 'light-rigs') {
     content = <LightRigsPanel />;
+  } else if (selectedId === 'scenes') {
+    content = <ScenesPanel />;
   } else if (selectedId === 'arrangements') {
     content = <ArrangementsPanel />;
   } else if (selectedId === 'assets') {

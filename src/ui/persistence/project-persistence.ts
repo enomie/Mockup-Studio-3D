@@ -7,6 +7,7 @@ import { cloneMaterialPreset, MATERIAL_PRESETS } from '@/data/material-presets';
 import { cloneArrangementPreset } from '@/scene/arrangement-types';
 import type { SceneApi, SceneSessionState } from '@/scene/scene-api';
 import * as store from '@/ui/store/app-store-internals';
+import { captureSceneSession } from '@/ui/store/app-store-scenes';
 import { getImageBlob, registerImageBlob } from './image-blob-registry';
 import {
   clearProjectDb,
@@ -46,12 +47,20 @@ function restoreImages(snapshot: ProjectSnapshot, blobs: ReadonlyMap<string, Blo
   return images;
 }
 
+function activeSceneOf(snapshot: ProjectSnapshot): ProjectSnapshot['scenes'][number] {
+  return snapshot.scenes.find((entry) => entry.id === snapshot.activeSceneId) ?? snapshot.scenes[0];
+}
+
 function applySnapshotToStore(snapshot: ProjectSnapshot, userImages: ImageAsset[]): void {
-  const { settings, libraries, scene } = snapshot;
+  const { settings, libraries, scenes } = snapshot;
+  const active = activeSceneOf(snapshot);
   const { state } = store;
   store.setAppState({
     ...state,
     ...settings,
+    ...active.data.settings,
+    scenes: scenes.map((entry) => (entry.id === active.id ? { ...entry, data: null } : entry)),
+    activeSceneId: active.id,
     images: [...STARTER_IMAGES, ...userImages],
     materials: mergeLibrary(MATERIAL_PRESETS.map(cloneMaterialPreset), libraries.materials),
     colors: mergeLibrary(COLOR_PRESETS.map(cloneColorPreset), libraries.colors),
@@ -69,8 +78,8 @@ function applySnapshotToStore(snapshot: ProjectSnapshot, userImages: ImageAsset[
     ),
     userBakedAssets: libraries.userBakedAssets,
     userProfiles: (libraries.profiles ?? []).filter((entry) => entry.source === 'user'),
-    physics: { ...state.physics, gravityScale: scene.gravityScale },
-    camera: { ...state.camera, slots: scene.cameraSlots },
+    physics: { ...state.physics, gravityScale: active.data.session.gravityScale },
+    camera: { ...state.camera, slots: active.data.session.cameraSlots },
   });
 }
 
@@ -83,27 +92,17 @@ export async function loadPersistedProject(): Promise<void> {
     if (!snapshot) {return;}
     const blobs = await readImageBlobs(snapshot.libraries.images.map((image) => image.id));
     applySnapshotToStore(snapshot, restoreImages(snapshot, blobs));
-    pendingSession = snapshot.scene;
+    pendingSession = activeSceneOf(snapshot).data.session;
     store.emit();
   } catch (error) {
     console.warn('Could not load the saved project; starting fresh.', error);
   }
 }
 
-function captureSession(api: SceneApi): SceneSessionState {
-  return {
-    entities: api.getEntities(),
-    patchNodes: api.getPatchNodes(),
-    cameraView: api.getCameraViewState(),
-    cameraSlots: api.getCameraSettings().slots,
-    gravityScale: store.state.physics.gravityScale,
-  };
-}
-
 async function saveNow(): Promise<void> {
   const api = store.sceneApi;
-  if (!api || resetting) {return;}
-  const snapshot = captureProjectSnapshot(store.state, captureSession(api));
+  if (!api || resetting || store.sceneSwitchInFlight) {return;}
+  const snapshot = captureProjectSnapshot(store.state, captureSceneSession(api));
 
   const usedImageIds = new Set(snapshot.libraries.images.map((image) => image.id));
   const addImages = new Map<string, Blob>();

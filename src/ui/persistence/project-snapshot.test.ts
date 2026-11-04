@@ -68,8 +68,32 @@ describe('project snapshot', () => {
   it('rejects other schema versions and broken data', () => {
     const snapshot = captureProjectSnapshot(getAppState(), scene);
     expect(parseProjectSnapshot({ ...snapshot, schemaVersion: PROJECT_SCHEMA_VERSION + 1 })).toBeNull();
-    expect(parseProjectSnapshot({ ...snapshot, scene: { ...scene, entities: 'x' } })).toBeNull();
+    const [first] = snapshot.scenes;
+    const broken = { ...first, data: { ...first.data, session: { ...scene, entities: 'x' } } };
+    expect(parseProjectSnapshot({ ...snapshot, scenes: [broken] })).toBeNull();
+    expect(parseProjectSnapshot({ ...snapshot, activeSceneId: 'missing' })).toBeNull();
+    expect(parseProjectSnapshot({ ...snapshot, scenes: [] })).toBeNull();
     expect(parseProjectSnapshot(undefined)).toBeNull();
+  });
+});
+
+describe('scenes in the snapshot', () => {
+  it('stores every scene; the active one comes live, the others as stored', () => {
+    const state = getAppState();
+    const stored = captureProjectSnapshot(state, scene).scenes[0].data;
+    const otherSession = { ...scene, gravityScale: 2 };
+    const snapshot = captureProjectSnapshot({
+      ...state,
+      scenes: [
+        { ...state.scenes[0], data: null },
+        { id: 'scene-b', name: 'B', createdAt: '2026-01-01T00:00:00.000Z', data: { ...stored, session: otherSession } },
+      ],
+    }, scene);
+    expect(snapshot.scenes.map((entry) => entry.name)).toEqual(['Scene', 'B']);
+    expect(snapshot.scenes[0].data.session).toEqual(scene);
+    expect(snapshot.scenes[1].data.session.gravityScale).toBe(2);
+    expect(snapshot.activeSceneId).toBe(state.activeSceneId);
+    expect(parseProjectSnapshot(structuredClone(snapshot))).toEqual(snapshot);
   });
 });
 

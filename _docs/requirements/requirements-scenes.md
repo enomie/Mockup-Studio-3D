@@ -4,7 +4,17 @@
 
 **Bestand (Inventur):** Start-Layout = Built-in-Arrangement **Clothing** (`src/data/builtin-arrangements.ts`, Engine `seedDefaultScene()`); `DEFAULT_SCENE_NAME` in `src/config/default-scene-assets.ts`; Breadcrumb `Scene › Default` in `TopSubBar`. **Arrangements** (nur Assets, live) und **Auto-Save der letzten Session** (IndexedDB, live) decken Teile davon ab → [`requirements-arrangements-and-persistence.md`](./requirements-arrangements-and-persistence.md). Eine Scene = Arrangement + Environment + Light rig + Kamera — beim Bau darauf aufsetzen (`ArrangementContent`, `SceneSessionState`, `ProjectSnapshot`), nicht parallel neu bauen.
 
-**Status:** Requirements — Default-Layout im Code; Scenes-Bibliothek und User-Save offen.
+**Status:** Umgesetzt ist das Modell „mehrere Scenes pro Projekt“ (siehe unten). Die weiteren Abschnitte (Built-in Scenes, Scene-Presets, „Save as scene“) beschreiben eine **Vorlagen-Bibliothek** und sind weiterhin offen — dafür sind heute die Arrangements zuständig.
+
+## Umgesetzt: Scenes im Projekt
+
+- Ein **Project** (Autosave-Slot in IndexedDB) enthält **mehrere Scenes**; genau eine ist aktiv und lebt in der Engine. Wechsel speichert den Stand der aktiven Scene zurück und lädt die Ziel-Scene (`SceneApi.restoreSession`). Die **Undo-Historie wird beim Wechsel geleert** (`history.resetBaseline`).
+- **Pro Scene:** Entities, Patch-Nodes, Kamera-Ansicht und -Slots, Gravity, Licht, Sky/Fog/Reflection, Ground, aktive Environment-/Light-rig-/Arrangement-ID (`PER_SCENE_SETTING_KEYS`).
+- **Projektweit (geteilt):** Libraries (Bilder, Materialien, Farben, Profile, Presets, Baked Assets), Viewport-Helpers, Export-Einstellungen, Profil-Snap.
+- **UI:** Left Main → **Scenes**: Liste, **Add new** (legt eine **Kopie der aktuellen Scene** an und öffnet sie), Editor mit Rename und Remove (die letzte Scene bleibt). Keine Thumbnails.
+- **Arrangements** sind Vorlagen: Laden ersetzt die Assets der aktiven Scene (mit Undo). Mit der Checkbox **Open in new scene** wird eine Kopie der aktuellen Scene angelegt und das Arrangement dort angewendet — die alte Scene bleibt unverändert.
+- Code: `src/scene/scene-document.ts`, `src/ui/store/app-store-scenes.ts`, `src/ui/store/scene-settings.ts`, `src/ui/panels/ScenesPanel.tsx`, `src/ui/persistence/project-snapshot.ts` (`scenes[]`, `activeSceneId`). Autosave pausiert während eines Wechsels (`sceneSwitchInFlight`).
+
 
 ---
 

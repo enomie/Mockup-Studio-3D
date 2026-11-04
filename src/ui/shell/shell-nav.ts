@@ -6,6 +6,7 @@ import {
   Download,
   Droplet,
   Image,
+  Clapperboard,
   LayoutGrid,
   LampFloor,
   Lightbulb,
@@ -24,6 +25,7 @@ export interface ShellNavItem {
 }
 
 export const LEFT_SHELL_NAV: ShellNavItem[] = [
+  { id: 'scenes', label: 'Scenes', icon: Clapperboard },
   { id: 'environments', label: 'Environments', icon: CloudSun },
   { id: 'light-rigs', label: 'Light rigs', icon: LampFloor },
   { id: 'arrangements', label: 'Arrangements', icon: LayoutGrid },

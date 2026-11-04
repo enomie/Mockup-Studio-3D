@@ -1,4 +1,5 @@
 import * as store from './app-store-internals';
+import { addScene } from './app-store-scenes';
 import { resolveBuiltinArrangementPreset } from '@/data/builtin-arrangements';
 import {
   cloneArrangementPreset,
@@ -29,11 +30,16 @@ export function nextArrangementSaveName(
   return `${base} ${index}`;
 }
 
-/** Replaces all scene assets with the arrangement; undo restores the previous scene. */
-export function loadArrangement(id: string): void {
+/**
+ * Replaces all assets of the active scene with the arrangement (undo restores them), or,
+ * with `asNewScene`, applies it to a new copy of the current scene and leaves the old one untouched.
+ */
+export async function loadArrangement(id: string, asNewScene = false): Promise<void> {
   const preset = getArrangementPresetById(id);
-  if (!preset || !store.sceneApi) {return;}
-  void store.sceneApi.applyArrangement(preset.content, `Load arrangement ${preset.name}`, () => {
+  const api = store.sceneApi;
+  if (!preset || !api) {return;}
+  if (asNewScene && (await addScene(preset.name)) === null) {return;}
+  await api.applyArrangement(preset.content, `Load arrangement ${preset.name}`, () => {
     store.setAppState({ ...store.state, activeArrangementId: id });
     store.emit();
   });

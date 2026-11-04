@@ -55,6 +55,8 @@ import type {
 } from '@/scene/export-image';
 import type { AssetEntity, MaterialPreset } from '@/scene/entity-types';
 import type { UserBakedAsset } from '@/scene/user-baked-asset';
+import type { SceneEntry } from '@/scene/scene-document';
+import type { PerSceneSettings } from './scene-settings';
 import { migrateMaterialId } from '@/scene/material-ids';
 import {
   clonePhysicsSettings,
@@ -126,6 +128,9 @@ export interface AppState {
   arrangements: ArrangementPreset[];
   /** Last loaded or saved arrangement; null once nothing is loaded. */
   activeArrangementId: string | null;
+  /** Scenes of the project; the active one has `data: null` (it lives in the engine). */
+  scenes: SceneEntry<PerSceneSettings>[];
+  activeSceneId: string;
   entities: readonly AssetEntity[];
   userBakedAssets: UserBakedAsset[];
   /** User-made profiles; built-ins come from the profile library. */
@@ -159,6 +164,15 @@ export let sceneApi: SceneApi | null = null;
 export let engineUnsubscribe: (() => void) | null = null;
 
 const { environment, ground, lighting, camera, viewportHelpers } = SCENE_DEFAULTS;
+
+const INITIAL_SCENE_ID = 'scene-initial';
+
+/** True while a scene switch is loading; autosave must not capture the half-loaded engine. */
+export let sceneSwitchInFlight = false;
+
+export function setSceneSwitchInFlight(value: boolean): void {
+  sceneSwitchInFlight = value;
+}
 
 export let state: AppState = {
   webgpuAvailable: false,
@@ -205,6 +219,10 @@ export let state: AppState = {
   activeLightingPresetId: BUILTIN_LIGHT_DEFAULT_ID,
   arrangements: ARRANGEMENT_PRESETS.map(cloneArrangementPreset),
   activeArrangementId: BUILTIN_ARRANGEMENT_DEFAULT_ID,
+  scenes: [
+    { id: INITIAL_SCENE_ID, name: 'Scene', createdAt: new Date().toISOString(), data: null },
+  ],
+  activeSceneId: INITIAL_SCENE_ID,
   entities: [],
   userBakedAssets: [],
   userProfiles: [],

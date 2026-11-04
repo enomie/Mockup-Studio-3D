@@ -2,7 +2,7 @@
 
 ## Arrangements (Left Main Panel → „Arrangements“)
 
-- Ein Arrangement ist eine gespeicherte Zusammenstellung von **Szenen-Assets**: Typ, Position, Rotation, Größe, Material, Bilder und alle Kind-Parameter. **Nicht** enthalten: Environment, Licht, Kamera (eigene Presets).
+- Ein Arrangement ist eine **Vorlage** (wird beim Anwenden in die aktive oder eine neue Scene kopiert) und eine gespeicherte Zusammenstellung von **Szenen-Assets**: Typ, Position, Rotation, Größe, Material, Bilder und alle Kind-Parameter. **Nicht** enthalten: Environment, Licht, Kamera (eigene Presets).
 - **Built-ins** (`src/data/builtin-arrangements.ts`), als Spawn-Regeln (`kind: 'spawn'`, Kind-Defaults + Position/Rotation/Material):
   - **Clothing**: Block + Silk-Fabric-Cloth (0,5 m hoch). **Start-Szene** der App.
   - **Devices**: Monitor, Tablet, Smartphone
@@ -19,12 +19,12 @@ Code: `src/scene/arrangement-types.ts`, `src/ui/store/app-store-arrangements.ts`
 
 - Speicherort: **IndexedDB** `mockup-studio-3d`. Store `project` (ein Datensatz `current`) + `image-blobs` (Dateien hochgeladener Bilder).
 - Gespeichert wird 500 ms nach jeder Store-Änderung und beim Verlassen der Seite (`pagehide`).
-- Inhalt (`ProjectSnapshot`, `schemaVersion` = 1):
-  - **Einstellungen:** Licht, Sky/Fog/Reflection, Ground, Viewport-Helpers, Export-Einstellungen, aktive Environment/Light-Rig/Arrangement-ID
+- Inhalt (`ProjectSnapshot`, `schemaVersion` = 2):
+  - **Einstellungen (global):** Viewport-Helpers, Export-Einstellungen
   - **Optionale Einstellungen** (`OPTIONAL_SETTING_KEYS`): werden gespeichert, dürfen in älteren Speicherständen fehlen (dann Default). Derzeit die Snap-Schalter des 2D-Profil-Editors (`profileSnapGrid`, `profileSnapPoints`). Neue Einstellungen kommen hierher, damit ältere Speicherstände nicht verworfen werden.
   - **Libraries:** Materials und Colors komplett, weil Built-ins editierbar sind. Bei Environments, Light rigs, Arrangements und Images nur User-Einträge. Dazu die User-Baked-Assets und die **User-Profile** (`libraries.profiles`, optional: ältere Speicherstände ohne Profile laden weiter) → [`requirements-profiles.md`](./requirements-profiles.md).
-  - **Szene:** Entities, Patch-Nodes, Kamera-Ansicht und Slots, Gravity
-- Laden: in `main.tsx` **vor** dem ersten Render. Built-ins kommen immer aus dem Code, neue Built-ins erscheinen also auch bei alten Speicherständen. Die Szene wird nach dem Engine-Start ohne Undo-Schritt eingesetzt (`SceneApi.restoreSession`).
+  - **Scenes** (`scenes[]`, `activeSceneId`): pro Scene Entities, Patch-Nodes, Kamera-Ansicht und Slots, Gravity sowie Licht, Sky/Fog/Reflection, Ground und aktive Environment/Light-Rig/Arrangement-ID → [`requirements-scenes.md`](./requirements-scenes.md)
+- Laden: in `main.tsx` **vor** dem ersten Render. Built-ins kommen immer aus dem Code, neue Built-ins erscheinen also auch bei alten Speicherständen. Die aktive Scene wird nach dem Engine-Start ohne Undo-Schritt eingesetzt (`SceneApi.restoreSession`).
 - Falsche `schemaVersion` oder kaputte Daten → werden ignoriert, die App startet mit Defaults. Der nächste Autosave überschreibt den Datensatz.
 
 Code: `src/ui/persistence/*`.
