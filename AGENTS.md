@@ -22,6 +22,7 @@
 - Plans in `_docs/plans/` are also committed and pushed to `main`.
 - Before pushing code: run tests, lint and build (`npx vitest run`, `npm run lint`, `npm run build`).
 - Background: see `_docs/diaries/diary-code-decisions.md` (single-branch decision).
+- **Branch cleanup at the end of every task:** once everything is pushed to `main`, delete all other branches, local and on `origin` (`git fetch --prune origin`, then `git branch -D …` / `git push origin --delete …`), and prune worktrees. Before deleting, check that the branch holds no commits missing from `main` (`git rev-list --count origin/main..<branch>`); if it does, ask the user first. If a remote delete is refused (e.g. no permission in a cloud session), tell the user which branches are left and give the command to delete them.
 
 ## No Backward Compatibility
 - There are no existing user scenes, saved files or production data yet — the software is pre-release.
