@@ -909,6 +909,21 @@ export class AssetSystem {
     await Promise.all(rebuilds);
   }
 
+  /** Adds ready-made entities (copies) with fresh roots; their geometry builds asynchronously. */
+  insertEntities(entities: readonly AssetEntity[]): Promise<void> {
+    const rebuilds = entities.map((entity) => {
+      const root = new Group();
+      this.scene.add(root);
+      this.registry.insertRestoredEntity(entity, root);
+      return rebuildEntity(this.rebuildCtx, entity.id).then(() => {
+        if (isRigidPrimitiveAssetKind(entity.assetKind)) {
+          this.rigidPrimitivePhysics?.reconcileEntity(entity.id);
+        }
+      });
+    });
+    return Promise.all(rebuilds).then(() => undefined);
+  }
+
   removeAsset(entityId: string): void {
     const runtime = this.registry.getRuntime(entityId);
     if (!runtime) {return;}

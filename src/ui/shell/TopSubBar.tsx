@@ -1,8 +1,15 @@
 import { DEFAULT_SCENE_NAME } from '@/config/default-scene-assets';
 import { Icon } from '@/ui/components/Icon';
-import { Redo2, Undo2 } from 'lucide-react';
+import { ClipboardPaste, Copy, CopyPlus, Redo2, Scissors, Undo2 } from 'lucide-react';
 import { redoSceneChange, setMode, undoSceneChange } from '@/ui/store/app-store';
 import { useAppStore } from '@/ui/store/use-app-store';
+import {
+  copySelection,
+  cutSelection,
+  duplicateSelection,
+  pasteClipboard,
+  useSceneClipboardHasContent,
+} from '@/ui/store/scene-clipboard-store';
 import { VIEWPORT_TOOLS, viewportToolLabel } from './viewport-tools';
 
 export function TopSubBar() {
@@ -12,6 +19,20 @@ export function TopSubBar() {
   const undoLabel = useAppStore((s) => s.history.undoLabel);
   const redoLabel = useAppStore((s) => s.history.redoLabel);
   const undoTitle = undoLabel ? `Undo: ${undoLabel} (Ctrl+Z)` : 'Undo (Ctrl+Z)';
+  const hasSelection = useAppStore((s) => s.selectedEntityIds.length > 0);
+  const hasClipboard = useSceneClipboardHasContent();
+  const editingProfile = useAppStore((s) => s.editingProfileId !== null);
+  const clipboardActions = [
+    { label: 'Cut (Ctrl+X)', icon: Scissors, enabled: hasSelection, run: cutSelection },
+    { label: 'Copy (Ctrl+C)', icon: Copy, enabled: hasSelection, run: copySelection },
+    {
+      label: 'Paste (Ctrl+V; Ctrl+Shift+V pastes in place)',
+      icon: ClipboardPaste,
+      enabled: hasClipboard,
+      run: () => pasteClipboard(),
+    },
+    { label: 'Duplicate (Ctrl+D; Alt-drag in move mode)', icon: CopyPlus, enabled: hasSelection, run: duplicateSelection },
+  ];
   const redoTitle = redoLabel ? `Redo: ${redoLabel} (Ctrl+Shift+Z)` : 'Redo (Ctrl+Shift+Z)';
 
   return (
@@ -39,7 +60,26 @@ export function TopSubBar() {
         })}
       </div>
 
-      <div className="top-bar__history" role="toolbar" aria-label="History">
+      <div className="top-bar__history">
+      {!editingProfile && (
+        <div className="top-bar__clipboard" role="toolbar" aria-label="Clipboard">
+          {clipboardActions.map((action) => (
+            <button
+              key={action.label}
+              type="button"
+              className="btn btn--icon"
+              aria-label={action.label}
+              title={action.label}
+              disabled={!action.enabled}
+              onClick={() => { action.run(); }}
+            >
+              <Icon icon={action.icon} />
+            </button>
+          ))}
+        </div>
+      )}
+
+      <div className="top-bar__clipboard" role="toolbar" aria-label="History">
         <button
           type="button"
           className="btn btn--icon"
@@ -60,6 +100,7 @@ export function TopSubBar() {
         >
           <Icon icon={Redo2} />
         </button>
+      </div>
       </div>
     </div>
   );

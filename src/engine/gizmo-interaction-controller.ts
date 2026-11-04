@@ -58,6 +58,8 @@ export interface GizmoInteractionDeps {
   ) => void;
   /** A drag of a patch point or handle ended; the patch pivot follows its points. */
   onPatchPointDragEnd: (entityId: string) => void;
+  /** Alt held at the start of a move drag: leave copies of these entities in place. */
+  duplicateForAltDrag: (entityIds: readonly string[]) => void;
 }
 
 /**
@@ -80,11 +82,35 @@ export class GizmoInteractionController {
     quaternion: Quaternion;
   } | null = null;
 
+  /** Alt (Option) state of the latest pointer press; read when a drag starts. */
+  private altPressed = false;
+  private readonly onPointerDownCapture = (event: PointerEvent): void => {
+    this.altPressed = event.altKey;
+  };
+
   constructor(private readonly deps: GizmoInteractionDeps) {
+    window.addEventListener('pointerdown', this.onPointerDownCapture, { capture: true });
     deps.gizmo.setCallbacks({
       onTransform: () => { this.onTransform(); },
       onDraggingChanged: (dragging) => { this.onDraggingChanged(dragging); },
     });
+  }
+
+  dispose(): void {
+    window.removeEventListener('pointerdown', this.onPointerDownCapture, { capture: true });
+  }
+
+  /** Alt-drag duplicate applies to plain asset moves (single or group), not lights or handles. */
+  private maybeDuplicateForAltDrag(): void {
+    if (!this.altPressed || this.deps.getMode() !== 'translate') {return;}
+    this.altPressed = false;
+    const { gizmo, registry, lighting, patchGizmo, worldPhysics } = this.deps;
+    if (lighting.getSelectedLightId() || patchGizmo.getActiveTarget()) {return;}
+    if (worldPhysics.getPhase() !== 'idle') {return;}
+    const attached = gizmo.getAttachedObject();
+    const selected = registry.getSelectedRuntime();
+    if (attached !== this.groupPivot && attached !== selected?.object) {return;}
+    this.deps.duplicateForAltDrag(registry.getSelectedEntityIds());
   }
 
   /** Re-targets the gizmo for the current mode and selection. */
@@ -467,6 +493,7 @@ export class GizmoInteractionController {
     const { cameras, viewportInvalidation, registry } = this.deps;
     cameras.setOrbitEnabled(!dragging);
     viewportInvalidation.setContinuous(dragging || cameras.isInteracting());
+    if (dragging) {this.maybeDuplicateForAltDrag();}
 
     if (this.deps.gizmo.getAttachedObject() === this.groupPivot) {
       this.onGroupDraggingChanged(dragging);

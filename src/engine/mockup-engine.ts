@@ -6,6 +6,7 @@ import {
 } from './history/scene-history-controller';
 import { attachHistoryInputTracking } from './history/history-input-tracking';
 import { PatchNodeSync } from './patch-node-sync';
+import { copyEntities } from '@/scene/entity-copy';
 import {
   alignNodeOpposite,
   addInnerNodeUse,
@@ -215,6 +216,7 @@ export class MockupEngine implements SceneApi {
       syncFixedRigidPose: (entityId) => { this.syncRigidPrimitivePoseFromRuntimeIfFixed(entityId); },
       applyAssetMutation: (mutation, options) => { this.applyAssetMutation(mutation, options); },
       onPatchPointDragEnd: (entityId) => { this.recenterPatchPivotAndRebuild(entityId); },
+      duplicateForAltDrag: (entityIds) => { this.duplicateInPlaceForDrag(entityIds); },
     });
 
     scene.add(gizmo.getHelper());
@@ -567,6 +569,62 @@ export class MockupEngine implements SceneApi {
     this.gizmoInteraction.refresh();
     this.emit();
     this.invalidateViewport();
+  }
+
+  /** Deep copies of the given entities (clipboard snapshot), in selection order. */
+  getEntitySnapshots(entityIds: readonly string[]): AssetEntity[] {
+    return entityIds
+      .map((id) => this.registry.getRuntime(id)?.entity)
+      .filter((entity): entity is AssetEntity => entity !== undefined)
+      .map((entity) => structuredClone(entity));
+  }
+
+  /** Inserts copies of `snapshots` shifted by `offset` as one undo step and selects them. */
+  insertEntityCopies(snapshots: readonly AssetEntity[], offset: Vec3, label: string): string[] {
+    if (snapshots.length === 0) {return [];}
+    this.history.flush();
+    this.patchAddPoint.stop();
+    const copies = copyEntities(snapshots, this.entityNames(), offset);
+    void this.assets.insertEntities(copies).then(() => { this.invalidateViewport(); });
+    this.patchGizmo.setActiveEntity(null);
+    this.registry.setSelectedEntityIds(copies.map((entity) => entity.id));
+    this.history.commitStep(label);
+    this.gizmoInteraction.refresh();
+    this.emit();
+    this.invalidateViewport();
+    return copies.map((entity) => entity.id);
+  }
+
+  /** Removes several entities as one undo step named `label`. */
+  removeEntities(entityIds: readonly string[], label: string): void {
+    if (entityIds.length === 0) {return;}
+    this.history.flush();
+    for (const entityId of entityIds) {this.removeEntity(entityId);}
+    this.history.commitStep(label);
+  }
+
+  /**
+   * Alt-drag in move mode: leaves copies of the dragged entities in place. The copies take
+   * over the original names and the dragged entities get the copy names, so the moved
+   * objects read as the duplicates. Recorded with the drag as one undo step.
+   */
+  private duplicateInPlaceForDrag(entityIds: readonly string[]): void {
+    const originals = this.getEntitySnapshots(entityIds);
+    if (originals.length === 0) {return;}
+    const copies = copyEntities(originals, this.entityNames());
+    for (let i = 0; i < copies.length; i += 1) {
+      const original = originals[i];
+      const copy = copies[i];
+      const copyName = copy.name;
+      copy.name = original.name;
+      this.registry.patchEntityFields(original.id, { name: copyName });
+    }
+    void this.assets.insertEntities(copies).then(() => { this.invalidateViewport(); });
+    this.emit();
+  }
+
+  private entityNames(): string[] {
+    return this.registry.getEntities().map((entity) => entity.name);
   }
 
   removeEntity(entityId: string): void {
@@ -1273,6 +1331,7 @@ export class MockupEngine implements SceneApi {
     this.patchAddPoint.dispose();
     this.selectionHighlight.dispose();
     this.selection.dispose();
+    this.gizmoInteraction.dispose();
     this.gizmo.dispose();
     this.assets.dispose();
     this.lighting.dispose();

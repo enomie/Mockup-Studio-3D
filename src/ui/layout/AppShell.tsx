@@ -18,10 +18,12 @@ import { RightSubPanel } from '@/ui/shell/RightSubPanel';
 import { StatusBar } from '@/ui/shell/StatusBar';
 import { TopMainBar } from '@/ui/shell/TopMainBar';
 import { TopSubBar } from '@/ui/shell/TopSubBar';
+import { useSceneClipboardShortcuts } from '@/ui/hooks/useSceneClipboardShortcuts';
 
 export function AppShell() {
   useViewportToolShortcuts();
   usePatchPointClipboardShortcuts();
+  useSceneClipboardShortcuts();
   useUndoRedoShortcuts();
   useCameraViewShortcuts();
 

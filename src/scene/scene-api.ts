@@ -211,6 +211,12 @@ export interface SceneApi {
   buildBakeFabricClothDraft(entityId: string): BakeFabricClothDraft | null;
   addAssetFromUserBaked(userAsset: UserBakedAsset, spawn?: { x: number; z: number }): string;
   removeEntity(entityId: string): void;
+  /** Removes several entities as one undo step named `label`. */
+  removeEntities(entityIds: readonly string[], label: string): void;
+  /** Deep copies of the given entities for the clipboard. */
+  getEntitySnapshots(entityIds: readonly string[]): AssetEntity[];
+  /** Inserts copies (fresh ids and names) shifted by `offset`; one undo step; selects them. */
+  insertEntityCopies(snapshots: readonly AssetEntity[], offset: Vec3, label: string): string[];
   /** Restores a saved session (scene, patch points, camera, gravity) without an undo step. */
   restoreSession(session: SceneSessionState): Promise<void>;
   /** Replaces every asset with an arrangement; one undo step named `label` (includes `onStart` edits). */
