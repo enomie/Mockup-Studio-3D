@@ -55,6 +55,7 @@ import type {
 } from '@/scene/export-image';
 import type { AssetEntity, MaterialPreset } from '@/scene/entity-types';
 import type { UserBakedAsset } from '@/scene/user-baked-asset';
+import { DEFAULT_SCENE_NAME } from '@/config/default-scene-assets';
 import type { SceneEntry } from '@/scene/scene-document';
 import type { PerSceneSettings } from './scene-settings';
 import { migrateMaterialId } from '@/scene/material-ids';
@@ -220,7 +221,7 @@ export let state: AppState = {
   arrangements: ARRANGEMENT_PRESETS.map(cloneArrangementPreset),
   activeArrangementId: BUILTIN_ARRANGEMENT_DEFAULT_ID,
   scenes: [
-    { id: INITIAL_SCENE_ID, name: 'Scene', createdAt: new Date().toISOString(), data: null },
+    { id: INITIAL_SCENE_ID, name: DEFAULT_SCENE_NAME, createdAt: new Date().toISOString(), data: null },
   ],
   activeSceneId: INITIAL_SCENE_ID,
   entities: [],

@@ -60,7 +60,7 @@ describe('scenes', () => {
     const secondId = await addScene();
     expect(secondId).not.toBeNull();
     expect(store.state.activeSceneId).toBe(secondId);
-    expect(store.state.scenes.map((entry) => entry.name)).toEqual(['Scene', 'Scene copy']);
+    expect(store.state.scenes.map((entry) => entry.name)).toEqual(['Default', 'Default copy']);
     expect(fake.current().gravityScale).toBe(3);
     expect(store.state.activeEnvironmentId).toBe('env-first');
 

@@ -1,4 +1,3 @@
-import { DEFAULT_SCENE_NAME } from '@/config/default-scene-assets';
 import { Icon } from '@/ui/components/Icon';
 import { ClipboardPaste, Copy, CopyPlus, Redo2, Scissors, Undo2 } from 'lucide-react';
 import { redoSceneChange, setMode, undoSceneChange } from '@/ui/store/app-store';
@@ -20,6 +19,9 @@ import { VIEWPORT_TOOLS, viewportToolLabel } from './viewport-tools';
 
 export function TopSubBar() {
   const mode = useAppStore((s) => s.mode);
+  const activeSceneName = useAppStore(
+    (s) => s.scenes.find((entry) => entry.id === s.activeSceneId)?.name ?? '',
+  );
   const canUndo = useAppStore((s) => s.history.canUndo);
   const canRedo = useAppStore((s) => s.history.canRedo);
   const undoLabel = useAppStore((s) => s.history.undoLabel);
@@ -50,7 +52,7 @@ export function TopSubBar() {
 
   return (
     <div className="top-bar top-bar--sub">
-      <span className="top-bar__breadcrumb">Scene › {DEFAULT_SCENE_NAME}</span>
+      <span className="top-bar__breadcrumb">Scene › {activeSceneName}</span>
 
       <div className="viewport-tools" role="toolbar" aria-label="Viewport tools">
         {VIEWPORT_TOOLS.map((tool) => {

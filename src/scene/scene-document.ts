@@ -17,8 +17,6 @@ export interface SceneEntry<TSettings> {
   data: SceneData<TSettings> | null;
 }
 
-export const DEFAULT_SCENE_NAME = 'Scene';
-
 /** First free "Scene 2", "Scene 3", … for a name that is already taken. */
 export function uniqueSceneName(
   base: string,
