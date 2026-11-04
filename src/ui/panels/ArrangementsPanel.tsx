@@ -1,11 +1,9 @@
-import { useState } from 'react';
 import { Copy, LayoutGrid, Plus, Trash2 } from 'lucide-react';
 import {
   arrangementAssetCount,
   type ArrangementPreset,
 } from '@/scene/arrangement-types';
 import { Icon } from '@/ui/components/Icon';
-import { PanelCheckbox } from '@/ui/components/PanelCheckbox';
 import { PanelTextField } from '@/ui/components/PanelTextField';
 import { SubPanel } from '@/ui/components/SubPanel';
 import { SubPanelSection } from '@/ui/components/SubPanelSection';
@@ -62,7 +60,6 @@ function ArrangementEditor({ preset }: ArrangementEditorProps) {
 }
 
 export function ArrangementsPanel() {
-  const [asNewScene, setAsNewScene] = useState(false);
   const arrangements = useAppStore((s) => s.arrangements);
   const activeArrangementId = useAppStore((s) => s.activeArrangementId);
   const sortedArrangements = sortBuiltinThenUserByName(
@@ -91,11 +88,6 @@ export function ArrangementsPanel() {
         </button>
       }
     >
-      <PanelCheckbox
-        label="Open in new scene"
-        checked={asNewScene}
-        onChange={setAsNewScene}
-      />
       <ul className="tile-list">
         {sortedArrangements.map((preset) => (
           <li key={preset.id}>
@@ -105,7 +97,7 @@ export function ArrangementsPanel() {
               aria-current={activeArrangementId === preset.id ? 'true' : undefined}
               aria-label={preset.name}
               title={preset.description ?? preset.name}
-              onClick={() => { void loadArrangement(preset.id, asNewScene); }}
+              onClick={() => { void loadArrangement(preset.id); }}
             >
               <span className="tile__thumb tile__thumb--icon">
                 <Icon icon={LayoutGrid} size={16} strokeWidth={1.75} />

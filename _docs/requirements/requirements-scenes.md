@@ -12,7 +12,7 @@
 - **Pro Scene:** Entities, Patch-Nodes, Kamera-Ansicht und -Slots, Gravity, Licht, Sky/Fog/Reflection, Ground, aktive Environment-/Light-rig-/Arrangement-ID (`PER_SCENE_SETTING_KEYS`).
 - **Projektweit (geteilt):** Libraries (Bilder, Materialien, Farben, Profile, Presets, Baked Assets), Viewport-Helpers, Export-Einstellungen, Profil-Snap.
 - **UI:** Left Main → **Scenes**: Liste, **Add new** (legt eine **Kopie der aktuellen Scene** an und öffnet sie), Editor mit Rename und Remove (die letzte Scene bleibt). Keine Thumbnails.
-- **Arrangements** sind Vorlagen: Laden ersetzt die Assets der aktiven Scene (mit Undo). Mit der Checkbox **Open in new scene** wird eine Kopie der aktuellen Scene angelegt und das Arrangement dort angewendet — die alte Scene bleibt unverändert.
+- **Arrangements** sind Vorlagen: Ein Klick darauf legt **immer eine neue Scene** an (Kopie der aktuellen, Name = Arrangement-Name) und wendet das Arrangement dort an. Die vorherige Scene bleibt unverändert.
 - Code: `src/scene/scene-document.ts`, `src/ui/store/app-store-scenes.ts`, `src/ui/store/scene-settings.ts`, `src/ui/panels/ScenesPanel.tsx`, `src/ui/persistence/project-snapshot.ts` (`scenes[]`, `activeSceneId`). Autosave pausiert während eines Wechsels (`sceneSwitchInFlight`).
 
 

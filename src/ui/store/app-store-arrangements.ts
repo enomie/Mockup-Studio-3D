@@ -31,14 +31,14 @@ export function nextArrangementSaveName(
 }
 
 /**
- * Replaces all assets of the active scene with the arrangement (undo restores them), or,
- * with `asNewScene`, applies it to a new copy of the current scene and leaves the old one untouched.
+ * Opens the arrangement in a new scene (a copy of the current one with the arrangement applied);
+ * the scene you came from stays untouched.
  */
-export async function loadArrangement(id: string, asNewScene = false): Promise<void> {
+export async function loadArrangement(id: string): Promise<void> {
   const preset = getArrangementPresetById(id);
   const api = store.sceneApi;
   if (!preset || !api) {return;}
-  if (asNewScene && (await addScene(preset.name)) === null) {return;}
+  if ((await addScene(preset.name)) === null) {return;}
   await api.applyArrangement(preset.content, `Load arrangement ${preset.name}`, () => {
     store.setAppState({ ...store.state, activeArrangementId: id });
     store.emit();

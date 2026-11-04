@@ -2,7 +2,7 @@
 
 ## Arrangements (Left Main Panel → „Arrangements“)
 
-- Ein Arrangement ist eine **Vorlage** (wird beim Anwenden in die aktive oder eine neue Scene kopiert) und eine gespeicherte Zusammenstellung von **Szenen-Assets**: Typ, Position, Rotation, Größe, Material, Bilder und alle Kind-Parameter. **Nicht** enthalten: Environment, Licht, Kamera (eigene Presets).
+- Ein Arrangement ist eine **Vorlage** (ein Klick öffnet sie in einer neuen Scene) und eine gespeicherte Zusammenstellung von **Szenen-Assets**: Typ, Position, Rotation, Größe, Material, Bilder und alle Kind-Parameter. **Nicht** enthalten: Environment, Licht, Kamera (eigene Presets).
 - **Built-ins** (`src/data/builtin-arrangements.ts`), als Spawn-Regeln (`kind: 'spawn'`, Kind-Defaults + Position/Rotation/Material):
   - **Clothing**: Block + Silk-Fabric-Cloth (0,5 m hoch). **Start-Szene** der App.
   - **Devices**: Monitor, Tablet, Smartphone

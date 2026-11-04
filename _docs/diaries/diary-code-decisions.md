@@ -1639,7 +1639,7 @@ Aktueller Stand → [`requirements-profiles.md`](../requirements/requirements-pr
 
 ### 2026-11-04 — Mehrere Scenes pro Projekt
 - **Problem:** Ein Arrangement laden ersetzte alle Assets; Änderungen gingen beim Wechsel verloren.
-- **Entscheidung:** Das Projekt enthält mehrere **Scenes**; jede hat eigene Objekte, Kamera, Licht, Sky/Fog/Ground. Libraries bleiben projektweit. Arrangements sind nur Vorlagen. **Neue Scene = Kopie der aktuellen.** „Arrangement in neuer Scene öffnen“ ist per Checkbox wählbar. Undo-Historie wird beim Wechsel geleert. Keine Thumbnails. `schemaVersion` 2 ohne Migration (Pre-Release).
+- **Entscheidung:** Das Projekt enthält mehrere **Scenes**; jede hat eigene Objekte, Kamera, Licht, Sky/Fog/Ground. Libraries bleiben projektweit. Arrangements sind nur Vorlagen. **Neue Scene = Kopie der aktuellen.** Ein Klick auf ein Arrangement öffnet **immer** eine neue Scene (die zuerst gebaute Checkbox „Open in new scene“ wurde wieder entfernt: nie Arbeit überschreiben, kein Modus zum Merken). Undo-Historie wird beim Wechsel geleert. Keine Thumbnails. `schemaVersion` 2 ohne Migration (Pre-Release).
 - **Verworfen:** Licht/Umgebung projektweit teilen (komplizierteres Modell, für Mockups kaum nötig; als Preset später nachrüstbar). Undo pro Scene halten (mehr Zustand, wenig Nutzen).
 - **Autosave** pausiert während eines Szenenwechsels (`sceneSwitchInFlight`), sonst würde die halb geladene Engine als neue Scene gespeichert.
 
