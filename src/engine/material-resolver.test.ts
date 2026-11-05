@@ -165,7 +165,8 @@ describe('createMaterialFromPreset — textured built-ins', () => {
     expect(material).toBeInstanceOf(MeshPhysicalNodeMaterial);
     expect(material.sheen).toBeCloseTo(1, 5);
     expect(material.sheenRoughness).toBeCloseTo(0.35, 5);
-    expect(material.anisotropy).toBeCloseTo(0.65, 5);
+    expect(material.anisotropy).toBeCloseTo(0.85, 5);
+    expect(material.clearcoat).toBeCloseTo(0.3, 5);
   });
 
   it('applies glossy clearcoat on Paper at gloss 1', () => {

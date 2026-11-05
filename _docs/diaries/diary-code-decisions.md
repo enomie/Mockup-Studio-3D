@@ -1649,5 +1649,5 @@ The first `silk-fine` shader (30 threads x tileScale 20, strict over/under) look
 
 ### 2026-11-05 — Silk: streaks with disturbances instead of weave
 - **Problem:** The weave of `silk-fine` (~0.3 mm threads) is below pixel size almost always and fades out, leaving a flat, matte surface. Brushed Aluminum looked better because its long streaks stay visible and the anisotropic highlight is strong.
-- **Decision:** `silk-fine` now renders fine streaks along the grain (brushed-style) with wavy lines (domain warping), wide light/dark bands and dropouts, plus lower roughness (0.3) and stronger anisotropy (0.65). Still non-metallic with sheen; fabric drape physics unchanged. Profile id and preset id kept to avoid churn.
+- **Decision:** `silk-fine` now renders fine streaks along the grain (brushed-style) with wavy lines (domain warping), wide light/dark bands and dropouts, plus low roughness (0.18), strong anisotropy (0.85) and a light clearcoat (0.3); the first values (0.3 / 0.65, no clearcoat) looked too matte. Still non-metallic with sheen; fabric drape physics unchanged. Profile id and preset id kept to avoid churn.
 - **Rejected:** a second additional material (duplicate of Silk); reusing the brushed-metal builder unchanged (metallic, too straight and uniform for fabric — the disturbances are what make it read as silk).
