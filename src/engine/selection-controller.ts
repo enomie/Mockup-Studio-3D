@@ -14,6 +14,16 @@ function isEditableTarget(target: EventTarget | null): boolean {
   return Boolean(target.closest('input, textarea, select, [contenteditable="true"]'));
 }
 
+/** Raycasting ignores `visible`, so hits on hidden objects must be filtered manually. */
+export function isVisibleInHierarchy(object: Object3D): boolean {
+  let current: Object3D | null = object;
+  while (current) {
+    if (!current.visible) {return false;}
+    current = current.parent;
+  }
+  return true;
+}
+
 export interface PatchLengthDragHandlers {
   begin: (ray: Ray) => boolean;
   update: (ray: Ray) => void;
@@ -222,11 +232,12 @@ export class SelectionController {
     return this.registry
       .getEntities()
       .map((entity) => this.registry.getRuntime(entity.id)?.object)
-      .filter((object): object is Object3D => Boolean(object));
+      .filter((object): object is Object3D => object?.visible === true);
   }
 
   private findEntityId(hits: { object: Object3D }[]): string | null {
     for (const hit of hits) {
+      if (!isVisibleInHierarchy(hit.object)) {continue;}
       let current: Object3D | null = hit.object;
       while (current) {
         const entityId = current.userData.entityId as string | undefined;
