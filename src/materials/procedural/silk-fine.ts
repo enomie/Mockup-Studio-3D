@@ -1,10 +1,12 @@
 /**
- * Fine silk — plain-weave micro relief plus a soft sheen lobe (applied on the
- * physical material via `sheen`). Non-metallic; the weave fades out where
- * threads become smaller than a pixel to avoid moiré.
+ * Fine silk — long, fine streaks along the grain (like brushed metal) with
+ * organic disturbances: wavy lines, wide light/dark bands and dropouts where
+ * single streaks fade. The anisotropic highlight and sheen lobe are applied on
+ * the physical material. Non-metallic; the streaks fade out where lines become
+ * smaller than a pixel to avoid moiré.
  */
 import type { Node } from 'three/webgpu';
-import { bumpMap, clamp, float, floor, fwidth, mix, mod, sin, smoothstep, vec2, vec3 } from 'three/tsl';
+import { bumpMap, clamp, float, fwidth, mix, smoothstep, vec2, vec3 } from 'three/tsl';
 import { buildProceduralSampleUv } from './procedural-sample-uv';
 import { triplanarScalar } from './procedural-triplanar-meters';
 import {
@@ -14,54 +16,62 @@ import {
 } from './procedural-types';
 import { proceduralNoise3 } from './tsl-noise';
 
-/** Threads per tileScale unit (tileScale = repeats per meter). */
-const THREADS_PER_TILE = 150;
-const TAU = Math.PI * 2;
+/** Streaks across the grain per tileScale unit; ~40 × tileScale 28 ≈ 0.9 mm spacing. */
+const STREAKS_ACROSS_PER_TILE = 40;
+/** Streak length: low frequency along the grain. */
+const STREAKS_ALONG_PER_TILE = 0.5;
+/** Waviness: how far (in streak widths) lines drift sideways along their length. */
+const WAVE_AMPLITUDE = 2.5;
+/** Bump strength per normalScale unit; kept low to avoid crushed blacks on edges. */
+const SILK_BUMP_PER_NORMAL_SCALE = 0.01;
 
 function silkSeedOffset(seed: Node<'float'>) {
-  return vec2(seed.mul(7.7), seed.mul(19.3));
+  return vec2(seed.mul(11.3), seed.mul(3.7));
 }
 
-/** Plain weave height in [0, 1]: warp and weft alternate over/under per thread cell. */
-function weaveHeight(sampleUv: Node<'vec2'>, seed: Node<'float'>) {
-  const coord = sampleUv.mul(float(THREADS_PER_TILE));
-  const cell = floor(coord);
-  const over = mod(cell.x.add(cell.y), float(2));
-  // Thread profile across its width (0 at gaps, 1 at the crown).
-  const warp = sin(coord.x.mul(TAU)).mul(0.5).add(0.5);
-  const weft = sin(coord.y.mul(TAU)).mul(0.5).add(0.5);
-  // Soft weave: the over/under contrast is low so it never reads as a checkerboard.
-  const crowns = mix(warp, weft, over.mul(0.5).add(0.25));
-  // Per-thread irregularity (slubs).
-  const slub = proceduralNoise3(vec3(cell.x.mul(0.37), cell.y.mul(0.37), seed)).mul(0.4);
-  // Fine fibre streaks running along the warp (noise stretched along the thread).
-  const fibres = proceduralNoise3(vec3(coord.x.mul(0.9), coord.y.mul(0.02), seed.add(3.1))).mul(0.25);
-  const height = clamp(crowns.mul(0.5).add(0.25).add(slub).add(fibres), 0, 1);
-  // Fade the weave once a thread gets close to pixel size.
-  const fade = float(1).sub(smoothstep(float(0.25), float(0.5), fwidth(coord.x).add(fwidth(coord.y))));
-  return mix(float(0.5), height, fade);
+/** Streak height in about [-1, 1]; `.x` = along grain, `.y` = across. */
+function silkStreaks(sampleUv: Node<'vec2'>, seed: Node<'float'>) {
+  const along = sampleUv.x.mul(float(STREAKS_ALONG_PER_TILE));
+  const acrossRaw = sampleUv.y.mul(float(STREAKS_ACROSS_PER_TILE));
+  // Wavy lines: shift the cross coordinate with a slow noise running along the grain.
+  const wave = proceduralNoise3(vec3(along.mul(0.8), acrossRaw.mul(0.04), seed.add(2.1)));
+  const across = acrossRaw.add(wave.mul(WAVE_AMPLITUDE));
+
+  const fine = proceduralNoise3(vec3(along, across, seed));
+  const coarse = proceduralNoise3(vec3(along, across.mul(0.23), seed.add(9.1)));
+  const lines = fine.mul(0.7).add(coarse.mul(0.3));
+
+  // Dropouts: individual streaks weaken or break off along their length.
+  const dropoutNoise = proceduralNoise3(vec3(along.mul(0.6), acrossRaw.mul(0.7), seed.add(7.4)));
+  const strength = mix(float(0.3), float(1), smoothstep(float(-0.3), float(0.4), dropoutNoise));
+
+  // Wide bands: groups of fibres that are slightly lighter or darker.
+  const bands = proceduralNoise3(vec3(along.mul(0.25), acrossRaw.mul(0.015), seed.add(5.5)));
+
+  const combined = lines.mul(strength).add(bands.mul(0.5));
+  // Fade the streaks once a line gets close to pixel size.
+  const fade = float(1).sub(smoothstep(float(0.35), float(0.7), fwidth(acrossRaw)));
+  return combined.mul(fade);
 }
 
 export function buildSilkFineNodes(params: ProceduralMaterialParams): ProceduralMaterialNodes {
   const seed = float(params.seed);
   const offset = silkSeedOffset(seed);
-  const weave =
+  const streaks =
     params.samplingSpace === 'uv' || params.samplingSpace === 'planar-meters'
-      ? weaveHeight(buildProceduralSampleUv(params).add(offset), seed)
-      : triplanarScalar(params.tileScale, offset, (uv) => weaveHeight(uv, seed));
+      ? silkStreaks(buildProceduralSampleUv(params).add(offset), seed)
+      : triplanarScalar(params.tileScale, offset, (uv) => silkStreaks(uv, seed));
 
-  const base = params.uniforms.color;
-  const colorNode = base.mul(mix(float(0.97), float(1.02), weave));
-  const normalNode = bumpMap(weave, float(params.normalScale * 0.02));
+  const colorNode = params.uniforms.color.mul(float(1).add(streaks.mul(0.05)));
+  const normalNode = bumpMap(
+    streaks.mul(0.5).add(0.5),
+    float(params.normalScale * SILK_BUMP_PER_NORMAL_SCALE),
+  );
   const roughnessNode = clamp(
-    params.uniforms.roughness.add(weave.sub(0.5).mul(0.06)),
+    params.uniforms.roughness.add(streaks.mul(0.08)),
     ROUGHNESS_MIN,
     1,
   );
 
-  return {
-    colorNode,
-    normalNode,
-    roughnessNode,
-  };
+  return { colorNode, normalNode, roughnessNode };
 }

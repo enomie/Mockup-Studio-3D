@@ -1,6 +1,6 @@
 # Plan: Silk mit feinen Streifen und Störungen statt Webmuster
 
-Status: **Entwurf – wartet auf Freigabe**
+Status: **Umgesetzt** – visuelle Abnahme (Werte justieren) lokal offen.
 Datum: 2026-11-05
 
 ## Problem

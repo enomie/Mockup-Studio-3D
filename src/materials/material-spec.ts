@@ -195,14 +195,15 @@ const PROFILE_SPECS: Record<ProceduralProfileId, ProfileOverrides> = {
   },
   'silk-fine': {
     label: 'Fabric Silk',
-    roughness: normalized(0.45),
+    roughness: normalized(0.3),
     physical: true,
     // Non-metallic fabric: no metalness control.
     metalness: undefined,
     normalScale: NORMAL_SCALE,
-    tileScale: tileRange(20),
+    // Streak density: ~40 × tileScale streaks per meter across the grain (28 ≈ 0.9 mm).
+    tileScale: { min: 4, max: 60, step: 1, decimals: 0, default: 28 },
     seed: true,
-    anisotropy: ANISOTROPY,
+    anisotropy: { ...ANISOTROPY, amount: normalized(0.65) },
     sheen: { amount: normalized(1), roughness: normalized(0.35) },
   },
   'metal-polished': {
