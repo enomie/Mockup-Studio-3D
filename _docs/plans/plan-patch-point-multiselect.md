@@ -25,7 +25,7 @@ Zwei oder mehr Punkte eines Patches gleichzeitig auswählen und parametrisch ver
 ### 2. Engine (`triangle-patch-gizmo-controller.ts`, `mockup-engine.ts`, `scene-api.ts`)
 - **Shift-Klick** auf einen Anker im Viewport fügt ihn zur Auswahl hinzu oder nimmt ihn heraus (analog Assets). Ein Klick ohne Shift setzt die Auswahl auf einen Punkt zurück. Shift+**Drag** bleibt wie bisher „Joint brechen“; Shift-Klick ohne Bewegung toggelt nur.
 - Ausgewählte Anker werden hervorgehoben (gleiche Highlight-Farbe wie der aktive Anker).
-- Bei Mehrfachauswahl sitzt der Translate-Gizmo in der Gruppenmitte; ziehen verschiebt alle Punkte um dasselbe Delta (ein Undo-Schritt).
+- Bei Mehrfachauswahl sitzt der Gizmo in der Gruppenmitte und kann wie bei Assets **verschieben, drehen und skalieren** (Modus-Umschaltung wie beim Asset-Gizmo). Drehen/Skalieren wirkt um die Gruppenmitte; jeder Drag ist ein Undo-Schritt.
 - SceneApi: `togglePatchPointSelection(entityId, pointId)`, `getPatchPointGroupState()` → `{ center, rotation, scale } | null`, `setPatchPointGroupCenter/Rotation/Scale(...)`. Rotation und Scale beziehen sich auf den Stand bei Auswahlbeginn (gemerkte Basis-Punkte, wie bei Assets).
 
 ### 3. UI (`src/ui/`)
@@ -44,6 +44,6 @@ Zwei oder mehr Punkte eines Patches gleichzeitig auswählen und parametrisch ver
 - Test für Toggle-Logik der Auswahl.
 - Kurz in `_docs/requirements/` (Patch-Requirements) und `diary-code-decisions.md` festhalten; danach diesen Plan löschen.
 
-## Offene Fragen
-1. Reicht „nur Anker, nur innerhalb eines Patches“ für den Anfang, oder sollen Punkte über mehrere Patches hinweg wählbar sein?
-2. Soll der Gizmo im Viewport bei Mehrfachauswahl auch drehen/skalieren können, oder reicht verschieben (Drehen/Skalieren dann nur über die Felder)?
+## Entscheidungen
+1. Mehrfachauswahl nur innerhalb eines Patches (keine patch-übergreifende Auswahl).
+2. Der Viewport-Gizmo kann die Punktgruppe verschieben, drehen und skalieren.
