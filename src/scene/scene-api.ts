@@ -1,4 +1,5 @@
 import type { SelectionGroupState } from '@/engine/gizmo-interaction-controller';
+import type { PatchPointGroupState } from '@/engine/triangle-patch-gizmo-controller';
 import type { ArrangementContent } from './arrangement-types';
 import type { PatchNode } from '@/scene/patch-nodes';
 import type { PatchEdgeLink, PatchSegment } from '@/scene/triangle-patch-edge-link';
@@ -283,6 +284,13 @@ export interface SceneApi {
   setBookMaterialTint(entityId: string, part: BookMaterialTintPart, tint: Rgb): void;
   selectPatchHandle(entityId: string, pointId: string, targetKey: PatchHandleTarget): void;
   getPatchHandleSelection(): PatchHandleSelection | null;
+  /** Shift-click on a patch anchor: adds it to the point selection of that patch or removes it. */
+  togglePatchPointSelection(entityId: string, pointId: string): void;
+  /** Centre / relative rotation / relative scale of two or more selected patch anchors. */
+  getPatchPointGroupState(): PatchPointGroupState | null;
+  setPatchPointGroupCenter(center: { x: number; y: number; z: number }): void;
+  setPatchPointGroupRotation(rotation: { x: number; y: number; z: number }): void;
+  setPatchPointGroupScale(scale: number): void;
   /** Starts the viewport add-point mode for a triangle patch, or stops it with null. */
   setPatchAddPointMode(entityId: string | null): void;
   getPatchAddPointEntityId(): string | null;

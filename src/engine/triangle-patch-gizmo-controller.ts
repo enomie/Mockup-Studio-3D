@@ -1,18 +1,20 @@
 import type { Vec3 } from '@/scene/entity-types';
 import {
   BufferGeometry,
+  Euler,
   Group,
   Line,
   LineBasicNodeMaterial,
+  Matrix4,
   Mesh,
   MeshBasicNodeMaterial,
+  Object3D,
   OctahedronGeometry,
   Quaternion,
   SphereGeometry,
   TorusGeometry,
   Vector3,
   type Material,
-  type Object3D,
   type Ray,
   type Sphere,
   type Scene,
@@ -37,6 +39,7 @@ import {
   type PatchNodeUse,
   isNodeIdOf,
 } from '@/scene/patch-nodes';
+import { groupTransformMatrix, patchPointsCenter, togglePointId, transformPatchPoints } from '@/scene/triangle-patch-group-edit';
 
 const PATCH_GIZMO_HANDLE_ROLE = 'patchGizmoHandle';
 
@@ -72,6 +75,18 @@ export function closestAxisParamToRay(origin: Vector3, dir: Vector3, ray: Ray): 
 
 export type PatchSubTarget = PatchHandleSelection;
 
+/** Two or more anchors of one patch selected together (scene space). */
+export interface PatchPointGroupState {
+  entityId: string;
+  pointIds: string[];
+  /** Mean of the selected anchors (scene space, m). */
+  center: Vec3;
+  /** Rotation since the selection was formed (radians, XYZ). */
+  rotation: Vec3;
+  /** Uniform scale since the selection was formed (1 = 100 %). */
+  scale: number;
+}
+
 interface PointHelpers {
   anchor: Mesh;
   /** Ring around the anchor of a smooth joint (faces the camera). */
@@ -98,6 +113,8 @@ interface HelperResources {
   jointRingMat: MeshBasicNodeMaterial;
   edgeAnchorGeo: SphereGeometry;
   edgeAnchorMat: MeshBasicNodeMaterial;
+  /** Anchors that are part of a multi-point selection. */
+  groupAnchorMat: MeshBasicNodeMaterial;
   handleGeo: OctahedronGeometry;
   pinkMat: MeshBasicNodeMaterial;
   yellowMat: MeshBasicNodeMaterial;
@@ -136,6 +153,7 @@ function createHelperResources(): HelperResources {
     // Edge points: purple and a bit smaller than the corners
     edgeAnchorGeo: new SphereGeometry(0.021, 16, 16),
     edgeAnchorMat: overlayMeshMaterial(0xa855f7),
+    groupAnchorMat: overlayMeshMaterial(0xf97316),
     handleGeo: new OctahedronGeometry(0.018),
     pinkMat: overlayMeshMaterial(0xec4899),
     yellowMat: overlayMeshMaterial(0xeab308),
@@ -149,6 +167,15 @@ export class TrianglePatchGizmoController {
   private readonly registry: EntityRegistry;
   private activeEntityId: string | null = null;
   private activeTarget: PatchSubTarget | null = null;
+  /** Anchors selected together; the active target's point is always one of them. */
+  private selectedPointIds: string[] = [];
+  /** Group rotation/scale relative to when the current point set was formed. */
+  private groupKey = '';
+  private readonly groupQuaternion = new Quaternion();
+  private groupScale = 1;
+  /** Invisible gizmo target at the centre of a multi-point selection (scene space). */
+  private readonly groupPivot = new Object3D();
+  private groupDrag: { points: PatchPoint[]; startInverse: Matrix4; startQuaternion: Quaternion } | null = null;
 
   // Root group for all visual helper nodes in the scene
   private readonly helperGroup: Group;
@@ -176,6 +203,8 @@ export class TrianglePatchGizmoController {
     this.helperGroup.name = 'PatchGizmoHelperGroup';
     this.scene.add(this.helperGroup);
     this.helperGroup.visible = false;
+    this.groupPivot.name = 'PatchPointGroupPivot';
+    this.scene.add(this.groupPivot);
 
     this.helperResources = createHelperResources();
     this.lengthRing = this.createLengthRing();
@@ -435,6 +464,8 @@ export class TrianglePatchGizmoController {
   setActiveEntity(entityId: string | null): void {
     if (this.activeEntityId === entityId) {return;}
     this.activeEntityId = entityId;
+    this.selectedPointIds = [];
+    this.groupDrag = null;
 
     if (!entityId) {
       this.helperGroup.visible = false;
@@ -459,8 +490,35 @@ export class TrianglePatchGizmoController {
 
   selectTarget(target: PatchSubTarget | null): void {
     this.activeTarget = target;
+    this.selectedPointIds = target ? [target.pointId] : [];
     this.lengthDrag = null;
-    this.syncLengthRing();
+    this.syncHelpersFromEntity();
+  }
+
+  /** Shift-click on an anchor: adds it to the point selection or removes it. */
+  togglePointSelection(pointId: string): void {
+    if (!this.activeEntityId) {return;}
+    const target = this.activeTarget;
+    const base = target?.targetKey === 'pos' ? this.selectedPointIds : target ? [target.pointId] : [];
+    const ids = togglePointId(base, pointId);
+    this.selectedPointIds = ids;
+    const active = ids.includes(pointId) ? pointId : ids[ids.length - 1];
+    this.activeTarget = { entityId: this.activeEntityId, pointId: active, targetKey: 'pos' };
+    this.lengthDrag = null;
+    this.syncHelpersFromEntity();
+  }
+
+  getSelectedPointIds(): readonly string[] {
+    return this.selectedPointIds;
+  }
+
+  /** True while two or more anchors of the active patch are selected. */
+  isGroupActive(): boolean {
+    return this.helperGroup.visible && this.activeTarget?.targetKey === 'pos' && this.selectedPointIds.length > 1;
+  }
+
+  getGroupPivot(): Object3D | null {
+    return this.isGroupActive() ? this.groupPivot : null;
   }
 
   selectHandleByMesh(mesh: Mesh): PatchSubTarget | null {
@@ -473,12 +531,17 @@ export class TrianglePatchGizmoController {
       return null;
     }
 
+    if (this.shiftHeld && targetKey === 'pos') {
+      this.togglePointSelection(pointId);
+      return this.activeTarget;
+    }
     this.activeTarget = {
       entityId: this.activeEntityId,
       pointId,
       targetKey,
     };
-    this.syncLengthRing();
+    this.selectedPointIds = [pointId];
+    this.syncHelpersFromEntity();
     return this.activeTarget;
   }
 
@@ -539,6 +602,7 @@ export class TrianglePatchGizmoController {
       }
 
       h.anchor.position.copy(pPos);
+      h.anchor.material = this.anchorMaterial(params, node.id);
       // Shared point marker: a ring around the anchor while the point is coupled.
       h.jointRing.visible = linkedIds.has(node.id) && node.joint === 'smooth';
       h.jointRing.position.copy(pPos);
@@ -551,7 +615,125 @@ export class TrianglePatchGizmoController {
       h.linePrev.geometry.setFromPoints([pPos, pPrev]);
       h.lineCross.geometry.setFromPoints(extra.yellow ? [pCrossIn, pPos, pCrossOut] : [pCrossIn, pPos, pPos]);
     }
+    this.selectedPointIds = this.selectedPointIds.filter((id) => params.points.some((point) => point.id === id));
     this.syncLengthRing();
+    this.syncGroupPivot();
+  }
+
+  private anchorMaterial(params: PatchParams, pointId: string): MeshBasicNodeMaterial {
+    const r = this.helperResources;
+    if (this.isGroupActive() && this.selectedPointIds.includes(pointId)) {return r.groupAnchorMat;}
+    return isPatchCorner(params, pointId) ? r.anchorMat : r.edgeAnchorMat;
+  }
+
+  /** Scene-space centre of the selected anchors; null without a group. */
+  private groupCenterWorld(): Vector3 | null {
+    const runtime = this.activeEntityId ? this.registry.getRuntime(this.activeEntityId) : undefined;
+    const params = runtime?.entity.patchParams;
+    if (!runtime || !params || !this.isGroupActive()) {return null;}
+    const center = patchPointsCenter(params.points, this.selectedPointIds);
+    if (!center) {return null;}
+    runtime.object.updateMatrixWorld(true);
+    return new Vector3(center.x, center.y, center.z).applyMatrix4(runtime.object.matrixWorld);
+  }
+
+  /** Keeps the group pivot on the centre of the selected anchors (not while dragging it). */
+  private syncGroupPivot(): void {
+    if (this.groupDrag) {return;}
+    const key = this.isGroupActive() ? `${this.activeEntityId ?? ''}:${[...this.selectedPointIds].sort().join('|')}` : '';
+    if (key !== this.groupKey) {
+      this.groupKey = key;
+      this.groupQuaternion.identity();
+      this.groupScale = 1;
+    }
+    const center = this.groupCenterWorld();
+    if (!center) {return;}
+    this.groupPivot.position.copy(center);
+    this.groupPivot.quaternion.identity();
+    this.groupPivot.scale.set(1, 1, 1);
+    this.groupPivot.updateMatrixWorld();
+  }
+
+  /** Group panel values; null unless two or more anchors are selected. */
+  getGroupState(): PatchPointGroupState | null {
+    const center = this.groupCenterWorld();
+    if (!center || !this.activeEntityId) {return null;}
+    const euler = new Euler().setFromQuaternion(this.groupQuaternion);
+    return {
+      entityId: this.activeEntityId,
+      pointIds: [...this.selectedPointIds],
+      center: { x: center.x, y: center.y, z: center.z },
+      rotation: { x: euler.x, y: euler.y, z: euler.z },
+      scale: this.groupScale,
+    };
+  }
+
+  /** Moves the selected points so their centre lands on `center` (scene space). */
+  setGroupCenter(center: Vec3): void {
+    const current = this.groupCenterWorld();
+    if (!current) {return;}
+    this.applyGroupWorldMatrix(new Matrix4().makeTranslation(center.x - current.x, center.y - current.y, center.z - current.z));
+  }
+
+  /** Turns the selected points about their centre to the relative rotation `rotation` (radians, XYZ). */
+  setGroupRotation(rotation: Vec3): void {
+    const current = this.groupCenterWorld();
+    if (!current) {return;}
+    const target = new Quaternion().setFromEuler(new Euler(rotation.x, rotation.y, rotation.z));
+    const delta = target.clone().multiply(this.groupQuaternion.clone().invert());
+    this.applyGroupWorldMatrix(groupTransformMatrix(current, delta, 1));
+    this.groupQuaternion.copy(target);
+  }
+
+  /** Scales the selected points about their centre to the relative uniform scale `scale`. */
+  setGroupScale(scale: number): void {
+    const current = this.groupCenterWorld();
+    if (!current || scale <= 0) {return;}
+    this.applyGroupWorldMatrix(groupTransformMatrix(current, new Quaternion(), scale / this.groupScale));
+    this.groupScale = scale;
+  }
+
+  beginGroupDrag(): void {
+    const params = this.activeEntityId ? this.registry.getRuntime(this.activeEntityId)?.entity.patchParams : undefined;
+    if (!params || !this.isGroupActive()) {return;}
+    this.groupPivot.updateMatrixWorld();
+    this.groupDrag = {
+      points: params.points,
+      startInverse: this.groupPivot.matrixWorld.clone().invert(),
+      startQuaternion: this.groupPivot.quaternion.clone(),
+    };
+  }
+
+  /** Applies the pivot's change since the drag started to the selected points. */
+  updateGroupDrag(): void {
+    const drag = this.groupDrag;
+    if (!drag) {return;}
+    this.groupPivot.updateMatrixWorld();
+    const world = this.groupPivot.matrixWorld.clone().multiply(drag.startInverse);
+    this.applyGroupWorldMatrix(world, drag.points);
+  }
+
+  endGroupDrag(): void {
+    const drag = this.groupDrag;
+    if (!drag) {return;}
+    const delta = this.groupPivot.quaternion.clone().multiply(drag.startQuaternion.clone().invert());
+    this.groupQuaternion.premultiply(delta);
+    this.groupScale *= this.groupPivot.scale.x;
+    this.groupDrag = null;
+    this.syncGroupPivot();
+  }
+
+  /** Applies a scene-space transform to the selected points (from `basePoints`, default: current). */
+  private applyGroupWorldMatrix(world: Matrix4, basePoints?: readonly PatchPoint[]): void {
+    if (!this.activeEntityId) {return;}
+    const runtime = this.registry.getRuntime(this.activeEntityId);
+    const params = runtime?.entity.patchParams;
+    if (!runtime || !params) {return;}
+    runtime.object.updateMatrixWorld(true);
+    const toWorld = runtime.object.matrixWorld;
+    const local = toWorld.clone().invert().multiply(world).multiply(toWorld);
+    const points = transformPatchPoints(basePoints ?? params.points, this.selectedPointIds, local);
+    this.commitParams(this.activeEntityId, { points });
   }
 
   /**
@@ -696,6 +878,7 @@ export class TrianglePatchGizmoController {
     this.windowListeners.abort();
     this.clearHelpers();
     this.scene.remove(this.helperGroup);
+    this.scene.remove(this.groupPivot);
     for (const resource of Object.values(this.helperResources) as { dispose(): void }[]) {resource.dispose();}
     this.lengthRing.geometry.dispose();
     (this.lengthRing.material as Material).dispose();

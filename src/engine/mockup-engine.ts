@@ -118,6 +118,7 @@ import { GizmoController } from './gizmo-controller';
 import { GizmoInteractionController, type SelectionGroupState } from './gizmo-interaction-controller';
 import {
   TrianglePatchGizmoController,
+  type PatchPointGroupState,
 } from './triangle-patch-gizmo-controller';
 import { insertPatchPoint } from '@/scene/triangle-patch-point-edit';
 import {
@@ -849,6 +850,39 @@ export class MockupEngine implements SceneApi {
   selectPatchHandle(entityId: string, pointId: string, targetKey: PatchHandleTarget): void {
     this.patchGizmo.setActiveEntity(entityId);
     this.patchGizmo.selectTarget({ entityId, pointId, targetKey });
+    this.gizmoInteraction.refresh();
+    this.emit();
+    this.invalidateViewport();
+  }
+
+  togglePatchPointSelection(entityId: string, pointId: string): void {
+    this.patchGizmo.setActiveEntity(entityId);
+    this.patchGizmo.togglePointSelection(pointId);
+    this.gizmoInteraction.refresh();
+    this.emit();
+    this.invalidateViewport();
+  }
+
+  getPatchPointGroupState(): PatchPointGroupState | null {
+    return this.patchGizmo.getGroupState();
+  }
+
+  setPatchPointGroupCenter(center: { x: number; y: number; z: number }): void {
+    this.applyPatchPointGroupEdit(() => { this.patchGizmo.setGroupCenter(center); });
+  }
+
+  setPatchPointGroupRotation(rotation: { x: number; y: number; z: number }): void {
+    this.applyPatchPointGroupEdit(() => { this.patchGizmo.setGroupRotation(rotation); });
+  }
+
+  setPatchPointGroupScale(scale: number): void {
+    this.applyPatchPointGroupEdit(() => { this.patchGizmo.setGroupScale(scale); });
+  }
+
+  private applyPatchPointGroupEdit(edit: () => void): void {
+    edit();
+    const entityId = this.patchGizmo.getActiveEntityId();
+    if (entityId) {this.recenterPatchPivotAndRebuild(entityId);}
     this.gizmoInteraction.refresh();
     this.emit();
     this.invalidateViewport();

@@ -39,7 +39,12 @@ import {
   selectPatchHandle,
   setPatchAddPointMode,
   getAppState,
-  } from '@/ui/store/app-store';
+  togglePatchPointSelection,
+  setPatchPointGroupCenter,
+  setPatchPointGroupRotation,
+  setPatchPointGroupScale,
+} from '@/ui/store/app-store';
+import { GroupTransformFields } from '@/ui/panels/GroupTransformFields';
 import {
   defaultPatchParamsForKind,
   isPatchAssetKind,
@@ -95,6 +100,8 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
   const viewportPointId = useAppStore((s) => s.patchHandleSelection?.pointId);
   const viewportTargetKey = useAppStore((s) => s.patchHandleSelection?.targetKey);
   const [localPointId, setLocalPointId] = useState<string | null>(null);
+  const storeGroup = useAppStore((s) => s.patchPointGroup);
+  const pointGroup = storeGroup?.entityId === entity.id ? storeGroup : null;
   const addPointActive = useAppStore((s) => s.patchAddPointEntityId === entity.id);
   const [localTargetKey, setLocalTargetKey] = useState<PatchHandleTarget>('pos');
   const pickedInViewport = viewportEntityId === entity.id && viewportPointId !== undefined && viewportTargetKey !== undefined;
@@ -304,15 +311,26 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
       <SubPanelSection title="Point & Handle Inspector">
         <ul className="patch-point-inspector-list">
           {patchParams.points.map((node) => {
-            const selected = selectedPointId === node.id;
+            const selected = pointGroup ? pointGroup.pointIds.includes(node.id) : selectedPointId === node.id;
+            const expanded = selected && !pointGroup;
             const corner = isPatchCorner(patchParams, node.id);
             return (
               <li key={node.id} className="patch-point-inspector-item">
                 <div
                   className="patch-point-inspector-point"
                   aria-current={selected ? 'true' : undefined}
-                  aria-expanded={selected}
-                  onClick={() => { handleSelectTarget(node.id, selectedTargetKey); }}
+                  aria-expanded={expanded}
+                  title="Shift-click to add or remove the point from the selection"
+                  onMouseDown={(e) => { if (e.shiftKey || e.metaKey || e.ctrlKey) {e.preventDefault();} }}
+                  onClick={(e) => {
+                    if (e.shiftKey || e.metaKey || e.ctrlKey) {
+                      // The panel may show a fallback point the engine has not selected yet.
+                      if (!pickedInViewport) {selectPatchHandle(entity.id, selectedPointId, 'pos');}
+                      togglePatchPointSelection(entity.id, node.id);
+                      return;
+                    }
+                    handleSelectTarget(node.id, pointGroup ? 'pos' : selectedTargetKey);
+                  }}
                 >
                   <span
                     className={`patch-point-inspector-point__dot${corner ? '' : ' patch-point-inspector-point__dot--edge'}`}
@@ -375,7 +393,7 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
                   )}
                 </div>
 
-                {selected ? (
+                {expanded ? (
                   <div className="patch-point-inspector-detail panel-field-stack">
                     {activeShared ? (
                       <div className="panel-field-stack">
@@ -481,6 +499,30 @@ export function TrianglePatchFields({ entity }: TrianglePatchFieldsProps) {
             );
           })}
         </ul>
+        {pointGroup ? (
+          <div className="patch-point-inspector-detail panel-field-stack">
+            <span className="panel-field-label">{pointGroup.pointIds.length} points selected</span>
+            <GroupTransformFields
+              center={pointGroup.center}
+              rotation={pointGroup.rotation}
+              scale={pointGroup.scale}
+              onCenterChange={setPatchPointGroupCenter}
+              onRotationChange={setPatchPointGroupRotation}
+              onScaleChange={setPatchPointGroupScale}
+            />
+            <p className="placeholder">
+              Position is the centre of the points; rotation and scale count from when the selection was made.
+              Handles move with their points.
+            </p>
+            <button
+              type="button"
+              className="btn"
+              onClick={() => { handleSelectTarget(selectedPointId, 'pos'); }}
+            >
+              Clear selection
+            </button>
+          </div>
+        ) : null}
         {clipboard ? (
           <div className="panel-field-stack">
             <div className="patch-point-inspector-point">

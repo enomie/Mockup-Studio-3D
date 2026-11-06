@@ -1,4 +1,5 @@
 import type { SelectionGroupState } from '@/engine/gizmo-interaction-controller';
+import type { PatchPointGroupState } from '@/engine/triangle-patch-gizmo-controller';
 import type { ProfileEntry } from '@/scene/profile-library';
 
 export interface ProfileNodeSelection {
@@ -142,6 +143,8 @@ export interface AppState {
   /** Group panel values while two or more assets are selected. */
   selectionGroup: SelectionGroupState | null;
   patchHandleSelection: PatchHandleSelection | null;
+  /** Group panel values while two or more anchors of one patch are selected. */
+  patchPointGroup: PatchPointGroupState | null;
   /** Patch whose viewport add-point mode is running, if any. */
   patchAddPointEntityId: string | null;
   history: SceneHistoryState;
@@ -231,6 +234,7 @@ export let state: AppState = {
   selectedEntityIds: [],
   selectionGroup: null,
   patchHandleSelection: null,
+  patchPointGroup: null,
   patchAddPointEntityId: null,
   history: { canUndo: false, canRedo: false, undoLabel: null, redoLabel: null },
   patchEdgePickEntityId: null,
@@ -367,6 +371,7 @@ export function syncEngineStateFromEngine(): void {
     selectedEntityIds: [...sceneApi.getSelectedEntityIds()],
     selectionGroup: sceneApi.getSelectionGroupState(),
     patchHandleSelection: sceneApi.getPatchHandleSelection(),
+    patchPointGroup: sceneApi.getPatchPointGroupState(),
     patchAddPointEntityId: sceneApi.getPatchAddPointEntityId(),
     history: sceneApi.getHistoryState(),
     patchEdgePickEntityId: sceneApi.getPatchEdgePickEntityId(),

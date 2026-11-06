@@ -24,6 +24,10 @@ export {
   setBookMaterialTint,
   setWallpaperPattern,
   selectPatchHandle,
+  togglePatchPointSelection,
+  setPatchPointGroupCenter,
+  setPatchPointGroupRotation,
+  setPatchPointGroupScale,
   setPatchAddPointMode,
 } from './app-store-asset-params';
 

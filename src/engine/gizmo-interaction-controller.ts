@@ -127,6 +127,18 @@ export class GizmoInteractionController {
       gizmo.attach(null);
       return;
     }
+    const patchGroupPivot = patchGizmo.getGroupPivot();
+    if (patchGroupPivot && worldPhysics.getPhase() === 'idle') {
+      this.groupPivot.removeFromParent();
+      if (mode !== 'translate' && mode !== 'rotate' && mode !== 'scale') {
+        gizmo.setEnabled(false);
+        return;
+      }
+      gizmo.setTransformMode(mode);
+      gizmo.attach(patchGroupPivot);
+      gizmo.setEnabled(true);
+      return;
+    }
     const activePatchHandle = patchGizmo.getActiveHandleMesh();
     const group = this.getGroupRuntimes();
     if (group && !selectedLightId && !activePatchHandle && worldPhysics.getPhase() === 'idle') {
@@ -451,6 +463,13 @@ export class GizmoInteractionController {
       this.onGroupTransform();
       return;
     }
+    if (gizmo.getAttachedObject() === patchGizmo.getGroupPivot()) {
+      if (this.deps.getMode() === 'scale') {gizmo.enforceUniformScale();}
+      patchGizmo.updateGroupDrag();
+      this.deps.emit();
+      this.deps.viewportInvalidation.invalidate();
+      return;
+    }
     const selectedLightId = lighting.getSelectedLightId();
     if (selectedLightId) {
       lighting.syncOffsetFromHelper(selectedLightId);
@@ -500,7 +519,20 @@ export class GizmoInteractionController {
       return;
     }
 
-    const patchEntityId = this.deps.patchGizmo.getActiveTarget()?.entityId;
+    const { patchGizmo } = this.deps;
+    if (this.deps.gizmo.getAttachedObject() === patchGizmo.getGroupPivot()) {
+      if (dragging) {
+        patchGizmo.beginGroupDrag();
+        return;
+      }
+      patchGizmo.endGroupDrag();
+      const entityId = patchGizmo.getActiveEntityId();
+      if (entityId) {this.deps.onPatchPointDragEnd(entityId);}
+      this.refresh();
+      return;
+    }
+
+    const patchEntityId = patchGizmo.getActiveTarget()?.entityId;
     if (!dragging && patchEntityId && this.deps.getMode() !== 'scale') {
       this.deps.onPatchPointDragEnd(patchEntityId);
       return;

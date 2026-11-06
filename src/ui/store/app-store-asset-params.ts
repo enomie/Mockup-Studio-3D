@@ -53,6 +53,23 @@ export function selectPatchHandle(
   store.sceneApi?.selectPatchHandle(entityId, pointId, targetKey);
 }
 
+/** Shift-click on a point: adds it to the patch's point selection or removes it. */
+export function togglePatchPointSelection(entityId: string, pointId: string): void {
+  store.sceneApi?.togglePatchPointSelection(entityId, pointId);
+}
+
+export function setPatchPointGroupCenter(center: { x: number; y: number; z: number }): void {
+  store.sceneApi?.setPatchPointGroupCenter(center);
+}
+
+export function setPatchPointGroupRotation(rotation: { x: number; y: number; z: number }): void {
+  store.sceneApi?.setPatchPointGroupRotation(rotation);
+}
+
+export function setPatchPointGroupScale(scale: number): void {
+  store.sceneApi?.setPatchPointGroupScale(scale);
+}
+
 export function setPatchAddPointMode(entityId: string | null): void {
   store.sceneApi?.setPatchAddPointMode(entityId);
 }
