@@ -2,6 +2,7 @@ import {
   BufferGeometry,
   Line,
   LineBasicNodeMaterial,
+  Matrix4,
   Mesh,
   MeshBasicNodeMaterial,
   SphereGeometry,
@@ -12,6 +13,7 @@ import {
 } from 'three/webgpu';
 import {
   getPatchEdgeCount,
+  getPatchMirrorSigns,
   isPatchAssetKind,
   type PatchParams,
 } from '@/scene/asset-triangle-patch';
@@ -43,6 +45,17 @@ const _a = new Vector2();
 const _b = new Vector2();
 const _p = new Vector2();
 const _world = new Vector3();
+
+/** Screen distance (px) from `pointer` to the edge polyline at parameter `t`. */
+function edgeHitDistance(samples: readonly (Vector2 | null)[], t: number, pointer: Vector2): number {
+  const last = samples.length - 1;
+  const i = Math.min(last - 1, Math.floor(t * last));
+  const a = samples[i];
+  const b = samples[i + 1];
+  if (!a || !b) {return Infinity;}
+  const f = t * last - i;
+  return _a.copy(a).lerp(b, f).distanceTo(pointer);
+}
 
 /**
  * Closest edge hit to `pointer` among screen-space edge polylines, or null when every
@@ -179,48 +192,72 @@ export class TrianglePatchAddPointTool {
 
   /** Updates the preview under the pointer. Returns true when the preview changed. */
   hoverAt(pointer: ViewportPointer, camera: Camera): boolean {
-    const hit = this.hitAt(pointer, camera);
+    const found = this.findHit(pointer, camera);
     const wasVisible = this.preview.visible;
     const params = this.getParams();
-    if (!hit || !params) {
+    if (!found || !params) {
       this.preview.visible = false;
       return wasVisible;
     }
-    evalEdge(params, hit.edgeIndex, hit.t, _world).applyMatrix4(this.getMatrixWorld());
+    const { hit, matrix } = found;
+    evalEdge(params, hit.edgeIndex, hit.t, _world).applyMatrix4(matrix);
     this.preview.position.copy(_world);
     this.preview.visible = true;
     return true;
   }
 
-  /** Edge hit under the pointer, or null when the pointer is not near an edge. */
+  /**
+   * Edge hit under the pointer, or null when the pointer is not near an edge. Edges of mirror
+   * copies count too: a mirrored edge reports the same edge index and parameter as the original's.
+   */
   hitAt(pointer: ViewportPointer, camera: Camera): PatchEdgeHit | null {
+    return this.findHit(pointer, camera)?.hit ?? null;
+  }
+
+  /** Closest edge hit over the original and all mirror copies, with the scene matrix of the side that was hit. */
+  private findHit(pointer: ViewportPointer, camera: Camera): { hit: PatchEdgeHit; matrix: Matrix4 } | null {
     const params = this.getParams();
     if (!params) {return null;}
-    const matrix = this.getMatrixWorld();
     camera.updateMatrixWorld();
-
-    const screenEdges: (Vector2 | null)[][] = [];
-    for (let e = 0; e < getPatchEdgeCount(params); e++) {
-      const samples: (Vector2 | null)[] = [];
-      for (let i = 0; i <= EDGE_SAMPLES; i++) {
-        evalEdge(params, e, i / EDGE_SAMPLES, _world).applyMatrix4(matrix).project(camera);
-        // Points behind the camera project mirrored; skip them.
-        samples.push(
-          _world.z > 1
-            ? null
-            : new Vector2(
-              ((_world.x + 1) / 2) * pointer.widthPx,
-              ((1 - _world.y) / 2) * pointer.heightPx,
-            ),
-        );
-      }
-      screenEdges.push(samples);
-    }
     const pointerPx = new Vector2(
       ((pointer.ndc.x + 1) / 2) * pointer.widthPx,
       ((1 - pointer.ndc.y) / 2) * pointer.heightPx,
     );
-    return findClosestEdgeHit(screenEdges, pointerPx, HOVER_RADIUS_PX);
+
+    let best: { hit: PatchEdgeHit; matrix: Matrix4; dist: number } | null = null;
+    for (const matrix of this.getSideMatrices(params)) {
+      const screenEdges: (Vector2 | null)[][] = [];
+      for (let e = 0; e < getPatchEdgeCount(params); e++) {
+        const samples: (Vector2 | null)[] = [];
+        for (let i = 0; i <= EDGE_SAMPLES; i++) {
+          evalEdge(params, e, i / EDGE_SAMPLES, _world).applyMatrix4(matrix).project(camera);
+          // Points behind the camera project mirrored; skip them.
+          samples.push(
+            _world.z > 1
+              ? null
+              : new Vector2(
+                ((_world.x + 1) / 2) * pointer.widthPx,
+                ((1 - _world.y) / 2) * pointer.heightPx,
+              ),
+          );
+        }
+        screenEdges.push(samples);
+      }
+      const hit = findClosestEdgeHit(screenEdges, pointerPx, HOVER_RADIUS_PX);
+      if (!hit) {continue;}
+      const dist = edgeHitDistance(screenEdges[hit.edgeIndex], hit.t, pointerPx);
+      if (!best || dist < best.dist) {best = { hit, matrix, dist };}
+    }
+    return best ? { hit: best.hit, matrix: best.matrix } : null;
+  }
+
+  /** Local-to-scene matrices of the original followed by every mirror copy. */
+  private getSideMatrices(params: PatchParams): Matrix4[] {
+    const base = this.getMatrixWorld();
+    return [
+      base.clone(),
+      ...getPatchMirrorSigns(params.mirror).map((s) => new Matrix4().makeScale(s.x, s.y, s.z).multiply(base)),
+    ];
   }
 
   /** Re-samples the highlighted edges, e.g. after the patch changed. */

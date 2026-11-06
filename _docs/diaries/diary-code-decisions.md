@@ -1656,6 +1656,10 @@ The first `silk-fine` shader (30 threads x tileScale 20, strict over/under) look
 - **Entscheidung:** Mehrere Anker **eines** Patches per Shift-Klick wählbar; die Auswahl liegt im `TrianglePatchGizmoController` (`selectedPointIds`), nicht in `PatchHandleSelection`. Der Gizmo hängt an einem eigenen unsichtbaren Pivot in Szenenkoordinaten; ein Drag wird als Szenen-Matrix seit Drag-Beginn auf die Start-Punkte angewendet (in Patch-lokal umgerechnet), damit sich Fehler nicht aufsummieren. Rot/Scale sind relativ zur Bildung der Auswahl, wie bei der Asset-Gruppe; die Felder sind eine gemeinsame Komponente `GroupTransformFields`.
 - **Verworfen:** Patch-übergreifende Auswahl (eigener Auswahl-State über Entities, wenig Nutzen); Handles mit in die Mehrfachauswahl nehmen (unklar, was Drehen/Skalieren dann bedeutet).
 
+### 2026-11-06 — Patch-Spiegelkopien editierbar
+- **Entscheidung:** Daten bleiben einmalig am Original (`PatchParams`). Der `TrianglePatchGizmoController` hält pro Spiegelkopie ein zusätzliches, blasseres Helfer-Set (`HelperSet`, Handles tragen `userData.mirrorKey`), positioniert per Achsen-Vorzeichen im Szenenraum. Ziehen an einer Kopie rechnet über `(M · matrixWorld)⁻¹` zurück in den lokalen Raum des Originals und läuft durch denselben Commit-Pfad (Undo, Handle-Länge, Edge-Links). Rotation wird als `M R M` zurückgerechnet. Das Add-Point-Tool prüft auch die Kantenkurven der Kopien; Kanten-Index und Parameter sind identisch zum Original. Gruppen-Gizmo/Mehrfachauswahl bleiben nur am Original (Shift-Klick auf eine Kopie wählt den Originalpunkt).
+- **Verworfen:** eigene Daten pro Kopie (zwei Wahrheiten); Gruppen-Gizmo an Kopien (Spiegelung von Rotation/Skalierung verwirrend).
+
 ## Alt+Move duplicate: the copy moves, the original stays
 - `TransformControls` captures the drag start before it fires `dragging-changed`, so the gizmo can be re-attached to the copy inside that callback. The copy sits at the same pose, so the drag continues seamlessly.
 - Rejected: leaving the copy behind and swapping names. The welded original then moved and tore the seam to its neighbors.

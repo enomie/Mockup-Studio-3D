@@ -21,6 +21,7 @@ import {
 } from 'three/webgpu';
 import {
   findPatchPoint,
+  getPatchMirrorSigns,
   isPatchCorner,
   replacePatchPoint,
   type PatchHandleSelection,
@@ -122,44 +123,64 @@ interface HelperResources {
   lineYellowMat: LineBasicNodeMaterial;
 }
 
-function overlayMeshMaterial(color: number): MeshBasicNodeMaterial {
+function overlayMeshMaterial(color: number, opacity: number): MeshBasicNodeMaterial {
   return new MeshBasicNodeMaterial({
     color,
     transparent: true,
-    opacity: 1.0,
+    opacity,
     depthTest: false,
     depthWrite: false,
     toneMapped: false,
   });
 }
 
-function overlayLineMaterial(color: number): LineBasicNodeMaterial {
+function overlayLineMaterial(color: number, opacity: number): LineBasicNodeMaterial {
   return new LineBasicNodeMaterial({
     color,
     transparent: true,
-    opacity: 0.85,
+    opacity: 0.85 * opacity,
     depthTest: false,
     depthWrite: false,
     toneMapped: false,
   });
 }
 
-function createHelperResources(): HelperResources {
+/** `opacity` dims the whole set (mirror copy helpers are fainter than the original's). */
+function createHelperResources(opacity: number): HelperResources {
   return {
     anchorGeo: new SphereGeometry(0.025, 16, 16),
-    anchorMat: overlayMeshMaterial(0x0284c7),
+    anchorMat: overlayMeshMaterial(0x0284c7, opacity),
     jointRingGeo: new TorusGeometry(0.038, 0.005, 8, 40),
-    jointRingMat: overlayMeshMaterial(0x22c55e),
+    jointRingMat: overlayMeshMaterial(0x22c55e, opacity),
     // Edge points: purple and a bit smaller than the corners
     edgeAnchorGeo: new SphereGeometry(0.021, 16, 16),
-    edgeAnchorMat: overlayMeshMaterial(0xa855f7),
-    groupAnchorMat: overlayMeshMaterial(0xf97316),
+    edgeAnchorMat: overlayMeshMaterial(0xa855f7, opacity),
+    groupAnchorMat: overlayMeshMaterial(0xf97316, opacity),
     handleGeo: new OctahedronGeometry(0.018),
-    pinkMat: overlayMeshMaterial(0xec4899),
-    yellowMat: overlayMeshMaterial(0xeab308),
-    linePinkMat: overlayLineMaterial(0xec4899),
-    lineYellowMat: overlayLineMaterial(0xeab308),
+    pinkMat: overlayMeshMaterial(0xec4899, opacity),
+    yellowMat: overlayMeshMaterial(0xeab308, opacity),
+    linePinkMat: overlayLineMaterial(0xec4899, opacity),
+    lineYellowMat: overlayLineMaterial(0xeab308, opacity),
   };
+}
+
+/** One full set of point helpers: the original's, or one mirror copy's (`sign` flips world axes). */
+interface HelperSet {
+  /** Sign key of the mirror copy; null for the original. */
+  key: string | null;
+  sign: Vec3 | null;
+  resources: HelperResources;
+  helpers: Map<string, PointHelpers>;
+}
+
+function mirrorKeyOf(sign: Vec3): string {
+  return `${sign.x},${sign.y},${sign.z}`;
+}
+
+/** Mirrors a scene-space vector in place across the world planes given by `sign` (a pure reflection is its own inverse). */
+function applyMirrorSign(vector: Vector3, sign: Vec3 | null): Vector3 {
+  if (sign) {vector.set(vector.x * sign.x, vector.y * sign.y, vector.z * sign.z);}
+  return vector;
 }
 
 export class TrianglePatchGizmoController {
@@ -169,6 +190,8 @@ export class TrianglePatchGizmoController {
   private activeTarget: PatchSubTarget | null = null;
   /** Anchors selected together; the active target's point is always one of them. */
   private selectedPointIds: string[] = [];
+  /** Sign key of the mirror copy whose helper is being edited; null while editing the original's. */
+  private activeMirrorKey: string | null = null;
   /** Group rotation/scale relative to when the current point set was formed. */
   private groupKey = '';
   private readonly groupQuaternion = new Quaternion();
@@ -186,6 +209,10 @@ export class TrianglePatchGizmoController {
   // Helper meshes per patch point id, created and removed as points come and go
   private readonly pointHelpers = new Map<string, PointHelpers>();
   private readonly helperResources: HelperResources;
+  private readonly mirrorResources: HelperResources;
+  private readonly originalSet: HelperSet;
+  /** Fainter helper sets on the mirror copies, keyed by sign; edits map back to the original's data. */
+  private readonly mirrorSets = new Map<string, HelperSet>();
 
   /** Glowing ring on the active lever line: drag it to change only the lever length. */
   private readonly lengthRing: Mesh;
@@ -206,7 +233,9 @@ export class TrianglePatchGizmoController {
     this.groupPivot.name = 'PatchPointGroupPivot';
     this.scene.add(this.groupPivot);
 
-    this.helperResources = createHelperResources();
+    this.helperResources = createHelperResources(1);
+    this.mirrorResources = createHelperResources(0.55);
+    this.originalSet = { key: null, sign: null, resources: this.helperResources, helpers: this.pointHelpers };
     this.lengthRing = this.createLengthRing();
     this.trackShiftKey();
   }
@@ -225,15 +254,16 @@ export class TrianglePatchGizmoController {
     this.onPatchChange = listener;
   }
 
-  private createPointHelpers(pointId: string, isCorner: boolean): PointHelpers {
+  private createPointHelpers(set: HelperSet, pointId: string, isCorner: boolean): PointHelpers {
     const { anchorGeo, anchorMat, edgeAnchorGeo, edgeAnchorMat, handleGeo, pinkMat, yellowMat, linePinkMat, lineYellowMat } =
-      this.helperResources;
+      set.resources;
+    const mirrorKey = set.key;
     const handleMesh = (geometry: BufferGeometry, material: MeshBasicNodeMaterial, targetKey: PatchHandleTarget) => {
       const mesh = new Mesh(geometry, material);
       mesh.castShadow = false;
       mesh.renderOrder = 999;
       mesh.frustumCulled = false;
-      mesh.userData = { role: PATCH_GIZMO_HANDLE_ROLE, pointId, targetKey };
+      mesh.userData = { role: PATCH_GIZMO_HANDLE_ROLE, pointId, targetKey, mirrorKey };
       return mesh;
     };
     const line = (pointCount: number, material: LineBasicNodeMaterial) => {
@@ -244,7 +274,7 @@ export class TrianglePatchGizmoController {
       return mesh;
     };
 
-    const jointRing = new Mesh(this.helperResources.jointRingGeo, this.helperResources.jointRingMat);
+    const jointRing = new Mesh(set.resources.jointRingGeo, set.resources.jointRingMat);
     jointRing.renderOrder = 999;
     jointRing.frustumCulled = false;
     jointRing.visible = false;
@@ -300,26 +330,70 @@ export class TrianglePatchGizmoController {
     helpers.lineCross.geometry.dispose();
   }
 
-  /** Keeps exactly one helper set per patch point. */
+  /** Keeps exactly one helper set per patch point, for the original and for every mirror copy. */
   private ensurePointHelpers(params: PatchParams): void {
+    const signs = getPatchMirrorSigns(params.mirror);
+    const wanted = new Set(signs.map(mirrorKeyOf));
+    for (const [key, set] of this.mirrorSets) {
+      if (!wanted.has(key)) {
+        this.clearSet(set);
+        this.mirrorSets.delete(key);
+      }
+    }
+    if (this.activeMirrorKey && !wanted.has(this.activeMirrorKey)) {this.activeMirrorKey = null;}
+    for (const sign of signs) {
+      const key = mirrorKeyOf(sign);
+      if (!this.mirrorSets.has(key)) {
+        this.mirrorSets.set(key, { key, sign, resources: this.mirrorResources, helpers: new Map() });
+      }
+    }
+
+    this.handleMeshes.length = 0;
+    for (const set of this.allSets()) {
+      this.ensureSetHelpers(set, params);
+    }
+  }
+
+  private allSets(): HelperSet[] {
+    return [this.originalSet, ...this.mirrorSets.values()];
+  }
+
+  private ensureSetHelpers(set: HelperSet, params: PatchParams): void {
     const { points } = params;
     const ids = new Set(points.map((point) => point.id));
-    for (const [id, helpers] of this.pointHelpers) {
+    for (const [id, helpers] of set.helpers) {
       if (!ids.has(id)) {
         this.disposePointHelpers(helpers);
-        this.pointHelpers.delete(id);
+        set.helpers.delete(id);
       }
     }
     for (const point of points) {
-      if (!this.pointHelpers.has(point.id)) {
-        this.pointHelpers.set(point.id, this.createPointHelpers(point.id, isPatchCorner(params, point.id)));
+      if (!set.helpers.has(point.id)) {
+        set.helpers.set(point.id, this.createPointHelpers(set, point.id, isPatchCorner(params, point.id)));
       }
     }
-    this.handleMeshes.length = 0;
     for (const point of points) {
-      const h = this.pointHelpers.get(point.id);
+      const h = set.helpers.get(point.id);
       if (h) {this.handleMeshes.push(h.anchor, h.handleNext, h.handlePrev, h.handleCrossIn, h.handleCrossOut, h.sharedPink);}
     }
+  }
+
+  private clearSet(set: HelperSet): void {
+    for (const helpers of set.helpers.values()) {this.disposePointHelpers(helpers);}
+    set.helpers.clear();
+  }
+
+  /** The helper set the user is currently editing (a mirror copy's or the original's). */
+  private activeSet(): HelperSet {
+    return (this.activeMirrorKey ? this.mirrorSets.get(this.activeMirrorKey) : undefined) ?? this.originalSet;
+  }
+
+  /** Matrix from the patch's local space to scene space on the side being edited (mirror copy or original). */
+  private activeLocalToWorld(entityObject: Object3D): Matrix4 {
+    entityObject.updateMatrixWorld(true);
+    const sign = this.activeSet().sign;
+    const base = entityObject.matrixWorld.clone();
+    return sign ? new Matrix4().makeScale(sign.x, sign.y, sign.z).multiply(base) : base;
   }
 
   private createLengthRing(): Mesh {
@@ -349,7 +423,7 @@ export class TrianglePatchGizmoController {
 
   private syncLengthRing(): void {
     const key = this.activeLeverKey();
-    const corner = this.activeTarget ? this.pointHelpers.get(this.activeTarget.pointId) : undefined;
+    const corner = this.activeTarget ? this.activeSet().helpers.get(this.activeTarget.pointId) : undefined;
     if (!key || !corner) {
       this.lengthRing.visible = false;
       return;
@@ -386,7 +460,7 @@ export class TrianglePatchGizmoController {
     if (startLength < 1e-9) {return false;}
     const dir = offset.divideScalar(startLength);
 
-    const startAxisParam = closestAxisParamToRay(origin, dir, this.toEntityLocalRay(ray, runtime.object));
+    const startAxisParam = closestAxisParamToRay(origin, dir, this.toLocalRay(ray, this.activeLocalToWorld(runtime.object)));
     if (startAxisParam === null) {return false;}
 
     this.lengthDrag = {
@@ -408,7 +482,7 @@ export class TrianglePatchGizmoController {
     if (!runtime || !params || !node) {return;}
 
     const origin = new Vector3(node.pos.x, node.pos.y, node.pos.z);
-    const t = closestAxisParamToRay(origin, drag.dir, this.toEntityLocalRay(ray, runtime.object));
+    const t = closestAxisParamToRay(origin, drag.dir, this.toLocalRay(ray, this.activeLocalToWorld(runtime.object)));
     if (t === null) {return;}
 
     const length = Math.max(MIN_HANDLE_LENGTH_M, drag.startLength + t - drag.startAxisParam);
@@ -435,8 +509,8 @@ export class TrianglePatchGizmoController {
     return sphere.clone().applyMatrix4(this.lengthRing.matrixWorld);
   }
 
-  private toEntityLocalRay(ray: Ray, entityObject: Object3D): Ray {
-    const local = ray.clone().applyMatrix4(entityObject.matrixWorld.clone().invert());
+  private toLocalRay(ray: Ray, localToWorld: Matrix4): Ray {
+    const local = ray.clone().applyMatrix4(localToWorld.clone().invert());
     local.direction.normalize();
     return local;
   }
@@ -456,7 +530,7 @@ export class TrianglePatchGizmoController {
   getActiveHandleMesh(): Mesh | null {
     if (!this.activeTarget || !this.helperGroup.visible) {return null;}
     const { pointId, targetKey } = this.activeTarget;
-    const corner = this.pointHelpers.get(pointId);
+    const corner = this.activeSet().helpers.get(pointId);
     if (!corner) {return null;}
     return corner[targetKey === 'pos' ? 'anchor' : targetKey];
   }
@@ -465,6 +539,7 @@ export class TrianglePatchGizmoController {
     if (this.activeEntityId === entityId) {return;}
     this.activeEntityId = entityId;
     this.selectedPointIds = [];
+    this.activeMirrorKey = null;
     this.groupDrag = null;
 
     if (!entityId) {
@@ -491,6 +566,7 @@ export class TrianglePatchGizmoController {
   selectTarget(target: PatchSubTarget | null): void {
     this.activeTarget = target;
     this.selectedPointIds = target ? [target.pointId] : [];
+    this.activeMirrorKey = null;
     this.lengthDrag = null;
     this.syncHelpersFromEntity();
   }
@@ -502,6 +578,8 @@ export class TrianglePatchGizmoController {
     const base = target?.targetKey === 'pos' ? this.selectedPointIds : target ? [target.pointId] : [];
     const ids = togglePointId(base, pointId);
     this.selectedPointIds = ids;
+    // The group gizmo lives on the original only.
+    this.activeMirrorKey = null;
     const active = ids.includes(pointId) ? pointId : ids[ids.length - 1];
     this.activeTarget = { entityId: this.activeEntityId, pointId: active, targetKey: 'pos' };
     this.lengthDrag = null;
@@ -522,10 +600,11 @@ export class TrianglePatchGizmoController {
   }
 
   selectHandleByMesh(mesh: Mesh): PatchSubTarget | null {
-    const { role, pointId, targetKey } = mesh.userData as {
+    const { role, pointId, targetKey, mirrorKey } = mesh.userData as {
       role?: string;
       pointId?: string;
       targetKey?: PatchHandleTarget;
+      mirrorKey?: string | null;
     };
     if (role !== PATCH_GIZMO_HANDLE_ROLE || pointId === undefined || !targetKey || !this.activeEntityId) {
       return null;
@@ -541,14 +620,17 @@ export class TrianglePatchGizmoController {
       targetKey,
     };
     this.selectedPointIds = [pointId];
+    // A handle on a mirror copy selects the original's point and remembers the copy being dragged.
+    this.activeMirrorKey = mirrorKey ?? null;
     this.syncHelpersFromEntity();
     return this.activeTarget;
   }
 
   /** Removes every per-point helper set (e.g. after the active patch was deleted). */
   clearHelpers(): void {
-    for (const helpers of this.pointHelpers.values()) {this.disposePointHelpers(helpers);}
-    this.pointHelpers.clear();
+    for (const set of this.allSets()) {this.clearSet(set);}
+    this.mirrorSets.clear();
+    this.activeMirrorKey = null;
     this.handleMeshes.length = 0;
     this.lengthRing.visible = false;
   }
@@ -579,49 +661,63 @@ export class TrianglePatchGizmoController {
 
     this.ensurePointHelpers(params);
     const linkedIds = new Set((params.edgeLinks ?? []).flatMap((l) => [l.startPointId, l.endPointId]));
-    for (const node of params.points) {
-      const h = this.pointHelpers.get(node.id);
-      if (!h) {continue;}
-
-      const toWorld = (v: Vec3) =>
-        new Vector3(v.x, v.y, v.z).applyMatrix4(parentObject.matrixWorld);
-      const pPos = toWorld(node.pos);
-      const pNext = toWorld(node.handleNext);
-      const pPrev = toWorld(node.handlePrev);
-      const pCrossIn = toWorld(node.handleCrossIn);
-      // Shared point: one point with all its handles - the node's handles this patch does
-      // not map itself are shown here too (normal colors).
-      const extra = this.nodeExtras(node);
-      const pCrossOut = extra.yellow ?? pPos;
-      h.handleCrossOut.visible = extra.yellow !== null;
-      h.sharedPink.visible = extra.pink !== null;
-      h.lineSharedPink.visible = extra.pink !== null;
-      if (extra.pink) {
-        h.sharedPink.position.copy(extra.pink);
-        h.lineSharedPink.geometry.setFromPoints([pPos, extra.pink]);
+    for (const set of this.allSets()) {
+      for (const node of params.points) {
+        const h = set.helpers.get(node.id);
+        if (!h) {continue;}
+        this.syncPointHelpers(set, h, node, params, parentObject, linkedIds);
       }
-
-      h.anchor.position.copy(pPos);
-      h.anchor.material = this.anchorMaterial(params, node.id);
-      // Shared point marker: a ring around the anchor while the point is coupled.
-      h.jointRing.visible = linkedIds.has(node.id) && node.joint === 'smooth';
-      h.jointRing.position.copy(pPos);
-      h.handleNext.position.copy(pNext);
-      h.handlePrev.position.copy(pPrev);
-      h.handleCrossIn.position.copy(pCrossIn);
-      h.handleCrossOut.position.copy(pCrossOut);
-
-      h.lineNext.geometry.setFromPoints([pPos, pNext]);
-      h.linePrev.geometry.setFromPoints([pPos, pPrev]);
-      h.lineCross.geometry.setFromPoints(extra.yellow ? [pCrossIn, pPos, pCrossOut] : [pCrossIn, pPos, pPos]);
     }
     this.selectedPointIds = this.selectedPointIds.filter((id) => params.points.some((point) => point.id === id));
     this.syncLengthRing();
     this.syncGroupPivot();
   }
 
-  private anchorMaterial(params: PatchParams, pointId: string): MeshBasicNodeMaterial {
-    const r = this.helperResources;
+  /** Places one point's helpers in scene space; a mirror set reflects every position across its world planes. */
+  private syncPointHelpers(
+    set: HelperSet,
+    h: PointHelpers,
+    node: PatchPoint,
+    params: PatchParams,
+    parentObject: Object3D,
+    linkedIds: ReadonlySet<string>,
+  ): void {
+    const toWorld = (v: Vec3) =>
+      applyMirrorSign(new Vector3(v.x, v.y, v.z).applyMatrix4(parentObject.matrixWorld), set.sign);
+    const pPos = toWorld(node.pos);
+    const pNext = toWorld(node.handleNext);
+    const pPrev = toWorld(node.handlePrev);
+    const pCrossIn = toWorld(node.handleCrossIn);
+    // Shared point: one point with all its handles - the node's handles this patch does
+    // not map itself are shown here too (normal colors).
+    const extra = this.nodeExtras(node);
+    const extraYellow = extra.yellow ? applyMirrorSign(extra.yellow, set.sign) : null;
+    const extraPink = extra.pink ? applyMirrorSign(extra.pink, set.sign) : null;
+    const pCrossOut = extraYellow ?? pPos;
+    h.handleCrossOut.visible = extraYellow !== null;
+    h.sharedPink.visible = extraPink !== null;
+    h.lineSharedPink.visible = extraPink !== null;
+    if (extraPink) {
+      h.sharedPink.position.copy(extraPink);
+      h.lineSharedPink.geometry.setFromPoints([pPos, extraPink]);
+    }
+
+    h.anchor.position.copy(pPos);
+    h.anchor.material = this.anchorMaterial(params, node.id, set.resources);
+    // Shared point marker: a ring around the anchor while the point is coupled.
+    h.jointRing.visible = linkedIds.has(node.id) && node.joint === 'smooth';
+    h.jointRing.position.copy(pPos);
+    h.handleNext.position.copy(pNext);
+    h.handlePrev.position.copy(pPrev);
+    h.handleCrossIn.position.copy(pCrossIn);
+    h.handleCrossOut.position.copy(pCrossOut);
+
+    h.lineNext.geometry.setFromPoints([pPos, pNext]);
+    h.linePrev.geometry.setFromPoints([pPos, pPrev]);
+    h.lineCross.geometry.setFromPoints(extraYellow ? [pCrossIn, pPos, pCrossOut] : [pCrossIn, pPos, pPos]);
+  }
+
+  private anchorMaterial(params: PatchParams, pointId: string, r: HelperResources): MeshBasicNodeMaterial {
     if (this.isGroupActive() && this.selectedPointIds.includes(pointId)) {return r.groupAnchorMat;}
     return isPatchCorner(params, pointId) ? r.anchorMat : r.edgeAnchorMat;
   }
@@ -753,9 +849,11 @@ export class TrianglePatchGizmoController {
 
     const parentObject = runtime.object;
     parentObject.updateMatrixWorld(true);
-    const invParent = parentObject.matrixWorld.clone().invert();
+    // On a mirror copy the dragged mesh lives in mirrored space: map it back into the patch's local space.
+    const sign = this.activeSet().sign;
+    const invParent = this.activeLocalToWorld(parentObject).invert();
 
-    const corner = this.pointHelpers.get(currentNode.id);
+    const corner = this.activeSet().helpers.get(currentNode.id);
     const movedMesh = this.getActiveHandleMesh();
     if (!movedMesh || !corner) {return false;}
 
@@ -765,7 +863,7 @@ export class TrianglePatchGizmoController {
     if (targetKey === 'pos') {
       if (gizmoMode === 'rotate') {
         // Rotate around anchor node: rotate all 4 handles relatively
-        const deltaQ = corner.anchor.quaternion.clone();
+        const deltaQ = this.originalSpaceRotation(corner.anchor.quaternion, sign);
         corner.anchor.quaternion.identity();
 
         const p0 = new Vector3(node.pos.x, node.pos.y, node.pos.z);
@@ -810,7 +908,7 @@ export class TrianglePatchGizmoController {
       }
       if (targetKey === 'handleCrossOut' || targetKey === 'sharedPink') {
         // Extra handle of a shared point: edit the node directly (Shift frees its pair).
-        this.moveNodeExtra(node, targetKey === 'handleCrossOut' ? 'yellow' : 'pink', movedMesh.position);
+        this.moveNodeExtra(node, targetKey === 'handleCrossOut' ? 'yellow' : 'pink', applyMirrorSign(movedMesh.position.clone(), sign));
         return true;
       }
       node[targetKey].x = newLocal.x;
@@ -823,6 +921,14 @@ export class TrianglePatchGizmoController {
 
     this.commitPoint(this.activeEntityId, node);
     return true;
+  }
+
+  /** A rotation seen in mirrored space, expressed in the original's space (M R M for a pure reflection M). */
+  private originalSpaceRotation(rotation: Quaternion, sign: Vec3 | null): Quaternion {
+    if (!sign) {return rotation.clone();}
+    const mirror = new Matrix4().makeScale(sign.x, sign.y, sign.z);
+    const conjugated = mirror.clone().multiply(new Matrix4().makeRotationFromQuaternion(rotation)).multiply(mirror);
+    return new Quaternion().setFromRotationMatrix(conjugated);
   }
 
   private nodeAndUse(point: PatchPoint): { node: PatchNode; use: PatchNodeUse } | null {
@@ -879,7 +985,9 @@ export class TrianglePatchGizmoController {
     this.clearHelpers();
     this.scene.remove(this.helperGroup);
     this.scene.remove(this.groupPivot);
-    for (const resource of Object.values(this.helperResources) as { dispose(): void }[]) {resource.dispose();}
+    for (const resources of [this.helperResources, this.mirrorResources]) {
+      for (const resource of Object.values(resources) as { dispose(): void }[]) {resource.dispose();}
+    }
     this.lengthRing.geometry.dispose();
     (this.lengthRing.material as Material).dispose();
   }
