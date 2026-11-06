@@ -184,6 +184,7 @@ export class MockupEngine implements SceneApi {
     private readonly viewportHelpers: ViewportHelpersSystem,
   ) {
     this.patchGizmo = new TrianglePatchGizmoController(scene, registry);
+    this.patchGizmo.setCameraProvider(() => this.cameras.camera);
     this.patchAddPoint = new TrianglePatchAddPointTool(scene, registry);
     this.viewportInvalidation = new ViewportInvalidation(renderer, (time) => { this.onFrame(time); },
     );

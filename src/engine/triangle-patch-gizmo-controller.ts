@@ -15,6 +15,7 @@ import {
   TorusGeometry,
   Vector3,
   type Material,
+  type Camera,
   type Ray,
   type Sphere,
   type Scene,
@@ -31,6 +32,7 @@ import {
   isPatchAssetKind,
 } from '@/scene/asset-triangle-patch';
 import type { EntityRegistry } from './entity-registry';
+import { screenConstantScale } from './screen-constant-scale';
 import {
   extraSlotsFor,
   nodeSlotWorld,
@@ -221,6 +223,9 @@ export class TrianglePatchGizmoController {
   private readonly windowListeners = new AbortController();
   private lengthDrag: LengthDragState | null = null;
 
+  /** Active viewport camera; helpers stay at a constant on-screen size relative to it. */
+  private cameraProvider: (() => Camera) | null = null;
+
   private onPatchChange?: (entityId: string, params: PatchParams) => void;
 
   constructor(scene: Scene, registry: EntityRegistry) {
@@ -248,6 +253,16 @@ export class TrianglePatchGizmoController {
     window.addEventListener('keyup', track, options);
     window.addEventListener('pointerdown', track, options);
     window.addEventListener('blur', () => { this.shiftHeld = false; }, { signal: this.windowListeners.signal });
+  }
+
+  setCameraProvider(provider: () => Camera): void {
+    this.cameraProvider = provider;
+  }
+
+  /** Scales an overlay mesh so it covers the same pixels at any zoom (no camera: modelled size). */
+  private applyScreenScale(mesh: Object3D): void {
+    const camera = this.cameraProvider?.();
+    mesh.scale.setScalar(camera ? screenConstantScale(camera, mesh.position) : 1);
   }
 
   setPatchChangeListener(listener: (entityId: string, params: PatchParams) => void): void {
@@ -437,6 +452,7 @@ export class TrianglePatchGizmoController {
     }
     this.lengthRing.position.copy(anchor).lerp(tip, 0.5);
     this.lengthRing.quaternion.copy(new Quaternion().setFromUnitVectors(RING_AXIS, dir.normalize()));
+    this.applyScreenScale(this.lengthRing);
     this.lengthRing.visible = true;
   }
 
@@ -715,6 +731,10 @@ export class TrianglePatchGizmoController {
     h.lineNext.geometry.setFromPoints([pPos, pNext]);
     h.linePrev.geometry.setFromPoints([pPos, pPrev]);
     h.lineCross.geometry.setFromPoints(extraYellow ? [pCrossIn, pPos, pCrossOut] : [pCrossIn, pPos, pPos]);
+
+    for (const mesh of [h.anchor, h.jointRing, h.handleNext, h.handlePrev, h.handleCrossIn, h.handleCrossOut, h.sharedPink]) {
+      this.applyScreenScale(mesh);
+    }
   }
 
   private anchorMaterial(params: PatchParams, pointId: string, r: HelperResources): MeshBasicNodeMaterial {

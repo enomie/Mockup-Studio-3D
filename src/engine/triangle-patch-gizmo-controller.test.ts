@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Group, Ray, Scene, Vector3 } from 'three/webgpu';
+import { Group, PerspectiveCamera, Ray, Scene, Vector3 } from 'three/webgpu';
 import { closestAxisParamToRay, TrianglePatchGizmoController } from './triangle-patch-gizmo-controller';
 import type { EntityRegistry } from './entity-registry';
 import type { PatchParams } from '@/scene/asset-triangle-patch';
@@ -166,5 +166,55 @@ describe('TrianglePatchGizmoController mirror copies', () => {
     runtime.entity.patchParams = { ...runtime.entity.patchParams, mirror: { x: false, y: false, z: false } };
     gizmo.syncHelpersFromEntity();
     expect(gizmo.getPickables().length).toBe(withMirror / 2);
+  });
+});
+
+describe('TrianglePatchGizmoController screen-constant size', () => {
+  const v = (x: number, y: number, z: number) => ({ x, y, z });
+  const point = (id: string, x: number) => ({
+    id,
+    name: id,
+    pos: v(x, 0, 0),
+    handleNext: v(x, 0.1, 0),
+    handlePrev: v(x, -0.1, 0),
+    handleCrossIn: v(x, 0, 0.1),
+    handleCrossOut: v(x, 0, -0.1),
+  });
+
+  it('shrinks helpers when the camera comes closer and mirrors follow the same rule', () => {
+    const scene = new Scene();
+    const object = new Group();
+    scene.add(object);
+    const entity = {
+      id: 'p1',
+      assetKind: 'triangle-patch',
+      patchParams: {
+        divisions: 4,
+        points: [point('a', 1), point('b', 2), point('c', 3)],
+        cornerIds: ['a', 'b', 'c'],
+        edgeParams: {},
+        mirror: { x: true, y: false, z: false },
+      },
+    };
+    const registry = {
+      getRuntime: (id: string) => (id === 'p1' ? { entity, object } : undefined),
+      getPatchNodes: () => [],
+    } as unknown as EntityRegistry;
+    const camera = new PerspectiveCamera(45, 1, 0.1, 100);
+    camera.position.set(0, 0, 4);
+    const gizmo = new TrianglePatchGizmoController(scene, registry);
+    gizmo.setCameraProvider(() => camera);
+    gizmo.setActiveEntity('p1');
+
+    const anchorScale = (mirrorKey: string | null) =>
+      gizmo.getPickables().find((m) => m.userData.pointId === 'a' && m.userData.targetKey === 'pos' && m.userData.mirrorKey === mirrorKey)
+        ?.scale.x ?? 0;
+    const far = anchorScale(null);
+    expect(anchorScale('-1,1,1')).toBeCloseTo(far);
+
+    camera.position.set(0, 0, 2);
+    gizmo.updateFrame();
+    expect(anchorScale(null)).toBeLessThan(far);
+    expect(anchorScale('-1,1,1')).toBeCloseTo(anchorScale(null));
   });
 });

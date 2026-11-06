@@ -20,6 +20,7 @@ import {
 import { evalCubicBezierEdge, evalEdge } from './triangle-patch-geometry';
 import { segmentHandleKeys } from '@/scene/triangle-patch-edge-link';
 import type { EntityRegistry } from './entity-registry';
+import { screenConstantScale } from './screen-constant-scale';
 
 /** Samples per edge for hover hit testing and the edge highlight lines. */
 const EDGE_SAMPLES = 64;
@@ -202,6 +203,7 @@ export class TrianglePatchAddPointTool {
     const { hit, matrix } = found;
     evalEdge(params, hit.edgeIndex, hit.t, _world).applyMatrix4(matrix);
     this.preview.position.copy(_world);
+    this.preview.scale.setScalar(screenConstantScale(camera, _world));
     this.preview.visible = true;
     return true;
   }

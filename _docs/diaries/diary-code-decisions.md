@@ -1660,6 +1660,10 @@ The first `silk-fine` shader (30 threads x tileScale 20, strict over/under) look
 - **Entscheidung:** Daten bleiben einmalig am Original (`PatchParams`). Der `TrianglePatchGizmoController` hält pro Spiegelkopie ein zusätzliches, blasseres Helfer-Set (`HelperSet`, Handles tragen `userData.mirrorKey`), positioniert per Achsen-Vorzeichen im Szenenraum. Ziehen an einer Kopie rechnet über `(M · matrixWorld)⁻¹` zurück in den lokalen Raum des Originals und läuft durch denselben Commit-Pfad (Undo, Handle-Länge, Edge-Links). Rotation wird als `M R M` zurückgerechnet. Das Add-Point-Tool prüft auch die Kantenkurven der Kopien; Kanten-Index und Parameter sind identisch zum Original. Gruppen-Gizmo/Mehrfachauswahl bleiben nur am Original (Shift-Klick auf eine Kopie wählt den Originalpunkt).
 - **Verworfen:** eigene Daten pro Kopie (zwei Wahrheiten); Gruppen-Gizmo an Kopien (Spiegelung von Rotation/Skalierung verwirrend).
 
+### 2026-11-06 — Patch-Helfer mit konstanter Bildschirmgröße
+- **Entscheidung:** Punkte, Handles, Ringe und die Add-Point-Vorschau werden pro Frame nach Kameraabstand (Perspektive: Abstand · tan(fov/2), Ortho: sichtbare Höhe) skaliert (`screen-constant-scale.ts`), normiert auf die Standardansicht (Orbit-Radius, Standard-FOV), dort also unverändert groß. Skaliert wird `mesh.scale` je Helfer an dessen eigener Position, daher bleibt auch die Klickfläche konstant. Das Transform-Gizmo (`TransformControls`) war bereits bildschirmkonstant.
+- **Verworfen:** Cloth-Pins mitskalieren (sind beleuchtete Simulationsobjekte, keine Overlay-Helfer); eine Größe nur über `sizeAttenuation`-Materialien (gilt nicht für Meshes).
+
 ## Alt+Move duplicate: the copy moves, the original stays
 - `TransformControls` captures the drag start before it fires `dragging-changed`, so the gizmo can be re-attached to the copy inside that callback. The copy sits at the same pose, so the drag continues seamlessly.
 - Rejected: leaving the copy behind and swapping names. The welded original then moved and tore the seam to its neighbors.
