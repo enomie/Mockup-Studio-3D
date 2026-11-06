@@ -1,6 +1,6 @@
 # Plan: Alt+Move-Duplizieren – die Kopie wandert, das Original bleibt
 
-Status: Entwurf, wartet auf Freigabe.
+Status: Umgesetzt (ohne automatisches Verschweißen). Esc-Abbruch entfällt: Die Engine hat keinen Drag-Abbruch.
 
 ## Problem
 

@@ -58,7 +58,7 @@ export interface GizmoInteractionDeps {
   ) => void;
   /** A drag of a patch point or handle ended; the patch pivot follows its points. */
   onPatchPointDragEnd: (entityId: string) => void;
-  /** Alt held at the start of a move drag: leave copies of these entities in place. */
+  /** Alt held at the start of a move drag: duplicate these entities and drag the copies instead. */
   duplicateForAltDrag: (entityIds: readonly string[]) => void;
 }
 

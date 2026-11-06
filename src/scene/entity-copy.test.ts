@@ -68,4 +68,25 @@ describe('copyEntities', () => {
     const [lone] = copyEntities([patch('a', 'other')], []);
     expect(lone.patchParams?.edgeLinks).toBeUndefined();
   });
+
+  it('leaves the welded original untouched when copying for an alt-drag', () => {
+    const welded = entity('a', 'Patch', {
+      assetKind: 'triangle-patch',
+      patchParams: {
+        divisions: 4,
+        points: [{ id: 'p', nodeId: 'node-1' } as never],
+        cornerIds: [],
+        edgeParams: {},
+        edgeLinks: [{ startPointId: 's', endPointId: 'e', partnerEntityId: 'neighbor', partnerStartPointId: 's', partnerEndPointId: 'e' }],
+      },
+    });
+    const before = structuredClone(welded);
+    const [copy] = copyEntities([welded], ['Patch']);
+    expect(copy.id).not.toBe('a');
+    expect(copy.name).toBe('Patch 2');
+    expect(copy.patchParams?.points[0].nodeId).toBeUndefined();
+    expect(copy.patchParams?.edgeLinks).toBeUndefined();
+    copy.transform.position.x += 5;
+    expect(welded).toEqual(before);
+  });
 });

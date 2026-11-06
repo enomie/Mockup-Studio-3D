@@ -605,22 +605,19 @@ export class MockupEngine implements SceneApi {
   }
 
   /**
-   * Alt-drag in move mode: leaves copies of the dragged entities in place. The copies take
-   * over the original names and the dragged entities get the copy names, so the moved
-   * objects read as the duplicates. Recorded with the drag as one undo step.
+   * Alt-drag in move mode: duplicates the dragged entities in place and selects the copies,
+   * so the running drag moves the copies while the originals stay untouched. The copies carry
+   * no patch welds. The duplicate and the move are recorded as one undo step with the drag.
    */
   private duplicateInPlaceForDrag(entityIds: readonly string[]): void {
     const originals = this.getEntitySnapshots(entityIds);
     if (originals.length === 0) {return;}
     const copies = copyEntities(originals, this.entityNames());
-    for (let i = 0; i < copies.length; i += 1) {
-      const original = originals[i];
-      const copy = copies[i];
-      const copyName = copy.name;
-      copy.name = original.name;
-      this.registry.patchEntityFields(original.id, { name: copyName });
-    }
+    // Registers entities and scene roots synchronously; geometry builds asynchronously.
     void this.assets.insertEntities(copies).then(() => { this.invalidateViewport(); });
+    this.patchGizmo.setActiveEntity(null);
+    this.registry.setSelectedEntityIds(copies.map((entity) => entity.id));
+    this.gizmoInteraction.refresh();
     this.emit();
   }
 

@@ -1655,3 +1655,8 @@ The first `silk-fine` shader (30 threads x tileScale 20, strict over/under) look
 ### 2026-11-06 — Mehrfachauswahl von Patch-Punkten
 - **Entscheidung:** Mehrere Anker **eines** Patches per Shift-Klick wählbar; die Auswahl liegt im `TrianglePatchGizmoController` (`selectedPointIds`), nicht in `PatchHandleSelection`. Der Gizmo hängt an einem eigenen unsichtbaren Pivot in Szenenkoordinaten; ein Drag wird als Szenen-Matrix seit Drag-Beginn auf die Start-Punkte angewendet (in Patch-lokal umgerechnet), damit sich Fehler nicht aufsummieren. Rot/Scale sind relativ zur Bildung der Auswahl, wie bei der Asset-Gruppe; die Felder sind eine gemeinsame Komponente `GroupTransformFields`.
 - **Verworfen:** Patch-übergreifende Auswahl (eigener Auswahl-State über Entities, wenig Nutzen); Handles mit in die Mehrfachauswahl nehmen (unklar, was Drehen/Skalieren dann bedeutet).
+
+## Alt+Move duplicate: the copy moves, the original stays
+- `TransformControls` captures the drag start before it fires `dragging-changed`, so the gizmo can be re-attached to the copy inside that callback. The copy sits at the same pose, so the drag continues seamlessly.
+- Rejected: leaving the copy behind and swapping names. The welded original then moved and tore the seam to its neighbors.
+- Copies carry no patch welds and are never auto-welded; welding stays a manual step.
