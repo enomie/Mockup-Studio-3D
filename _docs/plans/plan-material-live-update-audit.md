@@ -81,3 +81,10 @@ Ziel: **ein** Mechanismus, kein Raten, welche Weiche greift.
 - Wie genau lief der Fehler ab (Reihenfolge: Patch gebaut → Material gewählt → Farbe geändert; schnell
   nacheinander oder nach Pause; Patch dupliziert/gespiegelt)? Das beschleunigt Phase 1.
 - Soll Phase 3 (Umbau) direkt nach dem Fix folgen oder erst nach deinem Test von Phase 2?
+
+## Phase 0 – Dev-Server: Engine-Änderungen laden die Seite immer komplett neu (umgesetzt)
+
+Verdacht für „Farbe erst nach Neuladen“: Nach einem Hot-Update (z. B. nach `git pull` bei laufendem
+`npm run dev`) hat der neue Modulcode ein leeres Live-Register, die laufende Engine hängt am alten.
+Absicherung in `vite.config.ts` (Plugin `engine-full-reload`) für `src/{engine,materials,physics,render,scene}`.
+Die saubere Lösung (Register pro Engine statt Modulzustand) bleibt Teil von Phase 3.
